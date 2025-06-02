@@ -18,6 +18,13 @@ interface RiskAssessmentProps {
   setUserInteracted?: () => void
 }
 
+interface RiskLevelDistribution {
+  Extreme: number;
+  High: number;
+  Medium: number;
+  Low: number;
+}
+
 const LIKELIHOOD_OPTIONS = [
   { value: '1', label: 'Very Unlikely (1)', description: 'Will only occur in exceptional circumstances', color: 'bg-green-100 text-green-800' },
   { value: '2', label: 'Unlikely (2)', description: 'Not likely to occur in the next 3 years', color: 'bg-yellow-100 text-yellow-800' },
@@ -168,14 +175,14 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     return riskItems.filter(item => item.likelihood && item.severity && item.planningMeasures.trim())
   }
 
-  const getRiskDistribution = () => {
-    const distribution = { Extreme: 0, High: 0, Medium: 0, Low: 0 }
+  const getRiskDistribution = (): RiskLevelDistribution => {
+    const distribution: RiskLevelDistribution = { Extreme: 0, High: 0, Medium: 0, Low: 0 };
     riskItems.forEach(item => {
-      if (item.riskLevel && distribution.hasOwnProperty(item.riskLevel)) {
-        distribution[item.riskLevel as keyof typeof distribution]++
+      if (item.riskLevel && item.riskLevel in distribution) {
+        distribution[item.riskLevel as keyof RiskLevelDistribution]++;
       }
-    })
-    return distribution
+    });
+    return distribution;
   }
 
   if (selectedHazards.length === 0) {
