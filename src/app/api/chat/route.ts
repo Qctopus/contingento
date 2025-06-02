@@ -1,10 +1,5 @@
 import { NextResponse } from 'next/server'
-import { OpenAI } from 'openai'
 import { prisma } from '@/lib/prisma'
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
 
 const STEPS = {
   BUSINESS_OVERVIEW: {
@@ -33,35 +28,6 @@ export async function POST(req: Request) {
   try {
     const { message, currentStep, sessionId, stepData, currentInput } = await req.json()
 
-    // Get or create session
-    let session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      include: {
-        businessProfile: true,
-        businessFunctions: true,
-        riskAssessments: true,
-        strategies: true,
-        actionPlans: true,
-      },
-    })
-
-    if (!session) {
-      session = await prisma.session.create({
-        data: {
-          id: sessionId,
-          currentStep,
-          stepData: JSON.stringify({}),
-        },
-        include: {
-          businessProfile: true,
-          businessFunctions: true,
-          riskAssessments: true,
-          strategies: true,
-          actionPlans: true,
-        },
-      })
-    }
-
     // Prepare conversation history for OpenAI
     const messages = [
       {
@@ -77,7 +43,7 @@ export async function POST(req: Request) {
         Use a warm, conversational tone and provide clear explanations of business continuity concepts.
         Include Caribbean-specific examples and terminology when relevant.
         
-        Current session data: ${JSON.stringify(session)}
+        Current session data: ${JSON.stringify({})}
         Current step data: ${JSON.stringify(stepData)}
         Current input: ${JSON.stringify(currentInput)}
 
@@ -97,33 +63,32 @@ export async function POST(req: Request) {
     ]
 
     // Get response from OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
-      messages,
-      temperature: 0.7,
-      max_tokens: 500,
-    })
+    // const completion = await openai.chat.completions.create({
+    //   model: 'gpt-4-turbo-preview',
+    //   messages,
+    //   temperature: 0.7,
+    //   max_tokens: 500,
+    // })
 
-    const response = completion.choices[0].message.content
+    // const response = completion.choices[0].message.content
 
     // Update session in database
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: {
-        stepData: JSON.stringify({
-          ...JSON.parse(session.stepData || '{}'),
-          [currentStep]: {
-            ...JSON.parse(session.stepData || '{}')[currentStep],
-            ...stepData,
-            lastMessage: message,
-            lastResponse: response,
-          },
-        }),
-      },
-    })
+    // await prisma.session.update({
+    //   where: { id: sessionId },
+    //   data: {
+    //     stepData: JSON.stringify({
+    //       ...JSON.parse(stepData || '{}'),
+    //       [currentStep]: {
+    //         ...JSON.parse(stepData || '{}')[currentStep],
+    //         ...stepData,
+    //         lastMessage: message,
+    //       },
+    //     }),
+    //   },
+    // })
 
     return NextResponse.json({
-      message: response,
+      message: 'No response generated',
       nextStep: currentStep,
       sessionId,
     })

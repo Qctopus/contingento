@@ -397,14 +397,20 @@ export async function POST(req: Request) {
       }
 
       // Add footer to all pages
-      const totalPages = doc.internal.getNumberOfPages()
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i)
-        doc.setFontSize(8)
-        doc.setTextColor(128, 128, 128)
-        doc.text(`${companyName} - Business Continuity Plan`, margin, pageHeight - 10)
-        doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 20, pageHeight - 10)
-        doc.text(`Generated: ${currentDate}`, pageWidth - margin - 80, pageHeight - 10)
+      let pageCount = 1; // Initialize page count
+
+      // When adding a new page, increment the counter
+      doc.addPage();
+      pageCount++;
+
+      // Use pageCount instead of doc.internal.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text(`${companyName} - Business Continuity Plan`, margin, pageHeight - 10);
+        doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin - 20, pageHeight - 10);
+        doc.text(`Generated: ${currentDate}`, pageWidth - margin - 80, pageHeight - 10);
       }
 
       // Get the PDF as a buffer

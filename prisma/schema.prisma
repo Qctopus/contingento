@@ -59,10 +59,11 @@ model EssentialFunction {
 }
 
 model RiskAssessment {
-  id        String   @id @default(cuid())
-  planId    String   @unique
-  plan      BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  hazards   String   // JSON array of selected hazards
+  id                  String   @id @default(cuid())
+  planId              String   @unique
+  plan                BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  potentialHazards    String   // JSON array of selected hazards
+  hazards             String   // JSON array of selected hazards
 }
 
 model Strategy {
@@ -82,4 +83,23 @@ model ActionPlan {
   resourceRequirements   String
   responsibleParties     String
   reviewUpdateSchedule   String
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  currentStep     String
+  stepData        String
+  businessProfile BusinessProfile?
+}
+
+model BusinessProfile {
+  id        String   @id @default(cuid())
+  sessionId String   @unique
+  session   Session  @relation(fields: [sessionId], references: [id])
+  name      String
+  industry  String
+  size      String
+  location  String
 } 
