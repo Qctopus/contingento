@@ -7,12 +7,13 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   structuredInput?: {
-    type: 'text' | 'radio' | 'checkbox' | 'select' | 'table'
+    type: 'text' | 'radio' | 'checkbox' | 'table' | 'special_risk_matrix'
     label: string
     options?: { label: string; value: string }[]
     required?: boolean
     tableColumns?: string[]
     tableRows?: string[]
+    prompt: string
   }
 }
 
@@ -404,6 +405,7 @@ ${currentInput.examples?.map(ex => `• ${ex}`).join('\n')}`,
         label: currentInput.label,
         required: currentInput.required,
         options: currentInput.options,
+        prompt: currentInput.prompt,
       },
     }
     setMessages([welcomeMessage])
@@ -524,8 +526,9 @@ ${currentInput.examples?.map(ex => `• ${ex}`).join('\n')}`,
             structuredInput: {
               type: nextInput.type,
               label: nextInput.label,
-              required: nextInput.required,
-              options: nextInput.options,
+              required: 'required' in nextInput ? nextInput.required : false,
+              options: 'options' in nextInput ? nextInput.options : undefined,
+              prompt: nextInput.prompt,
             },
           },
         ])
@@ -547,8 +550,9 @@ ${currentInput.examples?.map(ex => `• ${ex}`).join('\n')}`,
               structuredInput: {
                 type: nextInput.type,
                 label: nextInput.label,
-                required: nextInput.required,
-                options: nextInput.options,
+                required: 'required' in nextInput ? nextInput.required : false,
+                options: 'options' in nextInput ? nextInput.options : undefined,
+                prompt: nextInput.prompt,
               },
             },
           ])

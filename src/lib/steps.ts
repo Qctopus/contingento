@@ -1,31 +1,114 @@
-export const STEPS = {
+// Explicit type definitions for input configurations
+type TextInput = {
+  type: 'text';
+  label: string;
+  required: boolean;
+  prompt: string;
+  examples?: string[];
+  options?: never;
+  tableColumns?: never;
+  tableRowsPrompt?: never;
+  priorityOptions?: never;
+  downtimeOptions?: never;
+  dependsOn?: never;
+};
+
+type RadioInput = {
+  type: 'radio';
+  label: string;
+  required: boolean;
+  prompt: string;
+  options: { label: string; value: string }[];
+  examples?: string[];
+  tableColumns?: never;
+  tableRowsPrompt?: never;
+  priorityOptions?: never;
+  downtimeOptions?: never;
+  dependsOn?: never;
+};
+
+type CheckboxInput = {
+  type: 'checkbox';
+  label: string;
+  required: boolean; // Explicitly ensure this is part of the type
+  prompt: string;
+  options: { label: string; value: string }[];
+  examples?: string[];
+  tableColumns?: never;
+  tableRowsPrompt?: never;
+  priorityOptions?: never;
+  downtimeOptions?: never;
+  dependsOn?: never;
+};
+
+type TableInput = {
+  type: 'table';
+  label: string;
+  required: boolean;
+  prompt: string;
+  tableColumns: string[];
+  tableRowsPrompt?: string;
+  examples?: string[];
+  options?: never;
+  priorityOptions?: { label: string; value: string }[];
+  downtimeOptions?: { label: string; value: string }[];
+  dependsOn?: string;
+};
+
+type SpecialRiskMatrixInput = {
+  type: 'special_risk_matrix';
+  label: string;
+  required: boolean;
+  prompt: string;
+  examples?: string[];
+  options?: never;
+  tableColumns?: never;
+  tableRowsPrompt?: never;
+  priorityOptions?: never;
+  downtimeOptions?: never;
+  dependsOn?: never;
+};
+
+export type InputConfig = TextInput | RadioInput | CheckboxInput | TableInput | SpecialRiskMatrixInput;
+
+type StepConfig = {
+  title: string;
+  description: string;
+  inputs: InputConfig[];
+};
+
+type StepsCollection = {
+  readonly [key: string]: StepConfig; // Using readonly for the top-level structure
+};
+
+export const STEPS: StepsCollection = {
   PLAN_INFORMATION: {
     title: 'Plan Information',
     description: 'Let\'s start by setting up the basic information for your business continuity plan.',
     inputs: [
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Company Name',
         required: true,
         prompt: 'What is your company name?',
         examples: ['ABC Store', 'Caribbean Delights', 'Island Services Ltd.'],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Plan Manager',
         required: true,
         prompt: 'Who is the person responsible for this business continuity plan? This should be someone with authority to make decisions.',
         examples: ['John Smith, Owner', 'Maria Rodriguez, Operations Manager', 'David Thompson, General Manager'],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Alternate Manager',
         required: true,
         prompt: 'Who is the alternate person responsible if the main manager is unavailable?',
         examples: ['Sarah Johnson, Assistant Manager', 'Michael Brown, Supervisor', 'Lisa Williams, Senior Staff'],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Plan Location',
         required: true,
         prompt: 'Where will copies of this business continuity plan be stored? Include both physical and digital locations.',
@@ -43,14 +126,14 @@ export const STEPS = {
     description: 'Now let\'s understand your business operations in detail.',
     inputs: [
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Business License Number',
         required: true,
         prompt: 'What is your business license number? This is usually found on your business registration documents.',
         examples: ['BL-12345', 'REG-2023-789', 'LIC-456789'],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Business Purpose',
         required: true,
         prompt: 'What is the main purpose of your business? Think about why you started this business and what problem it solves for your customers.',
@@ -61,7 +144,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Products and Services',
         required: true,
         prompt: 'What products and services do you provide? What makes your business special or unique?',
@@ -72,7 +155,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Service Delivery Methods',
         required: true,
         prompt: 'How and where do you provide your products and services? Consider your physical location, delivery methods, and any online presence.',
@@ -83,7 +166,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Operating Hours',
         required: true,
         prompt: 'What are your operating hours and days? Include any seasonal variations or special hours.',
@@ -94,7 +177,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Key Personnel Involved',
         required: true,
         prompt: 'Who are the key people involved in running your business? Include employees, key suppliers, and contractors.',
@@ -105,7 +188,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Minimum Resource Requirements',
         required: true,
         prompt: 'What are the absolute minimum resources (personnel, equipment, records) needed to keep your business running?',
@@ -116,7 +199,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Customer Base',
         required: true,
         prompt: 'Who are your customers? Describe your main customer groups and any special customers who depend on you.',
@@ -127,7 +210,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'radio' as const,
+        type: 'radio',
         label: 'Service Provider BCP Status',
         required: true,
         prompt: 'Do your main service providers (suppliers, vendors, contractors) have business continuity plans in place?',
@@ -146,8 +229,9 @@ export const STEPS = {
     description: 'Let\'s identify and prioritize the key functions that keep your business running.',
     inputs: [
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Supply Chain Management Functions',
+        required: false,
         prompt: 'Which supply chain management functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Ordering supplies from vendors', value: 'ordering_supplies' },
@@ -164,8 +248,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Staff Management Functions',
+        required: false,
         prompt: 'Which staff-related functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Staff recruitment and hiring', value: 'recruitment' },
@@ -182,8 +267,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Technology Functions',
+        required: false,
         prompt: 'Which technology functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Website maintenance and updates', value: 'website' },
@@ -201,8 +287,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Product and Service Delivery',
+        required: false,
         prompt: 'Which product/service functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Product design and development', value: 'design' },
@@ -221,8 +308,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Sales and Marketing Functions',
+        required: false,
         prompt: 'Which sales and marketing functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Advertising and promotion', value: 'advertising' },
@@ -241,8 +329,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Administrative Functions',
+        required: false,
         prompt: 'Which administrative functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Appointment scheduling and bookings', value: 'bookings' },
@@ -263,8 +352,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Infrastructure and Facilities',
+        required: false,
         prompt: 'Which infrastructure and facilities functions are essential to your business? Select all that apply.',
         options: [
           { label: 'Building access and security', value: 'building_access' },
@@ -282,7 +372,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Function Priority Assessment',
         prompt: 'For each business function you selected above, indicate its priority level and maximum acceptable downtime.',
         required: true,
@@ -306,6 +396,7 @@ export const STEPS = {
           { label: '1-2 weeks', value: '1-2weeks' },
           { label: 'More than 2 weeks', value: '>2weeks' },
         ],
+        dependsOn: 'ESSENTIAL_FUNCTIONS', // Example, adjust if needed
       },
     ],
   },
@@ -315,8 +406,9 @@ export const STEPS = {
     description: 'Let\'s identify and assess the risks that could disrupt your business operations.',
     inputs: [
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Potential Hazards',
+        required: false,
         prompt: 'Select all hazards that may affect your business. Consider both natural disasters and human-caused risks that are relevant to your location and industry.',
         options: [
           { label: 'Earthquake', value: 'earthquake' },
@@ -347,7 +439,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'special_risk_matrix' as const,
+        type: 'special_risk_matrix',
         label: 'Risk Assessment Matrix',
         prompt: 'For each hazard you selected, assess the likelihood and potential severity of impact on your business.',
         required: true,
@@ -365,8 +457,9 @@ export const STEPS = {
     description: 'Now let\'s develop comprehensive strategies to prevent, respond to, and recover from the risks you\'ve identified.',
     inputs: [
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Prevention Strategies (Before Emergencies)',
+        required: false,
         prompt: 'Which prevention strategies will you implement to reduce the likelihood or impact of risks? Select all that apply.',
         options: [
           { label: 'Regular maintenance of equipment and facilities', value: 'maintenance' },
@@ -389,8 +482,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Response Strategies (During Emergencies)',
+        required: false,
         prompt: 'Which response strategies will you implement during an emergency? Select all that apply.',
         options: [
           { label: 'Emergency response team activation', value: 'emergency_team' },
@@ -413,8 +507,9 @@ export const STEPS = {
         ],
       },
       {
-        type: 'checkbox' as const,
+        type: 'checkbox',
         label: 'Recovery Strategies (After Emergencies)',
+        required: false,
         prompt: 'Which recovery strategies will help you restore normal operations after an emergency? Select all that apply.',
         options: [
           { label: 'Damage assessment and documentation', value: 'damage_assessment' },
@@ -437,7 +532,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Long-term Risk Reduction Measures',
         required: true,
         prompt: 'What long-term measures will you implement to reduce future risks? Consider climate adaptation, sustainable practices, and building resilience over time.',
@@ -455,7 +550,7 @@ export const STEPS = {
     description: 'Finally, let\'s create a detailed action plan to implement your business continuity strategies.',
     inputs: [
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Action Plan by Risk Level',
         prompt: 'For your highest-priority risks, create specific action plans with timelines and responsibilities.',
         required: true,
@@ -467,7 +562,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Implementation Timeline',
         required: true,
         prompt: 'What is your overall timeline for implementing this business continuity plan? Consider your business cycles, budget constraints, and priority risks.',
@@ -478,7 +573,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Resource Requirements',
         required: true,
         prompt: 'What resources (financial, human, technical) will you need to implement your plan? Be specific about costs and personnel time.',
@@ -489,7 +584,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Responsible Parties and Roles',
         required: true,
         prompt: 'Who will be responsible for implementing and maintaining different aspects of the plan? Assign specific roles and backup responsibilities.',
@@ -500,7 +595,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Review and Update Schedule',
         required: true,
         prompt: 'How often will you review and update your business continuity plan? Include regular reviews and trigger events for updates.',
@@ -511,7 +606,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Testing and Assessment Plan',
         prompt: 'How will you test your business continuity plan to ensure it works effectively?',
         required: true,
@@ -532,7 +627,7 @@ export const STEPS = {
     description: 'Let\'s compile all the important contact information and details you\'ll need during an emergency.',
     inputs: [
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Staff Contact Information',
         prompt: 'Provide contact information for all staff members.',
         required: true,
@@ -545,7 +640,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Key Customer Contacts',
         prompt: 'List your most important customers who would need special attention during an emergency.',
         required: false,
@@ -558,7 +653,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Supplier Information',
         prompt: 'List your main suppliers and at least one backup supplier for key goods/services.',
         required: true,
@@ -571,7 +666,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Emergency Services and Utilities',
         prompt: 'Compile contact information for emergency services and utility providers.',
         required: true,
@@ -587,7 +682,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Critical Business Information',
         required: true,
         prompt: 'Provide other critical business information needed during emergencies.',
@@ -597,7 +692,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Plan Distribution List',
         prompt: 'Track who has received copies of this business continuity plan.',
         required: true,
@@ -617,7 +712,7 @@ export const STEPS = {
     description: 'Establish procedures for keeping your business continuity plan current and effective.',
     inputs: [
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Plan Testing Schedule',
         prompt: 'Create a schedule for regularly testing different aspects of your business continuity plan.',
         required: true,
@@ -631,7 +726,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Plan Revision History',
         prompt: 'Track changes and updates to your business continuity plan over time.',
         required: true,
@@ -644,7 +739,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'table' as const,
+        type: 'table',
         label: 'Improvement Tracking',
         prompt: 'Track improvements and action items identified through testing and real events.',
         required: true,
@@ -657,7 +752,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Annual Review Process',
         required: true,
         prompt: 'Describe your process for conducting comprehensive annual reviews of the business continuity plan.',
@@ -668,7 +763,7 @@ export const STEPS = {
         ],
       },
       {
-        type: 'text' as const,
+        type: 'text',
         label: 'Trigger Events for Plan Updates',
         required: true,
         prompt: 'What events or changes would trigger an immediate update to your business continuity plan?',

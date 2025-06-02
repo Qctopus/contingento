@@ -9,15 +9,17 @@ generator client {
 }
 
 model BusinessContinuityPlan {
-  id                String   @id @default(cuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  planInformation   PlanInformation?
-  businessOverview  BusinessOverview?
-  essentialFunctions EssentialFunction?
-  riskAssessments   RiskAssessment?
-  strategies        Strategy?
-  actionPlans       ActionPlan?
+  id                  String               @id @default(cuid())
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  planInformation     PlanInformation?
+  businessOverview    BusinessOverview?
+  essentialFunction   EssentialFunction?
+  riskAssessment      RiskAssessment?
+  strategy            Strategy?
+  actionPlan          ActionPlan?
+  contactsInformation ContactsInformation?
+  testingMaintenance  TestingMaintenance?
 }
 
 model PlanInformation {
@@ -105,4 +107,27 @@ model BusinessProfile {
   industry  String
   size      String
   location  String
+}
+
+model ContactsInformation {
+  id                         String                 @id @default(cuid())
+  planId                     String                 @unique
+  plan                       BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  staffContactInfo           String // JSON array of staff contact information
+  keyCustomerContacts        String // JSON array of customer contacts
+  supplierInformation        String // JSON array of supplier information
+  emergencyServicesUtilities String // JSON array of emergency services
+  criticalBusinessInfo       String // Text field for critical business info
+  planDistributionList       String // JSON array of distribution list
+}
+
+model TestingMaintenance {
+  id                      String                 @id @default(cuid())
+  planId                  String                 @unique
+  plan                    BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  planTestingSchedule     String // JSON array of testing schedule
+  planRevisionHistory     String // JSON array of revision history
+  improvementTracking     String // JSON array of improvement tracking
+  annualReviewProcess     String // Text field for annual review process
+  triggerEventsForUpdates String // Text field for trigger events
 } 

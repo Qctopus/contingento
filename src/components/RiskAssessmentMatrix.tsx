@@ -133,7 +133,11 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     setRiskItems(prevItems => {
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
-      currentItem[field] = value
+      
+      // Handle string fields
+      if (field === 'hazard' || field === 'likelihood' || field === 'severity' || field === 'riskLevel' || field === 'planningMeasures') {
+        currentItem[field] = value
+      }
       
       // Recalculate risk level if likelihood or severity changed
       if (field === 'likelihood' || field === 'severity') {
