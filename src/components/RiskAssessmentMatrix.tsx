@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface RiskItem {
   hazard: string
@@ -32,14 +32,6 @@ const SEVERITY_OPTIONS = [
   { value: '4', label: 'Major (4)', description: 'Large-scale damage, long-term business impact', color: 'bg-red-100 text-red-800' },
 ]
 
-const HAZARD_CATEGORIES = {
-  'Natural Disasters': ['earthquake', 'hurricane', 'coastal_flood', 'flash_flood', 'landslide', 'tsunami', 'volcanic', 'drought'],
-  'Health & Safety': ['epidemic', 'pandemic', 'fire'],
-  'Infrastructure': ['power_outage', 'telecom_failure', 'cyber_attack'],
-  'Security & Crime': ['crime', 'civil_disorder', 'terrorism'],
-  'Business Operations': ['supply_disruption', 'staff_unavailable', 'economic_downturn'],
-}
-
 const HAZARD_LABELS: { [key: string]: string } = {
   earthquake: 'Earthquake',
   hurricane: 'Hurricane/Tropical Storm',
@@ -67,20 +59,35 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
   const [riskItems, setRiskItems] = useState<RiskItem[]>([])
   const [activeRisk, setActiveRisk] = useState<number | null>(null)
 
-  // Merge hazards and initialValue, preserving previous risk data for hazards that remain selected
+  // Initialize risk items when selectedHazards or initialValue changes
   useEffect(() => {
-    // Map initialValue by hazard for quick lookup
-    const initialMap = (initialValue || []).reduce((acc, item) => {
-      acc[item.hazard] = item
-      return acc
-    }, {} as Record<string, RiskItem>)
+    if (selectedHazards.length === 0) {
+      setRiskItems([])
+      onComplete([])
+      return
+    }
 
-    // Build risk items for all selected hazards
+    // Create a map of existing risk items by hazard name
+    const existingRisksMap = new Map<string, RiskItem>()
+    if (initialValue && Array.isArray(initialValue)) {
+      initialValue.forEach(item => {
+        existingRisksMap.set(item.hazard, item)
+      })
+    }
+
+    // Create risk items for all selected hazards
     const newRiskItems = selectedHazards.map(hazardKey => {
-      const label = HAZARD_LABELS[hazardKey] || hazardKey
-      // Use initialValue if available, otherwise create new item
-      return initialMap[label] || initialMap[hazardKey] || {
-        hazard: label,
+      const hazardLabel = HAZARD_LABELS[hazardKey] || hazardKey
+      
+      // Use existing data if available, otherwise create new item
+      const existingItem = existingRisksMap.get(hazardLabel) || existingRisksMap.get(hazardKey)
+      
+      if (existingItem) {
+        return existingItem
+      }
+      
+      return {
+        hazard: hazardLabel,
         likelihood: '',
         severity: '',
         riskLevel: '',
@@ -88,15 +95,23 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         planningMeasures: '',
       }
     })
+
     setRiskItems(newRiskItems)
   }, [selectedHazards, initialValue])
 
-  // Calculate risk level and notify parent
+  // Notify parent of changes using useCallback to prevent unnecessary re-renders
+  const notifyParent = useCallback((items: RiskItem[]) => {
+    onComplete(items)
+  }, [onComplete])
+
+  // Call parent when risk items change - debounced to prevent excessive calls
   useEffect(() => {
-    if (riskItems.length > 0) {
-      onComplete(riskItems)
-    }
-  }, [riskItems, onComplete])
+    const timeoutId = setTimeout(() => {
+      notifyParent(riskItems)
+    }, 100) // Small delay to batch updates
+    
+    return () => clearTimeout(timeoutId)
+  }, [riskItems, notifyParent])
 
   const calculateRiskLevel = (likelihood: string, severity: string): { level: string; score: number; color: string } => {
     const l = parseInt(likelihood) || 0
@@ -110,23 +125,30 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     return { level: '', score: 0, color: 'bg-gray-200 text-gray-600' }
   }
 
-  const updateRiskItem = (index: number, field: keyof RiskItem, value: string) => {
-    if (setUserInteracted) setUserInteracted();
-    const updatedItems = [...riskItems]
-    updatedItems[index] = { ...updatedItems[index], [field]: value }
-    
-    // Recalculate risk level if likelihood or severity changed
-    if (field === 'likelihood' || field === 'severity') {
-      const { level, score, color } = calculateRiskLevel(
-        updatedItems[index].likelihood,
-        updatedItems[index].severity
-      )
-      updatedItems[index].riskLevel = level
-      updatedItems[index].riskScore = score
+  const updateRiskItem = useCallback((index: number, field: keyof RiskItem, value: string) => {
+    if (setUserInteracted) {
+      setUserInteracted()
     }
     
-    setRiskItems(updatedItems)
-  }
+    setRiskItems(prevItems => {
+      const updatedItems = [...prevItems]
+      const currentItem = { ...updatedItems[index] }
+      currentItem[field] = value
+      
+      // Recalculate risk level if likelihood or severity changed
+      if (field === 'likelihood' || field === 'severity') {
+        const { level, score } = calculateRiskLevel(
+          currentItem.likelihood,
+          currentItem.severity
+        )
+        currentItem.riskLevel = level
+        currentItem.riskScore = score
+      }
+      
+      updatedItems[index] = currentItem
+      return updatedItems
+    })
+  }, [setUserInteracted])
 
   const getRiskLevelColor = (riskLevel: string): string => {
     switch (riskLevel) {
@@ -247,10 +269,11 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
           const isCompleted = risk.likelihood && risk.severity && risk.planningMeasures.trim()
           
           return (
-            <div key={index} className={`bg-white border rounded-lg transition-all duration-200 ${isActive ? 'ring-2 ring-primary-500 shadow-lg' : 'hover:shadow-md'}`}>
+            <div key={`${risk.hazard}-${index}`} className={`bg-white border rounded-lg transition-all duration-200 ${isActive ? 'ring-2 ring-primary-500 shadow-lg' : 'hover:shadow-md'}`}>
               <button
                 onClick={() => setActiveRisk(isActive ? null : index)}
                 className="w-full p-4 text-left flex items-center justify-between"
+                type="button"
               >
                 <div className="flex items-center space-x-3">
                   <div className={`w-3 h-3 rounded-full ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
@@ -283,20 +306,29 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {LIKELIHOOD_OPTIONS.map(option => (
-                        <label key={option.value} className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.likelihood === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <div 
+                          key={`likelihood-${index}-${option.value}`} 
+                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.likelihood === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            updateRiskItem(index, 'likelihood', option.value)
+                          }}
+                        >
                           <input
                             type="radio"
-                            name={`likelihood-${index}`}
+                            name={`likelihood-${risk.hazard.replace(/\s+/g, '')}-${index}`}
                             value={option.value}
                             checked={risk.likelihood === option.value}
-                            onChange={(e) => updateRiskItem(index, 'likelihood', e.target.value)}
-                            className="h-4 w-4 text-primary-600 mr-3"
+                            onChange={() => {}} // Controlled by parent div click
+                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500 pointer-events-none"
+                            readOnly
                           />
-                          <div>
+                          <div className="pointer-events-none">
                             <div className="font-medium">{option.label}</div>
                             <div className="text-sm text-gray-600">{option.description}</div>
                           </div>
-                        </label>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -308,20 +340,29 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {SEVERITY_OPTIONS.map(option => (
-                        <label key={option.value} className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.severity === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                        <div 
+                          key={`severity-${index}-${option.value}`} 
+                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.severity === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            updateRiskItem(index, 'severity', option.value)
+                          }}
+                        >
                           <input
                             type="radio"
-                            name={`severity-${index}`}
+                            name={`severity-${risk.hazard.replace(/\s+/g, '')}-${index}`}
                             value={option.value}
                             checked={risk.severity === option.value}
-                            onChange={(e) => updateRiskItem(index, 'severity', e.target.value)}
-                            className="h-4 w-4 text-primary-600 mr-3"
+                            onChange={() => {}} // Controlled by parent div click
+                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500 pointer-events-none"
+                            readOnly
                           />
-                          <div>
+                          <div className="pointer-events-none">
                             <div className="font-medium">{option.label}</div>
                             <div className="text-sm text-gray-600">{option.description}</div>
                           </div>
-                        </label>
+                        </div>
                       ))}
                     </div>
                   </div>

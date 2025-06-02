@@ -62,10 +62,13 @@ export function StructuredInput({
       didMount.current = true
       return
     }
+    
+    // Special handling for risk matrix - always save its data
     if (type === 'special_risk_matrix') {
-      // For risk matrix, always call onComplete with the latest tableRows
-      onComplete(tableRows)
-    } else if (hasUserInteracted.current) {
+      return // Risk matrix handles its own saving
+    }
+    
+    if (hasUserInteracted.current) {
       // For other types, only call onComplete after user interaction
       if (type === 'table') {
         onComplete(tableRows)
@@ -78,11 +81,11 @@ export function StructuredInput({
   // Initialize value and tableRows from initialValue when type or initialValue changes
   useEffect(() => {
     if (type === 'special_risk_matrix') {
-      // For risk matrix, always initialize from initialValue
-      if (Array.isArray(initialValue)) {
-        setTableRows(initialValue)
-      }
-    } else if (!hasUserInteracted.current) {
+      // For risk matrix, don't manage local state
+      return
+    }
+    
+    if (!hasUserInteracted.current) {
       // For other types, only initialize if user hasn't interacted
       if (type === 'checkbox' || type === 'radio' || type === 'text') {
         if (initialValue !== undefined && initialValue !== null) {
@@ -112,9 +115,7 @@ export function StructuredInput({
   }
 
   const handleRadioChange = (optionValue: string) => {
-    if (type !== 'special_risk_matrix') {
-      hasUserInteracted.current = true
-    }
+    hasUserInteracted.current = true
     handleChange(optionValue)
   }
 
@@ -430,6 +431,12 @@ export function StructuredInput({
     return []
   }
 
+  // Special handling for risk matrix type
+  const handleRiskMatrixComplete = (riskMatrix: any[]) => {
+    hasUserInteracted.current = true
+    onComplete(riskMatrix)
+  }
+
   return (
     <div className="space-y-4">
       {type === 'text' && (
@@ -469,7 +476,7 @@ export function StructuredInput({
       {type === 'special_risk_matrix' && (
         <RiskAssessmentMatrix 
           selectedHazards={getSelectedHazards()} 
-          onComplete={(riskMatrix) => onComplete(riskMatrix)}
+          onComplete={handleRiskMatrixComplete}
           initialValue={initialValue}
           setUserInteracted={() => { hasUserInteracted.current = true }}
         />
