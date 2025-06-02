@@ -78,7 +78,7 @@ export async function POST(req: Request) {
         riskAssessments: {
           create: {
             potentialHazards: safeStringify(planData.RISK_ASSESSMENT?.['Potential Hazards']),
-            riskAssessmentMatrix: safeStringify(planData.RISK_ASSESSMENT?.['Risk Assessment Matrix']),
+            hazards: safeStringify(planData.RISK_ASSESSMENT?.['Risk Assessment Matrix']),
           },
         },
 

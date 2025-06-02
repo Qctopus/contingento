@@ -74,16 +74,19 @@ model Strategy {
   preventionStrategies String  // JSON array of selected strategies
   responseStrategies   String  // JSON array of selected strategies
   recoveryStrategies   String  // JSON array of selected strategies
+  longTermRiskReduction String // JSON string of long-term risk reduction measures
 }
 
 model ActionPlan {
   id                    String   @id @default(cuid())
   planId                String   @unique
   plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  actionPlanByRisk      String   // JSON string of action plan by risk level
   implementationTimeline String
   resourceRequirements   String
   responsibleParties     String
   reviewUpdateSchedule   String
+  testingAssessmentPlan String   // JSON string of testing and assessment plan
 }
 
 model Session {
