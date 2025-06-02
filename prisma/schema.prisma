@@ -1,0 +1,72 @@
+// This is your Prisma schema file
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model BusinessContinuityPlan {
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  businessProfile   BusinessProfile?
+  businessFunctions BusinessFunction?
+  riskAssessments   RiskAssessment?
+  strategies        Strategy?
+  actionPlans       ActionPlan?
+}
+
+model BusinessProfile {
+  id                    String   @id @default(cuid())
+  planId                String   @unique
+  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  companyName           String
+  businessLicenseNumber String
+  businessPurpose       String
+  productsAndServices   String
+  serviceDelivery       String
+  operatingHours        String
+  serviceProviderBCP    String
+}
+
+model BusinessFunction {
+  id                    String   @id @default(cuid())
+  planId                String   @unique
+  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  supplyChainManagement String
+  staff                 String
+  technology            String
+  productsServices      String
+  infrastructureFacilities String
+  sales                 String
+  administration        String
+}
+
+model RiskAssessment {
+  id        String   @id @default(cuid())
+  planId    String   @unique
+  plan      BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  hazards   String   // JSON array of selected hazards
+}
+
+model Strategy {
+  id                  String   @id @default(cuid())
+  planId              String   @unique
+  plan                BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  preventionStrategies String  // JSON array of selected strategies
+  responseStrategies   String  // JSON array of selected strategies
+  recoveryStrategies   String  // JSON array of selected strategies
+}
+
+model ActionPlan {
+  id                    String   @id @default(cuid())
+  planId                String   @unique
+  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  implementationTimeline String
+  resourceRequirements   String
+  responsibleParties     String
+  reviewUpdateSchedule   String
+} 
