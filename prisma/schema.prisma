@@ -64,6 +64,7 @@ model RiskAssessment {
   plan                BusinessContinuityPlan @relation(fields: [planId], references: [id])
   potentialHazards    String   // JSON array of selected hazards
   hazards             String   // JSON array of selected hazards
+  riskAssessmentMatrix String  // JSON string of risk assessment matrix
 }
 
 model Strategy {
