@@ -15,80 +15,118 @@ export async function POST(req: Request) {
     // Log the incoming data for debugging
     console.log('Received plan data:', JSON.stringify(planData, null, 2))
 
-    // Validate and transform the data
-    const transformedData = {
-      businessProfile: {
-        create: {
-          companyName: String(planData.BUSINESS_OVERVIEW?.['Company Name'] || ''),
-          businessLicenseNumber: String(planData.BUSINESS_OVERVIEW?.['Business License Number'] || ''),
-          businessPurpose: String(planData.BUSINESS_OVERVIEW?.['Business Purpose'] || ''),
-          productsAndServices: String(planData.BUSINESS_OVERVIEW?.['Products and Services'] || ''),
-          serviceDelivery: String(planData.BUSINESS_OVERVIEW?.['Service Delivery'] || ''),
-          operatingHours: String(planData.BUSINESS_OVERVIEW?.['Operating Hours'] || ''),
-          serviceProviderBCP: String(planData.BUSINESS_OVERVIEW?.['Service Provider BCP'] || ''),
-        },
-      },
-      businessFunctions: {
-        create: {
-          supplyChainManagement: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Supply Chain Management']) 
-            ? planData.ESSENTIAL_FUNCTIONS['Supply Chain Management'] 
-            : []),
-          staff: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Staff'])
-            ? planData.ESSENTIAL_FUNCTIONS['Staff']
-            : []),
-          technology: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Technology'])
-            ? planData.ESSENTIAL_FUNCTIONS['Technology']
-            : []),
-          productsServices: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Products/Services'])
-            ? planData.ESSENTIAL_FUNCTIONS['Products/Services']
-            : []),
-          infrastructureFacilities: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Infrastructure/Facilities'])
-            ? planData.ESSENTIAL_FUNCTIONS['Infrastructure/Facilities']
-            : []),
-          sales: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Sales'])
-            ? planData.ESSENTIAL_FUNCTIONS['Sales']
-            : []),
-          administration: JSON.stringify(Array.isArray(planData.ESSENTIAL_FUNCTIONS?.['Administration'])
-            ? planData.ESSENTIAL_FUNCTIONS['Administration']
-            : []),
-        },
-      },
-      riskAssessments: {
-        create: {
-          hazards: JSON.stringify(Array.isArray(planData.RISK_ASSESSMENT?.['Hazards'])
-            ? planData.RISK_ASSESSMENT['Hazards']
-            : []),
-        },
-      },
-      strategies: {
-        create: {
-          preventionStrategies: JSON.stringify(Array.isArray(planData.STRATEGIES?.['Prevention Strategies'])
-            ? planData.STRATEGIES['Prevention Strategies']
-            : []),
-          responseStrategies: JSON.stringify(Array.isArray(planData.STRATEGIES?.['Response Strategies'])
-            ? planData.STRATEGIES['Response Strategies']
-            : []),
-          recoveryStrategies: JSON.stringify(Array.isArray(planData.STRATEGIES?.['Recovery Strategies'])
-            ? planData.STRATEGIES['Recovery Strategies']
-            : []),
-        },
-      },
-      actionPlans: {
-        create: {
-          implementationTimeline: String(planData.ACTION_PLAN?.['Implementation Timeline'] || ''),
-          resourceRequirements: String(planData.ACTION_PLAN?.['Resource Requirements'] || ''),
-          responsibleParties: String(planData.ACTION_PLAN?.['Responsible Parties'] || ''),
-          reviewUpdateSchedule: String(planData.ACTION_PLAN?.['Review and Update Schedule'] || ''),
-        },
-      },
+    // Helper function to safely convert array/object data to JSON string
+    const safeStringify = (data: any): string => {
+      if (data === undefined || data === null) return '[]'
+      if (typeof data === 'string') return data
+      if (Array.isArray(data)) return JSON.stringify(data)
+      if (typeof data === 'object') return JSON.stringify(data)
+      return String(data)
     }
 
-    // Log the transformed data for debugging
-    console.log('Transformed data:', JSON.stringify(transformedData, null, 2))
+    // Helper function to safely get string value
+    const safeString = (data: any): string => {
+      if (data === undefined || data === null) return ''
+      if (typeof data === 'string') return data
+      if (typeof data === 'object') return JSON.stringify(data)
+      return String(data)
+    }
 
-    // Create a new plan in the database
+    // Create a new plan in the database with all sections
     const plan = await prisma.businessContinuityPlan.create({
-      data: transformedData,
+      data: {
+        // Plan Information
+        planInformation: {
+          create: {
+            companyName: safeString(planData.PLAN_INFORMATION?.['Company Name']),
+            planManager: safeString(planData.PLAN_INFORMATION?.['Plan Manager']),
+            alternateManager: safeString(planData.PLAN_INFORMATION?.['Alternate Manager']),
+            planLocation: safeString(planData.PLAN_INFORMATION?.['Plan Location']),
+          },
+        },
+
+        // Business Overview
+        businessProfile: {
+          create: {
+            businessLicenseNumber: safeString(planData.BUSINESS_OVERVIEW?.['Business License Number']),
+            businessPurpose: safeString(planData.BUSINESS_OVERVIEW?.['Business Purpose']),
+            productsAndServices: safeString(planData.BUSINESS_OVERVIEW?.['Products and Services']),
+            serviceDeliveryMethods: safeString(planData.BUSINESS_OVERVIEW?.['Service Delivery Methods']),
+            operatingHours: safeString(planData.BUSINESS_OVERVIEW?.['Operating Hours']),
+            keyPersonnelInvolved: safeString(planData.BUSINESS_OVERVIEW?.['Key Personnel Involved']),
+            minimumResourceRequirements: safeString(planData.BUSINESS_OVERVIEW?.['Minimum Resource Requirements']),
+            customerBase: safeString(planData.BUSINESS_OVERVIEW?.['Customer Base']),
+            serviceProviderBCPStatus: safeString(planData.BUSINESS_OVERVIEW?.['Service Provider BCP Status']),
+          },
+        },
+
+        // Essential Functions
+        businessFunctions: {
+          create: {
+            supplyChainManagement: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Supply Chain Management Functions']),
+            staffManagement: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Staff Management Functions']),
+            technology: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Technology Functions']),
+            productServiceDelivery: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Product and Service Delivery']),
+            salesMarketing: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Sales and Marketing Functions']),
+            administration: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Administrative Functions']),
+            infrastructureFacilities: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Infrastructure and Facilities']),
+            functionPriorityAssessment: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Function Priority Assessment']),
+          },
+        },
+
+        // Risk Assessment
+        riskAssessments: {
+          create: {
+            potentialHazards: safeStringify(planData.RISK_ASSESSMENT?.['Potential Hazards']),
+            riskAssessmentMatrix: safeStringify(planData.RISK_ASSESSMENT?.['Risk Assessment Matrix']),
+          },
+        },
+
+        // Strategies
+        strategies: {
+          create: {
+            preventionStrategies: safeStringify(planData.STRATEGIES?.['Prevention Strategies (Before Emergencies)']),
+            responseStrategies: safeStringify(planData.STRATEGIES?.['Response Strategies (During Emergencies)']),
+            recoveryStrategies: safeStringify(planData.STRATEGIES?.['Recovery Strategies (After Emergencies)']),
+            longTermRiskReduction: safeString(planData.STRATEGIES?.['Long-term Risk Reduction Measures']),
+          },
+        },
+
+        // Action Plans
+        actionPlans: {
+          create: {
+            actionPlanByRisk: safeStringify(planData.ACTION_PLAN?.['Action Plan by Risk Level']),
+            implementationTimeline: safeString(planData.ACTION_PLAN?.['Implementation Timeline']),
+            resourceRequirements: safeString(planData.ACTION_PLAN?.['Resource Requirements']),
+            responsiblePartiesRoles: safeString(planData.ACTION_PLAN?.['Responsible Parties and Roles']),
+            reviewUpdateSchedule: safeString(planData.ACTION_PLAN?.['Review and Update Schedule']),
+            testingAssessmentPlan: safeStringify(planData.ACTION_PLAN?.['Testing and Assessment Plan']),
+          },
+        },
+
+        // Contacts and Information
+        contactsInformation: {
+          create: {
+            staffContactInfo: safeStringify(planData.CONTACTS_AND_INFORMATION?.['Staff Contact Information']),
+            keyCustomerContacts: safeStringify(planData.CONTACTS_AND_INFORMATION?.['Key Customer Contacts']),
+            supplierInformation: safeStringify(planData.CONTACTS_AND_INFORMATION?.['Supplier Information']),
+            emergencyServicesUtilities: safeStringify(planData.CONTACTS_AND_INFORMATION?.['Emergency Services and Utilities']),
+            criticalBusinessInfo: safeString(planData.CONTACTS_AND_INFORMATION?.['Critical Business Information']),
+            planDistributionList: safeStringify(planData.CONTACTS_AND_INFORMATION?.['Plan Distribution List']),
+          },
+        },
+
+        // Testing and Maintenance
+        testingMaintenance: {
+          create: {
+            planTestingSchedule: safeStringify(planData.TESTING_AND_MAINTENANCE?.['Plan Testing Schedule']),
+            planRevisionHistory: safeStringify(planData.TESTING_AND_MAINTENANCE?.['Plan Revision History']),
+            improvementTracking: safeStringify(planData.TESTING_AND_MAINTENANCE?.['Improvement Tracking']),
+            annualReviewProcess: safeString(planData.TESTING_AND_MAINTENANCE?.['Annual Review Process']),
+            triggerEventsForUpdates: safeString(planData.TESTING_AND_MAINTENANCE?.['Trigger Events for Plan Updates']),
+          },
+        },
+      },
     })
 
     return NextResponse.json({ success: true, planId: plan.id })
@@ -109,4 +147,4 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
-} 
+}

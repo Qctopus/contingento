@@ -12,37 +12,50 @@ model BusinessContinuityPlan {
   id                String   @id @default(cuid())
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-  businessProfile   BusinessProfile?
-  businessFunctions BusinessFunction?
+  planInformation   PlanInformation?
+  businessOverview  BusinessOverview?
+  essentialFunctions EssentialFunction?
   riskAssessments   RiskAssessment?
   strategies        Strategy?
   actionPlans       ActionPlan?
 }
 
-model BusinessProfile {
+model PlanInformation {
+  id              String   @id @default(cuid())
+  planId          String   @unique
+  plan            BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  companyName     String
+  planManager     String
+  alternateManager String
+  planLocation    String
+}
+
+model BusinessOverview {
   id                    String   @id @default(cuid())
   planId                String   @unique
   plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  companyName           String
   businessLicenseNumber String
   businessPurpose       String
   productsAndServices   String
-  serviceDelivery       String
+  serviceDeliveryMethods String
   operatingHours        String
+  keyPersonnel          String
+  minimumResources      String
+  customerBase          String
   serviceProviderBCP    String
 }
 
-model BusinessFunction {
+model EssentialFunction {
   id                    String   @id @default(cuid())
   planId                String   @unique
   plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  supplyChainManagement String
-  staff                 String
-  technology            String
-  productsServices      String
-  infrastructureFacilities String
-  sales                 String
-  administration        String
+  supplyChainManagement String   // JSON array of selected functions
+  staffManagement       String   // JSON array of selected functions
+  technology            String   // JSON array of selected functions
+  productsServices      String   // JSON array of selected functions
+  infrastructureFacilities String // JSON array of selected functions
+  sales                 String   // JSON array of selected functions
+  administration        String   // JSON array of selected functions
 }
 
 model RiskAssessment {

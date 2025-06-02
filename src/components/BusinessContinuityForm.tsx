@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { STEPS } from '@/lib/steps'
 import { StructuredInput } from './StructuredInput'
 
@@ -12,9 +12,49 @@ interface FormData {
 
 export function BusinessContinuityForm() {
   const [formData, setFormData] = useState<FormData>({})
-  const [currentStep, setCurrentStep] = useState<string>('BUSINESS_OVERVIEW')
+  const [currentStep, setCurrentStep] = useState<string>('PLAN_INFORMATION')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+
+  // Load saved data on component mount
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('bcp-draft')
+      if (savedData) {
+        const parsed = JSON.parse(savedData)
+        setFormData(parsed)
+      }
+    } catch (error) {
+      console.error('Failed to load saved data:', error)
+    }
+  }, [])
+
+  // Auto-save functionality
+  useEffect(() => {
+    const autoSave = async () => {
+      if (Object.keys(formData).length === 0) return
+      
+      setAutoSaveStatus('saving')
+      try {
+        localStorage.setItem('bcp-draft', JSON.stringify(formData))
+        setAutoSaveStatus('saved')
+        
+        setTimeout(() => {
+          setAutoSaveStatus('idle')
+        }, 2000)
+      } catch (error) {
+        console.error('Auto-save failed:', error)
+        setAutoSaveStatus('error')
+        setTimeout(() => {
+          setAutoSaveStatus('idle')
+        }, 3000)
+      }
+    }
+
+    const timeoutId = setTimeout(autoSave, 2000)
+    return () => clearTimeout(timeoutId)
+  }, [formData])
 
   const handleInputComplete = (step: string, label: string, value: any) => {
     setFormData(prev => ({
@@ -84,6 +124,10 @@ export function BusinessContinuityForm() {
       }
 
       const data = await response.json()
+      
+      // Clear the draft after successful save
+      localStorage.removeItem('bcp-draft')
+      
       alert('Plan saved successfully!')
     } catch (error) {
       console.error('Error saving plan:', error)
@@ -113,7 +157,7 @@ export function BusinessContinuityForm() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'business-continuity-plan.pdf'
+      a.download = `${formData.PLAN_INFORMATION?.['Company Name'] || 'business'}-continuity-plan.pdf`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -121,6 +165,15 @@ export function BusinessContinuityForm() {
     } catch (error) {
       console.error('Error generating PDF:', error)
       alert('Failed to generate PDF. Please try again.')
+    }
+  }
+
+  const clearDraft = () => {
+    if (confirm('Are you sure you want to clear all data and start over? This cannot be undone.')) {
+      localStorage.removeItem('bcp-draft')
+      setFormData({})
+      setCurrentStep('PLAN_INFORMATION')
+      setCurrentQuestionIndex(0)
     }
   }
 
@@ -139,6 +192,9 @@ export function BusinessContinuityForm() {
       if (input.type === 'checkbox') {
         return Array.isArray(value) && value.length > 0
       }
+      if (input.type === 'table') {
+        return Array.isArray(value) && value.length > 0
+      }
       return value !== undefined && value !== ''
     })
   })
@@ -152,136 +208,289 @@ export function BusinessContinuityForm() {
     return value !== ''
   }
 
+  // Calculate completion percentage for each step
+  const getStepCompletion = (step: string) => {
+    const stepData = STEPS[step as keyof typeof STEPS]
+    const stepAnswers = formData[step] || {}
+    const answeredQuestions = stepData.inputs.filter(input => {
+      const value = stepAnswers[input.label]
+      if (input.type === 'checkbox' || input.type === 'table') {
+        return Array.isArray(value) && value.length > 0
+      }
+      return value !== undefined && value !== ''
+    })
+    return Math.round((answeredQuestions.length / stepData.inputs.length) * 100)
+  }
+
+  // Get current value for display
+  const getCurrentValue = () => {
+    const stepAnswers = formData[currentStep] || {}
+    return stepAnswers[currentQuestion.label]
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Navigation Sidebar */}
-      <div className="w-64 bg-white border-r p-4 overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">Business Continuity Plan</h2>
-        <div className="space-y-4">
-          {Object.entries(STEPS).map(([step, stepData]) => (
-            <div key={step} className="space-y-2">
-              <button
-                onClick={() => handleStepClick(step)}
-                className={`w-full text-left px-3 py-2 rounded-lg ${
-                  currentStep === step ? 'bg-primary-50 text-primary-600' : 'hover:bg-gray-50'
-                }`}
-              >
-                <h3 className="font-medium">{stepData.title}</h3>
-                <p className="text-sm text-gray-500">{stepData.description}</p>
-              </button>
-              {currentStep === step && (
-                <div className="pl-4 space-y-1">
-                  {stepData.inputs.map((input, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuestionClick(step, index)}
-                      className={`w-full text-left px-3 py-1 text-sm rounded flex items-center ${
-                        currentQuestionIndex === index
-                          ? 'bg-primary-100 text-primary-600'
-                          : 'hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="flex-1">{input.label}</span>
-                      {isQuestionAnswered(step, input.label) && (
-                        <svg
-                          className="h-4 w-4 text-green-500"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
+      <div className="w-80 bg-white border-r overflow-y-auto">
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Business Continuity Plan</h2>
+            {autoSaveStatus === 'saving' && (
+              <span className="text-xs text-gray-500">Saving...</span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className="text-xs text-green-600">✓ Saved</span>
+            )}
+            {autoSaveStatus === 'error' && (
+              <span className="text-xs text-red-600">Save failed</span>
+            )}
+          </div>
+          
+          <div className="space-y-3">
+            {Object.entries(STEPS).map(([step, stepData]) => {
+              const completion = getStepCompletion(step)
+              return (
+                <div key={step} className="space-y-2">
+                  <button
+                    onClick={() => handleStepClick(step)}
+                    className={`w-full text-left px-3 py-3 rounded-lg border transition-colors ${
+                      currentStep === step 
+                        ? 'bg-primary-50 text-primary-600 border-primary-200' 
+                        : 'hover:bg-gray-50 border-transparent'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-medium text-sm">{stepData.title}</h3>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs text-gray-500">{completion}%</span>
+                        {completion === 100 && (
+                          <svg className="h-4 w-4 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1 mb-2">
+                      <div 
+                        className="bg-primary-600 h-1 rounded-full transition-all" 
+                        style={{ width: `${completion}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500">{stepData.description}</p>
+                  </button>
+                  
+                  {currentStep === step && (
+                    <div className="pl-4 space-y-1">
+                      {stepData.inputs.map((input, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleQuestionClick(step, index)}
+                          className={`w-full text-left px-3 py-2 text-xs rounded flex items-center transition-colors ${
+                            currentQuestionIndex === index
+                              ? 'bg-primary-100 text-primary-600'
+                              : 'hover:bg-gray-50'
+                          }`}
                         >
-                          <path d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                  ))}
+                          <span className="flex-1 truncate">{input.label}</span>
+                          {isQuestionAnswered(step, input.label) && (
+                            <svg
+                              className="h-3 w-3 text-green-500 ml-1"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
+              )
+            })}
+          </div>
+
+          {/* Action buttons in sidebar */}
+          <div className="mt-6 space-y-2">
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm"
+            >
+              {isSubmitting ? 'Saving...' : 'Save Progress'}
+            </button>
+            
+            {isComplete && (
+              <button
+                onClick={exportToPDF}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+              >
+                Export Complete Plan
+              </button>
+            )}
+            
+            <button
+              onClick={clearDraft}
+              className="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
+            >
+              Clear All Data
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto p-8">
-          {/* Progress Bar */}
+        <div className="max-w-4xl mx-auto p-8">
+          {/* Progress Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-gray-600">
-                Question {currentQuestionNumber} of {totalQuestions}
-              </span>
-              <span className="text-sm text-gray-600">
-                {currentStepData.title}
-              </span>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {currentStepData.title}
+                </h1>
+                <p className="text-gray-600 mt-1">{currentStepData.description}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-gray-600">
+                  Question {currentQuestionNumber} of {totalQuestions}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Step {Object.keys(STEPS).indexOf(currentStep) + 1} of {Object.keys(STEPS).length}
+                </div>
+              </div>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full">
+            
+            {/* Overall Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2">
               <div
-                className="h-2 bg-primary-600 rounded-full transition-all duration-300"
+                className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(currentQuestionNumber / totalQuestions) * 100}%` }}
               />
             </div>
           </div>
 
           {/* Current Question */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-2">{currentQuestion.label}</h2>
-            <p className="text-gray-600 mb-4">{currentQuestion.prompt}</p>
-            {currentQuestion.examples && (
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <p className="text-sm font-medium mb-2">Examples:</p>
-                <ul className="list-disc list-inside text-sm text-gray-600">
+          <div className="bg-white rounded-lg shadow-sm border p-8">
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-3 text-gray-900">
+                {currentQuestion.label}
+                {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
+              </h2>
+              <p className="text-gray-600 leading-relaxed">{currentQuestion.prompt}</p>
+            </div>
+
+            {/* Examples */}
+            {currentQuestion.examples && currentQuestion.examples.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Examples:</h4>
+                <ul className="space-y-1">
                   {currentQuestion.examples.map((example, i) => (
-                    <li key={i}>{example}</li>
+                    <li key={i} className="text-sm text-blue-800 flex items-start">
+                      <span className="text-blue-400 mr-2">•</span>
+                      <span>{example}</span>
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
+
+            {/* Input Component */}
             <StructuredInput
               {...currentQuestion}
+              initialValue={getCurrentValue()}
+              stepData={formData[currentStep]}
               onComplete={(value) => handleInputComplete(currentStep, currentQuestion.label, value)}
-              key={`${currentStep}-${currentQuestion.label}`} // Force re-render on question change
+              key={`${currentStep}-${currentQuestion.label}`}
             />
+
+            {/* Current Value Display for debugging */}
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
+                <strong>Current Value:</strong> {JSON.stringify(getCurrentValue(), null, 2)}
+              </div>
+            )}
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex justify-between items-center mt-6">
+          {/* Navigation */}
+          <div className="flex justify-between items-center mt-8">
             <button
               onClick={handlePrevious}
-              disabled={currentStep === 'BUSINESS_OVERVIEW' && currentQuestionIndex === 0}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50"
+              disabled={currentStep === 'PLAN_INFORMATION' && currentQuestionIndex === 0}
+              className="flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
+              <svg className="h-4 w-4 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                <path d="M15 19l-7-7 7-7" />
+              </svg>
               Previous
             </button>
-            <div className="space-x-4">
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
-              >
-                {isSubmitting ? 'Saving...' : 'Save Progress'}
-              </button>
-              {isComplete && (
+
+            <div className="flex items-center space-x-4">
+              {/* Skip button for optional questions */}
+              {!currentQuestion.required && (
                 <button
-                  onClick={exportToPDF}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                  onClick={handleNext}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  Export to PDF
+                  Skip for now
                 </button>
               )}
+
               <button
                 onClick={handleNext}
-                disabled={currentStep === 'ACTION_PLAN' && currentQuestionIndex === currentStepData.inputs.length - 1}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
+                disabled={
+                  currentStep === 'TESTING_AND_MAINTENANCE' && 
+                  currentQuestionIndex === currentStepData.inputs.length - 1
+                }
+                className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Next
+                {currentStep === 'TESTING_AND_MAINTENANCE' && currentQuestionIndex === currentStepData.inputs.length - 1 
+                  ? 'Complete Plan' 
+                  : 'Next'
+                }
+                <svg className="h-4 w-4 ml-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M9 5l7 7-7 7" />
+                </svg>
               </button>
             </div>
+          </div>
+
+          {/* Completion Status */}
+          {isComplete && (
+            <div className="mt-8 bg-green-50 border border-green-200 rounded-lg p-6">
+              <div className="flex items-center">
+                <svg className="h-6 w-6 text-green-500 mr-3" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h3 className="text-lg font-medium text-green-900">
+                    Congratulations! Your business continuity plan is complete.
+                  </h3>
+                  <p className="text-green-700 mt-1">
+                    You can now export your plan as a PDF or continue to refine your answers.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Help Text */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              Need help? This tool follows the CARICHAM methodology for business continuity planning.
+              {autoSaveStatus === 'saved' && (
+                <span className="block mt-1 text-green-600">
+                  ✓ Your progress is automatically saved
+                </span>
+              )}
+            </p>
           </div>
         </div>
       </div>
     </div>
   )
-} 
+}

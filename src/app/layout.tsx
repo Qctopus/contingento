@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import { NextAuthProvider } from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'CARICHAM Business Continuity Plan',
-  description: 'Create your business continuity plan following the CARICHAM methodology',
+  title: 'Business Continuity Plan Generator',
+  description: 'Generate comprehensive business continuity plans',
 }
 
 export default function RootLayout({
@@ -17,9 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <main className="min-h-screen bg-gray-50">
-          {children}
-        </main>
+        <NextAuthProvider>{children}</NextAuthProvider>
       </body>
     </html>
   )

@@ -1,14 +1,23 @@
+'use client'
+
+import { useSession } from 'next-auth/react'
+import { redirect } from 'next/navigation'
 import { BusinessContinuityForm } from '@/components/BusinessContinuityForm'
 
 export default function Home() {
-  return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="container mx-auto py-8">
-        <h1 className="text-3xl font-bold text-center mb-8">
-          Business Continuity Plan Creator
-        </h1>
-        <BusinessContinuityForm />
+  const { data: session, status } = useSession()
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-lg">Loading...</div>
       </div>
-    </main>
-  )
+    )
+  }
+
+  if (!session) {
+    redirect('/login')
+  }
+
+  return <BusinessContinuityForm />
 } 
