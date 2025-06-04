@@ -77,8 +77,8 @@ type StepConfig = {
   inputs: InputConfig[];
 };
 
-type StepsCollection = {
-  readonly [key: string]: StepConfig; // Using readonly for the top-level structure
+export type StepsCollection = {
+  readonly [key: string]: StepConfig;
 };
 
 export const STEPS: StepsCollection = {

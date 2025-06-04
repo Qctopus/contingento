@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { STEPS } from '@/lib/steps'
+import { useTranslations } from 'next-intl'
+import { useLocalizedSteps } from '@/lib/localizedSteps'
 import { StructuredInput } from './StructuredInput'
 
 interface FormData {
@@ -11,6 +12,8 @@ interface FormData {
 }
 
 export function BusinessContinuityForm() {
+  const t = useTranslations()
+  const STEPS = useLocalizedSteps()
   const [formData, setFormData] = useState<FormData>({})
   const [currentStep, setCurrentStep] = useState<string>('PLAN_INFORMATION')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
@@ -128,10 +131,10 @@ export function BusinessContinuityForm() {
       // Clear the draft after successful save
       localStorage.removeItem('bcp-draft')
       
-      alert('Plan saved successfully!')
+      alert(t('common.success'))
     } catch (error) {
       console.error('Error saving plan:', error)
-      alert('Failed to save plan. Please try again.')
+      alert(t('common.error'))
     } finally {
       setIsSubmitting(false)
     }
@@ -164,12 +167,12 @@ export function BusinessContinuityForm() {
       document.body.removeChild(a)
     } catch (error) {
       console.error('Error generating PDF:', error)
-      alert('Failed to generate PDF. Please try again.')
+      alert(t('common.error'))
     }
   }
 
   const clearDraft = () => {
-    if (confirm('Are you sure you want to clear all data and start over? This cannot be undone.')) {
+    if (confirm(t('common.confirmClear'))) {
       localStorage.removeItem('bcp-draft')
       setFormData({})
       setCurrentStep('PLAN_INFORMATION')
@@ -231,18 +234,18 @@ export function BusinessContinuityForm() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Navigation Sidebar */}
-      <div className="w-80 bg-white border-r overflow-y-auto">
+      <div className="w-64 bg-white border-r overflow-y-auto">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Business Continuity Plan</h2>
+            <h2 className="text-lg font-semibold">{t('common.businessContinuityPlan')}</h2>
             {autoSaveStatus === 'saving' && (
-              <span className="text-xs text-gray-500">Saving...</span>
+              <span className="text-xs text-gray-500">{t('common.saving')}</span>
             )}
             {autoSaveStatus === 'saved' && (
-              <span className="text-xs text-green-600">✓ Saved</span>
+              <span className="text-xs text-green-600">✓ {t('common.saved')}</span>
             )}
             {autoSaveStatus === 'error' && (
-              <span className="text-xs text-red-600">Save failed</span>
+              <span className="text-xs text-red-600">{t('common.saveFailed')}</span>
             )}
           </div>
           
@@ -321,7 +324,7 @@ export function BusinessContinuityForm() {
               disabled={isSubmitting}
               className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 text-sm"
             >
-              {isSubmitting ? 'Saving...' : 'Save Progress'}
+              {isSubmitting ? t('common.saving') : t('common.save')}
             </button>
             
             {isComplete && (
@@ -329,7 +332,7 @@ export function BusinessContinuityForm() {
                 onClick={exportToPDF}
                 className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
               >
-                Export Complete Plan
+                {t('common.exportPDF')}
               </button>
             )}
             
@@ -337,7 +340,7 @@ export function BusinessContinuityForm() {
               onClick={clearDraft}
               className="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"
             >
-              Clear All Data
+              {t('common.clearDraft')}
             </button>
           </div>
         </div>
@@ -345,7 +348,7 @@ export function BusinessContinuityForm() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto p-8">
+        <div className="max-w-full mx-auto px-8 py-6">
           {/* Progress Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
@@ -357,10 +360,13 @@ export function BusinessContinuityForm() {
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-600">
-                  Question {currentQuestionNumber} of {totalQuestions}
+                  {t('common.question')} {currentQuestionNumber} {t('common.of')} {totalQuestions}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Step {Object.keys(STEPS).indexOf(currentStep) + 1} of {Object.keys(STEPS).length}
+                  {t('common.step', { 
+                    current: Object.keys(STEPS).indexOf(currentStep) + 1, 
+                    total: Object.keys(STEPS).length 
+                  })}
                 </div>
               </div>
             </div>
@@ -387,10 +393,10 @@ export function BusinessContinuityForm() {
             {/* Examples */}
             {currentQuestion.examples && currentQuestion.examples.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">Examples:</h4>
-                <ul className="space-y-1">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">{t('common.examples')}</h4>
+                <ul>
                   {currentQuestion.examples.map((example, i) => (
-                    <li key={i} className="text-sm text-blue-800 flex items-start">
+                    <li key={i} className="text-sm text-blue-800 flex items-start mb-1 last:mb-0">
                       <span className="text-blue-400 mr-2">•</span>
                       <span>{example}</span>
                     </li>
@@ -401,17 +407,31 @@ export function BusinessContinuityForm() {
 
             {/* Input Component */}
             <StructuredInput
-              {...currentQuestion}
-              initialValue={getCurrentValue()}
+              type={currentQuestion.type}
+              label={currentQuestion.label}
+              required={currentQuestion.required}
+              prompt={currentQuestion.prompt}
+              examples={currentQuestion.examples}
+              options={currentQuestion.options}
+              tableColumns={currentQuestion.tableColumns}
+              tableRowsPrompt={currentQuestion.tableRowsPrompt}
+              priorityOptions={currentQuestion.priorityOptions}
+              downtimeOptions={currentQuestion.downtimeOptions}
+              {...(currentQuestion.type === 'special_risk_matrix' && {
+                likelihoodOptions: (currentQuestion as any).likelihoodOptions,
+                severityOptions: (currentQuestion as any).severityOptions,
+              })}
+              dependsOn={currentQuestion.dependsOn}
               stepData={formData[currentStep]}
               onComplete={(value) => handleInputComplete(currentStep, currentQuestion.label, value)}
+              initialValue={getCurrentValue()}
               key={`${currentStep}-${currentQuestion.label}`}
             />
 
             {/* Current Value Display for debugging */}
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                <strong>Current Value:</strong> {JSON.stringify(getCurrentValue(), null, 2)}
+                <strong>{t('common.currentValue')}:</strong> {JSON.stringify(getCurrentValue(), null, 2)}
               </div>
             )}
           </div>
@@ -421,12 +441,12 @@ export function BusinessContinuityForm() {
             <button
               onClick={handlePrevious}
               disabled={currentStep === 'PLAN_INFORMATION' && currentQuestionIndex === 0}
-              className="flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
             >
               <svg className="h-4 w-4 mr-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                 <path d="M15 19l-7-7 7-7" />
               </svg>
-              Previous
+              {t('common.previous')}
             </button>
 
             <div className="flex items-center space-x-4">
@@ -436,7 +456,7 @@ export function BusinessContinuityForm() {
                   onClick={handleNext}
                   className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  Skip for now
+                  {t('common.skipForNow')}
                 </button>
               )}
 
@@ -446,11 +466,11 @@ export function BusinessContinuityForm() {
                   currentStep === 'TESTING_AND_MAINTENANCE' && 
                   currentQuestionIndex === currentStepData.inputs.length - 1
                 }
-                className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 {currentStep === 'TESTING_AND_MAINTENANCE' && currentQuestionIndex === currentStepData.inputs.length - 1 
-                  ? 'Complete Plan' 
-                  : 'Next'
+                  ? t('common.completePlan')
+                  : t('common.next')
                 }
                 <svg className="h-4 w-4 ml-2" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                   <path d="M9 5l7 7-7 7" />
@@ -468,10 +488,10 @@ export function BusinessContinuityForm() {
                 </svg>
                 <div>
                   <h3 className="text-lg font-medium text-green-900">
-                    Congratulations! Your business continuity plan is complete.
+                    {t('common.congratulations')}
                   </h3>
                   <p className="text-green-700 mt-1">
-                    You can now export your plan as a PDF or continue to refine your answers.
+                    {t('common.planCompleteDescription')}
                   </p>
                 </div>
               </div>
@@ -481,10 +501,10 @@ export function BusinessContinuityForm() {
           {/* Help Text */}
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-500">
-              Need help? This tool follows the CARICHAM methodology for business continuity planning.
+              {t('common.needHelp')}
               {autoSaveStatus === 'saved' && (
                 <span className="block mt-1 text-green-600">
-                  ✓ Your progress is automatically saved
+                  ✓ {t('common.automaticallySaved')}
                 </span>
               )}
             </p>

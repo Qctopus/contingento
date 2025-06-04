@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { RiskAssessmentMatrix } from './RiskAssessmentMatrix'
+import { useTranslations } from 'next-intl'
 
 interface Option {
   label: string
@@ -55,6 +56,7 @@ export function StructuredInput({
   const [tableRows, setTableRows] = useState<TableRow[]>([])
   const didMount = useRef(false)
   const hasUserInteracted = useRef(false)
+  const t = useTranslations('common')
 
   // Auto-save functionality: only call onComplete after user interaction
   useEffect(() => {
@@ -171,7 +173,7 @@ export function StructuredInput({
                 </th>
               ))}
               <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                Actions
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -184,19 +186,19 @@ export function StructuredInput({
                     value={row[tableColumns[0]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[0], e.target.value)}
                     placeholder="Enter business function"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                   />
                 </td>
                 <td className="border border-gray-300 px-4 py-3">
                   <select
                     value={row[tableColumns[1]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[1], e.target.value)}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                   >
                     <option value="">Select priority</option>
                     {priorityOptions?.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        <span className="text-gray-700 text-sm">{option.label}</span>
                       </option>
                     ))}
                   </select>
@@ -205,12 +207,12 @@ export function StructuredInput({
                   <select
                     value={row[tableColumns[2]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[2], e.target.value)}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                   >
                     <option value="">Select downtime</option>
                     {downtimeOptions?.map((option) => (
                       <option key={option.value} value={option.value}>
-                        {option.label}
+                        <span className="text-gray-700 text-sm">{option.label}</span>
                       </option>
                     ))}
                   </select>
@@ -220,7 +222,7 @@ export function StructuredInput({
                     value={row[tableColumns[3]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[3], e.target.value)}
                     placeholder="Additional notes"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                     rows={2}
                   />
                 </td>
@@ -229,7 +231,7 @@ export function StructuredInput({
                     onClick={() => deleteTableRow(rowIndex)}
                     className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50"
                   >
-                    Delete
+                    {t('deleteRows', { count: 1 })}
                   </button>
                 </td>
               </tr>
@@ -240,12 +242,12 @@ export function StructuredInput({
       
       <button
         onClick={addTableRow}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2"
+        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm"
       >
         <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
           <path d="M12 4v16m8-8H4" />
         </svg>
-        <span>Add Function</span>
+        <span>{t('addRow')}</span>
       </button>
     </div>
   )
@@ -269,7 +271,7 @@ export function StructuredInput({
                 </th>
               ))}
               <th className="border border-gray-300 px-4 py-3 text-left text-sm font-medium text-gray-700">
-                Actions
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -284,7 +286,7 @@ export function StructuredInput({
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
                         placeholder={`Enter ${column.toLowerCase()}`}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                       />
                     ) : column.toLowerCase().includes('phone') ? (
                       <input
@@ -292,21 +294,21 @@ export function StructuredInput({
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
                         placeholder={`Enter ${column.toLowerCase()}`}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                       />
                     ) : column.toLowerCase().includes('date') ? (
                       <input
                         type="date"
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                       />
                     ) : (
                       <textarea
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
                         placeholder={`Enter ${column.toLowerCase()}`}
-                        className="w-full p-2 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                         rows={2}
                       />
                     )}
@@ -320,7 +322,7 @@ export function StructuredInput({
                     <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                       <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                    <span>Delete</span>
+                    <span>{t('deleteRows', { count: 1 })}</span>
                   </button>
                 </td>
               </tr>
@@ -331,12 +333,12 @@ export function StructuredInput({
       
       <button
         onClick={addTableRow}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2"
+        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm"
       >
         <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
           <path d="M12 4v16m8-8H4" />
         </svg>
-        <span>Add Row</span>
+        <span>{t('addRow')}</span>
       </button>
     </div>
   )
@@ -379,7 +381,7 @@ export function StructuredInput({
                   {categoryOptions.map((option) => (
                     <label
                       key={option.value}
-                      className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                      className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                     >
                       <input
                         type="checkbox"
@@ -388,7 +390,7 @@ export function StructuredInput({
                         onChange={() => handleCheckboxChange(option.value)}
                         className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded"
                       />
-                      <span className="text-gray-700">{option.label}</span>
+                      <span className="text-gray-700 text-sm">{option.label}</span>
                     </label>
                   ))}
                 </div>
@@ -405,7 +407,7 @@ export function StructuredInput({
         {options?.map((option) => (
           <label
             key={option.value}
-            className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
           >
             <input
               type="checkbox"
@@ -414,7 +416,7 @@ export function StructuredInput({
               onChange={() => handleCheckboxChange(option.value)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded"
             />
-            <span className="text-gray-700">{option.label}</span>
+            <span className="text-gray-700 text-sm">{option.label}</span>
           </label>
         ))}
       </div>
@@ -443,8 +445,8 @@ export function StructuredInput({
         <textarea
           value={value as string}
           onChange={handleTextChange}
-          className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-          placeholder="Type your answer here..."
+          className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
+          placeholder={t('typeAnswerHere')}
           required={required}
         />
       )}
@@ -454,7 +456,7 @@ export function StructuredInput({
           {options.map((option) => (
             <label
               key={option.value}
-              className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               <input
                 type="radio"
@@ -465,7 +467,7 @@ export function StructuredInput({
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500"
                 required={required}
               />
-              <span className="text-gray-700">{option.label}</span>
+              <span className="text-gray-700 text-sm">{option.label}</span>
             </label>
           ))}
         </div>

@@ -1,0 +1,602 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "next": "Next",
+    "previous": "Previous",
+    "skip": "Skip for now",
+    "examples": "Examples:",
+    "required": "Required",
+    "optional": "Optional",
+    "step": "Step {current} of {total}",
+    "completePlan": "Complete Plan",
+    "congratulations": "Congratulations!",
+    "planCompleted": "Your Business Continuity Plan has been completed successfully.",
+    "exportPdf": "Export PDF",
+    "clearDraft": "Clear Draft",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "confirmClear": "Are you sure you want to clear all data and start over? This cannot be undone.",
+    "exportPDF": "Export PDF",
+    "question": "Question",
+    "of": "of",
+    "clearDraftConfirm": "Are you sure you want to clear your draft? This action cannot be undone.",
+    "yes": "Yes",
+    "no": "No",
+    "planCompleteDescription": "You can now export your plan as a PDF or continue to refine your answers.",
+    "needHelp": "Need help? This tool follows the CARICHAM methodology for business continuity planning.",
+    "automaticallySaved": "Your progress is automatically saved",
+    "addRow": "Add Row",
+    "currentValue": "Current Value",
+    "actions": "Actions",
+    "deleteRows": "Delete {count} rows",
+    "noHazardsSelected": "No Hazards Selected",
+    "selectHazardsPrompt": "Please select hazards in the previous step to create your risk assessment matrix",
+    "typeAnswerHere": "Type your answer here",
+    "businessContinuityPlan": "Business Continuity Plan",
+    "saved": "Saved"
+  },
+  "steps": {
+    "planInformation": {
+      "title": "Plan Information",
+      "description": "Let's start by setting up the basic information for your business continuity plan.",
+      "inputs": {
+        "companyName": {
+          "label": "Company Name",
+          "prompt": "What is the name of your company?",
+          "examples": [
+            "ABC Store",
+            "Caribbean Delights",
+            "Island Services Ltd."
+          ]
+        },
+        "planManager": {
+          "label": "Plan Manager",
+          "prompt": "Who is the person responsible for this business continuity plan? This should be someone with authority to make decisions.",
+          "examples": [
+            "John Perez, Owner",
+            "Maria Rodriguez, Operations Manager",
+            "David Thompson, General Manager"
+          ]
+        },
+        "alternateManager": {
+          "label": "Alternate Manager",
+          "prompt": "Who is the alternate responsible person if the main manager is unavailable?",
+          "examples": [
+            "Sara Johnson, Assistant Manager",
+            "Michael Brown, Supervisor",
+            "Lisa Williams, Senior Staff"
+          ]
+        },
+        "planLocation": {
+          "label": "Plan Location",
+          "prompt": "Where will copies of this business continuity plan be stored? Include both physical and digital locations.",
+          "examples": [
+            "Fireproof cabinet in the office; Electronic version on company server",
+            "Safe in manager's office; Cloud storage with backup on external drive",
+            "Locked drawer at reception; Shared folder on Google Drive"
+          ]
+        },
+        "planName": {
+          "label": "Plan Name",
+          "prompt": "What would you like to call this business continuity plan?",
+          "examples": [
+            "Caribbean Breeze Restaurant Business Continuity Plan",
+            "Island Tech Solutions Emergency Response Plan",
+            "Paradise Tours & Travel Disaster Recovery Plan"
+          ]
+        },
+        "businessName": {
+          "label": "Business Name",
+          "prompt": "What is the official name of your business?",
+          "examples": [
+            "Caribbean Breeze Restaurant Ltd.",
+            "Island Tech Solutions",
+            "Paradise Tours & Travel Co."
+          ]
+        },
+        "businessAddress": {
+          "label": "Business Address",
+          "prompt": "What is the physical address of your main business location?",
+          "examples": [
+            "123 Harbor View Drive, Montego Bay, St. James, Jamaica",
+            "45 Technology Park, Kingston 10, Jamaica",
+            "Ocean Front Plaza, Unit 12, Negril, Westmoreland, Jamaica"
+          ]
+        },
+        "businessDescription": {
+          "label": "Business Description",
+          "prompt": "Provide a brief description of what your business does and who you serve.",
+          "examples": [
+            "Family-owned restaurant serving authentic Caribbean cuisine to locals and tourists, established 2015, 25 employees, specializing in seafood and traditional Jamaican dishes",
+            "Technology consulting firm providing IT support and software development services to small and medium businesses across Jamaica, 12 employees, founded 2018",
+            "Tour operator offering cultural and adventure tours throughout Jamaica, serving international tourists and cruise ship passengers, 8 full-time staff plus seasonal guides"
+          ]
+        },
+        "keyPersonnel": {
+          "label": "Key Personnel",
+          "prompt": "Who are the key people responsible for business operations and emergency response?",
+          "examples": [
+            "Owner/Manager: John Smith (876-555-0123), Assistant Manager: Maria Rodriguez (876-555-0124), Head Chef: David Williams (876-555-0125)",
+            "CEO: Sarah Johnson (876-555-0130), IT Director: Michael Brown (876-555-0131), Operations Manager: Lisa Davis (876-555-0132)",
+            "Owner: Robert Taylor (876-555-0140), Tour Coordinator: Angela Thompson (876-555-0141), Safety Officer: Marcus Clarke (876-555-0142)"
+          ]
+        },
+        "planPreparedBy": {
+          "label": "Plan Prepared By",
+          "prompt": "Who is preparing this business continuity plan?",
+          "examples": [
+            "John Smith, Business Owner, with assistance from local emergency management office",
+            "Emergency Planning Committee: Sarah Johnson (CEO), Michael Brown (IT Director), Lisa Davis (Operations)",
+            "Robert Taylor (Owner) and Marcus Clarke (Safety Officer)"
+          ]
+        },
+        "preparationDate": {
+          "label": "Preparation Date",
+          "prompt": "When is this plan being prepared?",
+          "examples": [
+            "January 15, 2024",
+            "March 2024",
+            "Prepared during Hurricane Season 2024"
+          ]
+        }
+      }
+    },
+    "businessOverview": {
+      "title": "Business Overview",
+      "description": "Now let's understand your business operations in detail.",
+      "inputs": {
+        "businessLicense": {
+          "label": "Business License Number",
+          "prompt": "What is your business license number? This is usually found on your business registration documents.",
+          "examples": [
+            "LC-12345",
+            "REG-2023-789",
+            "LIC-456789"
+          ]
+        },
+        "businessPurpose": {
+          "label": "Business Purpose",
+          "prompt": "What is the main purpose of your business? Think about why you started this business and what problem it solves for your customers.",
+          "examples": [
+            "Provide fresh local products to the St. George's community",
+            "Offer affordable home repair services in Barbados",
+            "Create authentic Caribbean cuisine for tourists and locals in Montego Bay"
+          ]
+        },
+        "productsAndServices": {
+          "label": "Products and Services",
+          "prompt": "What products and services do you provide? What makes your business special or unique?",
+          "examples": [
+            "We sell fresh fruits, vegetables, and local spices. Our specialty is homemade hot sauce made with local scotch bonnet peppers.",
+            "We provide plumbing and electrical services. What makes us special is our 24/7 emergency service and same-day repairs.",
+            "We offer authentic Caribbean cuisine with a modern twist. Our specialty is our family jerk chicken recipe passed down for three generations."
+          ]
+        },
+        "serviceDeliveryMethods": {
+          "label": "Service Delivery Methods",
+          "prompt": "How and where do you provide your products and services? Consider your physical location, delivery methods, and any online presence.",
+          "examples": [
+            "Physical store in downtown Kingston with delivery to nearby parishes. Customers can order via our website or WhatsApp.",
+            "We operate from our workshop but provide services at client locations. We have a mobile service van for emergency calls.",
+            "Restaurant in Bridgetown with takeout and delivery. We also offer catering for events and have a food truck for festivals."
+          ]
+        },
+        "operatingHours": {
+          "label": "Operating Hours",
+          "prompt": "What are your business hours and days of operation? Include any seasonal variations or special hours.",
+          "examples": [
+            "Monday to Saturday, 8 AM to 6 PM. Closed Sundays and holidays. Extended hours during Carnival season.",
+            "24/7 for emergency services. Regular business hours Monday to Friday, 9 AM to 5 PM.",
+            "Tuesday to Sunday, 11 AM to 10 PM. Extended hours during tourist season (December to April)."
+          ]
+        },
+        "keyPersonnel": {
+          "label": "Key Personnel Involved",
+          "prompt": "Who are the key people involved in running your business? Include employees, key suppliers, and contractors.",
+          "examples": [
+            "3 full-time employees, 2 part-time staff, main supplier (Caribbean Foods Ltd), delivery contractor",
+            "Owner-operator, 1 assistant, apprentice electrician, regular parts supplier (Island Hardware)",
+            "Head chef, 2 cooks, 3 waiters, manager, local farmers for produce, seafood supplier"
+          ]
+        },
+        "minimumResources": {
+          "label": "Minimum Resource Requirements",
+          "prompt": "What are the absolute minimum resources (staff, equipment, records) needed to keep your business running?",
+          "examples": [
+            "1 cashier, cash register, refrigeration for perishables, basic inventory, customer payment records",
+            "1 qualified technician, basic tool kit, work van, customer contact list, license documents",
+            "1 cook, basic kitchen equipment, main menu ingredients, seating for 20 customers, food safety certificates"
+          ]
+        },
+        "customerBase": {
+          "label": "Customer Base",
+          "prompt": "Who are your customers? Describe your main customer groups and any special customers who depend on you.",
+          "examples": [
+            "Local families, small restaurants, elderly customers who rely on delivery, tourists",
+            "Homeowners in suburban areas, small businesses, property management companies, emergency service calls",
+            "Tourists (60%), local residents (30%), special event and catering clients (10%)"
+          ]
+        },
+        "serviceProviderBCP": {
+          "label": "Service Provider BCP Status",
+          "prompt": "Do your main service providers (suppliers, vendors, contractors) have business continuity plans in place?",
+          "options": [
+            { "label": "Yes - Most of our key suppliers have shared their continuity plans with us", "value": "yes" },
+            { "label": "No - We have not asked our suppliers about their continuity plans", "value": "no" },
+            { "label": "Partially - Some suppliers have plans, others do not", "value": "partial" },
+            { "label": "Unknown - We are not sure if our suppliers have continuity plans", "value": "unknown" }
+          ]
+        }
+      }
+    },
+    "essentialFunctions": {
+      "title": "Essential Functions",
+      "description": "Let's identify and prioritize the key functions that keep your business running.",
+      "inputs": {
+        "businessFunctions": {
+          "label": "Business Functions",
+          "prompt": "List all the main functions of your business. For each function, assess how critical it is and how much downtime you can tolerate.",
+          "tableColumns": ["Business Function", "Description", "Priority Level", "Maximum Acceptable Downtime", "Critical Resources Needed"],
+          "tableRowsPromptPartial": "Think about all the activities your business performs daily",
+          "priorityOptions": [
+            { "label": "Critical - Business cannot function without this", "value": "critical" },
+            { "label": "Important - Would cause significant problems if stopped", "value": "important" },
+            { "label": "Useful - Good to have but not essential", "value": "useful" },
+            { "label": "Deferrable - Can be postponed if necessary", "value": "deferrable" }
+          ],
+          "downtimeOptions": [
+            { "label": "0-2 hours", "value": "0-2h" },
+            { "label": "2-8 hours", "value": "2-8h" },
+            { "label": "8-24 hours", "value": "8-24h" },
+            { "label": "1-3 days", "value": "1-3d" },
+            { "label": "3-7 days", "value": "3-7d" },
+            { "label": "1-2 weeks", "value": "1-2w" },
+            { "label": "More than 2 weeks", "value": "2w+" }
+          ],
+          "examples": [
+            "Sales - Process customer orders - Critical - 0-2 hours - Cashier, payment system, inventory",
+            "Accounting - Record transactions - Important - 1-3 days - Accountant, accounting software, receipts",
+            "Marketing - Social media management - Useful - 3-7 days - Marketing staff, internet access"
+          ]
+        }
+      }
+    },
+    "riskAssessment": {
+      "title": "Risk Assessment",
+      "description": "Let's identify and assess the risks that could disrupt your business operations.",
+      "inputs": {
+        "potentialHazards": {
+          "label": "Potential Hazards",
+          "prompt": "Select all hazards that may affect your business. Consider both natural disasters and human-caused risks that are relevant to your location and industry.",
+          "options": [
+            { "label": "Earthquake", "value": "earthquake" },
+            { "label": "Hurricane/Tropical Storm", "value": "hurricane" },
+            { "label": "Coastal Flooding", "value": "coastal_flood" },
+            { "label": "Flash Flooding", "value": "flash_flood" },
+            { "label": "Landslide", "value": "landslide" },
+            { "label": "Tsunami", "value": "tsunami" },
+            { "label": "Volcanic Activity", "value": "volcanic" },
+            { "label": "Drought", "value": "drought" },
+            { "label": "Epidemic (local disease outbreak)", "value": "epidemic" },
+            { "label": "Pandemic (widespread disease)", "value": "pandemic" },
+            { "label": "Extended Power Outage", "value": "power_outage" },
+            { "label": "Telecommunications Failure", "value": "telecom_failure" },
+            { "label": "Internet/Cyber Attacks", "value": "cyber_attack" },
+            { "label": "Fire", "value": "fire" },
+            { "label": "Crime/Theft/Break-in", "value": "crime" },
+            { "label": "Civil Disorder/Unrest", "value": "civil_disorder" },
+            { "label": "Terrorism", "value": "terrorism" },
+            { "label": "Supply Chain Disruption", "value": "supply_disruption" },
+            { "label": "Key Staff Unavailability", "value": "staff_unavailable" },
+            { "label": "Economic Downturn", "value": "economic_downturn" }
+          ],
+          "examples": [
+            "Coastal business: Hurricane, Coastal flooding, Tsunami, Power outage",
+            "Technology business: Power outage, Cyber attack, Telecom failure",
+            "Retail business: Crime, Fire, Power outage, Supply disruption"
+          ]
+        },
+        "riskMatrix": {
+          "label": "Risk Assessment Matrix",
+          "prompt": "For each hazard you selected, assess the likelihood and potential severity of impact on your business.",
+          "examples": [
+            "Hurricane - Likely (3) - Serious (3) - High (9) - Purchase insurance, prepare shutters, secure inventory",
+            "Power Outage - Very Likely (4) - Minor (2) - Medium (8) - Install backup generator, UPS for computers",
+            "Fire - Unlikely (2) - Major (4) - Medium (8) - Install fire alarms, sprinkler system, fire extinguishers"
+          ]
+        }
+      }
+    },
+    "strategies": {
+      "title": "Business Continuity Strategies",
+      "description": "Now let's develop comprehensive strategies to prevent, respond to, and recover from the risks you've identified.",
+      "inputs": {
+        "preventionStrategies": {
+          "label": "Prevention Strategies (Before Emergencies)",
+          "prompt": "Which prevention strategies will you implement to reduce the likelihood or impact of risks? Select all that apply.",
+          "options": [
+            { "label": "Regular maintenance of equipment and facilities", "value": "maintenance" },
+            { "label": "Physical security systems (alarms, cameras, locks)", "value": "physical_security" },
+            { "label": "Cybersecurity measures and data protection", "value": "cybersecurity" },
+            { "label": "Comprehensive insurance coverage", "value": "insurance" },
+            { "label": "Employee training and emergency preparedness", "value": "employee_training" },
+            { "label": "Supplier diversification and backup suppliers", "value": "supplier_diversity" },
+            { "label": "Financial reserves and emergency funds", "value": "financial_reserves" },
+            { "label": "Regular data backup and off-site storage", "value": "data_backup" },
+            { "label": "Building modifications for disaster resistance", "value": "building_upgrades" },
+            { "label": "Emergency supplies and equipment stockpiling", "value": "emergency_supplies" },
+            { "label": "Regular risk assessments and plan updates", "value": "risk_monitoring" },
+            { "label": "Community partnerships and mutual aid agreements", "value": "community_partnerships" }
+          ],
+          "examples": [
+            "Retail store: Physical security, Insurance, Employee training, Emergency supplies",
+            "Technology business: Cybersecurity, Data backup, Employee training, Financial reserves",
+            "Restaurant: Maintenance, Insurance, Emergency supplies, Building upgrades"
+          ]
+        },
+        "responseStrategies": {
+          "label": "Response Strategies (During Emergencies)",
+          "prompt": "Which response strategies will you implement during an emergency? Select all that apply.",
+          "options": [
+            { "label": "Emergency response team activation", "value": "emergency_team" },
+            { "label": "Staff and customer safety procedures", "value": "safety_procedures" },
+            { "label": "Emergency communication plan", "value": "emergency_communication" },
+            { "label": "Alternative work locations", "value": "alternative_locations" },
+            { "label": "Remote work and virtual operations", "value": "remote_work" },
+            { "label": "Emergency inventory and supply management", "value": "emergency_inventory" },
+            { "label": "Customer service continuity procedures", "value": "customer_continuity" },
+            { "label": "Media and public relations management", "value": "media_management" },
+            { "label": "Emergency financial procedures", "value": "emergency_finance" },
+            { "label": "Coordination with emergency services", "value": "emergency_services" },
+            { "label": "Temporary closure and securing procedures", "value": "closure_procedures" },
+            { "label": "Essential services only operations", "value": "essential_operations" }
+          ],
+          "examples": [
+            "Service business: Emergency team, Remote work, Customer continuity, Emergency communication",
+            "Retail business: Safety procedures, Emergency inventory, Closure procedures, Emergency services",
+            "Manufacturing: Emergency team, Alternative locations, Essential operations, Emergency finance"
+          ]
+        },
+        "recoveryStrategies": {
+          "label": "Recovery Strategies (After Emergencies)",
+          "prompt": "Which recovery strategies will help you restore normal operations after an emergency? Select all that apply.",
+          "options": [
+            { "label": "Damage assessment and documentation", "value": "damage_assessment" },
+            { "label": "Insurance claims and financial recovery", "value": "insurance_claims" },
+            { "label": "Business resumption and restart procedures", "value": "business_resumption" },
+            { "label": "Employee support and counseling programs", "value": "employee_support" },
+            { "label": "Customer retention and win-back strategies", "value": "customer_retention" },
+            { "label": "Supplier relationship restoration", "value": "supplier_restoration" },
+            { "label": "Marketing and reputation management", "value": "reputation_management" },
+            { "label": "Financial assistance and loan applications", "value": "financial_assistance" },
+            { "label": "Facility repair and reconstruction", "value": "facility_repair" },
+            { "label": "Equipment replacement and upgrades", "value": "equipment_replacement" },
+            { "label": "Lessons learned and plan improvements", "value": "lessons_learned" },
+            { "label": "Community support and collaboration", "value": "community_support" }
+          ],
+          "examples": [
+            "Small business: Insurance claims, Business resumption, Customer retention, Financial assistance",
+            "Service business: Employee support, Customer retention, Reputation management, Lessons learned",
+            "Manufacturing: Damage assessment, Facility repair, Equipment replacement, Supplier restoration"
+          ]
+        },
+        "longTermMeasures": {
+          "label": "Long-term Risk Reduction Measures",
+          "prompt": "What long-term measures will you implement to reduce future risks? Consider climate adaptation, sustainable practices, and building resilience over time.",
+          "examples": [
+            "Install solar panels for energy independence, relocate critical equipment above flood levels, diversify supply chains across multiple islands",
+            "Implement sustainable waste management, use local suppliers to reduce transportation risks, build stronger community partnerships",
+            "Invest in climate-resilient building materials, develop staff cross-training programs, establish emergency fund equivalent to 3 months operating costs"
+          ]
+        }
+      }
+    },
+    "actionPlan": {
+      "title": "Implementation Action Plan",
+      "description": "Finally, let's create a detailed action plan to implement your business continuity strategies.",
+      "inputs": {
+        "actionPlanByRisk": {
+          "label": "Action Plan by Risk Level",
+          "prompt": "For your highest-priority risks, create specific action plans with timelines and responsibilities.",
+          "tableColumns": ["Hazard/Risk", "Immediate Actions (0-24 hours)", "Short-term Actions (1-7 days)", "Medium-term Actions (1-4 weeks)", "Responsible Person"],
+          "tableRowsPrompt": "We'll focus on your high and medium-risk hazards. For each one, think about what needs to happen immediately, in the first week, and in the first month.",
+          "examples": [
+            "Hurricane - Secure building, activate emergency team - Contact staff and customers, assess damage - File insurance claims, resume operations - Operations Manager",
+            "Power Outage - Switch to backup power, secure cash registers - Contact utility company, implement manual processes - Evaluate backup power needs, order equipment - Facility Manager"
+          ]
+        },
+        "implementationTimeline": {
+          "label": "Implementation Timeline",
+          "prompt": "What is your overall timeline for implementing this business continuity plan? Consider your business cycles, budget constraints, and priority risks.",
+          "examples": [
+            "Phase 1 (Immediate - 1 month): Implement high-priority prevention measures and emergency procedures. Phase 2 (1-3 months): Complete staff training and backup system installation. Phase 3 (3-6 months): Finalize all strategies and conduct first full test.",
+            "Start implementation immediately with hurricane season approaching. Complete critical measures within 6 weeks, full implementation within 3 months.",
+            "Begin after the busy season ends in April. Implement high-priority items by June, complete full plan by December before next tourist season."
+          ]
+        },
+        "resourceRequirements": {
+          "label": "Resource Requirements",
+          "prompt": "What resources (financial, human, technical) will you need to implement your plan? Be specific about costs and personnel time.",
+          "examples": [
+            "Budget: $15,000 for security system ($8,000), generator ($5,000), training ($2,000). Personnel: 20 hours/week from manager for 2 months, 4 hours/week from each staff member.",
+            "Financial: $25,000 total - IT infrastructure ($15,000), insurance increases ($3,000/year), emergency supplies ($2,000), training ($5,000). Human: IT consultant (40 hours), management time (2 days/week for 3 months).",
+            "Equipment budget: $10,000 for backup systems. Training budget: $3,000 for staff certification. Time investment: 1 day per week from department heads for 4 months."
+          ]
+        },
+        "responsibleParties": {
+          "label": "Responsible Parties and Roles",
+          "prompt": "Who will be responsible for implementing and maintaining different aspects of the plan? Assign specific roles and backup responsibilities.",
+          "examples": [
+            "Plan Coordinator: General Manager (backup: Operations Supervisor). IT Systems: IT Manager (backup: External consultant). Staff Training: HR Manager (backup: Senior Supervisor). Emergency Response: Operations Manager (backup: Assistant Manager).",
+            "Overall Implementation: Business Owner (backup: Office Manager). Risk Prevention: Facility Manager (backup: Maintenance Staff). Communication: Customer Service Manager (backup: Reception Staff). Financial: Accountant (backup: Office Manager).",
+            "Business Continuity Team: 3 senior staff members with rotating leadership. Department Implementation: Each department head responsible for their area. External Relations: Marketing Manager for media, Admin Manager for government/insurance."
+          ]
+        },
+        "reviewSchedule": {
+          "label": "Review and Update Schedule",
+          "prompt": "How often will you review and update your business continuity plan? Include regular reviews and trigger events for updates.",
+          "examples": [
+            "Quarterly reviews of risk assessment and contact information. Annual comprehensive plan update. Immediate review after any emergency event or significant business change.",
+            "Monthly check-ins during hurricane season (June-November). Bi-annual full reviews in January and July. Update plan whenever we change suppliers, move locations, or change key staff.",
+            "Ongoing monitoring: Monthly risk assessment updates. Formal reviews: Quarterly team meetings. Major updates: Annually and after any emergency event, business expansion, or regulatory changes."
+          ]
+        },
+        "testingPlan": {
+          "label": "Testing and Assessment Plan",
+          "prompt": "How will you test your business continuity plan to ensure it works effectively?",
+          "tableColumns": ["Test Type", "Frequency", "Participants", "Success Criteria", "Responsible Person"],
+          "tableRowsPrompt": "Plan different types of tests to validate your business continuity plan.",
+          "examples": [
+            "Communication Test - Monthly - All staff - Everyone receives and responds to emergency message within 2 hours - Communications Manager",
+            "Evacuation Drill - Quarterly - All staff and customers - Building evacuated safely within 5 minutes - Safety Officer",
+            "Backup System Test - Monthly - IT staff - All systems switch to backup power/internet successfully - IT Manager",
+            "Full Plan Exercise - Annually - All key staff - Complete scenario exercise completed successfully - Plan Coordinator"
+          ]
+        }
+      }
+    },
+    "contactsAndInformation": {
+      "title": "Contacts and Critical Information",
+      "description": "Let's compile all the important contact information and details you'll need during an emergency.",
+      "inputs": {
+        "staffContacts": {
+          "label": "Staff Contact Information",
+          "prompt": "Provide contact information for all staff members.",
+          "tableColumns": ["Name", "Position", "Phone Number", "Email Address", "Emergency Contact"],
+          "tableRowsPrompt": "Include all employees, managers, and key personnel who would need to be contacted during an emergency.",
+          "examples": [
+            "John Smith - Manager - 876-555-0123 - j.smith@company.com - Wife: 876-555-0124",
+            "Maria Rodriguez - Cashier - 876-555-0125 - m.rodriguez@company.com - Sister: 876-555-0126",
+            "David Thompson - Cook - 876-555-0127 - d.thompson@company.com - Mother: 876-555-0128"
+          ]
+        },
+        "keyCustomers": {
+          "label": "Key Customer Contacts",
+          "prompt": "List your most important customers who would need special attention during an emergency.",
+          "tableColumns": ["Customer Name", "Type/Notes", "Phone Number", "Email Address", "Special Requirements"],
+          "tableRowsPrompt": "Focus on customers who depend on you for essential services or have special needs.",
+          "examples": [
+            "Mrs. James - Elderly customer (home delivery) - 876-555-0130 - - Relies on weekly grocery delivery",
+            "Paradise Resort - Major client - 876-555-0131 - orders@paradiseresort.com - Daily fresh produce delivery",
+            "City Hospital - Emergency supplies - 876-555-0132 - procurement@cityhospital.gov - Critical medical supplies"
+          ]
+        },
+        "supplierInfo": {
+          "label": "Supplier Information",
+          "prompt": "List your main suppliers and at least one backup supplier for key goods/services.",
+          "tableColumns": ["Supplier Name", "Goods/Services Supplied", "Phone Number", "Email Address", "Backup Supplier"],
+          "tableRowsPrompt": "Include primary suppliers and identify backup options for critical supplies.",
+          "examples": [
+            "Caribbean Foods Ltd - Fresh produce - 876-555-0140 - orders@caribbeanfoods.com - Island Fresh Co.",
+            "Island Hardware - Tools & supplies - 876-555-0141 - sales@islandhardware.com - Tools & More Ltd.",
+            "Power Solutions Inc - Generator maintenance - 876-555-0142 - service@powersolutions.com - Electric Pro Services"
+          ]
+        },
+        "emergencyServices": {
+          "label": "Emergency Services and Utilities",
+          "prompt": "Compile contact information for emergency services and utility providers.",
+          "tableColumns": ["Service Type", "Organization Name", "Phone Number", "Email Address", "Account Number"],
+          "tableRowsPrompt": "Include all essential services you might need to contact during an emergency.",
+          "examples": [
+            "Police - Royal Police Force - 911 / 876-555-0150 - - N/A",
+            "Fire Department - Kingston Fire Brigade - 911 / 876-555-0151 - - N/A",
+            "Electricity - Jamaica Public Service - 876-555-0152 - customer@jps.com.jm - Account: JPS123456",
+            "Water - National Water Commission - 876-555-0153 - service@nwc.com.jm - Account: NWC789012",
+            "Internet - Flow Jamaica - 876-555-0154 - support@flow.com - Account: FLOW345678",
+            "Insurance - Guardian Life - 876-555-0155 - claims@guardian.com - Policy: GL901234"
+          ]
+        },
+        "criticalBusinessInfo": {
+          "label": "Critical Business Information",
+          "prompt": "Provide other critical business information needed during emergencies.",
+          "examples": [
+            "Business License: BL-2023-0456, Insurance Policy: GL-789012 (Guardian Life), Bank Account: Scotia Bank #123456789, Critical Records Location: Fireproof safe in manager office, Backup Records: Cloud storage (Google Drive) + external drive at owner home",
+            "Registration Number: REG-2022-0789, Insurance: Sagicor Policy #SG-456789, Banking: First Caribbean #987654321, Important Documents: Safety deposit box at bank, Digital Copies: Dropbox account shared with accountant"
+          ]
+        },
+        "planDistribution": {
+          "label": "Plan Distribution List",
+          "prompt": "Track who has received copies of this business continuity plan.",
+          "tableColumns": ["Name/Position", "Format Received", "Date Provided", "Version Number", "Acknowledgment"],
+          "tableRowsPrompt": "Document everyone who should have access to the plan.",
+          "examples": [
+            "John Smith (Manager) - Electronic + Hard copy - 2024-01-15 - Version 1.0 - Signed",
+            "Maria Rodriguez (Assistant Manager) - Electronic - 2024-01-15 - Version 1.0 - Email confirmed",
+            "Guardian Life Insurance - Electronic - 2024-01-20 - Version 1.0 - Submitted with application"
+          ]
+        }
+      }
+    },
+    "testingAndMaintenance": {
+      "title": "Testing and Maintenance",
+      "description": "Establish procedures for keeping your business continuity plan current and effective.",
+      "inputs": {
+        "testingSchedule": {
+          "label": "Plan Testing Schedule",
+          "prompt": "Create a schedule for regularly testing different aspects of your business continuity plan.",
+          "tableColumns": ["Test Type", "What is Tested", "Frequency", "Next Test Date", "Responsible Person"],
+          "tableRowsPrompt": "Plan different types of tests to ensure your plan works when needed.",
+          "examples": [
+            "Communication Test - Emergency contact procedures - Monthly - 2024-02-15 - Office Manager",
+            "Backup Systems - Generator and backup power - Quarterly - 2024-03-15 - Maintenance Staff",
+            "Evacuation Drill - Emergency evacuation procedures - Semi-annually - 2024-06-15 - Safety Officer",
+            "Full Plan Exercise - Complete emergency scenario - Annually - 2024-12-15 - General Manager"
+          ]
+        },
+        "revisionHistory": {
+          "label": "Plan Revision History",
+          "prompt": "Track changes and updates to your business continuity plan over time.",
+          "tableColumns": ["Version", "Date Updated", "Changes Made", "Updated By", "Reason for Update"],
+          "tableRowsPrompt": "Start with Version 1.0 and plan for future updates.",
+          "examples": [
+            "Version 1.0 - 2024-01-15 - Initial plan creation - John Smith (Manager) - New business continuity plan",
+            "Version 1.1 - 2024-03-15 - Updated supplier contacts - Maria Rodriguez - Supplier changed phone numbers",
+            "Version 2.0 - 2024-07-15 - Major revision after hurricane drill - John Smith (Manager) - Lessons learned from testing"
+          ]
+        },
+        "improvementTracking": {
+          "label": "Improvement Tracking",
+          "prompt": "Track improvements and action items identified through testing and real events.",
+          "tableColumns": ["Issue Identified", "Improvement Action", "Priority Level", "Target Completion", "Status"],
+          "tableRowsPrompt": "Use this to track ongoing improvements to your plan.",
+          "examples": [
+            "Staff took too long to respond to emergency call - Improve staff training on emergency procedures - High - 2024-02-28 - In Progress",
+            "Backup generator failed to start - Schedule monthly generator testing and maintenance - High - 2024-01-30 - Completed",
+            "Customer contact list was outdated - Implement quarterly customer contact review - Medium - 2024-03-31 - Planned"
+          ]
+        },
+        "annualReview": {
+          "label": "Annual Review Process",
+          "prompt": "Describe your process for conducting comprehensive annual reviews of the business continuity plan.",
+          "examples": [
+            "Every January: 1) Review all contact information and update as needed, 2) Assess new risks based on previous year events, 3) Update insurance and financial information, 4) Review staff training needs, 5) Update emergency supplies inventory, 6) Schedule year's testing activities.",
+            "Annual review meeting in December with all key staff: Review past year's incidents and tests, update risk assessment based on climate/business changes, verify all contact information, assess budget for next year's improvements, plan training schedule, update emergency supply lists.",
+            "Comprehensive annual review process: 1) Stakeholder feedback collection, 2) Risk environment assessment, 3) Plan effectiveness evaluation, 4) Resource requirement review, 5) Training program assessment, 6) Communication system evaluation, 7) Documentation updates."
+          ]
+        },
+        "triggerEvents": {
+          "label": "Trigger Events for Plan Updates",
+          "prompt": "What events or changes would trigger an immediate update to your business continuity plan?",
+          "examples": [
+            "Immediate updates required for: 1) Any actual emergency or disaster affecting the business, 2) Changes in key staff or management, 3) Moving to new location or major facility changes, 4) Changes in major suppliers or service providers, 5. New significant risks identified, 6) Changes in insurance coverage or legal requirements.",
+            "Plan updates triggered by: Major staff changes, location moves, new equipment/technology, supplier changes, insurance policy changes, government regulation changes, community emergency plan updates, lessons learned from actual emergencies.",
+            "Update triggers: Business expansion or downsizing, new technology implementation, changes in customer base, regulatory changes, natural disaster events (even if business not directly affected), changes in local emergency services, merger or acquisition activities."
+          ]
+        }
+      }
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "minLength": "Must be at least {min} characters",
+    "maxLength": "Must be no more than {max} characters"
+  },
+  "pdf": {
+    "title": "Business Continuity Plan",
+    "generatedOn": "Generated on {date}",
+    "companyInfo": "Company Information",
+    "planDetails": "Plan Details"
+  }
+} 

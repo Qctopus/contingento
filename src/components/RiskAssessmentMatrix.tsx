@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface RiskItem {
   hazard: string
@@ -65,6 +66,7 @@ const HAZARD_LABELS: { [key: string]: string } = {
 export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue, setUserInteracted }: RiskAssessmentProps) {
   const [riskItems, setRiskItems] = useState<RiskItem[]>([])
   const [activeRisk, setActiveRisk] = useState<number | null>(null)
+  const t = useTranslations('common')
 
   // Initialize risk items when selectedHazards or initialValue changes
   useEffect(() => {
@@ -191,8 +193,8 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         <svg className="h-12 w-12 text-blue-400 mx-auto mb-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
           <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 className="text-lg font-medium text-blue-900 mb-2">No Hazards Selected</h3>
-        <p className="text-blue-700">Please select hazards in the previous step to create your risk assessment matrix.</p>
+        <h3 className="text-lg font-medium text-blue-900 mb-2">{t('noHazardsSelected')}</h3>
+        <p className="text-blue-700">{t('selectHazardsPrompt')}</p>
       </div>
     )
   }

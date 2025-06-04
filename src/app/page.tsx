@@ -1,7 +1,6 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { defaultLocale } from '@/i18n/config'
 
-import { BusinessContinuityForm } from '@/components/BusinessContinuityForm'
-
-export default function Home() {
-  return <BusinessContinuityForm />
+export default function RootPage() {
+  redirect(`/${defaultLocale}`)
 } 
