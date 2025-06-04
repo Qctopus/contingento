@@ -34,7 +34,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider locale={locale} messages={messages}>
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             <header className="bg-white dark:bg-gray-800 shadow">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+              <div className="w-full px-4 py-4 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                   <img src="/undp-logo.png" alt="UNDP Logo" style={{ height: '64px', marginRight: '1.5rem' }} />
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -44,7 +44,7 @@ export default async function LocaleLayout({
                 <LanguageSwitcher />
               </div>
             </header>
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="w-full px-2 py-8">
               {children}
             </main>
           </div>
