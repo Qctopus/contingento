@@ -33,8 +33,51 @@
       "typeAnswerHere": "Tapez votre réponse ici",
       "addRow": "Ajouter une ligne",
       "deleteRows": "Supprimer {count} lignes",
-      "noHazardsSelected": "Aucun Danger Sélectionné",
-      "selectHazardsPrompt": "Veuillez sélectionner les dangers dans l'étape précédente pour créer votre matrice d'évaluation des risques"
+      "noHazardsSelected": "Aucun danger sélectionné",
+      "selectHazardsPrompt": "Veuillez sélectionner des dangers à l'étape précédente pour créer votre matrice d'évaluation des risques",
+      "riskOverview": "Aperçu de l'évaluation des risques",
+      "assessmentProgress": "Progression de l'évaluation",
+      "completed": "terminé",
+      "riskMatrix": "Matrice de risque CARICHAM",
+      "severity": "GRAVITÉ",
+      "likelihood": "PROBABILITÉ",
+      "individualRiskAssessments": "Évaluations individuelles des risques",
+      "likelihoodAssessment": "Évaluation de la probabilité",
+      "severityAssessment": "Évaluation de la gravité",
+      "calculatedRiskLevel": "Niveau de risque calculé :",
+      "riskScore": "Score",
+      "planningMeasures": "Mesures de planification",
+      "planningMeasuresPlaceholder": "Décrivez les mesures spécifiques que vous prendrez pour traiter ce risque...",
+      "planningMeasuresHelp": "Considérez les mesures de prévention, les procédures de réponse et les stratégies de récupération.",
+      "assessmentSummary": "Résumé de l'évaluation et recommandations",
+      "extremePriority": "Priorité extrême :",
+      "extremePriorityText": "Vous avez {count} risque(s) extrême(s) qui nécessitent une attention immédiate et des stratégies d'atténuation complètes.",
+      "highPriority": "Priorité élevée :",
+      "highPriorityText": "Vous avez {count} risque(s) élevé(s) qui devraient être traités avec des mesures de planification robustes.",
+      "nextSteps": "Prochaines étapes :",
+      "nextStepsText": "Concentrez-vous d'abord sur le développement de stratégies complètes pour vos éléments à risque le plus élevé. Considérez les mesures de planification que vous avez identifiées et assurez-vous qu'elles sont réalistes et réalisables.",
+      "ongoingProcess": "Rappelez-vous que l'évaluation des risques est un processus continu. Révisez et mettez à jour ces évaluations régulièrement, surtout lorsque votre environnement commercial change.",
+      "veryUnlikely": "Très improbable (1)",
+      "veryUnlikelyDesc": "Ne se produira que dans des circonstances exceptionnelles",
+      "unlikely": "Improbable (2)",
+      "unlikelyDesc": "Peu susceptible de se produire dans les 3 prochaines années",
+      "likely": "Probable (3)",
+      "likelyDesc": "Susceptible de se produire dans les 2 prochaines années",
+      "veryLikely": "Très probable (4)",
+      "veryLikelyDesc": "Très susceptible de se produire dans la prochaine année",
+      "insignificant": "Insignifiant (1)",
+      "insignificantDesc": "Aucune mesure spéciale requise",
+      "minor": "Mineur (2)",
+      "minorDesc": "Perturbations courtes, dommages à court terme",
+      "serious": "Grave (3)",
+      "seriousDesc": "Quelques dommages à l'infrastructure, impact à moyen terme",
+      "major": "Majeur (4)",
+      "majorDesc": "Dommages à grande échelle, impact commercial à long terme",
+      "lowRisk": "Faible",
+      "mediumRisk": "Moyen",
+      "highRisk": "Élevé",
+      "extremeRisk": "Extrême",
+      "riskText": "Risque"
     },
     "steps": {
       "planInformation": {
@@ -319,6 +362,43 @@
       "riskAssessment": {
         "title": "Évaluation des Risques",
         "description": "Identifions et évaluons les risques qui pourraient perturber vos opérations commerciales.",
+        "hazardLabels": {
+          "earthquake": "Tremblement de terre",
+          "hurricane": "Ouragan/Tempête tropicale",
+          "coastal_flood": "Inondation côtière",
+          "flash_flood": "Inondation soudaine",
+          "landslide": "Glissement de terrain",
+          "tsunami": "Tsunami",
+          "volcanic": "Activité volcanique",
+          "drought": "Sécheresse",
+          "epidemic": "Épidémie (foyer de maladie locale)",
+          "pandemic": "Pandémie (maladie généralisée)",
+          "power_outage": "Panne de courant prolongée",
+          "telecom_failure": "Panne des télécommunications",
+          "cyber_attack": "Attaques Internet/Cybernétiques",
+          "fire": "Incendie",
+          "crime": "Crime/Vol/Effraction",
+          "civil_disorder": "Désordre civil/Troubles",
+          "terrorism": "Terrorisme",
+          "supply_disruption": "Perturbation de la chaîne d'approvisionnement",
+          "staff_unavailable": "Indisponibilité du personnel clé",
+          "economic_downturn": "Ralentissement économique",
+          "urban_flooding": "Inondation urbaine",
+          "traffic_disruption": "Perturbation du trafic/Transport",
+          "storm_surge": "Onde de tempête",
+          "coastal_erosion": "Érosion côtière",
+          "infrastructure_failure": "Défaillance de l'infrastructure",
+          "crowd_management": "Problèmes de gestion de foule",
+          "river_flooding": "Inondation fluviale",
+          "urban_congestion": "Congestion urbaine/Trafic",
+          "water_shortage": "Pénurie d'eau",
+          "industrial_accident": "Accident industriel",
+          "air_pollution": "Pollution atmosphérique",
+          "tourism_disruption": "Perturbation du tourisme",
+          "oil_spill": "Déversement de pétrole",
+          "sargassum": "Impact des algues sargasses",
+          "waste_management": "Problèmes de gestion des déchets"
+        },
         "inputs": {
           "potentialHazards": {
             "label": "Dangers Potentiels",
@@ -343,7 +423,22 @@
               { "label": "Terrorisme", "value": "terrorism" },
               { "label": "Perturbation de la chaîne d'approvisionnement", "value": "supply_disruption" },
               { "label": "Indisponibilité du personnel clé", "value": "staff_unavailable" },
-              { "label": "Ralentissement économique", "value": "economic_downturn" }
+              { "label": "Ralentissement économique", "value": "economic_downturn" },
+              { "label": "Inondation urbaine", "value": "urban_flooding" },
+              { "label": "Perturbation du trafic/Transport", "value": "traffic_disruption" },
+              { "label": "Onde de tempête", "value": "storm_surge" },
+              { "label": "Érosion côtière", "value": "coastal_erosion" },
+              { "label": "Défaillance de l'infrastructure", "value": "infrastructure_failure" },
+              { "label": "Problèmes de gestion de foule", "value": "crowd_management" },
+              { "label": "Inondation fluviale", "value": "river_flooding" },
+              { "label": "Congestion urbaine/Trafic", "value": "urban_congestion" },
+              { "label": "Pénurie d'eau", "value": "water_shortage" },
+              { "label": "Accident industriel", "value": "industrial_accident" },
+              { "label": "Pollution atmosphérique", "value": "air_pollution" },
+              { "label": "Perturbation du tourisme", "value": "tourism_disruption" },
+              { "label": "Déversement de pétrole", "value": "oil_spill" },
+              { "label": "Impact des algues sargasses", "value": "sargassum" },
+              { "label": "Problèmes de gestion des déchets", "value": "waste_management" }
             ],
             "examples": [
               "Entreprise côtière : Ouragan, Inondation côtière, Tsunami, Panne de courant",
@@ -652,5 +747,141 @@
       "generatedOn": "Généré le {date}",
       "companyInfo": "Informations de l'Entreprise",
       "planDetails": "Détails du Plan"
+    },
+    "industrySelector": {
+      "businessTypeTitle": "Quel type d'entreprise exploitez-vous ?",
+      "businessTypeDescription": "Sélectionnez votre type d'entreprise pour obtenir des recommandations personnalisées et du contenu intelligent pré-rempli pour votre Plan de Continuité d'Activité.",
+      "locationTitle": "Où se situe votre entreprise ?",
+      "locationDescription": "Aidez-nous à comprendre les risques spécifiques à votre localisation et fournir des recommandations ciblées.",
+      "skipSetup": "Ignorer cette étape et commencer avec un formulaire vierge",
+      "backToBusiness": "Retour à la sélection d'entreprise",
+      "countryLabel": "Pays/Territoire",
+      "countryPlaceholder": "Sélectionnez votre pays",
+      "parishLabel": "Paroisse/Région",
+      "parishPlaceholder": "Sélectionnez la paroisse/région (optionnel)",
+      "regionLabel": "Zone/Quartier spécifique",
+      "regionPlaceholder": "ex. Centre-ville, Zone industrielle, District commercial",
+      "locationCharacteristics": "Caractéristiques de l'emplacement",
+      "nearCoast": "Près de la côte ou du front de mer",
+      "nearCoastDescription": "À moins de 3 km de l'océan, d'une rivière importante ou d'un grand plan d'eau",
+      "urbanArea": "Zone urbaine/centre-ville",
+      "urbanAreaDescription": "Forte densité de population, district commercial ou centre-ville",
+      "generatePlan": "Générer un Plan Intelligent Pré-rempli",
+      "skipSetupAction": "Ignorer la Configuration",
+      "selectedBusiness": "Type d'Entreprise Sélectionné :",
+      "retailCommerce": "Commerce de Détail",
+      "foodHospitality": "Alimentation et Hôtellerie",
+      "personalServices": "Services Personnels",
+      "tourismRecreation": "Tourisme et Loisirs",
+      "agricultureFishing": "Agriculture et Pêche",
+      "manufacturingProduction": "Fabrication et Production",
+      "smartPreFilled": "Pré-rempli Intelligent",
+      "industrySpecific": "Spécifique à l'industrie",
+      "resetToDefaults": "Rétablir les valeurs par défaut de l'industrie",
+      "preFillIndicator": "Ce champ a été automatiquement rempli en fonction de votre sélection d'industrie"
+    },
+    "industryProfiles": {
+      "grocery_store": {
+        "name": "Épicerie",
+        "localName": "Épicerie Locale/Mini-Marché",
+        "businessPurpose": [
+          "Fournir des produits d'épicerie frais et des produits de première nécessité à la communauté de [NEIGHBORHOOD]",
+          "Servir les résidents locaux avec un accès pratique à la nourriture et aux articles ménagers",
+          "Soutenir les familles locales avec des produits d'épicerie abordables et des spécialités caribéennes"
+        ],
+        "productsServices": [
+          "Produits frais, viande, produits laitiers et produits de base. Spécialités locales comme les assaisonnements [ISLAND] et les aliments traditionnels",
+          "Épicerie, boissons, articles ménagers et produits locaux. Services de transfert d'argent et de paiement de factures",
+          "Produits de première nécessité, aliments congelés, collations et articles de soins personnels. Commandes spéciales pour les événements communautaires"
+        ],
+        "uniqueSellingPoints": [
+          "Focus communautaire local avec service personnalisé et crédit pour les clients de confiance",
+          "Heures prolongées et emplacement [AREA] pratique avec des produits locaux frais",
+          "Entreprise familiale avec des racines communautaires profondes et des prix compétitifs"
+        ],
+        "keyPersonnel": [
+          "Propriétaire/Gérant du magasin, Caissier, Commis aux stocks",
+          "Propriétaire, Gérant adjoint, Caissier à temps partiel",
+          "Gérant, Caissier principal, Chauffeur-livreur"
+        ],
+        "minimumResourcesExamples": [
+          "2 membres du personnel, système de point de vente de base, 1 unité de réfrigération, générateur de secours",
+          "Propriétaire + 1 employé, caisse enregistreuse, vitrine réfrigérée, caméra de sécurité",
+          "Gérant + caissier, système de point de vente moderne, chambre froide, véhicule de livraison"
+        ],
+        "customerBase": [
+          "Résidents locaux dans un rayon de 3 km, familles, clients âgés, petites entreprises",
+          "Familles du quartier, jeunes professionnels, touristes séjournant dans [AREA]",
+          "Membres de la communauté, restaurants locaux, parents en visite de résidents"
+        ]
+      },
+      "restaurant": {
+        "name": "Restaurant",
+        "localName": "Restaurant Local/Établissement de Restauration",
+        "businessPurpose": [
+          "Servir une cuisine authentique [ISLAND] et offrir une expérience culinaire accueillante",
+          "Offrir des repas frais d'origine locale qui célèbrent les saveurs et la culture caribéennes",
+          "Créer un lieu de rassemblement communautaire centré sur la bonne nourriture et l'hospitalité"
+        ],
+        "productsServices": [
+          "Plats traditionnels [ISLAND], fruits de mer frais, boissons tropicales. Traiteur pour événements spéciaux",
+          "Cuisine fusion caribéenne, spécialités locales, cocktails artisanaux. Services de plats à emporter et de livraison",
+          "Cuisine familiale, spéciaux du jour, options végétariennes. Salle à manger privée et traiteur pour fêtes"
+        ],
+        "uniqueSellingPoints": [
+          "Recettes familiales transmises de génération en génération avec des ingrédients d'origine locale",
+          "Atmosphère authentique [ISLAND] avec musique live et vues magnifiques sur [AREA]",
+          "Chef primé spécialisé dans la cuisine caribéenne moderne avec des racines traditionnelles"
+        ],
+        "keyPersonnel": [
+          "Chef principal, Gérant de restaurant, Serveurs, Personnel de cuisine",
+          "Propriétaire/Chef, Gérant adjoint, Personnel de service, Cuisinier préparateur",
+          "Chef exécutif, Gérant de salle, Barman, Équipe de cuisine"
+        ],
+        "minimumResourcesExamples": [
+          "Chef + 2 serveurs, installation de cuisine de base, 3 tables, comptoir de plats à emporter",
+          "Propriétaire + cuisinier + serveur, cuisine complète, 8 tables de salle à manger, petit bar",
+          "Personnel de cuisine complet, salle à manger de 15 tables, bar, terrasse extérieure"
+        ],
+        "customerBase": [
+          "Résidents locaux, employés de bureau pendant le déjeuner, touristes explorant [AREA]",
+          "Familles célébrant des occasions spéciales, réunions d'affaires pour le déjeuner, dîneurs du week-end",
+          "Amateurs de gastronomie, clients d'hôtel, couples cherchant un dîner romantique, professionnels locaux"
+        ]
+      },
+      "beauty_salon": {
+        "name": "Salon de Beauté",
+        "localName": "Salon de Coiffure/Institut de Beauté",
+        "businessPurpose": [
+          "Fournir des services professionnels de soins capillaires et de beauté aux résidents de [NEIGHBORHOOD]",
+          "Aider les clients à paraître et se sentir au mieux avec des soins de coiffure et des traitements de beauté experts",
+          "Créer un environnement relaxant où les clients peuvent profiter de soins et de détente"
+        ],
+        "productsServices": [
+          "Coupes de cheveux, coiffure, coloration et traitements. Manucures, pédicures et services de sourcils",
+          "Soins capillaires professionnels, coiffure pour occasions spéciales, forfaits mariée. Produits capillaires de détail",
+          "Salon complet offrant coupes, couleur, permanentes et traitements thérapeutiques pour tous types de cheveux"
+        ],
+        "uniqueSellingPoints": [
+          "Spécialisé dans les textures de cheveux caribéens avec des stylistes certifiés et des produits de qualité",
+          "Service personnalisé dans une atmosphère confortable et amicale avec horaires flexibles",
+          "Dernières tendances et techniques combinées avec les méthodes de coiffure traditionnelles [ISLAND]"
+        ],
+        "keyPersonnel": [
+          "Styliste Principal/Propriétaire, Esthéticienne licenciée, Réceptionniste",
+          "Propriétaire du salon, Styliste senior, Styliste junior, Assistant à temps partiel",
+          "Styliste principal, Technicienne en ongles, Styliste apprenti"
+        ],
+        "minimumResourcesExamples": [
+          "Propriétaire-styliste + 1 employé, 2 postes de coiffure, équipement de base",
+          "2 stylistes, 3 postes, zone manucure, gamme complète de produits, système de rendez-vous",
+          "Personnel complet de 3, 4 postes de coiffure, zone de lavage, section de vente au détail, équipement moderne"
+        ],
+        "customerBase": [
+          "Femmes et hommes locaux, clients réguliers hebdomadaires/mensuels, clients pour occasions spéciales",
+          "Résidents de [AREA], mariées et groupes de mariage, professionnels nécessitant un entretien régulier",
+          "Membres de la communauté, touristes, clients célébrant des événements spéciaux, clients fidèles réguliers"
+        ]
+      }
     }
   }

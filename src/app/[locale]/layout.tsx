@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { locales } from '@/i18n/config'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -32,22 +33,24 @@ export default async function LocaleLayout({
     <html lang={locale}>
       <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            <header className="bg-white dark:bg-gray-800 shadow">
-              <div className="w-full px-4 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <img src="/undp-logo.png" alt="UNDP Logo" style={{ height: '64px', marginRight: '1.5rem' }} />
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Business Continuity Plan Tool
-                  </h1>
+          <ErrorBoundary>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+              <header className="bg-white dark:bg-gray-800 shadow">
+                <div className="w-full px-4 py-4 flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <img src="/undp-logo.png" alt="UNDP Logo" style={{ height: '64px', marginRight: '1.5rem' }} />
+                    <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Business Continuity Plan Tool
+                    </h1>
+                  </div>
+                  <LanguageSwitcher />
                 </div>
-                <LanguageSwitcher />
-              </div>
-            </header>
-            <main className="w-full px-2 py-8">
-              {children}
-            </main>
-          </div>
+              </header>
+              <main className="w-full px-2 py-8">
+                {children}
+              </main>
+            </div>
+          </ErrorBoundary>
         </NextIntlClientProvider>
         
         {/* UNDP Design System Scripts - Following official documentation */}

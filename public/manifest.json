@@ -1,0 +1,47 @@
+{
+  "name": "CARICHAM Business Continuity Planner",
+  "short_name": "BCP Planner",
+  "description": "Create professional business continuity plans for Caribbean small businesses",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#006699",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/screenshot-tablet.png", 
+      "sizes": "1024x768",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "scope": "/",
+  "id": "caricham-bcp-planner",
+  "launch_handler": {
+    "client_mode": "navigate-new"
+  }
+} 

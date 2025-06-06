@@ -1,9 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale, useMessages } from 'next-intl'
 import { useLocalizedSteps } from '@/lib/localizedSteps'
 import { StructuredInput } from './StructuredInput'
+import IndustrySelector from './IndustrySelector'
+import { LocationData, PreFillData } from '../data/types'
+import { generatePreFillData, mergePreFillData, isFieldPreFilled } from '../services/preFillService'
+
+// Development logging utility
+const devLog = (message: string, data?: any) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[BCP Form]: ${message}`, data)
+  }
+}
 
 interface FormData {
   [key: string]: {
@@ -13,12 +23,98 @@ interface FormData {
 
 export function BusinessContinuityForm() {
   const t = useTranslations()
+  const locale = useLocale()
+  const messages = useMessages()
   const STEPS = useLocalizedSteps()
   const [formData, setFormData] = useState<FormData>({})
   const [currentStep, setCurrentStep] = useState<string>('PLAN_INFORMATION')
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  
+  // Industry selection states
+  const [showIndustrySelector, setShowIndustrySelector] = useState(false)
+  const [preFillData, setPreFillData] = useState<PreFillData | null>(null)
+  const [hasSelectedIndustry, setHasSelectedIndustry] = useState(false)
+  const [examples, setExamples] = useState<any>({})
+
+  // Check if user should see industry selector on mount
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem('bcp-draft')
+      const hasIndustrySelection = localStorage.getItem('bcp-industry-selected')
+      
+      if (savedData) {
+        const parsed = JSON.parse(savedData)
+        setFormData(parsed)
+      }
+      
+      // Show industry selector if no previous industry selection and no saved data
+      if (!hasIndustrySelection && (!savedData || Object.keys(JSON.parse(savedData || '{}')).length === 0)) {
+        setShowIndustrySelector(true)
+      } else if (hasIndustrySelection) {
+        setHasSelectedIndustry(true)
+        const preFillDataStored = localStorage.getItem('bcp-prefill-data')
+        if (preFillDataStored) {
+          setPreFillData(JSON.parse(preFillDataStored))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load saved data:', error)
+    }
+  }, [])
+
+  // Handle industry selection
+  const handleIndustrySelection = (industryId: string, location: LocationData) => {
+    const preFillData = generatePreFillData(industryId, location, locale, messages)
+    
+    if (preFillData) {
+      // Merge pre-fill data with any existing form data
+      const mergedData = mergePreFillData(formData, preFillData)
+      
+      devLog('Industry selection complete', { 
+        industryId, 
+        location, 
+        locale,
+        preFillDataGenerated: !!preFillData,
+        fieldsPreFilled: Object.keys(preFillData.preFilledFields).length
+      })
+      
+      setFormData(mergedData)
+      setExamples(preFillData.contextualExamples)
+      setPreFillData(preFillData)
+      
+      // Store selection state
+      localStorage.setItem('bcp-industry-selected', 'true')
+      localStorage.setItem('bcp-prefill-data', JSON.stringify(preFillData))
+      
+      setHasSelectedIndustry(true)
+    }
+    
+    setShowIndustrySelector(false)
+  }
+
+  // Handle skipping industry selection
+  const handleSkipIndustrySelection = () => {
+    localStorage.setItem('bcp-industry-selected', 'skipped')
+    setShowIndustrySelector(false)
+  }
+
+  // Reset to industry defaults function
+  const resetToIndustryDefaults = (stepId: string) => {
+    if (!preFillData) return
+    
+    const stepDefaults = preFillData.preFilledFields[stepId]
+    if (stepDefaults) {
+      setFormData(prev => ({
+        ...prev,
+        [stepId]: {
+          ...prev[stepId],
+          ...stepDefaults
+        }
+      }))
+    }
+  }
 
   // Load saved data on component mount
   useEffect(() => {
@@ -174,10 +270,24 @@ export function BusinessContinuityForm() {
   const clearDraft = () => {
     if (confirm(t('common.confirmClear'))) {
       localStorage.removeItem('bcp-draft')
+      localStorage.removeItem('bcp-industry-selected')
+      localStorage.removeItem('bcp-prefill-data')
       setFormData({})
       setCurrentStep('PLAN_INFORMATION')
       setCurrentQuestionIndex(0)
+      setPreFillData(null)
+      setHasSelectedIndustry(false)
     }
+  }
+
+  // Show industry selector if needed
+  if (showIndustrySelector) {
+    return (
+      <IndustrySelector
+        onSelection={handleIndustrySelection}
+        onSkip={handleSkipIndustrySelection}
+      />
+    )
   }
 
   const currentStepData = STEPS[currentStep as keyof typeof STEPS]
@@ -198,37 +308,64 @@ export function BusinessContinuityForm() {
       if (input.type === 'table') {
         return Array.isArray(value) && value.length > 0
       }
-      return value !== undefined && value !== ''
+      return value !== undefined && value !== null && value !== ''
     })
   })
 
-  // Check if a specific question is answered
   const isQuestionAnswered = (step: string, label: string) => {
     const stepAnswers = formData[step] || {}
     const value = stepAnswers[label]
-    if (value === undefined) return false
-    if (Array.isArray(value)) return value.length > 0
-    return value !== ''
+    return value !== undefined && value !== null && value !== ''
   }
 
-  // Calculate completion percentage for each step
   const getStepCompletion = (step: string) => {
     const stepData = STEPS[step as keyof typeof STEPS]
-    const stepAnswers = formData[step] || {}
-    const answeredQuestions = stepData.inputs.filter(input => {
-      const value = stepAnswers[input.label]
-      if (input.type === 'checkbox' || input.type === 'table') {
-        return Array.isArray(value) && value.length > 0
-      }
-      return value !== undefined && value !== ''
-    })
+    const answeredQuestions = stepData.inputs.filter(input => 
+      isQuestionAnswered(step, input.label)
+    )
     return Math.round((answeredQuestions.length / stepData.inputs.length) * 100)
   }
 
   // Get current value for display
   const getCurrentValue = () => {
     const stepAnswers = formData[currentStep] || {}
-    return stepAnswers[currentQuestion.label]
+    const currentStepData = STEPS[currentStep as keyof typeof STEPS]
+    if (!currentStepData) return undefined
+    
+    const currentInput = currentStepData.inputs[currentQuestionIndex]
+    if (!currentInput) return undefined
+    
+    const fieldLabel = currentInput.label
+    const currentValue = stepAnswers[fieldLabel]
+    const hasPreFillData = !!preFillData
+    const preFilledStepData = preFillData?.preFilledFields[currentStep]
+    
+    devLog('Getting current value', {
+      currentStep,
+      fieldLabel,
+      stepAnswers: Object.keys(stepAnswers),
+      currentValue: currentValue ? 'has value' : 'no value',
+      hasPreFillData,
+      preFilledStepData: preFilledStepData ? 'available' : 'none'
+    })
+    
+    return currentValue
+  }
+
+  // Check if current field is pre-filled
+  const isCurrentFieldPreFilled = isFieldPreFilled(
+    currentStep,
+    currentQuestion.label,
+    getCurrentValue(),
+    preFillData
+  )
+
+  // Get industry-specific examples if available
+  const getIndustryExamples = () => {
+    if (preFillData?.contextualExamples?.[currentStep]?.[currentQuestion.label]) {
+      return preFillData.contextualExamples[currentStep][currentQuestion.label]
+    }
+    return currentQuestion.examples
   }
 
   return (
@@ -248,10 +385,27 @@ export function BusinessContinuityForm() {
               <span className="text-xs text-red-600">{t('common.saveFailed')}</span>
             )}
           </div>
+
+          {/* Industry Information Display */}
+          {hasSelectedIndustry && preFillData && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center mb-2">
+                <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs font-medium text-blue-900">{t('industrySelector.smartPreFilled')}</span>
+              </div>
+              <div className="text-xs text-blue-800">
+                <div className="font-medium">{preFillData.industry.name}</div>
+                <div>{preFillData.location.parish}, {preFillData.location.country}</div>
+              </div>
+            </div>
+          )}
           
           <div className="space-y-3">
             {Object.entries(STEPS).map(([step, stepData]) => {
               const completion = getStepCompletion(step)
+              const hasPreFillDefaults = preFillData?.preFilledFields[step]
               return (
                 <div key={step} className="space-y-2">
                   <button
@@ -266,6 +420,11 @@ export function BusinessContinuityForm() {
                       <h3 className="font-medium text-sm">{stepData.title}</h3>
                       <div className="flex items-center space-x-2">
                         <span className="text-xs text-gray-500">{completion}%</span>
+                        {hasPreFillDefaults && (
+                          <svg className="w-3 h-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        )}
                         {completion === 100 && (
                           <svg className="h-4 w-4 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
                             <path d="M5 13l4 4L19 7" />
@@ -295,6 +454,11 @@ export function BusinessContinuityForm() {
                           }`}
                         >
                           <span className="flex-1 truncate">{input.label}</span>
+                          {isFieldPreFilled(step, input.label, formData[step]?.[input.label], preFillData) && (
+                            <svg className="w-3 h-3 text-blue-500 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          )}
                           {isQuestionAnswered(step, input.label) && (
                             <svg
                               className="h-3 w-3 text-green-500 ml-1"
@@ -310,6 +474,16 @@ export function BusinessContinuityForm() {
                           )}
                         </button>
                       ))}
+                      
+                      {/* Reset to Defaults Button */}
+                      {hasPreFillDefaults && currentStep === step && (
+                        <button
+                          onClick={() => resetToIndustryDefaults(step)}
+                          className="w-full mt-2 px-3 py-2 text-xs bg-blue-50 text-blue-700 rounded border border-blue-200 hover:bg-blue-100 transition-colors"
+                        >
+                          {t('industrySelector.resetToDefaults')}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -382,6 +556,17 @@ export function BusinessContinuityForm() {
 
           {/* Current Question */}
           <div className="bg-white rounded-lg shadow-sm border p-8">
+            {/* Pre-fill indicator */}
+            {isCurrentFieldPreFilled && (
+              <div className="mb-4 flex items-center text-sm text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">{t('industrySelector.smartPreFilled')}</span>
+                <span className="ml-2">{t('industrySelector.preFillIndicator')}</span>
+              </div>
+            )}
+
             <div className="mb-6">
               <h2 className="text-xl font-semibold mb-3 text-gray-900">
                 {currentQuestion.label}
@@ -391,11 +576,16 @@ export function BusinessContinuityForm() {
             </div>
 
             {/* Examples */}
-            {currentQuestion.examples && currentQuestion.examples.length > 0 && (
+            {getIndustryExamples() && getIndustryExamples()!.length > 0 && (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">{t('common.examples')}</h4>
+                <h4 className="text-sm font-medium text-blue-900 mb-2">
+                  {t('common.examples')}
+                  {preFillData?.contextualExamples?.[currentStep]?.[currentQuestion.label] && (
+                    <span className="ml-2 text-xs font-normal text-blue-700">({t('industrySelector.industrySpecific')})</span>
+                  )}
+                </h4>
                 <ul>
-                  {currentQuestion.examples.map((example, i) => (
+                  {getIndustryExamples()!.map((example, i) => (
                     <li key={i} className="text-sm text-blue-800 flex items-start mb-1 last:mb-0">
                       <span className="text-blue-400 mr-2">•</span>
                       <span>{example}</span>
@@ -411,7 +601,7 @@ export function BusinessContinuityForm() {
               label={currentQuestion.label}
               required={currentQuestion.required}
               prompt={currentQuestion.prompt}
-              examples={currentQuestion.examples}
+              examples={getIndustryExamples()}
               options={currentQuestion.options}
               tableColumns={currentQuestion.tableColumns}
               tableRowsPrompt={currentQuestion.tableRowsPrompt}

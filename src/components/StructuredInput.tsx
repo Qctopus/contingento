@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { RiskAssessmentMatrix } from './RiskAssessmentMatrix'
 import { useTranslations } from 'next-intl'
+import { useUserInteraction } from '@/lib/hooks'
 
 interface Option {
   label: string
@@ -30,6 +31,7 @@ interface StructuredInputProps {
   stepData?: any // Current step's data to access dependencies
   onComplete: (value: any) => void
   initialValue?: any
+  setUserInteracted?: () => void
 }
 
 export function StructuredInput({
@@ -49,28 +51,27 @@ export function StructuredInput({
   stepData,
   onComplete,
   initialValue,
+  setUserInteracted,
 }: StructuredInputProps) {
   const [value, setValue] = useState<string | string[] | TableRow[]>(
     type === 'checkbox' ? [] : type === 'table' ? [] : ''
   )
   const [tableRows, setTableRows] = useState<TableRow[]>([])
-  const didMount = useRef(false)
-  const hasUserInteracted = useRef(false)
   const t = useTranslations('common')
+  
+  // Use custom hook for user interaction tracking
+  const { hasUserInteracted, didMount, setUserInteracted: setInteracted, resetInteraction } = useUserInteraction()
 
   // Auto-save functionality: only call onComplete after user interaction
   useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true
-      return
-    }
+    if (!didMount) return
     
     // Special handling for risk matrix - always save its data
     if (type === 'special_risk_matrix') {
       return // Risk matrix handles its own saving
     }
     
-    if (hasUserInteracted.current) {
+    if (hasUserInteracted) {
       // For other types, only call onComplete after user interaction
       if (type === 'table') {
         onComplete(tableRows)
@@ -78,7 +79,7 @@ export function StructuredInput({
         onComplete(value)
       }
     }
-  }, [value, tableRows, type, onComplete])
+  }, [value, tableRows, type, onComplete, hasUserInteracted, didMount])
 
   // Initialize value and tableRows from initialValue when type or initialValue changes
   useEffect(() => {
@@ -87,7 +88,7 @@ export function StructuredInput({
       return
     }
     
-    if (!hasUserInteracted.current) {
+    if (!hasUserInteracted) {
       // For other types, only initialize if user hasn't interacted
       if (type === 'checkbox' || type === 'radio' || type === 'text') {
         if (initialValue !== undefined && initialValue !== null) {
@@ -99,30 +100,28 @@ export function StructuredInput({
         }
       }
     }
-  }, [type, initialValue])
+  }, [type, initialValue, hasUserInteracted])
 
-  // Reset hasUserInteracted when the question/section changes
+  // Reset interaction tracking when the question/section changes
   useEffect(() => {
-    hasUserInteracted.current = false
-  }, [label, type])
+    resetInteraction()
+  }, [label, type, resetInteraction])
 
   const handleChange = (newValue: string | string[]) => {
-    hasUserInteracted.current = true
+    setInteracted()
+    setUserInteracted?.()
     setValue(newValue)
   }
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    hasUserInteracted.current = true
     handleChange(e.target.value)
   }
 
   const handleRadioChange = (optionValue: string) => {
-    hasUserInteracted.current = true
     handleChange(optionValue)
   }
 
   const handleCheckboxChange = (optionValue: string) => {
-    hasUserInteracted.current = true
     const currentValue = value as string[]
     const newValue = currentValue.includes(optionValue)
       ? currentValue.filter(v => v !== optionValue)
@@ -132,7 +131,8 @@ export function StructuredInput({
 
   // Table handling functions
   const addTableRow = () => {
-    hasUserInteracted.current = true
+    setInteracted()
+    setUserInteracted?.()
     const newRow: TableRow = {}
     tableColumns.forEach(column => {
       newRow[column] = ''
@@ -141,7 +141,8 @@ export function StructuredInput({
   }
 
   const updateTableRow = (rowIndex: number, columnKey: string, cellValue: string) => {
-    hasUserInteracted.current = true
+    setInteracted()
+    setUserInteracted?.()
     const updatedRows = [...tableRows]
     updatedRows[rowIndex] = {
       ...updatedRows[rowIndex],
@@ -151,7 +152,8 @@ export function StructuredInput({
   }
 
   const deleteTableRow = (rowIndex: number) => {
-    hasUserInteracted.current = true
+    setInteracted()
+    setUserInteracted?.()
     const updatedRows = tableRows.filter((_, index) => index !== rowIndex)
     setTableRows(updatedRows)
   }
@@ -353,14 +355,34 @@ export function StructuredInput({
 
   // Enhanced checkbox rendering with categories
   const renderEnhancedCheckbox = () => {
-    if (label === 'Potential Hazards' && options) {
+    // Check if this is a Potential Hazards field in any language
+    const isPotentialHazards = [
+      'Potential Hazards',        // English
+      'Dangers Potentiels',       // French
+      'Peligros Potenciales'      // Spanish
+    ].includes(label)
+    
+    if (isPotentialHazards && options) {
       // Group hazards by category
       const HAZARD_CATEGORIES = {
-        'Natural Disasters': ['earthquake', 'hurricane', 'coastal_flood', 'flash_flood', 'landslide', 'tsunami', 'volcanic', 'drought'],
-        'Health & Safety': ['epidemic', 'pandemic', 'fire'],
-        'Infrastructure': ['power_outage', 'telecom_failure', 'cyber_attack'],
+        'Natural Disasters': [
+          'earthquake', 'hurricane', 'coastal_flood', 'flash_flood', 'landslide', 
+          'tsunami', 'volcanic', 'drought', 'storm_surge', 'coastal_erosion', 
+          'river_flooding', 'urban_flooding'
+        ],
+        'Health & Safety': ['epidemic', 'pandemic', 'fire', 'air_pollution'],
+        'Infrastructure': [
+          'power_outage', 'telecom_failure', 'cyber_attack', 'infrastructure_failure',
+          'traffic_disruption', 'urban_congestion', 'water_shortage', 'waste_management'
+        ],
         'Security & Crime': ['crime', 'civil_disorder', 'terrorism'],
-        'Business Operations': ['supply_disruption', 'staff_unavailable', 'economic_downturn'],
+        'Business Operations': [
+          'supply_disruption', 'staff_unavailable', 'economic_downturn', 
+          'tourism_disruption'
+        ],
+        'Industrial & Environmental': [
+          'industrial_accident', 'oil_spill', 'sargassum', 'crowd_management'
+        ]
       }
 
       return (
@@ -423,20 +445,64 @@ export function StructuredInput({
     )
   }
 
+  // Special handling for risk matrix type
+  const handleRiskMatrixComplete = (riskMatrix: any[]) => {
+    setInteracted()
+    onComplete(riskMatrix)
+  }
+
   // Get selected hazards from dependency
   const getSelectedHazards = (): string[] => {
     if (type === 'special_risk_matrix' && stepData) {
-      // Get the hazards from the 'Potential Hazards' input
-      const hazards = stepData['Potential Hazards']
-      return Array.isArray(hazards) ? hazards : []
+      // Try to get hazards using possible localized field names
+      const possibleFieldNames = [
+        'Potential Hazards',        // English
+        'Dangers Potentiels',       // French
+        'Peligros Potenciales'      // Spanish
+      ]
+      
+      for (const fieldName of possibleFieldNames) {
+        const hazards = stepData[fieldName]
+        if (Array.isArray(hazards)) {
+          return hazards
+        }
+      }
+      
+      // If no exact match found, try to find any array field (fallback)
+      for (const [key, value] of Object.entries(stepData)) {
+        if (Array.isArray(value) && value.length > 0) {
+          return value
+        }
+      }
     }
     return []
   }
 
-  // Special handling for risk matrix type
-  const handleRiskMatrixComplete = (riskMatrix: any[]) => {
-    hasUserInteracted.current = true
-    onComplete(riskMatrix)
+  if (type === 'special_risk_matrix') {
+    const selectedHazards = getSelectedHazards()
+    
+    if (selectedHazards.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <div className="text-gray-500 mb-4">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noHazardsSelected')}</h3>
+          <p className="text-gray-600">{t('selectHazardsPrompt')}</p>
+        </div>
+      )
+    }
+
+    return (
+      <RiskAssessmentMatrix
+        selectedHazards={selectedHazards}
+        onComplete={handleRiskMatrixComplete}
+        initialValue={initialValue}
+        setUserInteracted={() => { setInteracted() }}
+      />
+    )
   }
 
   return (
@@ -474,15 +540,6 @@ export function StructuredInput({
       )}
 
       {type === 'checkbox' && options && renderEnhancedCheckbox()}
-
-      {type === 'special_risk_matrix' && (
-        <RiskAssessmentMatrix 
-          selectedHazards={getSelectedHazards()} 
-          onComplete={handleRiskMatrixComplete}
-          initialValue={initialValue}
-          setUserInteracted={() => { hasUserInteracted.current = true }}
-        />
-      )}
 
       {type === 'table' && renderTable()}
 
