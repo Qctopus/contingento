@@ -40,6 +40,9 @@ next-env.d.ts
 *.db
 *.db-journal
 
+# Anonymous session storage
+/data/
+
 # IDE and Editor files
 .vscode/
 .idea/

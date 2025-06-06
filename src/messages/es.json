@@ -81,7 +81,9 @@
     "mediumRisk": "Medio",
     "highRisk": "Alto",
     "extremeRisk": "Extremo",
-    "riskText": "Riesgo"
+    "riskText": "Riesgo",
+    "incomplete": "Incompleto",
+    "assessments": "Evaluaciones"
   },
   "steps": {
     "planInformation": {
@@ -770,5 +772,41 @@
         "Miembros de la comunidad, turistas, clientes celebrando eventos especiales, clientes leales regulares"
       ]
     }
+  },
+  "sessionManager": {
+    "planStatus": "Estado del Plan",
+    "getStarted": "Comenzar",
+    "manage": "Gestionar",
+    "business": "Negocio",
+    "cloudSaved": "☁️ Guardado en la Nube",
+    "localOnly": "💾 Solo Local",
+    "shareable": "🔗 Compartible",
+    "noActivePlan": "No hay plan activo. Crea uno o carga uno existente.",
+    "managePlan": "Gestionar Tu Plan",
+    "saveToCloud": "Guardar en la Nube",
+    "loadPlan": "Cargar Plan",
+    "businessName": "Nombre del Negocio",
+    "businessNameRequired": "Nombre del Negocio *",
+    "enterBusinessName": "Ingresa el nombre de tu negocio",
+    "sixDigitPin": "PIN de 6 Dígitos",
+    "sixDigitPinRequired": "PIN de 6 Dígitos *",
+    "pinPlaceholder": "123456",
+    "pinHelp": "Usa este PIN para acceder a tu plan más tarde",
+    "emailOptional": "Email (Opcional)",
+    "emailPlaceholder": "tu@email.com",
+    "emailHelp": "Solo para recuperación",
+    "allowSharing": "Generar enlace compartible (para prestamistas/asesores)",
+    "saving": "Guardando...",
+    "loading": "Cargando...",
+    "startNewPlan": "Comenzar Nuevo Plan",
+    "planSavedSuccessfully": "¡Plan guardado exitosamente!",
+    "planLoadedSuccessfully": "¡Plan cargado exitosamente!",
+    "shareableLinkCreated": "Enlace Compartible Creado:",
+    "copy": "Copiar",
+    "privacySecurity": "Privacidad y Seguridad",
+    "privacyBullet1": "• Los planes se guardan anónimamente - no se requieren datos personales",
+    "privacyBullet2": "• Tu PIN es tu clave - manténlo seguro",
+    "privacyBullet3": "• Los datos están encriptados y expiran automáticamente después de 30 días de inactividad",
+    "privacyBullet4": "• Los enlaces compartibles permiten acceso de solo lectura para prestamistas/asesores"
   }
 } 

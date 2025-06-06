@@ -194,7 +194,7 @@ export function MobileOptimizedForm() {
   if (showIndustrySelector) {
     return (
       <IndustrySelector
-        onIndustrySelection={handleIndustrySelection}
+        onSelection={handleIndustrySelection}
         onSkip={handleSkipIndustrySelection}
       />
     )

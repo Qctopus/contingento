@@ -31,4 +31,31 @@ export interface UserInteractionState {
 }
 
 // Re-export existing types for convenience
-export type { LocationData, PreFillData } from '../data/types' 
+export type { LocationData, PreFillData } from '../data/types'
+
+// Anonymous User Management Types
+export interface AnonymousSession {
+  id: string;
+  businessName?: string;
+  pin?: string;
+  email?: string; // Optional for recovery
+  createdAt: Date;
+  lastAccessed: Date;
+  planData: any; // The actual BCP data
+  isCloudSaved: boolean;
+  shareableLink?: string;
+  qrCode?: string;
+}
+
+export interface SaveOptions {
+  saveToCloud: boolean;
+  businessName?: string;
+  pin?: string;
+  email?: string;
+  allowSharing: boolean;
+}
+
+export interface AccessAttempt {
+  businessName: string;
+  pin: string;
+} 

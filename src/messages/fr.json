@@ -77,7 +77,9 @@
       "mediumRisk": "Moyen",
       "highRisk": "Élevé",
       "extremeRisk": "Extrême",
-      "riskText": "Risque"
+      "riskText": "Risque",
+      "incomplete": "Incomplet",
+      "assessments": "Évaluations"
     },
     "steps": {
       "planInformation": {
@@ -883,5 +885,41 @@
           "Membres de la communauté, touristes, clients célébrant des événements spéciaux, clients fidèles réguliers"
         ]
       }
+    },
+    "sessionManager": {
+      "planStatus": "Statut du Plan",
+      "getStarted": "Commencer",
+      "manage": "Gérer",
+      "business": "Entreprise",
+      "cloudSaved": "☁️ Sauvé sur le Cloud",
+      "localOnly": "💾 Local Seulement",
+      "shareable": "🔗 Partageable",
+      "noActivePlan": "Aucun plan actif. Créez-en un ou chargez-en un existant.",
+      "managePlan": "Gérer Votre Plan",
+      "saveToCloud": "Sauvegarder sur le Cloud",
+      "loadPlan": "Charger le Plan",
+      "businessName": "Nom de l'Entreprise",
+      "businessNameRequired": "Nom de l'Entreprise *",
+      "enterBusinessName": "Entrez le nom de votre entreprise",
+      "sixDigitPin": "PIN à 6 Chiffres",
+      "sixDigitPinRequired": "PIN à 6 Chiffres *",
+      "pinPlaceholder": "123456",
+      "pinHelp": "Utilisez ce PIN pour accéder à votre plan plus tard",
+      "emailOptional": "Email (Optionnel)",
+      "emailPlaceholder": "votre@email.com",
+      "emailHelp": "Pour la récupération seulement",
+      "allowSharing": "Générer un lien partageable (pour prêteurs/conseillers)",
+      "saving": "Sauvegarde...",
+      "loading": "Chargement...",
+      "startNewPlan": "Commencer un Nouveau Plan",
+      "planSavedSuccessfully": "Plan sauvegardé avec succès!",
+      "planLoadedSuccessfully": "Plan chargé avec succès!",
+      "shareableLinkCreated": "Lien Partageable Créé:",
+      "copy": "Copier",
+      "privacySecurity": "Confidentialité et Sécurité",
+      "privacyBullet1": "• Les plans sont sauvés anonymement - aucune donnée personnelle requise",
+      "privacyBullet2": "• Votre PIN est votre clé - gardez-le en sécurité",
+      "privacyBullet3": "• Les données sont cryptées et expirent automatiquement après 30 jours d'inactivité",
+      "privacyBullet4": "• Les liens partageables permettent un accès en lecture seule pour les prêteurs/conseillers"
     }
   }

@@ -337,7 +337,9 @@
     "mediumRisk": "Medium",
     "highRisk": "High",
     "extremeRisk": "Extreme",
-    "riskText": "Risk"
+    "riskText": "Risk",
+    "incomplete": "Incomplete",
+    "assessments": "Assessments"
   },
   "steps": {
     "planInformation": {
@@ -1089,5 +1091,41 @@
         "Community members, tourists, clients celebrating special events, loyal repeat customers"
       ]
     }
+  },
+  "sessionManager": {
+    "planStatus": "Plan Status",
+    "getStarted": "Get Started",
+    "manage": "Manage",
+    "business": "Business",
+    "cloudSaved": "☁️ Cloud Saved",
+    "localOnly": "💾 Local Only",
+    "shareable": "🔗 Shareable",
+    "noActivePlan": "No active plan. Create one or load existing.",
+    "managePlan": "Manage Your Plan",
+    "saveToCloud": "Save to Cloud",
+    "loadPlan": "Load Plan",
+    "businessName": "Business Name",
+    "businessNameRequired": "Business Name *",
+    "enterBusinessName": "Enter your business name",
+    "sixDigitPin": "6-Digit PIN",
+    "sixDigitPinRequired": "6-Digit PIN *",
+    "pinPlaceholder": "123456",
+    "pinHelp": "Use this PIN to access your plan later",
+    "emailOptional": "Email (Optional)",
+    "emailPlaceholder": "your@email.com",
+    "emailHelp": "For recovery purposes only",
+    "allowSharing": "Generate shareable link (for lenders/advisors)",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "startNewPlan": "Start New Plan",
+    "planSavedSuccessfully": "Plan saved successfully!",
+    "planLoadedSuccessfully": "Plan loaded successfully!",
+    "shareableLinkCreated": "Shareable Link Created:",
+    "copy": "Copy",
+    "privacySecurity": "Privacy & Security",
+    "privacyBullet1": "• Plans are saved anonymously - no personal data required",
+    "privacyBullet2": "• Your PIN is your key - keep it safe",
+    "privacyBullet3": "• Data is encrypted and automatically expires after 30 days of inactivity",
+    "privacyBullet4": "• Shareable links allow read-only access for lenders/advisors"
   }
 } 

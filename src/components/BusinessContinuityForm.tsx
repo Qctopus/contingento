@@ -7,6 +7,7 @@ import { StructuredInput } from './StructuredInput'
 import IndustrySelector from './IndustrySelector'
 import { LocationData, PreFillData } from '../data/types'
 import { generatePreFillData, mergePreFillData, isFieldPreFilled } from '../services/preFillService'
+import { anonymousSessionService } from '@/services/anonymousSessionService'
 
 // Development logging utility
 const devLog = (message: string, data?: any) => {
@@ -129,14 +130,19 @@ export function BusinessContinuityForm() {
     }
   }, [])
 
-  // Auto-save functionality
+  // Auto-save functionality with session integration
   useEffect(() => {
     const autoSave = async () => {
       if (Object.keys(formData).length === 0) return
       
       setAutoSaveStatus('saving')
       try {
+        // Save to localStorage (existing functionality)
         localStorage.setItem('bcp-draft', JSON.stringify(formData))
+        
+        // Also save to anonymous session
+        anonymousSessionService.savePlanData(formData)
+        
         setAutoSaveStatus('saved')
         
         setTimeout(() => {

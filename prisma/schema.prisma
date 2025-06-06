@@ -130,4 +130,22 @@ model TestingMaintenance {
   improvementTracking     String // JSON array of improvement tracking
   annualReviewProcess     String // Text field for annual review process
   triggerEventsForUpdates String // Text field for trigger events
+}
+
+model AnonymousSession {
+  id                   String   @id @default(cuid())
+  sessionId            String   @unique
+  businessName         String   // Lowercase for searching
+  displayBusinessName  String   // Original casing for display
+  pin                  String   // 6-digit PIN
+  email                String?  // Optional email for recovery
+  planData             String   // JSON string of the BCP data
+  shareableId          String?  // Unique ID for shareable links
+  allowSharing         Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  lastAccessed         DateTime @default(now())
+  
+  @@unique([businessName, pin])
+  @@index([businessName])
+  @@index([shareableId])
 } 
