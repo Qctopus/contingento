@@ -773,6 +773,28 @@
       ]
     }
   },
+  "welcome": {
+    "title": "Generador de Plan de Continuidad del Negocio",
+    "subtitle": "Powered by CARICHAM Methodology",
+    "whatIsThis": "¿Qué es esta herramienta?",
+    "description": "Esta herramienta interactiva ayuda a pequeñas y medianas empresas a crear planes integrales de preparación para emergencias. Utilizando la metodología CARICHAM probada, le guía a través de la identificación de riesgos, planificación de respuestas y construcción de resistencia para su negocio.",
+    "howItWorks": "Cómo funciona:",
+    "step1": "Cuéntenos sobre su tipo de negocio y ubicación para recomendaciones personalizadas",
+    "step2": "Responda preguntas guiadas con ejemplos y sugerencias específicas de la industria",
+    "step3": "Descargue su plan completo y profesional de continuidad del negocio como PDF",
+    "whatYouNeed": "Lo que necesitará:",
+    "timeRequired": "30-45 minutos de su tiempo",
+    "businessInfo": "Información básica sobre las operaciones de su negocio",
+    "saveProgress": "Puede guardar el progreso y regresar en cualquier momento",
+    "youWillGet": "Lo que recibirá:",
+    "comprehensivePlan": "Un plan completo y profesional de continuidad del negocio",
+    "industrySpecific": "Recomendaciones adaptadas para su tipo de negocio",
+    "pdfDownload": "PDF descargable listo para bancos, aseguradoras y partes interesadas",
+    "dataSecure": "Sus datos están seguros y son privados",
+    "privacyNote": "Toda la información se almacena localmente y está encriptada. No se requieren datos personales.",
+    "getStarted": "Comenzar con Selección de Industria",
+    "skipIntro": "Omitir Introducción y Comenzar Planificación"
+  },
   "sessionManager": {
     "planStatus": "Estado del Plan",
     "getStarted": "Comenzar",

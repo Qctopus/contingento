@@ -886,6 +886,28 @@
         ]
       }
     },
+    "welcome": {
+      "title": "Générateur de Plan de Continuité d'Activité",
+      "subtitle": "Powered by CARICHAM Methodology",
+      "whatIsThis": "Qu'est-ce que cet outil ?",
+      "description": "Cet outil interactif aide les petites et moyennes entreprises à créer des plans complets de préparation aux urgences. En utilisant la méthodologie CARICHAM éprouvée, il vous guide à travers l'identification des risques, la planification des réponses et la construction de la résilience pour votre entreprise.",
+      "howItWorks": "Comment ça marche :",
+      "step1": "Parlez-nous de votre type d'entreprise et de votre emplacement pour des recommandations personnalisées",
+      "step2": "Répondez aux questions guidées avec des exemples et suggestions spécifiques à l'industrie",
+      "step3": "Téléchargez votre plan complet et professionnel de continuité d'activité en PDF",
+      "whatYouNeed": "Ce dont vous aurez besoin :",
+      "timeRequired": "30-45 minutes de votre temps",
+      "businessInfo": "Informations de base sur les opérations de votre entreprise",
+      "saveProgress": "Vous pouvez sauvegarder vos progrès et revenir à tout moment",
+      "youWillGet": "Ce que vous recevrez :",
+      "comprehensivePlan": "Un plan complet et professionnel de continuité d'activité",
+      "industrySpecific": "Recommandations adaptées à votre type d'entreprise",
+      "pdfDownload": "PDF téléchargeable prêt pour les banques, assureurs et parties prenantes",
+      "dataSecure": "Vos données sont sécurisées et privées",
+      "privacyNote": "Toutes les informations sont stockées localement et chiffrées. Aucune donnée personnelle n'est requise.",
+      "getStarted": "Commencer avec la Sélection d'Industrie",
+      "skipIntro": "Ignorer l'Introduction et Commencer la Planification"
+    },
     "sessionManager": {
       "planStatus": "Statut du Plan",
       "getStarted": "Commencer",

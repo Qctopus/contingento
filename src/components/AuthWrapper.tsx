@@ -2,6 +2,8 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { LoginForm } from './LoginForm'
+import { WelcomeScreen } from './WelcomeScreen'
+import { useState, useEffect } from 'react'
 
 interface AuthWrapperProps {
   children: React.ReactNode
@@ -9,6 +11,34 @@ interface AuthWrapperProps {
 
 export function AuthWrapper({ children }: AuthWrapperProps) {
   const { isAuthenticated, isLoading, login } = useAuth()
+  const [showWelcome, setShowWelcome] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated && typeof window !== 'undefined') {
+      // Check if user has seen welcome screen before
+      const hasSeenWelcome = localStorage.getItem('bcp-welcome-seen')
+      const hasExistingData = localStorage.getItem('bcp-industry-selected')
+      
+      // Show welcome screen if they haven't seen it and don't have existing data
+      if (!hasSeenWelcome && !hasExistingData) {
+        setShowWelcome(true)
+      }
+    }
+  }, [isAuthenticated])
+
+  const handleGetStarted = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bcp-welcome-seen', 'true')
+    }
+    setShowWelcome(false)
+  }
+
+  const handleSkipWelcome = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bcp-welcome-seen', 'true')
+    }
+    setShowWelcome(false)
+  }
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -28,6 +58,11 @@ export function AuthWrapper({ children }: AuthWrapperProps) {
   // Show login form if not authenticated
   if (!isAuthenticated) {
     return <LoginForm onLogin={login} />
+  }
+
+  // Show welcome screen for new users, otherwise show main app
+  if (showWelcome) {
+    return <WelcomeScreen onGetStarted={handleGetStarted} onSkipWelcome={handleSkipWelcome} />
   }
 
   // Show the main app if authenticated
