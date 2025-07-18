@@ -13,7 +13,7 @@ export interface IndustryProfile {
   id: string
   name: string
   localName: string
-  category: 'retail' | 'hospitality' | 'services' | 'agriculture' | 'manufacturing' | 'tourism' | 'other'
+  category: 'retail' | 'hospitality' | 'services' | 'agriculture' | 'manufacturing' | 'tourism' | 'industrial' | 'other'
   commonHazards: string[]
   essentialFunctions: {
     core: string[]
@@ -76,4 +76,13 @@ export interface PreFillData {
     response: string[]
     recovery: string[]
   }
-} 
+}
+
+// New type definitions for enhanced BCP features
+export type PriorityLevel = 'critical' | 'high' | 'medium' | 'low'
+
+export type ImprovementStatus = 'not_started' | 'planning' | 'in_progress' | 'on_hold' | 'completed' | 'cancelled'
+
+export type ReasonForUpdate = 'annual_review' | 'post_incident' | 'business_change' | 'regulatory_change' | 'staff_feedback' | 'risk_update' | 'technology_upgrade' | 'other'
+
+export type JamaicaParish = 'Kingston' | 'St. Andrew' | 'St. Catherine' | 'Clarendon' | 'Manchester' | 'St. Elizabeth' | 'Westmoreland' | 'Hanover' | 'St. James' | 'Trelawny' | 'St. Ann' | 'St. Mary' | 'Portland' | 'St. Thomas' 

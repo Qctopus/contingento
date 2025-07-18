@@ -7,6 +7,17 @@
     "saving": "Guardando...",
     "saved": "Guardado",
     "saveFailed": "Error al guardar",
+    "retrying": "Reintentando",
+    "saveNow": "Guardar Ahora",
+    "retry": "Reintentar",
+    "lastSaved": "Guardado por última vez",
+    "unsavedChanges": "Cambios sin guardar",
+    "allSaved": "Todo guardado",
+    "autoSaveTip": "Los cambios se guardan automáticamente cada 2 segundos",
+    "loadFailed": "Error al cargar datos guardados",
+    "industryProfile": "Perfil de Industria",
+    "industry": "Industria",
+    "location": "Ubicación",
     "loading": "Cargando...",
     "error": "Error",
     "success": "Éxito",
@@ -42,6 +53,13 @@
     "riskOverview": "Resumen de evaluación de riesgos",
     "assessmentProgress": "Progreso de evaluación",
     "completed": "completado",
+    "hazardSelection": "Selección de Riesgos",
+    "riskAssessment": "Evaluación de Riesgos",
+    "showAdvanced": "Mostrar Herramientas Avanzadas",
+    "hideAdvanced": "Ocultar Herramientas Avanzadas",
+    "advancedRiskMatrix": "Matriz de Riesgo Avanzada",
+    "advancedMatrixDescription": "Vista tradicional de matriz de riesgo para análisis detallado",
+    "of": "de",
     "riskMatrix": "Matriz de riesgo CARICHAM",
     "severity": "GRAVEDAD",
     "likelihood": "PROBABILIDAD",
@@ -109,21 +127,35 @@
           ]
         },
         "alternateManager": {
-          "label": "Gerente Alterno",
-          "prompt": "¿Quién es la persona alterna responsable si el gerente principal no está disponible?",
+          "label": "Gerente Alterno (Opcional)",
+          "prompt": "¿Quién es la persona alterna responsable si el gerente principal no está disponible? Este campo es opcional - si no tiene un gerente alterno, puede dejarlo en blanco o escribir \"N/A\". Considere designar a un empleado de confianza, familiar o socio comercial que pueda tomar decisiones básicas durante emergencias.",
           "examples": [
             "Sara Johnson, Subgerente",
             "Miguel Brown, Supervisor",
-            "Lisa Williams, Personal Senior"
+            "Lisa Williams, Personal Senior",
+            "N/A - Solo dependerá del gerente principal",
+            "Designaré cuando el negocio crezca",
+            "Contacto de emergencia: Asociación empresarial local"
           ]
         },
-        "planLocation": {
-          "label": "Ubicación del Plan",
-          "prompt": "¿Dónde se almacenarán las copias de este plan de continuidad del negocio? Incluya ubicaciones físicas y digitales.",
+        "physicalPlanLocation": {
+          "label": "Ubicación Física del Plan",
+          "prompt": "¿Dónde se almacenarán las copias físicas de este plan de continuidad del negocio? Elija ubicaciones seguras y accesibles a las que varias personas puedan acceder.",
           "examples": [
-            "Gabinete a prueba de fuego en la oficina; Versión electrónica en el servidor de la empresa",
-            "Caja fuerte en la oficina del gerente; Almacenamiento en la nube con respaldo en disco externo",
-            "Cajón cerrado en recepción; Carpeta compartida en Google Drive"
+            "Gabinete a prueba de fuego en la oficina del gerente",
+            "Caja fuerte en el área de recepción",
+            "Archivador con llave en la oficina de administración",
+            "Caja de seguridad en el banco local"
+          ]
+        },
+        "digitalPlanLocation": {
+          "label": "Ubicación Digital del Plan",
+          "prompt": "¿Dónde se almacenarán las copias digitales? Esto es opcional - si no tiene internet confiable o almacenamiento digital, puede omitir este campo.",
+          "examples": [
+            "Servidor de la empresa con respaldos diarios",
+            "Google Drive compartido con el equipo de gestión",
+            "Almacenamiento en la nube con respaldo en disco externo",
+            "Copias por correo electrónico enviadas al personal clave"
           ]
         }
       }
@@ -286,7 +318,12 @@
         "tourism_disruption": "Interrupción del turismo",
         "oil_spill": "Derrame de petróleo",
         "sargassum": "Impacto de las algas sargazos",
-        "waste_management": "Problemas de gestión de residuos"
+        "waste_management": "Problemas de gestión de residuos",
+        "chemical_spill": "Derrame químico",
+        "environmental_contamination": "Contaminación ambiental",
+        "waste_management_failure": "Falla en gestión de residuos",
+        "water_contamination": "Contaminación del agua",
+        "crowd_management": "Problemas de gestión de multitudes"
       },
       "inputs": {
         "potentialHazards": {
@@ -664,6 +701,7 @@
     "tourismRecreation": "Turismo y Recreación",
     "agricultureFishing": "Agricultura y Pesca",
     "manufacturingProduction": "Manufactura y Producción",
+    "industrialEnvironmental": "Industrial y Ambiental",
     "smartPreFilled": "Pre-llenado Inteligente",
     "industrySpecific": "Específico de la industria",
     "resetToDefaults": "Restablecer a Valores Predeterminados de la Industria",
@@ -703,6 +741,18 @@
         "Familias del vecindario, jóvenes profesionales, turistas hospedándose en [AREA]",
         "Miembros de la comunidad, restaurantes locales, familiares visitantes de residentes"
       ]
+    },
+    "chemical_processing": {
+      "name": "Planta de Procesamiento Químico",
+      "localName": "Instalación Química/Petroquímica"
+    },
+    "waste_management": {
+      "name": "Instalación de Gestión de Residuos",
+      "localName": "Centro de Tratamiento/Reciclaje de Residuos"
+    },
+    "water_treatment": {
+      "name": "Planta de Tratamiento de Agua",
+      "localName": "Instalación de Tratamiento de Agua/Aguas Residuales"
     },
     "restaurant": {
       "name": "Restaurante",

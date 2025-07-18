@@ -84,6 +84,11 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
       category: 'manufacturing',
       title: t('manufacturingProduction'),
       industries: industryProfiles.filter(p => p.category === 'manufacturing')
+    },
+    {
+      category: 'industrial',
+      title: t('industrialEnvironmental'),
+      industries: industryProfiles.filter(p => p.category === 'industrial')
     }
   ].filter(cat => cat.industries.length > 0)
 

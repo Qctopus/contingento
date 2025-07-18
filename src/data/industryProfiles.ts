@@ -223,6 +223,228 @@ export const industryProfiles: IndustryProfile[] = [
         'Community members, tourists, clients celebrating special events, loyal repeat customers'
       ]
     }
+  },
+  {
+    id: 'chemical_processing',
+    name: 'Chemical Processing Plant',
+    localName: 'Chemical/Petrochemical Facility',
+    category: 'industrial',
+    commonHazards: ['chemical_spill', 'industrial_accident', 'fire', 'environmental_contamination', 'power_outage', 'hurricane', 'air_pollution'],
+    essentialFunctions: {
+      core: [
+        'Chemical processing and production',
+        'Safety monitoring and emergency response',
+        'Quality control and testing',
+        'Environmental monitoring'
+      ],
+      support: [
+        'Equipment maintenance and repair',
+        'Raw material handling and storage',
+        'Waste treatment and disposal',
+        'Security and access control'
+      ],
+      administrative: [
+        'Regulatory compliance and reporting',
+        'Environmental impact assessments',
+        'Safety training and certification',
+        'Supply chain management'
+      ]
+    },
+    criticalSuppliers: [
+      'Raw chemical suppliers',
+      'Safety equipment providers',
+      'Environmental monitoring services',
+      'Waste disposal companies',
+      'Emergency response contractors',
+      'Specialized maintenance services'
+    ],
+    minimumResources: {
+      staff: '10-15 staff members (operators, safety officer, supervisor)',
+      equipment: ['Safety monitoring systems', 'Emergency shutdown systems', 'Personal protective equipment', 'Backup power systems'],
+      utilities: ['Reliable electricity', 'Industrial water supply', 'Waste treatment systems', 'Emergency communication'],
+      space: 'Processing facility, storage areas, safety zones, administrative offices'
+    },
+    typicalOperatingHours: '24/7 continuous operation with shift rotations',
+    examples: {
+      businessPurpose: [
+        'To manufacture industrial chemicals safely while protecting the environment and community',
+        'To process petrochemical products for regional distribution with zero environmental incidents',
+        'To provide essential chemical products for Caribbean industries while maintaining strict safety standards'
+      ],
+      productsServices: [
+        'Industrial chemicals, cleaning agents, and specialty compounds for local industries',
+        'Petrochemical products, fuel additives, and polymer materials for regional markets',
+        'Chemical processing services, custom formulations, and technical consulting'
+      ],
+      uniqueSellingPoints: [
+        'Advanced safety systems and environmental protection with 24/7 monitoring',
+        'Regional expertise in Caribbean climate conditions and regulatory requirements',
+        'ISO certified processes with commitment to community safety and environmental stewardship'
+      ],
+      keyPersonnel: [
+        'Plant Manager, Safety Officer, Lead Operator, Environmental Coordinator',
+        'Operations Supervisor, Quality Control Manager, Maintenance Lead, Emergency Response Team',
+        'Production Manager, Environmental Engineer, Safety Coordinator, Technical Specialists'
+      ],
+      minimumResourcesExamples: [
+        'Core team of 12, basic safety systems, manual monitoring, emergency protocols',
+        'Full operational team of 18, automated safety systems, environmental monitoring, backup power',
+        'Complete staff of 25, advanced control systems, continuous monitoring, redundant safety systems'
+      ],
+      customerBase: [
+        'Local manufacturing companies, agricultural suppliers, cleaning service providers',
+        'Regional industries, shipping companies, construction firms, government facilities',
+        'International distributors, specialty manufacturers, research institutions, industrial contractors'
+      ]
+    }
+  },
+  {
+    id: 'waste_management',
+    name: 'Waste Management Facility',
+    localName: 'Waste Treatment/Recycling Center',
+    category: 'industrial',
+    commonHazards: ['waste_management_failure', 'environmental_contamination', 'fire', 'water_contamination', 'air_pollution', 'industrial_accident'],
+    essentialFunctions: {
+      core: [
+        'Waste collection and sorting',
+        'Recycling and processing operations',
+        'Environmental monitoring and compliance',
+        'Safe disposal of hazardous materials'
+      ],
+      support: [
+        'Fleet maintenance and logistics',
+        'Equipment operation and maintenance',
+        'Site security and access control',
+        'Community relations and education'
+      ],
+      administrative: [
+        'Regulatory compliance and permits',
+        'Environmental reporting',
+        'Staff safety training',
+        'Contract management'
+      ]
+    },
+    criticalSuppliers: [
+      'Heavy equipment suppliers',
+      'Safety equipment providers',
+      'Environmental testing services',
+      'Transportation contractors',
+      'Hazardous waste disposal specialists',
+      'Recycling market buyers'
+    ],
+    minimumResources: {
+      staff: '8-12 staff members (operators, drivers, supervisor, safety coordinator)',
+      equipment: ['Collection vehicles', 'Sorting equipment', 'Safety monitoring systems', 'Personal protective equipment'],
+      utilities: ['Reliable electricity', 'Water for operations', 'Communication systems', 'Emergency equipment'],
+      space: 'Processing facility, storage areas, vehicle depot, administrative building'
+    },
+    typicalOperatingHours: 'Monday-Saturday 6:00 AM - 6:00 PM, Emergency response 24/7',
+    examples: {
+      businessPurpose: [
+        'To provide comprehensive waste management services while protecting public health and environment',
+        'To promote recycling and sustainable waste practices in [AREA] communities',
+        'To safely manage industrial and municipal waste with focus on environmental protection'
+      ],
+      productsServices: [
+        'Municipal waste collection, recycling services, and hazardous waste disposal',
+        'Commercial waste management, construction debris removal, and electronic waste recycling',
+        'Industrial waste treatment, environmental remediation services, and sustainability consulting'
+      ],
+      uniqueSellingPoints: [
+        'Licensed facility with advanced environmental controls and community commitment',
+        'Comprehensive recycling programs reducing landfill waste by 60%',
+        'Emergency response capability with specialized equipment for hazardous material incidents'
+      ],
+      keyPersonnel: [
+        'Facility Manager, Environmental Officer, Operations Supervisor, Safety Coordinator',
+        'Plant Supervisor, Fleet Manager, Quality Control Inspector, Community Liaison',
+        'General Manager, Environmental Engineer, Maintenance Lead, Emergency Response Team'
+      ],
+      minimumResourcesExamples: [
+        'Basic team of 8, manual sorting, 2 collection vehicles, standard safety equipment',
+        'Operational team of 12, semi-automated sorting, 4 vehicles, environmental monitoring',
+        'Full team of 18, automated systems, 6+ vehicles, advanced monitoring and safety systems'
+      ],
+      customerBase: [
+        'Municipal governments, local businesses, residential communities, schools',
+        'Commercial properties, construction companies, manufacturing facilities, hotels',
+        'Industrial clients, government facilities, healthcare institutions, large corporations'
+      ]
+    }
+  },
+  {
+    id: 'water_treatment',
+    name: 'Water Treatment Plant',
+    localName: 'Water/Wastewater Treatment Facility',
+    category: 'industrial',
+    commonHazards: ['water_contamination', 'chemical_spill', 'power_outage', 'equipment_failure', 'environmental_contamination', 'hurricane'],
+    essentialFunctions: {
+      core: [
+        'Water purification and treatment',
+        'Quality monitoring and testing',
+        'Distribution system management',
+        'Emergency water supply provision'
+      ],
+      support: [
+        'Equipment maintenance and calibration',
+        'Chemical storage and handling',
+        'Pump station operations',
+        'System monitoring and control'
+      ],
+      administrative: [
+        'Regulatory compliance and reporting',
+        'Water quality documentation',
+        'Staff certification management',
+        'Emergency response coordination'
+      ]
+    },
+    criticalSuppliers: [
+      'Water treatment chemical suppliers',
+      'Laboratory testing services',
+      'Equipment maintenance contractors',
+      'Emergency generator services',
+      'Specialized repair services',
+      'Water quality monitoring equipment'
+    ],
+    minimumResources: {
+      staff: '6-10 certified operators (water treatment operators, lab technician, supervisor)',
+      equipment: ['Treatment systems', 'Testing equipment', 'Emergency generators', 'Monitoring systems'],
+      utilities: ['Reliable electricity', 'Raw water source', 'Chemical storage', 'Communication systems'],
+      space: 'Treatment facility, laboratory, chemical storage, control room'
+    },
+    typicalOperatingHours: '24/7 continuous operation with operator coverage',
+    examples: {
+      businessPurpose: [
+        'To provide safe, clean drinking water to [AREA] communities meeting all health standards',
+        'To treat wastewater protecting public health and environmental quality in [REGION]',
+        'To ensure reliable water supply during emergencies and maintain community health standards'
+      ],
+      productsServices: [
+        'Potable water treatment, distribution system management, and water quality monitoring',
+        'Wastewater treatment, environmental compliance, and effluent quality management',
+        'Emergency water services, system maintenance, and community health protection'
+      ],
+      uniqueSellingPoints: [
+        'State-of-the-art treatment technology exceeding Caribbean health standards',
+        'Certified operators with emergency response capability and backup systems',
+        'Community-focused service with transparent water quality reporting and education'
+      ],
+      keyPersonnel: [
+        'Plant Supervisor, Senior Operator, Lab Technician, Maintenance Specialist',
+        'Operations Manager, Certified Operators (2-3), Quality Control Coordinator',
+        'Plant Manager, Senior Staff (4-5), Environmental Specialist, Emergency Coordinator'
+      ],
+      minimumResourcesExamples: [
+        'Core team of 6, basic treatment systems, manual monitoring, standard backup power',
+        'Operational team of 8, automated systems, continuous monitoring, enhanced backup systems',
+        'Full team of 12, advanced treatment technology, redundant systems, comprehensive emergency plans'
+      ],
+      customerBase: [
+        'Municipal water systems, residential communities, local businesses, government facilities',
+        'Regional water authorities, industrial clients, healthcare facilities, educational institutions',
+        'Multi-community systems, large industrial users, emergency services, tourism facilities'
+      ]
+    }
   }
 ]
 

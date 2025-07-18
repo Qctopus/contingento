@@ -27,7 +27,13 @@ export const locationHazards: LocationHazards[] = [
       createHazard('power_outage', 'Power Outage', 'high', 'likely', 'minor'),
       createHazard('economic_downturn', 'Economic Downturn', 'medium', 'possible', 'moderate'),
       createHazard('supply_disruption', 'Supply Chain Disruption', 'medium', 'possible', 'moderate'),
-      createHazard('crime', 'Crime/Security Issues', 'medium', 'possible', 'minor')
+      createHazard('crime', 'Crime/Security Issues', 'medium', 'possible', 'minor'),
+      createHazard('industrial_accident', 'Industrial Accident', 'medium', 'possible', 'major'),
+      createHazard('chemical_spill', 'Chemical Spill', 'low', 'unlikely', 'major'),
+      createHazard('environmental_contamination', 'Environmental Contamination', 'medium', 'possible', 'moderate'),
+      createHazard('waste_management_failure', 'Waste Management Failure', 'medium', 'possible', 'minor'),
+      createHazard('air_pollution', 'Air Pollution Event', 'medium', 'possible', 'moderate'),
+      createHazard('water_contamination', 'Water Contamination', 'medium', 'possible', 'major')
     ],
     parishSpecific: {
       'Kingston': [
@@ -45,6 +51,47 @@ export const locationHazards: LocationHazards[] = [
       'St. Thomas': [
         createHazard('landslide', 'Landslide', 'medium', 'possible', 'major'),
         createHazard('river_flooding', 'River Flooding', 'medium', 'possible', 'moderate')
+      ],
+      'St. Catherine': [
+        createHazard('urban_flooding', 'Urban Flooding', 'medium', 'possible', 'moderate'),
+        createHazard('industrial_accident', 'Industrial Accident', 'medium', 'possible', 'moderate')
+      ],
+      'Clarendon': [
+        createHazard('drought', 'Drought', 'high', 'likely', 'moderate'),
+        createHazard('flash_flood', 'Flash Flooding', 'medium', 'possible', 'moderate')
+      ],
+      'Manchester': [
+        createHazard('landslide', 'Landslide', 'medium', 'possible', 'major'),
+        createHazard('drought', 'Drought', 'medium', 'possible', 'moderate')
+      ],
+      'St. Elizabeth': [
+        createHazard('drought', 'Drought', 'high', 'likely', 'moderate'),
+        createHazard('flash_flood', 'Flash Flooding', 'low', 'unlikely', 'minor')
+      ],
+      'Westmoreland': [
+        createHazard('coastal_flooding', 'Coastal Flooding', 'high', 'likely', 'moderate'),
+        createHazard('hurricane', 'Hurricane/Tropical Storm', 'high', 'likely', 'major')
+      ],
+      'Hanover': [
+        createHazard('coastal_flooding', 'Coastal Flooding', 'medium', 'possible', 'moderate'),
+        createHazard('tourism_disruption', 'Tourism Disruption', 'medium', 'possible', 'moderate')
+      ],
+      'St. James': [
+        createHazard('coastal_flooding', 'Coastal Flooding', 'high', 'likely', 'moderate'),
+        createHazard('tourism_disruption', 'Tourism Disruption', 'high', 'likely', 'moderate'),
+        createHazard('urban_flooding', 'Urban Flooding', 'medium', 'possible', 'moderate')
+      ],
+      'Trelawny': [
+        createHazard('coastal_erosion', 'Coastal Erosion', 'medium', 'possible', 'moderate'),
+        createHazard('tourism_disruption', 'Tourism Disruption', 'medium', 'possible', 'moderate')
+      ],
+      'St. Ann': [
+        createHazard('tourism_disruption', 'Tourism Disruption', 'high', 'likely', 'moderate'),
+        createHazard('flash_flood', 'Flash Flooding', 'medium', 'possible', 'moderate')
+      ],
+      'St. Mary': [
+        createHazard('flash_flood', 'Flash Flooding', 'high', 'likely', 'moderate'),
+        createHazard('landslide', 'Landslide', 'medium', 'possible', 'major')
       ]
     },
     coastalModifiers: [

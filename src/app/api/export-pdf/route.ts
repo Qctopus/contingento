@@ -1,5 +1,15 @@
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
+
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF
+    lastAutoTable: {
+      finalY: number
+    }
+  }
+}
 
 export async function POST(req: Request) {
   try {
@@ -24,13 +34,14 @@ export async function POST(req: Request) {
     const pageHeight = doc.internal.pageSize.getHeight()
     const maxWidth = pageWidth - (margin * 2)
     const maxContentHeight = pageHeight - 40 // Leave space for header/footer
+    
     const companyName = planData.PLAN_INFORMATION?.['Company Name'] || 
                        planData.PLAN_INFORMATION?.['companyName'] ||
                        planData.PLAN_INFORMATION?.['Nom de l\'Entreprise'] ||
                        planData.PLAN_INFORMATION?.['Nombre de la Empresa'] ||
                        'Your Company'
 
-    // Color scheme
+    // Enhanced color scheme
     const colors = {
       primary: [0, 102, 153] as [number, number, number], // Dark blue
       secondary: [51, 153, 204] as [number, number, number], // Light blue
@@ -38,7 +49,10 @@ export async function POST(req: Request) {
       text: [51, 51, 51] as [number, number, number], // Dark gray
       lightGray: [242, 242, 242] as [number, number, number],
       mediumGray: [200, 200, 200] as [number, number, number],
-      darkGray: [128, 128, 128] as [number, number, number]
+      darkGray: [128, 128, 128] as [number, number, number],
+      white: [255, 255, 255] as [number, number, number],
+      tableHeader: [240, 248, 255] as [number, number, number], // Alice blue
+      tableStripe: [248, 249, 250] as [number, number, number] // Light gray
     }
 
     // Helper function to check if we need a new page
@@ -48,7 +62,9 @@ export async function POST(req: Request) {
         doc.addPage()
         addPageHeader()
         y = 50 // Account for header space
+        return true
       }
+      return false
     }
 
     // Helper function to add page header
@@ -57,11 +73,14 @@ export async function POST(req: Request) {
         doc.setFillColor(...colors.primary)
         doc.rect(0, 0, pageWidth, 15, 'F')
         
-        doc.setTextColor(255, 255, 255)
+        doc.setTextColor(...colors.white)
         doc.setFontSize(10)
         doc.setFont('helvetica', 'bold')
         doc.text('Business Continuity Plan', margin, 10)
-        doc.text(companyName, pageWidth - margin - doc.getStringUnitWidth(companyName) * 10 / doc.internal.scaleFactor, 10)
+        
+        const headerText = companyName.length > 40 ? companyName.substring(0, 37) + '...' : companyName
+        const headerWidth = doc.getStringUnitWidth(headerText) * 10 / doc.internal.scaleFactor
+        doc.text(headerText, pageWidth - margin - headerWidth, 10)
         
         // Reset text color
         doc.setTextColor(...colors.text)
@@ -83,27 +102,40 @@ export async function POST(req: Request) {
       doc.setTextColor(...colors.text)
     }
 
-    // Helper function to add text with wrapping and automatic page breaks
-    const addText = (text: string, x: number, fontSize: number, isBold = false, isTitle = false, textColor: [number, number, number] = colors.text) => {
-      checkPageBreak(fontSize * 2)
+    // Enhanced text wrapping function
+    const wrapText = (text: string, maxWidth: number, fontSize: number = 10): string[] => {
+      if (!text) return ['']
       
       doc.setFontSize(fontSize)
-      doc.setFont('helvetica', isBold ? 'bold' : 'normal')
-      doc.setTextColor(...textColor)
+      const lines = doc.splitTextToSize(text.toString(), maxWidth)
+      return Array.isArray(lines) ? lines : [lines]
+    }
+
+    // Helper function to add text with automatic wrapping and page breaks
+    const addText = (text: string, x: number, fontSize: number, isBold = false, isTitle = false, textColor: [number, number, number] = colors.text) => {
+      if (!text) return y
       
-      if (isTitle) {
-        // Center titles
-        const textWidth = doc.getStringUnitWidth(text) * fontSize / doc.internal.scaleFactor
-        x = (pageWidth - textWidth) / 2
+      const lineHeight = fontSize * 0.4
+      const lines = wrapText(text, maxWidth - (x - margin), fontSize)
+      
+      for (let i = 0; i < lines.length; i++) {
+        if (checkPageBreak(lineHeight + 5)) {
+          // Page was broken, continue from new page
+        }
+        
+        doc.setFontSize(fontSize)
+        doc.setFont('helvetica', isBold ? 'bold' : 'normal')
+        doc.setTextColor(...textColor)
+        
+        let textX = x
+        if (isTitle) {
+          const textWidth = doc.getStringUnitWidth(lines[i]) * fontSize / doc.internal.scaleFactor
+          textX = (pageWidth - textWidth) / 2
+        }
+        
+        doc.text(lines[i], textX, y)
+        y += lineHeight
       }
-      
-      const lines = doc.splitTextToSize(text, maxWidth - (x - margin))
-      
-      lines.forEach((line: string, index: number) => {
-        if (index > 0) checkPageBreak(fontSize * 0.4)
-        doc.text(line, x, y)
-        y += fontSize * 0.4
-      })
       
       return y
     }
@@ -118,7 +150,7 @@ export async function POST(req: Request) {
       doc.rect(margin, y - 12, maxWidth, 18, 'F')
       
       // Section title
-      doc.setTextColor(255, 255, 255)
+      doc.setTextColor(...colors.white)
       doc.setFontSize(16)
       doc.setFont('helvetica', 'bold')
       
@@ -128,7 +160,7 @@ export async function POST(req: Request) {
       }
       
       doc.text(titleText, margin + 5, y)
-      y += 15
+      y += 25
       
       // Reset text color
       doc.setTextColor(...colors.text)
@@ -139,14 +171,14 @@ export async function POST(req: Request) {
       checkPageBreak(25)
       y += 8
       
-      doc.setFillColor(...colors.lightGray)
-      doc.rect(margin, y - 8, maxWidth, 12, 'F')
+      doc.setFillColor(...colors.tableHeader)
+      doc.rect(margin, y - 10, maxWidth, 15, 'F')
       
       doc.setFontSize(12)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(...colors.primary)
-      doc.text(title, margin + 3, y)
-      y += 10
+      doc.text(title, margin + 5, y)
+      y += 15
       
       // Reset text color
       doc.setTextColor(...colors.text)
@@ -158,111 +190,147 @@ export async function POST(req: Request) {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
       y = addText(text, margin + indent, 10)
-      y += 4
+      y += 6
     }
 
-    // Helper function to add key-value pairs
+    // Helper function to add key-value pairs with better formatting
     const addKeyValue = (key: string, value: string, indent = 0) => {
       if (!value || value.trim() === '') return
-      checkPageBreak(15)
+      
+      checkPageBreak(20)
       
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(10)
-      doc.text(`${key}:`, margin + indent, y)
+      doc.setTextColor(...colors.primary)
       
-      doc.setFont('helvetica', 'normal')
-      const keyWidth = doc.getStringUnitWidth(`${key}: `) * 10 / doc.internal.scaleFactor
-      const lines = doc.splitTextToSize(value, maxWidth - keyWidth - indent)
+      const keyText = `${key}:`
+      doc.text(keyText, margin + indent, y)
       
-      lines.forEach((line: string, index: number) => {
-        if (index > 0) {
-          checkPageBreak(12)
-          doc.text(line, margin + indent + keyWidth, y)
-        } else {
-          doc.text(line, margin + indent + keyWidth, y)
-        }
-        y += 12
-      })
-      
-      y += 2
-    }
-
-    // Enhanced table function with better formatting
-    const addTable = (data: any[], title: string) => {
-      if (!Array.isArray(data) || data.length === 0) return
-
-      addSubsectionHeader(title)
-      
-      // Get all unique keys from the data
-      const allKeys = Array.from(new Set(data.flatMap(item => Object.keys(item))))
-      
-      if (allKeys.length === 0) return
-
-      // Calculate column widths
-      const colWidth = (maxWidth - 10) / allKeys.length
-      
-      // Table header
-      checkPageBreak(50)
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      
-      // Header background
-      doc.setFillColor(...colors.primary)
-      doc.rect(margin, y - 8, maxWidth, 15, 'F')
-      
-      // Header text
-      doc.setTextColor(255, 255, 255)
-      let currentX = margin + 2
-      allKeys.forEach((key) => {
-        const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
-        const truncatedKey = displayKey.length > 15 ? displayKey.substring(0, 12) + '...' : displayKey
-        doc.text(truncatedKey, currentX, y)
-        currentX += colWidth
-      })
-      
-      y += 18
-      
-      // Table rows
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(...colors.text)
       
-      data.forEach((row, rowIndex) => {
-        checkPageBreak(20)
-        
-        // Alternate row colors
-        if (rowIndex % 2 === 0) {
-          doc.setFillColor(...colors.lightGray)
-          doc.rect(margin, y - 8, maxWidth, 15, 'F')
-        }
-        
-        currentX = margin + 2
-        allKeys.forEach(key => {
-          const value = row[key] || ''
-          const displayValue = typeof value === 'string' ? value : JSON.stringify(value)
-          
-          // Wrap text for long content
-          const maxCellWidth = colWidth - 4
-          const lines = doc.splitTextToSize(displayValue, maxCellWidth)
-          const truncated = lines.length > 2 ? lines.slice(0, 2).join(' ').substring(0, 40) + '...' : lines.join(' ')
-          
-          doc.text(truncated, currentX, y)
-          currentX += colWidth
-        })
-        
-        y += 15
-      })
+      const keyWidth = doc.getStringUnitWidth(keyText + ' ') * 10 / doc.internal.scaleFactor
+      const valueX = margin + indent + keyWidth
+      const availableWidth = maxWidth - keyWidth - indent
       
-      y += 8
+      const lines = wrapText(value, availableWidth, 10)
+      
+      for (let i = 0; i < lines.length; i++) {
+        if (i > 0) {
+          checkPageBreak(12)
+          doc.text(lines[i], valueX, y)
+        } else {
+          doc.text(lines[i], valueX, y)
+        }
+        y += 12
+      }
+      
+      y += 4
     }
 
-    // Enhanced list function
+    // Enhanced table function using autoTable
+    const addTable = (data: any[], title: string, customColumnConfig?: any) => {
+      if (!Array.isArray(data) || data.length === 0) return
+
+      addSubsectionHeader(title)
+      y += 5
+
+      // Prepare table data
+      const processedData = data.map(item => {
+        const row: any = {}
+        Object.keys(item).forEach(key => {
+          const value = item[key]
+          if (value !== null && value !== undefined) {
+            row[key] = typeof value === 'string' ? value : JSON.stringify(value)
+          } else {
+            row[key] = ''
+          }
+        })
+        return row
+      })
+
+      if (processedData.length === 0) return
+
+      // Get all unique columns
+      const allColumns = Array.from(new Set(processedData.flatMap(item => Object.keys(item))))
+      
+      // Prepare column headers with better formatting
+      const columns = allColumns.map(col => ({
+        header: col.replace(/([A-Z])/g, ' $1')
+                  .replace(/^./, str => str.toUpperCase())
+                  .replace(/\s+/g, ' ')
+                  .trim(),
+        dataKey: col
+      }))
+
+      // Prepare table body
+      const body = processedData.map(row => 
+        allColumns.map(col => row[col] || '')
+      )
+
+      try {
+        doc.autoTable({
+          startY: y,
+          head: [columns.map(col => col.header)],
+          body: body,
+          theme: 'grid',
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            textColor: colors.text,
+            lineColor: colors.mediumGray,
+            lineWidth: 0.1,
+            overflow: 'linebreak',
+            cellWidth: 'wrap'
+          },
+          headStyles: {
+            fillColor: colors.primary,
+            textColor: colors.white,
+            fontStyle: 'bold',
+            fontSize: 9,
+            halign: 'left'
+          },
+          alternateRowStyles: {
+            fillColor: colors.tableStripe
+          },
+          columnStyles: customColumnConfig || {
+            // Auto-adjust column widths based on content
+          },
+          margin: { left: margin, right: margin },
+          tableWidth: maxWidth,
+          didDrawPage: function() {
+            addPageHeader()
+          },
+          willDrawCell: function(data: any) {
+            // Handle long text wrapping
+            if (data.cell.text && data.cell.text.length > 0) {
+              data.cell.text = data.cell.text.map((text: string) => {
+                if (text.length > 50) {
+                  return text.substring(0, 47) + '...'
+                }
+                return text
+              })
+            }
+          }
+        })
+
+        y = (doc as any).lastAutoTable.finalY + 10
+      } catch (error) {
+        console.error('Error creating table:', error)
+        // Fallback to simple text if table fails
+        addParagraph(`Table data for ${title}: ${JSON.stringify(data).substring(0, 200)}...`)
+      }
+    }
+
+    // Enhanced list function with better formatting
     const addList = (items: string[], title: string) => {
       if (!Array.isArray(items) || items.length === 0) return
 
       addSubsectionHeader(title)
       
       items.forEach((item, index) => {
-        checkPageBreak(15)
+        checkPageBreak(20)
+        
         doc.setFont('helvetica', 'normal')
         doc.setFontSize(10)
         
@@ -270,18 +338,23 @@ export async function POST(req: Request) {
         doc.setTextColor(...colors.accent)
         doc.text('•', margin + 5, y)
         
-        // Add item text
+        // Add item text with proper wrapping
         doc.setTextColor(...colors.text)
-        const lines = doc.splitTextToSize(item, maxWidth - 20)
+        const lines = wrapText(item, maxWidth - 25, 10)
+        
         lines.forEach((line: string, lineIndex: number) => {
-          if (lineIndex > 0) checkPageBreak(10)
-          doc.text(line, margin + 15, y)
-          y += 10
+          if (lineIndex > 0) {
+            checkPageBreak(12)
+            doc.text(line, margin + 15, y)
+          } else {
+            doc.text(line, margin + 15, y)
+          }
+          y += 12
         })
-        y += 2
+        y += 3
       })
       
-      y += 5
+      y += 8
     }
 
     // Create executive summary from plan data
@@ -292,30 +365,33 @@ export async function POST(req: Request) {
       
       let summary = `This Business Continuity Plan (BCP) has been prepared for ${companyName} using the CARICHAM methodology. `
       
-      if (businessOverview['Business Purpose']) {
-        summary += `The company's primary business purpose is: ${businessOverview['Business Purpose']}. `
+      if (businessOverview['Business Purpose'] || businessOverview['businessPurpose']) {
+        const purpose = businessOverview['Business Purpose'] || businessOverview['businessPurpose']
+        summary += `The company's primary business purpose is: ${purpose}. `
       }
       
-      if (riskAssessment['Potential Hazards']) {
-        const hazardCount = riskAssessment['Potential Hazards'].length
+      if (riskAssessment['Potential Hazards'] || riskAssessment['potentialHazards']) {
+        const hazards = riskAssessment['Potential Hazards'] || riskAssessment['potentialHazards']
+        const hazardCount = Array.isArray(hazards) ? hazards.length : 0
         summary += `This plan addresses ${hazardCount} identified potential hazards and risks that could impact business operations. `
       }
       
       summary += `The plan outlines comprehensive prevention, response, and recovery strategies to ensure business continuity during emergencies and disasters. `
       
-      if (strategies['Prevention Strategies (Before Emergencies)']) {
-        const preventionCount = strategies['Prevention Strategies (Before Emergencies)'].length
-        summary += `It includes ${preventionCount} prevention strategies, `
+      const prevention = strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies']
+      const response = strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies'] 
+      const recovery = strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies']
+      
+      if (prevention && Array.isArray(prevention)) {
+        summary += `It includes ${prevention.length} prevention strategies, `
       }
       
-      if (strategies['Response Strategies (During Emergencies)']) {
-        const responseCount = strategies['Response Strategies (During Emergencies)'].length
-        summary += `${responseCount} response strategies, `
+      if (response && Array.isArray(response)) {
+        summary += `${response.length} response strategies, `
       }
       
-      if (strategies['Recovery Strategies (After Emergencies)']) {
-        const recoveryCount = strategies['Recovery Strategies (After Emergencies)'].length
-        summary += `and ${recoveryCount} recovery strategies. `
+      if (recovery && Array.isArray(recovery)) {
+        summary += `and ${recovery.length} recovery strategies. `
       }
       
       summary += `This plan serves as a critical business document for loan applications, insurance purposes, and regulatory compliance, demonstrating the organization's commitment to risk management and business resilience.`
@@ -329,7 +405,7 @@ export async function POST(req: Request) {
       doc.rect(0, 0, pageWidth, 80, 'F')
       
       // Company logo area (placeholder)
-      doc.setFillColor(255, 255, 255)
+      doc.setFillColor(...colors.white)
       doc.rect(margin, 20, 60, 30, 'F')
       doc.setTextColor(...colors.primary)
       doc.setFontSize(8)
@@ -337,11 +413,11 @@ export async function POST(req: Request) {
       doc.text('LOGO', margin + 23, 42)
       
       // Main title
-      doc.setTextColor(255, 255, 255)
+      doc.setTextColor(...colors.white)
       doc.setFontSize(28)
       doc.setFont('helvetica', 'bold')
       y = 35
-      y = addText('BUSINESS CONTINUITY PLAN', margin, 28, true, true, [255, 255, 255])
+      y = addText('BUSINESS CONTINUITY PLAN', margin, 28, true, true, colors.white)
       
       // Subtitle
       doc.setFontSize(14)
@@ -353,7 +429,7 @@ export async function POST(req: Request) {
       // Plan details box
       y = 130
       doc.setFillColor(...colors.lightGray)
-      doc.rect(margin, y, maxWidth, 60, 'F')
+      doc.rect(margin, y, maxWidth, 70, 'F')
       
       y += 15
       doc.setFontSize(12)
@@ -382,12 +458,12 @@ export async function POST(req: Request) {
       doc.text('Status: CONFIDENTIAL - Business Use Only', margin + 5, y)
       
       // Certification statement
-      y = 220
+      y = 230
       doc.setFillColor(...colors.accent)
-      doc.rect(margin, y, maxWidth, 40, 'F')
+      doc.rect(margin, y, maxWidth, 50, 'F')
       
-      y += 12
-      doc.setTextColor(255, 255, 255)
+      y += 15
+      doc.setTextColor(...colors.white)
       doc.setFontSize(10)
       doc.setFont('helvetica', 'bold')
       doc.text('CERTIFICATION', margin + 5, y)
@@ -396,7 +472,7 @@ export async function POST(req: Request) {
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(9)
       const certText = 'This Business Continuity Plan has been prepared in accordance with international best practices and the CARICHAM methodology for Caribbean small businesses.'
-      const certLines = doc.splitTextToSize(certText, maxWidth - 10)
+      const certLines = wrapText(certText, maxWidth - 10, 9)
       certLines.forEach((line: string) => {
         doc.text(line, margin + 5, y)
         y += 10
@@ -431,13 +507,14 @@ export async function POST(req: Request) {
         
         // Dots
         const titleWidth = doc.getStringUnitWidth(item.title) * 11 / doc.internal.scaleFactor
-        const pageWidth_calc = doc.getStringUnitWidth(item.page) * 11 / doc.internal.scaleFactor
-        const dotCount = Math.floor((maxWidth - titleWidth - pageWidth_calc - 20) / 3)
-        const dots = '.'.repeat(dotCount)
+        const pageNumWidth = doc.getStringUnitWidth(item.page) * 11 / doc.internal.scaleFactor
+        const availableSpace = maxWidth - titleWidth - pageNumWidth - 20
+        const dotCount = Math.floor(availableSpace / 3)
+        const dots = '.'.repeat(Math.max(0, dotCount))
         doc.text(dots, margin + 10 + titleWidth, y)
         
         // Page number
-        doc.text(item.page, pageWidth - margin - pageWidth_calc, y)
+        doc.text(item.page, pageWidth - margin - pageNumWidth, y)
         y += 15
       })
 
@@ -454,7 +531,7 @@ export async function POST(req: Request) {
       // Key highlights box
       y += 10
       doc.setFillColor(...colors.lightGray)
-      doc.rect(margin, y, maxWidth, 80, 'F')
+      doc.rect(margin, y, maxWidth, 90, 'F')
       
       y += 15
       doc.setFontSize(12)
@@ -491,8 +568,10 @@ export async function POST(req: Request) {
         const planInfo = planData.PLAN_INFORMATION
         addKeyValue('Company Name', planInfo['Company Name'] || planInfo['companyName'] || planInfo['Nom de l\'Entreprise'] || planInfo['Nombre de la Empresa'] || 'Not specified')
         addKeyValue('Plan Manager', planInfo['Plan Manager'] || planInfo['planManager'] || planInfo['Responsable du Plan'] || planInfo['Gerente del Plan'] || 'Not specified')
-        addKeyValue('Alternate Manager', planInfo['Alternate Manager'] || planInfo['alternateManager'] || planInfo['Responsable Alternatif'] || planInfo['Gerente Alterno'] || 'Not specified')
-        addKeyValue('Plan Location', planInfo['Plan Location'] || planInfo['planLocation'] || planInfo['Emplacement du Plan'] || planInfo['Ubicación del Plan'] || 'Not specified')
+        const alternateManager = planInfo['Alternate Manager'] || planInfo['alternateManager'] || planInfo['Responsable Alternatif'] || planInfo['Gerente Alterno'] || ''
+        addKeyValue('Alternate Manager', alternateManager || 'No alternate manager designated')
+        addKeyValue('Physical Plan Location', planInfo['Physical Plan Location'] || planInfo['physicalPlanLocation'] || 'Not specified')
+        addKeyValue('Digital Plan Location', planInfo['Digital Plan Location'] || planInfo['digitalPlanLocation'] || 'Not specified')
       }
 
       // BUSINESS OVERVIEW PAGE
@@ -535,7 +614,8 @@ export async function POST(req: Request) {
         
         // Add function priority assessment table
         if (functions['Function Priority Assessment'] || functions['businessFunctions']) {
-          addTable(functions['Function Priority Assessment'] || functions['businessFunctions'], 'Business Function Analysis')
+          const tableData = functions['Function Priority Assessment'] || functions['businessFunctions']
+          addTable(tableData, 'Business Function Analysis')
         }
       }
 
@@ -550,11 +630,15 @@ export async function POST(req: Request) {
         const riskAssessment = planData.RISK_ASSESSMENT
         
         if (riskAssessment['Potential Hazards'] || riskAssessment['potentialHazards']) {
-          addList(riskAssessment['Potential Hazards'] || riskAssessment['potentialHazards'], 'Identified Hazards and Risks')
+          const hazards = riskAssessment['Potential Hazards'] || riskAssessment['potentialHazards']
+          if (Array.isArray(hazards)) {
+            addList(hazards, 'Identified Hazards and Risks')
+          }
         }
         
         if (riskAssessment['Risk Assessment Matrix'] || riskAssessment['riskMatrix']) {
-          addTable(riskAssessment['Risk Assessment Matrix'] || riskAssessment['riskMatrix'], 'Risk Assessment Matrix')
+          const riskMatrix = riskAssessment['Risk Assessment Matrix'] || riskAssessment['riskMatrix']
+          addTable(riskMatrix, 'Risk Assessment Matrix')
         }
       }
 
@@ -569,15 +653,24 @@ export async function POST(req: Request) {
         const strategies = planData.STRATEGIES
         
         if (strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies']) {
-          addList(strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies'], 'Prevention Strategies (Before Emergencies)')
+          const prevention = strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies']
+          if (Array.isArray(prevention)) {
+            addList(prevention, 'Prevention Strategies (Before Emergencies)')
+          }
         }
         
         if (strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies']) {
-          addList(strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies'], 'Response Strategies (During Emergencies)')
+          const response = strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies']
+          if (Array.isArray(response)) {
+            addList(response, 'Response Strategies (During Emergencies)')
+          }
         }
         
         if (strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies']) {
-          addList(strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies'], 'Recovery Strategies (After Emergencies)')
+          const recovery = strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies']
+          if (Array.isArray(recovery)) {
+            addList(recovery, 'Recovery Strategies (After Emergencies)')
+          }
         }
         
         if (strategies['Long-term Risk Reduction Measures'] || strategies['longTermMeasures']) {
@@ -597,7 +690,8 @@ export async function POST(req: Request) {
         const actionPlan = planData.ACTION_PLAN
         
         if (actionPlan['Action Plan by Risk Level'] || actionPlan['actionPlanByRisk']) {
-          addTable(actionPlan['Action Plan by Risk Level'] || actionPlan['actionPlanByRisk'], 'Action Plan by Risk Level')
+          const actionPlanData = actionPlan['Action Plan by Risk Level'] || actionPlan['actionPlanByRisk']
+          addTable(actionPlanData, 'Action Plan by Risk Level')
         }
         
         if (actionPlan['Implementation Timeline'] || actionPlan['implementationTimeline']) {
@@ -621,7 +715,8 @@ export async function POST(req: Request) {
         }
         
         if (actionPlan['Testing and Assessment Plan'] || actionPlan['testingPlan']) {
-          addTable(actionPlan['Testing and Assessment Plan'] || actionPlan['testingPlan'], 'Testing and Assessment Plan')
+          const testingData = actionPlan['Testing and Assessment Plan'] || actionPlan['testingPlan']
+          addTable(testingData, 'Testing and Assessment Plan')
         }
       }
 
@@ -636,19 +731,23 @@ export async function POST(req: Request) {
         const contacts = planData.CONTACTS_AND_INFORMATION
         
         if (contacts['Staff Contact Information'] || contacts['staffContacts']) {
-          addTable(contacts['Staff Contact Information'] || contacts['staffContacts'], 'Staff Contact Information')
+          const staffData = contacts['Staff Contact Information'] || contacts['staffContacts']
+          addTable(staffData, 'Staff Contact Information')
         }
         
         if (contacts['Key Customer Contacts'] || contacts['keyCustomers']) {
-          addTable(contacts['Key Customer Contacts'] || contacts['keyCustomers'], 'Key Customer Contacts')
+          const customerData = contacts['Key Customer Contacts'] || contacts['keyCustomers']
+          addTable(customerData, 'Key Customer Contacts')
         }
         
         if (contacts['Supplier Information'] || contacts['supplierInfo']) {
-          addTable(contacts['Supplier Information'] || contacts['supplierInfo'], 'Supplier Information')
+          const supplierData = contacts['Supplier Information'] || contacts['supplierInfo']
+          addTable(supplierData, 'Supplier Information')
         }
         
         if (contacts['Emergency Services and Utilities'] || contacts['emergencyServices']) {
-          addTable(contacts['Emergency Services and Utilities'] || contacts['emergencyServices'], 'Emergency Services and Utilities')
+          const emergencyData = contacts['Emergency Services and Utilities'] || contacts['emergencyServices']
+          addTable(emergencyData, 'Emergency Services and Utilities')
         }
         
         if (contacts['Critical Business Information'] || contacts['criticalBusinessInfo']) {
@@ -657,7 +756,8 @@ export async function POST(req: Request) {
         }
         
         if (contacts['Plan Distribution List'] || contacts['planDistribution']) {
-          addTable(contacts['Plan Distribution List'] || contacts['planDistribution'], 'Plan Distribution List')
+          const distributionData = contacts['Plan Distribution List'] || contacts['planDistribution']
+          addTable(distributionData, 'Plan Distribution List')
         }
       }
 
@@ -672,15 +772,18 @@ export async function POST(req: Request) {
         const testing = planData.TESTING_AND_MAINTENANCE
         
         if (testing['Plan Testing Schedule'] || testing['testingSchedule']) {
-          addTable(testing['Plan Testing Schedule'] || testing['testingSchedule'], 'Plan Testing Schedule')
+          const testingData = testing['Plan Testing Schedule'] || testing['testingSchedule']
+          addTable(testingData, 'Plan Testing Schedule')
         }
         
         if (testing['Plan Revision History'] || testing['revisionHistory']) {
-          addTable(testing['Plan Revision History'] || testing['revisionHistory'], 'Plan Revision History')
+          const revisionData = testing['Plan Revision History'] || testing['revisionHistory']
+          addTable(revisionData, 'Plan Revision History')
         }
         
         if (testing['Improvement Tracking'] || testing['improvementTracking']) {
-          addTable(testing['Improvement Tracking'] || testing['improvementTracking'], 'Improvement Tracking')
+          const improvementData = testing['Improvement Tracking'] || testing['improvementTracking']
+          addTable(improvementData, 'Improvement Tracking')
         }
         
         if (testing['Annual Review Process'] || testing['annualReview']) {
@@ -728,7 +831,9 @@ export async function POST(req: Request) {
         // Footer content
         if (i === 1) {
           // Different footer for cover page
-          doc.text('Confidential Business Document', pageWidth/2 - 30, pageHeight - 10)
+          const footerText = 'Confidential Business Document'
+          const footerWidth = doc.getStringUnitWidth(footerText) * 8 / doc.internal.scaleFactor
+          doc.text(footerText, (pageWidth - footerWidth) / 2, pageHeight - 10)
         } else {
           doc.text(`${companyName} - Business Continuity Plan`, margin, pageHeight - 10)
           doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 25, pageHeight - 10)

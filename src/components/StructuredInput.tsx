@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { RiskAssessmentMatrix } from './RiskAssessmentMatrix'
+import { RiskAssessmentWizard } from './RiskAssessmentWizard'
+import { ExcelUpload } from './ExcelUpload'
 import { useTranslations } from 'next-intl'
 import { useUserInteraction } from '@/lib/hooks'
 
@@ -29,6 +30,7 @@ interface StructuredInputProps {
   severityOptions?: Option[]
   dependsOn?: string
   stepData?: any // Current step's data to access dependencies
+  preFillData?: any // Industry and location pre-fill data
   onComplete: (value: any) => void
   initialValue?: any
   setUserInteracted?: () => void
@@ -49,6 +51,7 @@ export function StructuredInput({
   severityOptions,
   dependsOn,
   stepData,
+  preFillData,
   onComplete,
   initialValue,
   setUserInteracted,
@@ -158,9 +161,33 @@ export function StructuredInput({
     setTableRows(updatedRows)
   }
 
+  // Excel import handling
+  const handleExcelImport = (importedData: TableRow[]) => {
+    setInteracted()
+    setUserInteracted?.()
+    setTableRows(importedData)
+  }
+
   // Special render for priority assessment table
   const renderPriorityTable = () => (
     <div className="space-y-4">
+      {/* Excel Upload Section */}
+      <ExcelUpload 
+        tableColumns={tableColumns}
+        onDataImported={handleExcelImport}
+        className="mb-6"
+      />
+      
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">{t('orEnterManually')}</span>
+        </div>
+      </div>
+      
       <div className="bg-blue-50 p-4 rounded-lg">
         <p className="text-sm text-blue-800">{tableRowsPrompt}</p>
       </div>
@@ -257,6 +284,23 @@ export function StructuredInput({
   // Generic table render for other table types
   const renderGenericTable = () => (
     <div className="space-y-4">
+      {/* Excel Upload Section */}
+      <ExcelUpload 
+        tableColumns={tableColumns}
+        onDataImported={handleExcelImport}
+        className="mb-6"
+      />
+      
+      {/* Divider */}
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-300" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-2 bg-white text-gray-500">{t('orEnterManually')}</span>
+        </div>
+      </div>
+      
       {tableRowsPrompt && (
         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <p className="text-sm text-blue-800">{tableRowsPrompt}</p>
@@ -381,7 +425,9 @@ export function StructuredInput({
           'tourism_disruption'
         ],
         'Industrial & Environmental': [
-          'industrial_accident', 'oil_spill', 'sargassum', 'crowd_management'
+          'industrial_accident', 'oil_spill', 'sargassum', 'crowd_management',
+          'chemical_spill', 'environmental_contamination', 'air_pollution', 
+          'water_contamination', 'waste_management_failure'
         ]
       }
 
@@ -478,6 +524,58 @@ export function StructuredInput({
     return []
   }
 
+  // Extract location and business data from all step data
+  const getContextualData = () => {
+    // Debug: Log all available data
+    if (process.env.NODE_ENV === 'development') {
+      console.log('StructuredInput stepData:', stepData)
+      console.log('StructuredInput preFillData:', preFillData)
+    }
+
+    // Use preFillData first if available, then fall back to stepData
+    let locationData = undefined
+    let businessData = undefined
+
+    if (preFillData) {
+      // Extract from preFillData structure
+      locationData = {
+        country: preFillData.location?.country || undefined,
+        countryCode: preFillData.location?.countryCode || undefined,
+        parish: preFillData.location?.parish || undefined,
+        nearCoast: preFillData.location?.nearCoast || false,
+        urbanArea: preFillData.location?.urbanArea || false
+      }
+      
+      businessData = {
+        industryType: preFillData.industry?.id || undefined,
+        businessPurpose: stepData?.['Business Purpose'] || undefined,
+        productsServices: stepData?.['Products and Services'] || undefined
+      }
+    } else if (stepData) {
+      // Fallback to stepData extraction - try to find from various step fields
+      locationData = {
+        country: stepData['Country'] || stepData['company_country'] || undefined,
+        countryCode: stepData['Country Code'] || stepData['company_country_code'] || undefined,
+        parish: stepData['Parish'] || stepData['Region'] || stepData['State'] || undefined,
+        nearCoast: stepData['Near Coast'] || stepData['Coastal Location'] || false,
+        urbanArea: stepData['Urban Area'] || stepData['City Location'] || false
+      }
+
+      businessData = {
+        industryType: stepData['Industry Type'] || stepData['Business Type'] || stepData['business_type'] || undefined,
+        businessPurpose: stepData['Business Purpose'] || stepData['Company Purpose'] || undefined,
+        productsServices: stepData['Products and Services'] || stepData['Services'] || undefined
+      }
+    }
+
+    // Debug: Log extracted data
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Extracted contextual data:', { locationData, businessData })
+    }
+
+    return { locationData, businessData }
+  }
+
   if (type === 'special_risk_matrix') {
     const selectedHazards = getSelectedHazards()
     
@@ -495,12 +593,16 @@ export function StructuredInput({
       )
     }
 
+    const { locationData, businessData } = getContextualData()
+
     return (
-      <RiskAssessmentMatrix
+      <RiskAssessmentWizard
         selectedHazards={selectedHazards}
         onComplete={handleRiskMatrixComplete}
         initialValue={initialValue}
         setUserInteracted={() => { setInteracted() }}
+        locationData={locationData}
+        businessData={businessData}
       />
     )
   }

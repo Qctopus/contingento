@@ -27,7 +27,20 @@
       "needHelp": "Besoin d'aide ? Cet outil suit la méthodologie CARICHAM pour la planification de continuité d'activité.",
       "automaticallySaved": "Votre progression est automatiquement sauvegardée",
       "businessContinuityPlan": "Plan de Continuité d'Activité",
+      "saving": "Enregistrement...",
       "saved": "Enregistré",
+      "saveFailed": "Échec de l'enregistrement",
+      "retrying": "Nouvelle tentative",
+      "saveNow": "Enregistrer Maintenant",
+      "retry": "Réessayer",
+      "lastSaved": "Dernière sauvegarde",
+      "unsavedChanges": "Modifications non sauvegardées",
+      "allSaved": "Tout sauvegardé",
+      "autoSaveTip": "Les modifications sont automatiquement sauvegardées toutes les 2 secondes",
+      "loadFailed": "Échec du chargement des données sauvegardées",
+      "industryProfile": "Profil d'Industrie",
+      "industry": "Industrie",
+      "location": "Emplacement",
       "actions": "Actions",
       "currentValue": "Valeur actuelle",
       "typeAnswerHere": "Tapez votre réponse ici",
@@ -38,6 +51,13 @@
       "riskOverview": "Aperçu de l'évaluation des risques",
       "assessmentProgress": "Progression de l'évaluation",
       "completed": "terminé",
+    "hazardSelection": "Sélection des Dangers",
+    "riskAssessment": "Évaluation des Risques",
+    "showAdvanced": "Afficher Outils Avancés",
+    "hideAdvanced": "Masquer Outils Avancés",
+    "advancedRiskMatrix": "Matrice de Risque Avancée",
+    "advancedMatrixDescription": "Vue traditionnelle de matrice de risque pour analyse détaillée",
+    "of": "de",
       "riskMatrix": "Matrice de risque CARICHAM",
       "severity": "GRAVITÉ",
       "likelihood": "PROBABILITÉ",
@@ -168,21 +188,35 @@
             ]
           },
           "alternateManager": {
-            "label": "Responsable Alternatif",
-            "prompt": "Qui est la personne alternative responsable si le responsable principal n'est pas disponible ?",
+            "label": "Responsable Alternatif (Optionnel)",
+            "prompt": "Qui est la personne alternative responsable si le responsable principal n'est pas disponible ? Ce champ est optionnel - si vous n'avez pas de responsable alternatif, vous pouvez le laisser vide ou écrire \"N/A\". Considérez désigner un employé de confiance, un membre de la famille ou un partenaire commercial qui peut prendre des décisions de base pendant les urgences.",
             "examples": [
               "Sara Johnson, Directrice Adjointe",
               "Michel Brown, Superviseur",
-              "Lisa Williams, Personnel Senior"
+              "Lisa Williams, Personnel Senior",
+              "N/A - Se fiera uniquement au responsable principal",
+              "Désignera quand l'entreprise grandira",
+              "Contact d'urgence : Association commerciale locale"
             ]
           },
-          "planLocation": {
-            "label": "Emplacement du Plan",
-            "prompt": "Où seront stockées les copies de ce plan de continuité d'activité ? Incluez les emplacements physiques et numériques.",
+          "physicalPlanLocation": {
+            "label": "Emplacement Physique du Plan",
+            "prompt": "Où seront stockées les copies physiques de ce plan de continuité d'activité ? Choisissez des emplacements sécurisés et accessibles auxquels plusieurs personnes peuvent accéder.",
             "examples": [
-              "Armoire ignifuge au bureau ; Version électronique sur le serveur de l'entreprise",
-              "Coffre-fort dans le bureau du responsable ; Stockage cloud avec sauvegarde sur disque externe",
-              "Tiroir verrouillé à la réception ; Dossier partagé sur Google Drive"
+              "Armoire ignifuge dans le bureau du responsable",
+              "Coffre-fort dans la zone de réception",
+              "Classeur verrouillé dans le bureau d'administration",
+              "Coffre-fort à la banque locale"
+            ]
+          },
+          "digitalPlanLocation": {
+            "label": "Emplacement Numérique du Plan",
+            "prompt": "Où seront stockées les copies numériques ? Ceci est optionnel - si vous n'avez pas d'internet fiable ou de stockage numérique, vous pouvez omettre ce champ.",
+            "examples": [
+              "Serveur de l'entreprise avec sauvegardes quotidiennes",
+              "Google Drive partagé avec l'équipe de gestion",
+              "Stockage cloud avec sauvegarde sur disque externe",
+              "Copies par email envoyées au personnel clé"
             ]
           }
         }
@@ -399,7 +433,12 @@
           "tourism_disruption": "Perturbation du tourisme",
           "oil_spill": "Déversement de pétrole",
           "sargassum": "Impact des algues sargasses",
-          "waste_management": "Problèmes de gestion des déchets"
+                  "waste_management": "Problèmes de gestion des déchets",
+        "chemical_spill": "Déversement chimique",
+        "environmental_contamination": "Contamination environnementale",
+        "waste_management_failure": "Défaillance de gestion des déchets",
+        "water_contamination": "Contamination de l'eau",
+        "crowd_management": "Problèmes de gestion des foules"
         },
         "inputs": {
           "potentialHazards": {
@@ -777,6 +816,7 @@
       "tourismRecreation": "Tourisme et Loisirs",
       "agricultureFishing": "Agriculture et Pêche",
       "manufacturingProduction": "Fabrication et Production",
+    "industrialEnvironmental": "Industriel et Environnemental",
       "smartPreFilled": "Pré-rempli Intelligent",
       "industrySpecific": "Spécifique à l'industrie",
       "resetToDefaults": "Rétablir les valeurs par défaut de l'industrie",
@@ -816,6 +856,18 @@
           "Familles du quartier, jeunes professionnels, touristes séjournant dans [AREA]",
           "Membres de la communauté, restaurants locaux, parents en visite de résidents"
         ]
+      },
+      "chemical_processing": {
+        "name": "Usine de Traitement Chimique",
+        "localName": "Installation Chimique/Pétrochimique"
+      },
+      "waste_management": {
+        "name": "Installation de Gestion des Déchets",
+        "localName": "Centre de Traitement/Recyclage des Déchets"
+      },
+      "water_treatment": {
+        "name": "Station de Traitement de l'Eau",
+        "localName": "Installation de Traitement de l'Eau/Eaux Usées"
       },
       "restaurant": {
         "name": "Restaurant",
@@ -931,7 +983,6 @@
       "emailPlaceholder": "votre@email.com",
       "emailHelp": "Pour la récupération seulement",
       "allowSharing": "Générer un lien partageable (pour prêteurs/conseillers)",
-      "saving": "Sauvegarde...",
       "loading": "Chargement...",
       "startNewPlan": "Commencer un Nouveau Plan",
       "planSavedSuccessfully": "Plan sauvegardé avec succès!",

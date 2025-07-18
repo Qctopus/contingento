@@ -39,9 +39,9 @@ class AnonymousSessionService {
         return null;
       }
 
-      // Update last accessed
+      // Update last accessed - use saveSession directly to avoid circular dependency
       session.lastAccessed = now;
-      this.updateSession(session);
+      this.saveSession(session);
       
       return session;
     } catch (error) {

@@ -71,20 +71,20 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     'waste_management': 'waste_management'
   }
 
-  // Get localized likelihood options
+  // Get localized likelihood options with colorblind-friendly styling
   const getLikelihoodOptions = () => [
-    { value: '1', label: t('veryUnlikely'), description: t('veryUnlikelyDesc'), color: 'bg-green-100 text-green-800' },
-    { value: '2', label: t('unlikely'), description: t('unlikelyDesc'), color: 'bg-yellow-100 text-yellow-800' },
-    { value: '3', label: t('likely'), description: t('likelyDesc'), color: 'bg-orange-100 text-orange-800' },
-    { value: '4', label: t('veryLikely'), description: t('veryLikelyDesc'), color: 'bg-red-100 text-red-800' },
+    { value: '1', label: t('veryUnlikely'), description: t('veryUnlikelyDesc'), color: 'bg-slate-100 text-slate-800 border-slate-300' },
+    { value: '2', label: t('unlikely'), description: t('unlikelyDesc'), color: 'bg-blue-100 text-blue-800 border-blue-300' },
+    { value: '3', label: t('likely'), description: t('likelyDesc'), color: 'bg-amber-100 text-amber-900 border-amber-400' },
+    { value: '4', label: t('veryLikely'), description: t('veryLikelyDesc'), color: 'bg-rose-100 text-rose-900 border-rose-400' },
   ]
 
-  // Get localized severity options
+  // Get localized severity options with colorblind-friendly styling
   const getSeverityOptions = () => [
-    { value: '1', label: t('insignificant'), description: t('insignificantDesc'), color: 'bg-green-100 text-green-800' },
-    { value: '2', label: t('minor'), description: t('minorDesc'), color: 'bg-yellow-100 text-yellow-800' },
-    { value: '3', label: t('serious'), description: t('seriousDesc'), color: 'bg-orange-100 text-orange-800' },
-    { value: '4', label: t('major'), description: t('majorDesc'), color: 'bg-red-100 text-red-800' },
+    { value: '1', label: t('insignificant'), description: t('insignificantDesc'), color: 'bg-slate-100 text-slate-800 border-slate-300' },
+    { value: '2', label: t('minor'), description: t('minorDesc'), color: 'bg-blue-100 text-blue-800 border-blue-300' },
+    { value: '3', label: t('serious'), description: t('seriousDesc'), color: 'bg-amber-100 text-amber-900 border-amber-400' },
+    { value: '4', label: t('major'), description: t('majorDesc'), color: 'bg-rose-100 text-rose-900 border-rose-400' },
   ]
 
   // Get localized hazard label
@@ -104,6 +104,42 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       return hazardKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     }
   }
+
+  // Calculate risk level based on likelihood and severity
+  const calculateRiskLevel = useCallback((likelihood: string, severity: string): { level: string; score: number; color: string } => {
+    const l = parseInt(likelihood) || 0
+    const s = parseInt(severity) || 0
+    const score = l * s
+    
+    // Get translation values with fallbacks
+    const extremeRisk = t('extremeRisk') || 'Extreme'
+    const highRisk = t('highRisk') || 'High'
+    const mediumRisk = t('mediumRisk') || 'Medium'
+    const lowRisk = t('lowRisk') || 'Low'
+    
+    // Ensure we return valid levels even if translations aren't loaded yet
+    if (score >= 12) return { 
+      level: extremeRisk, 
+      score, 
+      color: 'bg-black text-white border-4 border-black shadow-lg font-bold' 
+    }
+    if (score >= 8) return { 
+      level: highRisk, 
+      score, 
+      color: 'bg-gray-800 text-white border-2 border-gray-900 font-semibold' 
+    }
+    if (score >= 3) return { 
+      level: mediumRisk, 
+      score, 
+      color: 'bg-gray-400 text-black border-2 border-gray-600 font-medium' 
+    }
+    if (score >= 1) return { 
+      level: lowRisk, 
+      score, 
+      color: 'bg-gray-100 text-gray-900 border border-gray-400' 
+    }
+    return { level: '', score: 0, color: 'bg-gray-50 text-gray-500 border border-gray-200' }
+  }, [t])
 
   // Initialize risk items when selectedHazards or initialValue changes
   useEffect(() => {
@@ -173,24 +209,29 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     })
 
     setRiskItems(newRiskItems)
-  }, [selectedHazards, initialValue, tSteps, t])
+  }, [selectedHazards, initialValue, tSteps, calculateRiskLevel])
 
-  // Recalculate risk levels when translation function changes (language switching)
+  // Recalculate risk levels when translation function changes or when translations load
   useEffect(() => {
-    setRiskItems(prevItems => 
-      prevItems.map(item => {
-        if (item.likelihood && item.severity) {
-          const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
-          return {
-            ...item,
-            riskLevel: level,
-            riskScore: score
+    // Check if we have translations loaded
+    const hasTranslations = t('extremeRisk') && t('extremeRisk') !== 'extremeRisk'
+    
+    if (hasTranslations) {
+      setRiskItems(prevItems => 
+        prevItems.map(item => {
+          if (item.likelihood && item.severity) {
+            const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
+            return {
+              ...item,
+              riskLevel: level,
+              riskScore: score
+            }
           }
-        }
-        return item
-      })
-    )
-  }, [t])
+          return item
+        })
+      )
+    }
+  }, [calculateRiskLevel, t])
 
   // Notify parent of changes using useCallback to prevent unnecessary re-renders
   const notifyParent = useCallback((items: RiskItem[]) => {
@@ -205,18 +246,6 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     
     return () => clearTimeout(timeoutId)
   }, [riskItems, notifyParent])
-
-  const calculateRiskLevel = (likelihood: string, severity: string): { level: string; score: number; color: string } => {
-    const l = parseInt(likelihood) || 0
-    const s = parseInt(severity) || 0
-    const score = l * s
-    
-    if (score >= 12) return { level: t('extremeRisk'), score, color: 'bg-red-600 text-white' }
-    if (score >= 8) return { level: t('highRisk'), score, color: 'bg-red-500 text-white' }
-    if (score >= 3) return { level: t('mediumRisk'), score, color: 'bg-yellow-500 text-white' }
-    if (score >= 1) return { level: t('lowRisk'), score, color: 'bg-green-500 text-white' }
-    return { level: '', score: 0, color: 'bg-gray-200 text-gray-600' }
-  }
 
   const updateRiskItem = useCallback((index: number, field: keyof RiskItem, value: string) => {
     if (setUserInteracted) {
@@ -262,12 +291,12 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
   }, [setUserInteracted, t])
 
   const getRiskLevelColor = (riskLevel: string): string => {
-    if (riskLevel === t('extremeRisk')) return 'bg-red-600 text-white'
-    if (riskLevel === t('highRisk')) return 'bg-red-500 text-white'
-    if (riskLevel === t('mediumRisk')) return 'bg-yellow-500 text-white'
-    if (riskLevel === t('lowRisk')) return 'bg-green-500 text-white'
-    if (riskLevel === t('incomplete') || riskLevel === 'Incomplete') return 'bg-gray-400 text-white'
-    return 'bg-gray-200 text-gray-600'
+    if (riskLevel === t('extremeRisk')) return 'bg-black text-white border-4 border-black shadow-lg font-bold'
+    if (riskLevel === t('highRisk')) return 'bg-gray-800 text-white border-2 border-gray-900 font-semibold'
+    if (riskLevel === t('mediumRisk')) return 'bg-gray-400 text-black border-2 border-gray-600 font-medium'
+    if (riskLevel === t('lowRisk')) return 'bg-gray-100 text-gray-900 border border-gray-400'
+    if (riskLevel === t('incomplete') || riskLevel === 'Incomplete') return 'bg-gray-200 text-gray-700 border border-gray-300'
+    return 'bg-gray-50 text-gray-500 border border-gray-200'
   }
 
   const getCompletedRisks = () => {
@@ -619,103 +648,28 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
 
   return (
     <div className="space-y-6">
-      {/* Risk Assessment Overview */}
-      <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('riskOverview')}</h3>
-        
-        {/* Progress Bar */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">{t('assessmentProgress')}</span>
-            <span className="text-sm font-medium">{completedRisks.length} {t('of')} {riskItems.length} {t('completed')}</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-primary-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${riskItems.length > 0 ? (completedRisks.length / riskItems.length) * 100 : 0}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Risk Distribution */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {Object.entries(distribution).map(([level, count]) => {
-            const isIncomplete = level === t('incomplete') || level === 'Incomplete'
-            const isHighPriority = level === t('extremeRisk') || level === t('highRisk')
-            return (
-              <div key={level} className={`text-center ${isHighPriority && count > 0 ? 'ring-2 ring-red-300 ring-opacity-50 rounded-lg p-2' : ''}`}>
-                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getRiskLevelColor(level)}`}>
-                  {count}
-                </div>
-                <div className="text-xs text-gray-600 mt-1">
-                  {isIncomplete ? (level + ' ' + t('assessments')) : (level + ' ' + t('riskText'))}
-                </div>
-                {isHighPriority && count > 0 && (
-                  <div className="text-xs text-red-600 font-semibold mt-1">
-                    {level === t('extremeRisk') ? '🚨 Urgent!' : '⚠️ Priority'}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* High Priority Alert */}
-        {(distribution[t('extremeRisk')] > 0 || distribution[t('highRisk')] > 0) && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-red-600 text-lg">🚨</span>
-              <h4 className="text-sm font-semibold text-red-900">Priority Risk Alert</h4>
-            </div>
-            <p className="text-sm text-red-800">
-              You have {distribution[t('extremeRisk')] + distribution[t('highRisk')]} high-priority risk(s) that require immediate attention. 
-              Review the recommended strategies and develop comprehensive mitigation plans for these risks first.
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Risk Matrix Visual */}
-      <div className="bg-white border rounded-lg p-6">
-        <h3 className="text-lg font-semibold mb-4">{t('riskMatrix')}</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-300 bg-white rounded-lg overflow-hidden text-xs">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-2"></th>
-                <th className="p-2 font-medium text-center">{t('insignificant')}</th>
-                <th className="p-2 font-medium text-center">{t('minor')}</th>
-                <th className="p-2 font-medium text-center">{t('serious')}</th>
-                <th className="p-2 font-medium text-center">{t('major')}</th>
-                <th className="p-2 font-medium text-center">{t('severity')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[4, 3, 2, 1].map(likelihood => (
-                <tr key={likelihood}>
-                  <td className="p-2 font-medium text-center align-middle">
-                    {likelihoodOptions.find(opt => opt.value === likelihood.toString())?.label || `(${likelihood})`}
-                  </td>
-                  {[1, 2, 3, 4].map(severity => {
-                    const score = likelihood * severity
-                    const { level, color } = calculateRiskLevel(likelihood.toString(), severity.toString())
-                    return (
-                      <td key={`${likelihood}-${severity}`} className={`p-3 text-center font-medium rounded ${color}`}> 
-                        {level}<br/>({score})
-                      </td>
-                    )
-                  })}
-                  <td className="p-2 font-medium text-center align-middle rotate-90">{likelihood === 4 ? t('likelihood') : ''}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Individual Risk Assessments */}
+      {/* REORDERED: Individual Risk Assessments First */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">{t('individualRiskAssessments')}</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">{t('individualRiskAssessments')}</h3>
+          {/* Progress indicator */}
+          <div className="text-sm text-gray-600">
+            {completedRisks.length} {t('of')} {riskItems.length} {t('completed')}
+          </div>
+        </div>
+        
+        <div className="bg-white border rounded-lg p-4 mb-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <svg className="h-4 w-4 text-blue-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+              <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">Assessment Instructions</span>
+          </div>
+          <p className="text-sm text-gray-600">
+            For each hazard, evaluate the <strong>likelihood</strong> of occurrence and potential <strong>severity</strong> of impact on your business. 
+            The risk level will be calculated automatically based on your assessment.
+          </p>
+        </div>
         
         {riskItems.map((risk, index) => {
           const isActive = activeRisk === index
@@ -726,7 +680,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
           return (
             <div key={`${risk.hazard}-${index}`} className={`bg-white border rounded-lg transition-all duration-200 ${
               isActive ? 'ring-2 ring-primary-500 shadow-lg' : 'hover:shadow-md'
-            } ${isExtremeRisk ? 'border-red-300' : isHighRisk ? 'border-orange-300' : ''}`}>
+            } ${isExtremeRisk ? 'border-black border-2' : isHighRisk ? 'border-gray-600' : ''}`}>
               <button
                 onClick={() => setActiveRisk(isActive ? null : index)}
                 className="w-full p-4 text-left flex items-center justify-between"
@@ -742,21 +696,19 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                   {/* Risk Level Badge */}
                   {risk.riskLevel && (
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getRiskLevelColor(risk.riskLevel)}`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium border-2 ${getRiskLevelColor(risk.riskLevel)}`}>
                         {risk.riskLevel} ({risk.riskScore})
                       </span>
                       
-                      {/* High Priority Visual Indicators */}
+                      {/* High Priority Visual Indicators with colorblind-friendly text */}
                       {isExtremeRisk && (
                         <div className="flex items-center space-x-1">
-                          <span className="text-red-600 text-sm" title="Extreme Risk - Immediate Action Required">🚨</span>
-                          <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full font-semibold">URGENT</span>
+                          <span className="bg-black text-white text-xs px-2 py-1 rounded-full font-bold border-2 border-black">EXTREME RISK</span>
                         </div>
                       )}
                       {isHighRisk && !isExtremeRisk && (
                         <div className="flex items-center space-x-1">
-                          <span className="text-orange-600 text-sm" title="High Risk - Priority Action Needed">⚠️</span>
-                          <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full font-semibold">HIGH</span>
+                          <span className="bg-gray-800 text-white text-xs px-2 py-1 rounded-full font-semibold border border-gray-900">HIGH RISK</span>
                         </div>
                       )}
                     </div>
@@ -786,7 +738,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                       {likelihoodOptions.map(option => (
                         <div 
                           key={`likelihood-${index}-${option.value}`} 
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.likelihood === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${risk.likelihood === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -820,7 +772,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                       {severityOptions.map(option => (
                         <div 
                           key={`severity-${index}-${option.value}`} 
-                          className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${risk.severity === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                          className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${risk.severity === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
@@ -849,7 +801,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                   {risk.likelihood && risk.severity && (
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="text-sm font-medium text-gray-700 mb-2">{t('calculatedRiskLevel')}</div>
-                      <div className={`inline-flex items-center px-4 py-2 rounded-full font-medium ${getRiskLevelColor(risk.riskLevel)}`}>
+                      <div className={`inline-flex items-center px-4 py-2 rounded-full border-2 ${getRiskLevelColor(risk.riskLevel)}`}>
                         {risk.riskLevel} {t('riskText')} ({t('riskScore')}: {risk.riskScore})
                       </div>
                     </div>
@@ -937,44 +889,206 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         })}
       </div>
 
-      {/* Summary and Recommendations */}
+      {/* MOVED TO BOTTOM: Risk Assessment Overview and Matrix */}
       {completedRisks.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-4">{t('assessmentSummary')}</h3>
-          
-          <div className="space-y-3">
-            {distribution[t('extremeRisk')] > 0 && (
-              <div className="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                <svg className="h-5 w-5 text-red-500 mr-3" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-                <span className="text-red-800">
-                  <strong>{t('extremePriority')}</strong> {t('extremePriorityText', { count: distribution[t('extremeRisk')] })}
-                </span>
+        <>
+          {/* Risk Assessment Overview */}
+          <div className="bg-white border rounded-lg p-6">
+            <h3 className="text-lg font-semibold mb-4">{t('riskOverview')}</h3>
+            
+            {/* Progress Bar */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">{t('assessmentProgress')}</span>
+                <span className="text-sm font-medium">{completedRisks.length} {t('of')} {riskItems.length} {t('completed')}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 border border-gray-300">
+                <div 
+                  className="bg-gray-800 h-3 rounded-full transition-all duration-300 border border-gray-900" 
+                  style={{ width: `${riskItems.length > 0 ? (completedRisks.length / riskItems.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Risk Distribution - Colorblind Friendly */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Object.entries(distribution).map(([level, count]) => {
+                const isIncomplete = level === t('incomplete') || level === 'Incomplete'
+                const isHighPriority = level === t('extremeRisk') || level === t('highRisk')
+                return (
+                  <div key={level} className={`text-center ${isHighPriority && count > 0 ? 'ring-4 ring-black ring-opacity-50 rounded-lg p-2 bg-gray-100' : ''}`}>
+                    <div className={`inline-flex items-center px-3 py-2 rounded-full text-sm font-medium border-2 ${getRiskLevelColor(level)}`}>
+                      {count}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1 font-medium">
+                      {isIncomplete ? (level + ' ' + t('assessments')) : (level + ' ' + t('riskText'))}
+                    </div>
+                    {level === t('extremeRisk') && count > 0 && (
+                      <div className="text-xs text-black font-bold mt-1 bg-black text-white px-1 rounded">
+                        EXTREME RISK
+                      </div>
+                    )}
+                    {level === t('highRisk') && count > 0 && (
+                      <div className="text-xs text-gray-900 font-bold mt-1 bg-gray-800 text-white px-1 rounded">
+                        HIGH RISK
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* High Priority Alert */}
+            {(distribution[t('extremeRisk')] > 0 || distribution[t('highRisk')] > 0) && (
+              <div className="mt-4 p-4 bg-gray-100 border-2 border-black rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-black text-lg font-bold">⚠️</span>
+                  <h4 className="text-sm font-bold text-black">Priority Risk Alert</h4>
+                </div>
+                <p className="text-sm text-gray-900 font-medium">
+                  You have {distribution[t('extremeRisk')] + distribution[t('highRisk')]} high-priority risk(s) that require immediate attention. 
+                  Review the recommended strategies and develop comprehensive mitigation plans for these risks first.
+                </p>
               </div>
             )}
-            
-            {distribution[t('highRisk')] > 0 && (
-              <div className="flex items-center p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <svg className="h-5 w-5 text-orange-500 mr-3" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                  <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-orange-800">
-                  <strong>{t('highPriority')}</strong> {t('highPriorityText', { count: distribution[t('highRisk')] })}
-                </span>
-              </div>
-            )}
-            
-            <div className="text-sm text-blue-800">
-              <p className="mb-2">
-                <strong>{t('nextSteps')}</strong> {t('nextStepsText')}
-              </p>
-              <p>
-                {t('ongoingProcess')}
+          </div>
+
+          {/* Risk Matrix Visual - Enhanced and Colorblind Friendly */}
+          <div className="bg-white border rounded-lg p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">{t('riskMatrix')}</h3>
+              <p className="text-sm text-gray-600">
+                This matrix shows how risk levels are calculated by multiplying likelihood × severity. 
+                Higher scores indicate higher priority risks requiring immediate attention.
               </p>
             </div>
+            
+            <div className="overflow-x-auto">
+              <div className="min-w-[600px]">
+                <table className="w-full border-2 border-gray-400 bg-white rounded-lg overflow-hidden">
+                  <thead>
+                    <tr className="bg-gray-200 border-b-2 border-gray-400">
+                      <th className="p-3 text-center font-bold text-gray-900 border-r-2 border-gray-400">
+                        <div className="transform -rotate-45 origin-center whitespace-nowrap text-sm">
+                          LIKELIHOOD →<br/>SEVERITY ↓
+                        </div>
+                      </th>
+                      <th className="p-3 font-bold text-center text-gray-900 border-r border-gray-300">
+                        <div className="text-xs mb-1">1</div>
+                        <div className="text-sm">{t('insignificant')}</div>
+                      </th>
+                      <th className="p-3 font-bold text-center text-gray-900 border-r border-gray-300">
+                        <div className="text-xs mb-1">2</div>
+                        <div className="text-sm">{t('minor')}</div>
+                      </th>
+                      <th className="p-3 font-bold text-center text-gray-900 border-r border-gray-300">
+                        <div className="text-xs mb-1">3</div>
+                        <div className="text-sm">{t('serious')}</div>
+                      </th>
+                      <th className="p-3 font-bold text-center text-gray-900">
+                        <div className="text-xs mb-1">4</div>
+                        <div className="text-sm">{t('major')}</div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[4, 3, 2, 1].map(likelihood => (
+                      <tr key={likelihood} className="border-b border-gray-300">
+                        <td className="p-3 font-bold text-center align-middle bg-gray-200 border-r-2 border-gray-400">
+                          <div className="text-xs mb-1">{likelihood}</div>
+                          <div className="text-sm transform -rotate-90 whitespace-nowrap">
+                            {likelihoodOptions.find(opt => opt.value === likelihood.toString())?.label || `(${likelihood})`}
+                          </div>
+                        </td>
+                        {[1, 2, 3, 4].map(severity => {
+                          const score = likelihood * severity
+                          const { level, color } = calculateRiskLevel(likelihood.toString(), severity.toString())
+                          
+                          // Add pattern classes for better accessibility
+                          let patternClass = ""
+                          if (score >= 12) patternClass = "bg-black text-white border-4 border-black"
+                          else if (score >= 8) patternClass = "bg-gray-800 text-white border-2 border-gray-900"
+                          else if (score >= 3) patternClass = "bg-gray-400 text-black border-2 border-gray-600"
+                          else patternClass = "bg-gray-100 text-gray-900 border border-gray-400"
+                          
+                          return (
+                            <td key={`${likelihood}-${severity}`} className={`p-4 text-center font-bold text-sm border-r border-gray-300 ${patternClass}`}>
+                              <div className="mb-1 font-bold">{level}</div>
+                              <div className="text-xs opacity-90">Score: {score}</div>
+                              {score >= 12 && <div className="text-xs font-bold mt-1">EXTREME</div>}
+                              {score >= 8 && score < 12 && <div className="text-xs font-bold mt-1">HIGH</div>}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {/* Legend */}
+                <div className="mt-4 p-4 bg-gray-50 border border-gray-300 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">Risk Level Guide:</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-gray-100 border border-gray-400 rounded"></div>
+                      <span><strong>LOW RISK</strong> (1-2): Monitor</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-gray-400 border-2 border-gray-600 rounded"></div>
+                      <span><strong>MEDIUM RISK</strong> (3-6): Plan</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-gray-800 border-2 border-gray-900 rounded"></div>
+                      <span><strong>HIGH RISK</strong> (8-9): Priority</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-black border-4 border-black rounded"></div>
+                      <span><strong>EXTREME RISK</strong> (12-16): Urgent</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+
+          {/* Summary and Recommendations */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">{t('assessmentSummary')}</h3>
+            
+            <div className="space-y-3">
+              {distribution[t('extremeRisk')] > 0 && (
+                <div className="flex items-center p-3 bg-black text-white border-2 border-black rounded-lg">
+                  <svg className="h-5 w-5 text-white mr-3" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <span className="font-bold">
+                    EXTREME PRIORITY: {distribution[t('extremeRisk')]} risk(s) require immediate action
+                  </span>
+                </div>
+              )}
+              
+              {distribution[t('highRisk')] > 0 && (
+                <div className="flex items-center p-3 bg-gray-800 text-white border-2 border-gray-900 rounded-lg">
+                  <svg className="h-5 w-5 text-white mr-3" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+                    <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="font-semibold">
+                    HIGH PRIORITY: {distribution[t('highRisk')]} risk(s) need priority attention
+                  </span>
+                </div>
+              )}
+              
+              <div className="text-sm text-blue-800">
+                <p className="mb-2">
+                  <strong>{t('nextSteps')}</strong> {t('nextStepsText')}
+                </p>
+                <p>
+                  {t('ongoingProcess')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )

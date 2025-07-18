@@ -38,7 +38,8 @@ export async function POST(req: Request) {
             companyName: safeString(planData.PLAN_INFORMATION?.['Company Name']),
             planManager: safeString(planData.PLAN_INFORMATION?.['Plan Manager']),
             alternateManager: safeString(planData.PLAN_INFORMATION?.['Alternate Manager']),
-            planLocation: safeString(planData.PLAN_INFORMATION?.['Plan Location']),
+            physicalPlanLocation: safeString(planData.PLAN_INFORMATION?.['Physical Plan Location']),
+            digitalPlanLocation: safeString(planData.PLAN_INFORMATION?.['Digital Plan Location']),
           },
         },
 

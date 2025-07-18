@@ -10,6 +10,9 @@ type TextInput = {
   tableRowsPrompt?: never;
   priorityOptions?: never;
   downtimeOptions?: never;
+  reasonForUpdateOptions?: never;
+  improvementStatusOptions?: never;
+  businessFunctionOptions?: never;
   dependsOn?: never;
 };
 
@@ -24,6 +27,9 @@ type RadioInput = {
   tableRowsPrompt?: never;
   priorityOptions?: never;
   downtimeOptions?: never;
+  reasonForUpdateOptions?: never;
+  improvementStatusOptions?: never;
+  businessFunctionOptions?: never;
   dependsOn?: never;
 };
 
@@ -38,6 +44,9 @@ type CheckboxInput = {
   tableRowsPrompt?: never;
   priorityOptions?: never;
   downtimeOptions?: never;
+  reasonForUpdateOptions?: never;
+  improvementStatusOptions?: never;
+  businessFunctionOptions?: never;
   dependsOn?: never;
 };
 
@@ -52,6 +61,9 @@ type TableInput = {
   options?: never;
   priorityOptions?: { label: string; value: string }[];
   downtimeOptions?: { label: string; value: string }[];
+  reasonForUpdateOptions?: { label: string; value: string }[];
+  improvementStatusOptions?: { label: string; value: string }[];
+  businessFunctionOptions?: { label: string; value: string }[];
   dependsOn?: string;
 };
 
@@ -66,6 +78,9 @@ type SpecialRiskMatrixInput = {
   tableRowsPrompt?: never;
   priorityOptions?: never;
   downtimeOptions?: never;
+  reasonForUpdateOptions?: never;
+  improvementStatusOptions?: never;
+  businessFunctionOptions?: never;
   dependsOn?: never;
 };
 
@@ -103,19 +118,39 @@ export const STEPS: StepsCollection = {
       {
         type: 'text',
         label: 'Alternate Manager',
-        required: true,
-        prompt: 'Who is the alternate person responsible if the main manager is unavailable?',
-        examples: ['Sarah Johnson, Assistant Manager', 'Michael Brown, Supervisor', 'Lisa Williams, Senior Staff'],
+        required: false,
+        prompt: 'Who is the alternate person responsible if the main manager is unavailable? This field is optional - if you don\'t have an alternate manager, you can leave this blank or enter "N/A". Consider designating a trusted employee, family member, or business partner who can make basic decisions during emergencies.',
+        examples: [
+          'Sarah Johnson, Assistant Manager', 
+          'Michael Brown, Supervisor', 
+          'Lisa Williams, Senior Staff',
+          'N/A - Will rely on main manager only',
+          'Will designate when business grows',
+          'Emergency contact: Local business association'
+        ],
       },
       {
         type: 'text',
-        label: 'Plan Location',
+        label: 'Physical Plan Location',
         required: true,
-        prompt: 'Where will copies of this business continuity plan be stored? Include both physical and digital locations.',
+        prompt: 'Where will physical copies of this business continuity plan be stored? Choose secure, accessible locations that multiple people can access.',
         examples: [
-          'Fire-proof cabinet in office; Electronic version on company server',
-          'Manager\'s office safe; Cloud storage with backup on external drive',
-          'Reception desk locked drawer; Google Drive shared folder'
+          'Fire-proof cabinet in manager\'s office',
+          'Security safe in reception area',
+          'Locked filing cabinet in administration office',
+          'Safety deposit box at local bank'
+        ],
+      },
+      {
+        type: 'text',
+        label: 'Digital Plan Location',
+        required: false,
+        prompt: 'Where will digital copies be stored? This is optional - if you don\'t have reliable internet or digital storage, you can skip this field.',
+        examples: [
+          'Company server with daily backups',
+          'Google Drive shared with management team',
+          'Cloud storage with backup on external drive',
+          'Email copies sent to key personnel'
         ],
       },
     ],
@@ -384,9 +419,10 @@ export const STEPS: StepsCollection = {
           'Power Supply - High Priority - 30 minutes - Refrigeration and POS systems critical',
         ],
         priorityOptions: [
-          { label: 'High (must be restored immediately)', value: 'high' },
-          { label: 'Medium (can wait a few days)', value: 'medium' },
-          { label: 'Low (can wait a few weeks)', value: 'low' },
+          { label: 'Critical - Business cannot function without this', value: 'critical' },
+          { label: 'High - Significant impact if disrupted', value: 'high' },
+          { label: 'Medium - Moderate impact, can wait a few days', value: 'medium' },
+          { label: 'Low - Minimal impact, can wait weeks', value: 'low' },
         ],
         downtimeOptions: [
           { label: 'Less than 1 hour', value: '<1hour' },
@@ -395,6 +431,22 @@ export const STEPS: StepsCollection = {
           { label: '3-7 days', value: '3-7days' },
           { label: '1-2 weeks', value: '1-2weeks' },
           { label: 'More than 2 weeks', value: '>2weeks' },
+        ],
+        businessFunctionOptions: [
+          { label: 'Sales and Customer Service', value: 'sales_customer_service' },
+          { label: 'Production/Manufacturing', value: 'production' },
+          { label: 'Supply Chain Management', value: 'supply_chain' },
+          { label: 'Financial Management', value: 'financial' },
+          { label: 'Human Resources', value: 'human_resources' },
+          { label: 'Information Technology', value: 'information_technology' },
+          { label: 'Marketing and Communications', value: 'marketing' },
+          { label: 'Administration', value: 'administration' },
+          { label: 'Quality Control', value: 'quality_control' },
+          { label: 'Research and Development', value: 'research_development' },
+          { label: 'Facilities Management', value: 'facilities' },
+          { label: 'Regulatory Compliance', value: 'compliance' },
+          { label: 'Transportation/Logistics', value: 'transportation' },
+          { label: 'Other (please specify)', value: 'other' }
         ],
         dependsOn: 'ESSENTIAL_FUNCTIONS', // Example, adjust if needed
       },
@@ -431,6 +483,16 @@ export const STEPS: StepsCollection = {
           { label: 'Supply Chain Disruption', value: 'supply_disruption' },
           { label: 'Key Staff Unavailability', value: 'staff_unavailable' },
           { label: 'Economic Downturn', value: 'economic_downturn' },
+          { label: 'Chemical Spill', value: 'chemical_spill' },
+          { label: 'Environmental Contamination', value: 'environmental_contamination' },
+          { label: 'Air Pollution Event', value: 'air_pollution' },
+          { label: 'Water Contamination', value: 'water_contamination' },
+          { label: 'Industrial Accident', value: 'industrial_accident' },
+          { label: 'Waste Management Failure', value: 'waste_management_failure' },
+          { label: 'Oil Spill', value: 'oil_spill' },
+          { label: 'Sargassum Seaweed Impact', value: 'sargassum' },
+          { label: 'Crowd Management Issues', value: 'crowd_management' },
+          { label: 'Waste Management Issues', value: 'waste_management' },
         ],
         examples: [
           'Coastal business: Hurricane, Coastal flooding, Tsunami, Power outage',
@@ -737,6 +799,16 @@ export const STEPS: StepsCollection = {
           'Version 1.1 - 2024-03-15 - Updated supplier contacts - Maria Rodriguez - Supplier changed phone numbers',
           'Version 2.0 - 2024-07-15 - Major revision after hurricane drill - John Smith (Manager) - Lessons learned from testing',
         ],
+        reasonForUpdateOptions: [
+          { label: 'Annual review and update', value: 'annual_review' },
+          { label: 'Post-incident analysis', value: 'post_incident' },
+          { label: 'Business change (new location, services, etc.)', value: 'business_change' },
+          { label: 'Regulatory requirement change', value: 'regulatory_change' },
+          { label: 'Staff feedback and suggestions', value: 'staff_feedback' },
+          { label: 'Risk assessment update', value: 'risk_update' },
+          { label: 'Technology upgrade', value: 'technology_upgrade' },
+          { label: 'Other (please specify)', value: 'other' }
+        ],
       },
       {
         type: 'table',
@@ -749,6 +821,20 @@ export const STEPS: StepsCollection = {
           'Staff took too long to respond to emergency call - Improve staff training on emergency procedures - High - 2024-02-28 - In Progress',
           'Backup generator failed to start - Schedule monthly generator testing and maintenance - High - 2024-01-30 - Completed',
           'Customer contact list was outdated - Implement quarterly customer contact review - Medium - 2024-03-31 - Planned',
+        ],
+        priorityOptions: [
+          { label: 'Critical - Business cannot function without this', value: 'critical' },
+          { label: 'High - Significant impact if disrupted', value: 'high' },
+          { label: 'Medium - Moderate impact, can wait a few days', value: 'medium' },
+          { label: 'Low - Minimal impact, can wait weeks', value: 'low' },
+        ],
+        improvementStatusOptions: [
+          { label: 'Not Started', value: 'not_started' },
+          { label: 'In Planning', value: 'planning' },
+          { label: 'In Progress', value: 'in_progress' },
+          { label: 'On Hold', value: 'on_hold' },
+          { label: 'Completed', value: 'completed' },
+          { label: 'Cancelled', value: 'cancelled' }
         ],
       },
       {

@@ -23,13 +23,14 @@ model BusinessContinuityPlan {
 }
 
 model PlanInformation {
-  id              String   @id @default(cuid())
-  planId          String   @unique
-  plan            BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  companyName     String
-  planManager     String
-  alternateManager String
-  planLocation    String
+  id                     String   @id @default(cuid())
+  planId                 String   @unique
+  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  companyName            String
+  planManager            String
+  alternateManager       String?
+  physicalPlanLocation   String
+  digitalPlanLocation    String?
 }
 
 model BusinessOverview {
