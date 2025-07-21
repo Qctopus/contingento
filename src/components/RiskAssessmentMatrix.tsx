@@ -105,15 +105,11 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     }
   }
 
-  // Calculate risk level based on likelihood and severity - WITH DEBUGGING
+  // Calculate risk level based on likelihood and severity
   const calculateRiskLevel = useCallback((likelihood: string, severity: string): { level: string; score: number; color: string } => {
-    console.log('🔥 CALCULATE RISK LEVEL CALLED:', { likelihood, severity, type_likelihood: typeof likelihood, type_severity: typeof severity })
-    
     const l = parseInt(likelihood) || 0
     const s = parseInt(severity) || 0
     const score = l * s
-    
-    console.log('🔥 PARSED VALUES:', { l, s, score, raw_calculation: `${l} × ${s} = ${score}` })
     
     // Get translation values with fallbacks
     const extremeRisk = t('extremeRisk') || 'Extreme'
@@ -121,57 +117,29 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     const mediumRisk = t('mediumRisk') || 'Medium'
     const lowRisk = t('lowRisk') || 'Low'
     
-    console.log('🔥 TRANSLATIONS:', { extremeRisk, highRisk, mediumRisk, lowRisk })
-    
-    let result
     // Ensure we return valid levels even if translations aren't loaded yet
-    if (score >= 12) {
-      result = { 
-        level: extremeRisk, 
-        score, 
-        color: 'bg-black text-white border-4 border-black shadow-lg font-bold' 
-      }
-    } else if (score >= 8) {
-      result = { 
-        level: highRisk, 
-        score, 
-        color: 'bg-gray-800 text-white border-2 border-gray-900 font-semibold' 
-      }
-    } else if (score >= 3) {
-      result = { 
-        level: mediumRisk, 
-        score, 
-        color: 'bg-gray-400 text-black border-2 border-gray-600 font-medium' 
-      }
-    } else if (score >= 1) {
-      result = { 
-        level: lowRisk, 
-        score, 
-        color: 'bg-gray-100 text-gray-900 border border-gray-400' 
-      }
-    } else {
-      result = { level: '', score: 0, color: 'bg-gray-50 text-gray-500 border border-gray-200' }
+    if (score >= 12) return { 
+      level: extremeRisk, 
+      score, 
+      color: 'bg-black text-white border-4 border-black shadow-lg font-bold' 
     }
-    
-    console.log('🔥 CALCULATION RESULT:', result)
-    return result
+    if (score >= 8) return { 
+      level: highRisk, 
+      score, 
+      color: 'bg-gray-800 text-white border-2 border-gray-900 font-semibold' 
+    }
+    if (score >= 3) return { 
+      level: mediumRisk, 
+      score, 
+      color: 'bg-gray-400 text-black border-2 border-gray-600 font-medium' 
+    }
+    if (score >= 1) return { 
+      level: lowRisk, 
+      score, 
+      color: 'bg-gray-100 text-gray-900 border border-gray-400' 
+    }
+    return { level: '', score: 0, color: 'bg-gray-50 text-gray-500 border border-gray-200' }
   }, [t])
-
-  // TEST FUNCTION - REMOVE LATER
-  const testCalculation = () => {
-    console.log('🧪 TESTING CALCULATION FUNCTION:')
-    const test1 = calculateRiskLevel('3', '3')
-    console.log('🧪 Test 3×3:', test1)
-    const test2 = calculateRiskLevel('4', '4')
-    console.log('🧪 Test 4×4:', test2)
-    const test3 = calculateRiskLevel('2', '2')
-    console.log('🧪 Test 2×2:', test3)
-  }
-
-  // RUN TEST ON COMPONENT MOUNT
-  useEffect(() => {
-    testCalculation()
-  }, [])
 
   // Initialize risk items when selectedHazards or initialValue changes
   useEffect(() => {
@@ -363,19 +331,9 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       setUserInteracted()
     }
     
-    console.log(`updateRiskItem called - Index: ${index}, Field: ${field}, Value: ${value}`)
-    
     setRiskItems(prevItems => {
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
-      
-      console.log(`Current item before update:`, {
-        hazard: currentItem.hazard,
-        likelihood: currentItem.likelihood,
-        severity: currentItem.severity,
-        riskLevel: currentItem.riskLevel,
-        riskScore: currentItem.riskScore
-      })
       
       // Handle string fields
       if (field === 'hazard' || field === 'likelihood' || field === 'severity' || field === 'riskLevel' || field === 'planningMeasures') {
@@ -386,35 +344,15 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       const newLikelihood = field === 'likelihood' ? value : currentItem.likelihood
       const newSeverity = field === 'severity' ? value : currentItem.severity
       
-      console.log(`After field update - Likelihood: ${newLikelihood}, Severity: ${newSeverity}`)
-      
       if (newLikelihood && newSeverity) {
         const { level, score } = calculateRiskLevel(newLikelihood, newSeverity)
         currentItem.riskLevel = level
         currentItem.riskScore = score
-        
-        console.log(`Risk calculation result:`, {
-          hazard: currentItem.hazard,
-          likelihood: newLikelihood,
-          severity: newSeverity,
-          calculatedLevel: level,
-          calculatedScore: score,
-          rawCalculation: `${parseInt(newLikelihood)} × ${parseInt(newSeverity)} = ${parseInt(newLikelihood) * parseInt(newSeverity)}`
-        })
       } else {
         // Clear risk level if either likelihood or severity is missing
         currentItem.riskLevel = ''
         currentItem.riskScore = 0
-        console.log(`Risk cleared - missing likelihood or severity`)
       }
-      
-      console.log(`Final item after update:`, {
-        hazard: currentItem.hazard,
-        likelihood: currentItem.likelihood,
-        severity: currentItem.severity,
-        riskLevel: currentItem.riskLevel,
-        riskScore: currentItem.riskScore
-      })
       
       updatedItems[index] = currentItem
       return updatedItems
@@ -936,15 +874,6 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                     </div>
                     {risk.likelihood && risk.severity ? (
                       <div className={`inline-flex items-center px-4 py-2 rounded-full border-2 ${getRiskLevelColor(risk.riskLevel)}`}>
-                        {(() => {
-                          console.log(`🔍 DISPLAY VALUES for ${risk.hazard}:`, { 
-                            likelihood: risk.likelihood, 
-                            severity: risk.severity, 
-                            riskLevel: risk.riskLevel, 
-                            riskScore: risk.riskScore 
-                          })
-                          return null
-                        })()}
                         {risk.riskLevel || 'Calculating...'} ({risk.riskScore || 0})
                       </div>
                     ) : (
@@ -952,15 +881,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                         Select likelihood and severity to calculate risk level
                       </div>
                     )}
-                    {/* Debug info - remove later */}
-                    <div className="text-xs text-gray-400 mt-2 border p-2 bg-yellow-50">
-                      <div>🔍 DEBUG VALUES:</div>
-                      <div>• Likelihood: "{risk.likelihood}" (type: {typeof risk.likelihood})</div>
-                      <div>• Severity: "{risk.severity}" (type: {typeof risk.severity})</div>
-                      <div>• Risk Level: "{risk.riskLevel}" (type: {typeof risk.riskLevel})</div>
-                      <div>• Risk Score: {risk.riskScore} (type: {typeof risk.riskScore})</div>
-                      <div>• Manual Test: {risk.likelihood && risk.severity ? `${parseInt(risk.likelihood) || 0} × ${parseInt(risk.severity) || 0} = ${(parseInt(risk.likelihood) || 0) * (parseInt(risk.severity) || 0)}` : 'incomplete'}</div>
-                    </div>
+
                   </div>
 
                   {/* Risk-Specific Strategy Recommendations */}

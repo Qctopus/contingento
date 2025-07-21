@@ -426,10 +426,10 @@ export function StructuredInput({
           'tsunami', 'volcanic', 'drought', 'storm_surge', 'coastal_erosion', 
           'river_flooding', 'urban_flooding'
         ],
-        'Health & Safety': ['epidemic', 'pandemic', 'fire', 'air_pollution'],
+        'Health & Safety': ['epidemic', 'pandemic', 'fire'],
         'Infrastructure': [
           'power_outage', 'telecom_failure', 'cyber_attack', 'infrastructure_failure',
-          'traffic_disruption', 'urban_congestion', 'water_shortage', 'waste_management'
+          'traffic_disruption', 'urban_congestion', 'water_shortage'
         ],
         'Security & Crime': ['crime', 'civil_disorder', 'terrorism'],
         'Business Operations': [
@@ -437,9 +437,9 @@ export function StructuredInput({
           'tourism_disruption'
         ],
         'Industrial & Environmental': [
-          'industrial_accident', 'oil_spill', 'sargassum', 'crowd_management',
-          'chemical_spill', 'environmental_contamination', 'air_pollution', 
-          'water_contamination', 'waste_management_failure'
+          'industrial_accident', 'chemical_spill', 'environmental_contamination', 
+          'waste_management_failure', 'air_pollution', 'water_contamination',
+          'oil_spill', 'sargassum', 'crowd_management', 'waste_management'
         ]
       }
 
