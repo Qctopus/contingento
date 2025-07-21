@@ -272,6 +272,38 @@ export function GuidedRiskAssessment({
   const isLastRisk = currentRiskIndex === riskItems.length - 1
   const completedRisks = riskItems.filter(r => r.likelihood && r.severity).length
 
+  // Calculate risk levels for pre-populated data on mount/change
+  useEffect(() => {
+    if (riskItems.length > 0) {
+      const needsCalculation = riskItems.some(item => 
+        item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)
+      )
+      
+      if (needsCalculation) {
+        console.log('🚀 CALCULATING RISK LEVELS FOR PRE-POPULATED DATA')
+        const updatedItems = riskItems.map(item => {
+          if (item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)) {
+            const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
+            console.log(`🚀 CALCULATED FOR ${item.hazard}:`, { 
+              likelihood: item.likelihood, 
+              severity: item.severity, 
+              calculatedLevel: level, 
+              calculatedScore: score 
+            })
+            return {
+              ...item,
+              riskLevel: level,
+              riskScore: score
+            }
+          }
+          return item
+        })
+        
+        onUpdate(updatedItems)
+      }
+    }
+  }, [riskItems, calculateRiskLevel, onUpdate])
+
   // DEBUG: Log current state
   console.log('🚀 GUIDED ASSESSMENT RENDER:', {
     currentRiskIndex,
@@ -280,16 +312,6 @@ export function GuidedRiskAssessment({
     completedRisks,
     allRiskItems: riskItems
   })
-
-  // FORCE TEST CALCULATION with current values
-  if (currentRisk && currentRisk.likelihood && currentRisk.severity) {
-    const testResult = calculateRiskLevel(currentRisk.likelihood, currentRisk.severity)
-    console.log('🚀 FORCE TEST CALCULATION:', {
-      input: { likelihood: currentRisk.likelihood, severity: currentRisk.severity },
-      output: testResult,
-      currentStored: { riskLevel: currentRisk.riskLevel, riskScore: currentRisk.riskScore }
-    })
-  }
 
   const handleNext = () => {
     if (isLastRisk) {
