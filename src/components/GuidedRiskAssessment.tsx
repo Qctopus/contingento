@@ -281,6 +281,16 @@ export function GuidedRiskAssessment({
     allRiskItems: riskItems
   })
 
+  // FORCE TEST CALCULATION with current values
+  if (currentRisk && currentRisk.likelihood && currentRisk.severity) {
+    const testResult = calculateRiskLevel(currentRisk.likelihood, currentRisk.severity)
+    console.log('🚀 FORCE TEST CALCULATION:', {
+      input: { likelihood: currentRisk.likelihood, severity: currentRisk.severity },
+      output: testResult,
+      currentStored: { riskLevel: currentRisk.riskLevel, riskScore: currentRisk.riskScore }
+    })
+  }
+
   const handleNext = () => {
     if (isLastRisk) {
       onComplete(riskItems)
@@ -512,6 +522,18 @@ export function GuidedRiskAssessment({
                 <p className="text-sm text-gray-600">Based on your likelihood and severity assessment</p>
                 <div className="text-xs bg-blue-100 p-2 mt-2 rounded">
                   🚀 DEBUG: GuidedRiskAssessment Component - L={currentRisk?.likelihood || 'none'}, S={currentRisk?.severity || 'none'}
+                  <br />
+                  <button 
+                    onClick={() => {
+                      console.log('🚀 MANUAL TRIGGER: Calling updateRiskItem manually')
+                      if (currentRisk?.likelihood && currentRisk?.severity) {
+                        updateRiskItem(currentRiskIndex, 'likelihood', currentRisk.likelihood)
+                      }
+                    }}
+                    className="bg-red-500 text-white px-2 py-1 rounded text-xs mt-1"
+                  >
+                    FORCE RECALCULATE
+                  </button>
                 </div>
               </div>
               {currentRisk?.likelihood && currentRisk?.severity ? (
