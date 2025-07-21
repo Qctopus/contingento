@@ -218,17 +218,33 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
   // Additional effect to ensure risk levels are calculated after component fully loads
   useEffect(() => {
     if (riskItems.length > 0) {
-      const needsRecalculation = riskItems.some(item => 
+      const itemsNeedingCalculation = riskItems.filter(item => 
         item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)
       )
       
-      if (needsRecalculation) {
-        console.log('Performing additional risk level calculation for items missing risk levels')
+      if (itemsNeedingCalculation.length > 0) {
+        console.log(`Found ${itemsNeedingCalculation.length} items needing risk calculation:`, 
+          itemsNeedingCalculation.map(item => ({
+            hazard: item.hazard,
+            likelihood: item.likelihood,
+            severity: item.severity,
+            currentRiskLevel: item.riskLevel,
+            currentRiskScore: item.riskScore
+          }))
+        )
+        
         setRiskItems(prevItems => 
           prevItems.map(item => {
-            if (item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)) {
+            if (item.likelihood && item.severity) {
               const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
-              console.log(`Recalculated risk for ${item.hazard}:`, { level, score })
+              console.log(`Force recalculated risk for ${item.hazard}:`, { 
+                likelihood: item.likelihood,
+                severity: item.severity,
+                calculatedLevel: level, 
+                calculatedScore: score,
+                previousLevel: item.riskLevel,
+                previousScore: item.riskScore
+              })
               return {
                 ...item,
                 riskLevel: level,
@@ -241,6 +257,38 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       }
     }
   }, [riskItems, calculateRiskLevel])
+
+  // FORCE recalculation on every render if needed - more aggressive approach
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setRiskItems(prevItems => {
+        let hasChanges = false
+        const updatedItems = prevItems.map(item => {
+          if (item.likelihood && item.severity) {
+            const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
+            if (item.riskLevel !== level || item.riskScore !== score) {
+              hasChanges = true
+              console.log(`FORCED recalculation for ${item.hazard}: ${item.likelihood} × ${item.severity} = ${score} (${level})`)
+              return {
+                ...item,
+                riskLevel: level,
+                riskScore: score
+              }
+            }
+          }
+          return item
+        })
+        
+        if (hasChanges) {
+          console.log('Updated risk items with forced calculation')
+          return updatedItems
+        }
+        return prevItems
+      })
+    }, 500) // Small delay to ensure everything is loaded
+    
+    return () => clearTimeout(timer)
+  }, [calculateRiskLevel])
 
   // Recalculate risk levels when translation function changes or when translations load
   useEffect(() => {
@@ -283,43 +331,63 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       setUserInteracted()
     }
     
+    console.log(`updateRiskItem called - Index: ${index}, Field: ${field}, Value: ${value}`)
+    
     setRiskItems(prevItems => {
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
+      
+      console.log(`Current item before update:`, {
+        hazard: currentItem.hazard,
+        likelihood: currentItem.likelihood,
+        severity: currentItem.severity,
+        riskLevel: currentItem.riskLevel,
+        riskScore: currentItem.riskScore
+      })
       
       // Handle string fields
       if (field === 'hazard' || field === 'likelihood' || field === 'severity' || field === 'riskLevel' || field === 'planningMeasures') {
         currentItem[field] = value
       }
       
-      // Recalculate risk level if likelihood or severity changed
-      if (field === 'likelihood' || field === 'severity') {
-        const newLikelihood = field === 'likelihood' ? value : currentItem.likelihood
-        const newSeverity = field === 'severity' ? value : currentItem.severity
+      // ALWAYS recalculate risk level when likelihood or severity exists
+      const newLikelihood = field === 'likelihood' ? value : currentItem.likelihood
+      const newSeverity = field === 'severity' ? value : currentItem.severity
+      
+      console.log(`After field update - Likelihood: ${newLikelihood}, Severity: ${newSeverity}`)
+      
+      if (newLikelihood && newSeverity) {
+        const { level, score } = calculateRiskLevel(newLikelihood, newSeverity)
+        currentItem.riskLevel = level
+        currentItem.riskScore = score
         
-        if (newLikelihood && newSeverity) {
-          const { level, score } = calculateRiskLevel(newLikelihood, newSeverity)
-          currentItem.riskLevel = level
-          currentItem.riskScore = score
-          
-          // Debug log to help identify issues
-          console.log(`Risk updated for ${currentItem.hazard}:`, {
-            likelihood: newLikelihood,
-            severity: newSeverity,
-            calculatedLevel: level,
-            calculatedScore: score
-          })
-        } else {
-          // Clear risk level if either likelihood or severity is missing
-          currentItem.riskLevel = ''
-          currentItem.riskScore = 0
-        }
+        console.log(`Risk calculation result:`, {
+          hazard: currentItem.hazard,
+          likelihood: newLikelihood,
+          severity: newSeverity,
+          calculatedLevel: level,
+          calculatedScore: score,
+          rawCalculation: `${parseInt(newLikelihood)} × ${parseInt(newSeverity)} = ${parseInt(newLikelihood) * parseInt(newSeverity)}`
+        })
+      } else {
+        // Clear risk level if either likelihood or severity is missing
+        currentItem.riskLevel = ''
+        currentItem.riskScore = 0
+        console.log(`Risk cleared - missing likelihood or severity`)
       }
+      
+      console.log(`Final item after update:`, {
+        hazard: currentItem.hazard,
+        likelihood: currentItem.likelihood,
+        severity: currentItem.severity,
+        riskLevel: currentItem.riskLevel,
+        riskScore: currentItem.riskScore
+      })
       
       updatedItems[index] = currentItem
       return updatedItems
     })
-  }, [setUserInteracted, t])
+  }, [setUserInteracted, calculateRiskLevel])
 
   const getRiskLevelColor = (riskLevel: string): string => {
     if (riskLevel === t('extremeRisk')) return 'bg-black text-white border-4 border-black shadow-lg font-bold'
@@ -828,15 +896,26 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                     </div>
                   </div>
 
-                  {/* Risk Level Display */}
-                  {risk.likelihood && risk.severity && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-sm font-medium text-gray-700 mb-2">{t('calculatedRiskLevel')}</div>
-                      <div className={`inline-flex items-center px-4 py-2 rounded-full border-2 ${getRiskLevelColor(risk.riskLevel)}`}>
-                        {risk.riskLevel} {t('riskText')} ({t('riskScore')}: {risk.riskScore})
-                      </div>
+                  {/* Risk Level Display - ALWAYS show when likelihood and severity are selected */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="text-sm font-medium text-gray-700 mb-2">{t('calculatedRiskLevel')}</div>
+                    <div className="text-sm text-gray-600 mb-2">
+                      Based on your likelihood and severity assessment
                     </div>
-                  )}
+                    {risk.likelihood && risk.severity ? (
+                      <div className={`inline-flex items-center px-4 py-2 rounded-full border-2 ${getRiskLevelColor(risk.riskLevel)}`}>
+                        {risk.riskLevel || 'Calculating...'} ({risk.riskScore || 0})
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center px-4 py-2 rounded-full border-2 bg-gray-100 text-gray-600 border-gray-300">
+                        Select likelihood and severity to calculate risk level
+                      </div>
+                    )}
+                    {/* Debug info - remove later */}
+                    <div className="text-xs text-gray-400 mt-2">
+                      Debug: L={risk.likelihood || 'none'}, S={risk.severity || 'none'}, Score={risk.riskScore || 0}
+                    </div>
+                  </div>
 
                   {/* Risk-Specific Strategy Recommendations */}
                   {risk.likelihood && risk.severity && (
