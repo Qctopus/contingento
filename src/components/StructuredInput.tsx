@@ -423,22 +423,19 @@ export function StructuredInput({
       const HAZARD_CATEGORIES = {
         'Natural Disasters': [
           'earthquake', 'hurricane', 'coastal_flood', 'flash_flood', 'landslide', 
-          'tsunami', 'volcanic', 'drought', 'storm_surge', 'coastal_erosion', 
-          'river_flooding', 'urban_flooding'
+          'tsunami', 'volcanic', 'drought'
         ],
         'Health & Safety': ['epidemic', 'pandemic', 'fire'],
         'Infrastructure': [
-          'power_outage', 'telecom_failure', 'cyber_attack', 'infrastructure_failure',
-          'traffic_disruption', 'urban_congestion', 'water_shortage'
+          'power_outage', 'telecom_failure', 'cyber_attack'
         ],
         'Security & Crime': ['crime', 'civil_disorder', 'terrorism'],
         'Business Operations': [
-          'supply_disruption', 'staff_unavailable', 'economic_downturn', 
-          'tourism_disruption'
+          'supply_disruption', 'staff_unavailable', 'economic_downturn'
         ],
         'Industrial & Environmental': [
-          'industrial_accident', 'chemical_spill', 'environmental_contamination', 
-          'waste_management_failure', 'air_pollution', 'water_contamination',
+          'chemical_spill', 'environmental_contamination', 'air_pollution', 
+          'water_contamination', 'industrial_accident', 'waste_management_failure',
           'oil_spill', 'sargassum', 'crowd_management', 'waste_management'
         ]
       }
