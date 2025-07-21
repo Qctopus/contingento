@@ -209,7 +209,7 @@ export function StructuredInput({
           <tbody>
             {tableRows.map((row, rowIndex) => (
               <tr key={rowIndex} className="hover:bg-gray-50">
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <input
                     type="text"
                     value={row[tableColumns[0]] || ''}
@@ -218,7 +218,7 @@ export function StructuredInput({
                     className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                   />
                 </td>
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <select
                     value={row[tableColumns[1]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[1], e.target.value)}
@@ -232,7 +232,7 @@ export function StructuredInput({
                     ))}
                   </select>
                 </td>
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <select
                     value={row[tableColumns[2]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[2], e.target.value)}
@@ -246,16 +246,22 @@ export function StructuredInput({
                     ))}
                   </select>
                 </td>
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <textarea
                     value={row[tableColumns[3]] || ''}
                     onChange={(e) => updateTableRow(rowIndex, tableColumns[3], e.target.value)}
                     placeholder="Additional notes"
-                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
-                    rows={2}
+                    className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400 min-h-[80px] resize-y"
+                    rows={3}
+                    style={{ height: 'auto', minHeight: '80px' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = Math.max(80, target.scrollHeight) + 'px';
+                    }}
                   />
                 </td>
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <button
                     onClick={() => deleteTableRow(rowIndex)}
                     className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50"
@@ -325,7 +331,7 @@ export function StructuredInput({
             {tableRows.map((row, rowIndex) => (
               <tr key={rowIndex} className="hover:bg-gray-50">
                 {tableColumns.map((column, colIndex) => (
-                  <td key={colIndex} className="border border-gray-300 px-4 py-3">
+                  <td key={colIndex} className="border border-gray-300 px-4 py-4 align-top">
                     {column.toLowerCase().includes('email') ? (
                       <input
                         type="email"
@@ -354,13 +360,19 @@ export function StructuredInput({
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
                         placeholder={`Enter ${column.toLowerCase()}`}
-                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
-                        rows={2}
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400 min-h-[80px] resize-y"
+                        rows={3}
+                        style={{ height: 'auto', minHeight: '80px' }}
+                        onInput={(e) => {
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = Math.max(80, target.scrollHeight) + 'px';
+                        }}
                       />
                     )}
                   </td>
                 ))}
-                <td className="border border-gray-300 px-4 py-3">
+                <td className="border border-gray-300 px-4 py-4 align-top">
                   <button
                     onClick={() => deleteTableRow(rowIndex)}
                     className="text-red-600 hover:text-red-800 text-sm px-2 py-1 rounded hover:bg-red-50 flex items-center space-x-1"

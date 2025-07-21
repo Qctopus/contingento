@@ -1,46 +1,29 @@
 import { LocationData, HazardRiskLevel } from '../data/types'
+import { locationHazards } from '../data/hazardMappings'
+import { industryProfiles } from '../data/industryProfiles'
 
-// Load JSON data
-let locationHazardsData: any = null
-let industryProfilesData: any = null
-
-// Load location hazards from JSON
-async function loadLocationHazards() {
-  if (!locationHazardsData) {
-    try {
-      const response = await fetch('/data/json/locationHazards.json')
-      locationHazardsData = await response.json()
-    } catch (error) {
-      console.error('Failed to load location hazards data:', error)
-      locationHazardsData = { countries: [] }
-    }
+// Use TypeScript data directly instead of loading JSON
+function getLocationHazardsData() {
+  return {
+    countries: locationHazards
   }
-  return locationHazardsData
 }
 
-// Load industry profiles from JSON
-async function loadIndustryProfiles() {
-  if (!industryProfilesData) {
-    try {
-      const response = await fetch('/data/json/industryProfiles.json')
-      industryProfilesData = await response.json()
-    } catch (error) {
-      console.error('Failed to load industry profiles data:', error)
-      industryProfilesData = { industries: [] }
-    }
+function getIndustryProfilesData() {
+  return {
+    industries: industryProfiles
   }
-  return industryProfilesData
 }
 
 // Get location hazards for a specific country
-export async function getLocationHazards(countryCode: string) {
-  const data = await loadLocationHazards()
+export function getLocationHazards(countryCode: string) {
+  const data = getLocationHazardsData()
   return data.countries.find((country: any) => country.countryCode === countryCode)
 }
 
 // Get all available countries
-export async function getAvailableCountries() {
-  const data = await loadLocationHazards()
+export function getAvailableCountries() {
+  const data = getLocationHazardsData()
   return data.countries.map((country: any) => ({
     name: country.country,
     code: country.countryCode
@@ -48,20 +31,20 @@ export async function getAvailableCountries() {
 }
 
 // Get parishes for a specific country
-export async function getCountryParishes(countryCode: string) {
-  const location = await getLocationHazards(countryCode)
+export function getCountryParishes(countryCode: string) {
+  const location = getLocationHazards(countryCode)
   if (!location || !location.parishSpecific) return []
   return Object.keys(location.parishSpecific)
 }
 
 // Calculate location-based risk
-export async function calculateLocationRisk(
+export function calculateLocationRisk(
   countryCode: string,
   parish?: string,
   nearCoast: boolean = false,
   urbanArea: boolean = false
-): Promise<HazardRiskLevel[]> {
-  const location = await getLocationHazards(countryCode)
+): HazardRiskLevel[] {
+  const location = getLocationHazards(countryCode)
   if (!location) return []
 
   let hazards = [...location.baseHazards]
@@ -103,24 +86,25 @@ export async function calculateLocationRisk(
 }
 
 // Get industry profile by ID
-export async function getIndustryProfile(id: string) {
-  const data = await loadIndustryProfiles()
+export function getIndustryProfile(id: string) {
+  const data = getIndustryProfilesData()
   return data.industries.find((industry: any) => industry.id === id)
 }
 
 // Get all industry profiles
-export async function getAllIndustryProfiles() {
-  const data = await loadIndustryProfiles()
+export function getAllIndustryProfiles() {
+  const data = getIndustryProfilesData()
   return data.industries
 }
 
 // Get industries by category
-export async function getIndustriesByCategory(category: string) {
-  const data = await loadIndustryProfiles()
+export function getIndustriesByCategory(category: string) {
+  const data = getIndustryProfilesData()
   return data.industries.filter((industry: any) => industry.category === category)
 }
 
 // Update the risk data from external sources (for admin panel in future)
+// Note: These functions would need to be reworked for TypeScript-based data
 export async function updateLocationHazards(newData: any) {
   try {
     const response = await fetch('/api/update-location-hazards', {
@@ -132,7 +116,8 @@ export async function updateLocationHazards(newData: any) {
     })
     
     if (response.ok) {
-      locationHazardsData = null // Clear cache to force reload
+      // With TypeScript data, updates would require code changes
+      console.warn('Location hazards data is now managed in TypeScript files')
       return true
     }
   } catch (error) {
@@ -152,7 +137,8 @@ export async function updateIndustryProfiles(newData: any) {
     })
     
     if (response.ok) {
-      industryProfilesData = null // Clear cache to force reload
+      // With TypeScript data, updates would require code changes
+      console.warn('Industry profiles data is now managed in TypeScript files')
       return true
     }
   } catch (error) {

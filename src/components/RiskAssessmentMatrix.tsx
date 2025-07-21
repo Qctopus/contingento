@@ -175,13 +175,13 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       const existingItem = existingRisksMap.get(hazardKey) || existingRisksMap.get(hazardLabel)
       
       if (existingItem) {
-        // Update the hazard field to use the translated label and recalculate risk level
+        // Update the hazard field to use the translated label and ALWAYS recalculate risk level
         const updatedItem = {
           ...existingItem,
           hazard: hazardLabel
         }
         
-        // Recalculate risk level if likelihood and severity are present
+        // FORCE recalculation if likelihood and severity are present
         if (updatedItem.likelihood && updatedItem.severity) {
           const { level, score } = calculateRiskLevel(updatedItem.likelihood, updatedItem.severity)
           updatedItem.riskLevel = level
@@ -193,6 +193,10 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
             calculatedLevel: level,
             calculatedScore: score
           })
+        } else if (!updatedItem.likelihood || !updatedItem.severity) {
+          // Clear risk level if data is incomplete
+          updatedItem.riskLevel = ''
+          updatedItem.riskScore = 0
         }
         
         return updatedItem
@@ -210,6 +214,33 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
 
     setRiskItems(newRiskItems)
   }, [selectedHazards, initialValue, tSteps, calculateRiskLevel])
+
+  // Additional effect to ensure risk levels are calculated after component fully loads
+  useEffect(() => {
+    if (riskItems.length > 0) {
+      const needsRecalculation = riskItems.some(item => 
+        item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)
+      )
+      
+      if (needsRecalculation) {
+        console.log('Performing additional risk level calculation for items missing risk levels')
+        setRiskItems(prevItems => 
+          prevItems.map(item => {
+            if (item.likelihood && item.severity && (!item.riskLevel || item.riskScore === 0)) {
+              const { level, score } = calculateRiskLevel(item.likelihood, item.severity)
+              console.log(`Recalculated risk for ${item.hazard}:`, { level, score })
+              return {
+                ...item,
+                riskLevel: level,
+                riskScore: score
+              }
+            }
+            return item
+          })
+        )
+      }
+    }
+  }, [riskItems, calculateRiskLevel])
 
   // Recalculate risk levels when translation function changes or when translations load
   useEffect(() => {
