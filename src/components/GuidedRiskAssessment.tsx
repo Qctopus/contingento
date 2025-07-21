@@ -43,23 +43,41 @@ export function GuidedRiskAssessment({
   const [viewMode, setViewMode] = useState<'guided' | 'overview'>('guided')
   const t = useTranslations('common')
 
-  // Calculate risk level from likelihood and severity
+  // Calculate risk level from likelihood and severity - WITH DEBUGGING
   const calculateRiskLevel = (likelihood: string, severity: string): { level: string; score: number } => {
+    console.log('🚀 GUIDED ASSESSMENT CALCULATE RISK:', { likelihood, severity, type_l: typeof likelihood, type_s: typeof severity })
+    
     const l = parseInt(likelihood) || 0
     const s = parseInt(severity) || 0
     const score = l * s
     
-    if (score >= 12) return { level: t('extremeRisk'), score }
-    if (score >= 8) return { level: t('highRisk'), score }
-    if (score >= 3) return { level: t('mediumRisk'), score }
-    if (score >= 1) return { level: t('lowRisk'), score }
-    return { level: '', score: 0 }
+    console.log('🚀 GUIDED PARSED VALUES:', { l, s, score, calculation: `${l} × ${s} = ${score}` })
+    
+    let result
+    if (score >= 12) {
+      result = { level: t('extremeRisk'), score }
+    } else if (score >= 8) {
+      result = { level: t('highRisk'), score }
+    } else if (score >= 3) {
+      result = { level: t('mediumRisk'), score }
+    } else if (score >= 1) {
+      result = { level: t('lowRisk'), score }
+    } else {
+      result = { level: '', score: 0 }
+    }
+    
+    console.log('🚀 GUIDED RESULT:', result)
+    return result
   }
 
-  // Update a specific risk item
+  // Update a specific risk item - WITH DEBUGGING
   const updateRiskItem = useCallback((index: number, field: keyof RiskItem, value: string) => {
+    console.log('🚀 GUIDED updateRiskItem called:', { index, field, value })
+    
     const updatedItems = [...riskItems]
     const currentItem = { ...updatedItems[index] }
+    
+    console.log('🚀 GUIDED current item before update:', currentItem)
     
     if (field === 'hazard' || field === 'likelihood' || field === 'severity' || field === 'riskLevel' || field === 'planningMeasures') {
       currentItem[field] = value
@@ -70,19 +88,25 @@ export function GuidedRiskAssessment({
       const newLikelihood = field === 'likelihood' ? value : currentItem.likelihood
       const newSeverity = field === 'severity' ? value : currentItem.severity
       
+      console.log('🚀 GUIDED recalculating with:', { newLikelihood, newSeverity })
+      
       if (newLikelihood && newSeverity) {
         const { level, score } = calculateRiskLevel(newLikelihood, newSeverity)
         currentItem.riskLevel = level
         currentItem.riskScore = score
+        console.log('🚀 GUIDED risk calculated, updating item:', { level, score })
       } else {
         currentItem.riskLevel = ''
         currentItem.riskScore = 0
+        console.log('🚀 GUIDED clearing risk - missing values')
       }
     }
     
+    console.log('🚀 GUIDED final item after update:', currentItem)
+    
     updatedItems[index] = currentItem
     onUpdate(updatedItems)
-  }, [riskItems, onUpdate])
+  }, [riskItems, onUpdate, calculateRiskLevel])
 
   // Get contextual guidance for a specific hazard
   const getContextualGuidance = (hazardKey: string) => {
@@ -247,6 +271,15 @@ export function GuidedRiskAssessment({
   const currentRisk = riskItems[currentRiskIndex]
   const isLastRisk = currentRiskIndex === riskItems.length - 1
   const completedRisks = riskItems.filter(r => r.likelihood && r.severity).length
+
+  // DEBUG: Log current state
+  console.log('🚀 GUIDED ASSESSMENT RENDER:', {
+    currentRiskIndex,
+    currentRisk,
+    totalRiskItems: riskItems.length,
+    completedRisks,
+    allRiskItems: riskItems
+  })
 
   const handleNext = () => {
     if (isLastRisk) {
@@ -471,13 +504,17 @@ export function GuidedRiskAssessment({
           </div>
 
           {/* Risk Level Display */}
-          {currentRisk.likelihood && currentRisk.severity && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Calculated Risk Level</h4>
-                  <p className="text-sm text-gray-600">Based on your likelihood and severity assessment</p>
+          {/* RISK LEVEL DISPLAY - ALWAYS SHOW WITH DEBUG */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-gray-900">Calculated Risk Level</h4>
+                <p className="text-sm text-gray-600">Based on your likelihood and severity assessment</p>
+                <div className="text-xs bg-blue-100 p-2 mt-2 rounded">
+                  🚀 DEBUG: GuidedRiskAssessment Component - L={currentRisk?.likelihood || 'none'}, S={currentRisk?.severity || 'none'}
                 </div>
+              </div>
+              {currentRisk?.likelihood && currentRisk?.severity ? (
                 <div className={`px-6 py-3 rounded-full font-bold text-lg ${
                   currentRisk.riskScore >= 12 
                     ? 'bg-black text-white'
@@ -489,9 +526,13 @@ export function GuidedRiskAssessment({
                 }`}>
                   {currentRisk.riskLevel} ({currentRisk.riskScore})
                 </div>
-              </div>
+              ) : (
+                <div className="px-6 py-3 rounded-full font-bold text-lg bg-gray-200 text-gray-600">
+                  Select both values
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Examples */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
