@@ -544,6 +544,8 @@ export function BusinessContinuityForm() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
+      console.log('Saving plan data:', formData)
+      
       const response = await fetch('/api/save-plan', {
         method: 'POST',
         headers: {
@@ -555,18 +557,22 @@ export function BusinessContinuityForm() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to save plan')
+        const errorData = await response.json()
+        console.error('Save failed with status:', response.status, errorData)
+        throw new Error(errorData.details || `Failed to save plan (${response.status})`)
       }
 
       const data = await response.json()
+      console.log('Save successful:', data)
       
       // Clear the draft after successful save
       localStorage.removeItem('bcp-draft')
       
-      alert(t('common.success'))
+      alert(`${t('common.success')} - Plan saved with ID: ${data.planId}`)
     } catch (error) {
       console.error('Error saving plan:', error)
-      alert(t('common.error'))
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`${t('common.error')}: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -1001,12 +1007,11 @@ export function BusinessContinuityForm() {
               )}
 
               <button
-                onClick={handleNext}
-                disabled={
-                  currentStep === 'TESTING_AND_MAINTENANCE' && 
-                  currentQuestionIndex === currentStepData.inputs.length - 1
+                onClick={currentStep === 'TESTING_AND_MAINTENANCE' && currentQuestionIndex === currentStepData.inputs.length - 1 
+                  ? exportToPDF
+                  : handleNext
                 }
-                className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"
               >
                 {currentStep === 'TESTING_AND_MAINTENANCE' && currentQuestionIndex === currentStepData.inputs.length - 1 
                   ? t('common.completePlan')
