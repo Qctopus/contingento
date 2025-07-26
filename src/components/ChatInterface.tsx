@@ -2,12 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { StructuredInput } from './StructuredInput'
+import { 
+  HAZARD_ACTION_PLANS, 
+  BUSINESS_TYPE_MODIFIERS, 
+  getBusinessTypeFromFormData 
+} from '../data/actionPlansMatrix'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
   structuredInput?: {
-    type: 'text' | 'radio' | 'checkbox' | 'table' | 'special_risk_matrix'
+    type: 'text' | 'radio' | 'checkbox' | 'table' | 'special_risk_matrix' | 'special_smart_action_plan'
     label: string
     options?: { label: string; value: string }[]
     required?: boolean
@@ -19,7 +24,7 @@ interface Message {
 
 const STEPS = {
   BUSINESS_OVERVIEW: {
-    title: 'Business Overview',
+    title: '🚀 UPDATED Business Overview - TEST',
     description: 'Let\'s start by understanding your business better.',
     inputs: [
       {
@@ -78,6 +83,50 @@ const STEPS = {
           'Monday to Saturday, 8 AM to 6 PM. Closed on Sundays and public holidays.',
           '24/7 for emergency services. Regular business hours are Monday to Friday, 9 AM to 5 PM.',
           'Tuesday to Sunday, 11 AM to 10 PM. Extended hours during tourist season (December to April).',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Key Markets',
+        required: true,
+        prompt: 'Who are your main customers or target markets? Think about who benefits most from your products or services.',
+        examples: [
+          'Local residents, tourists, and small businesses in the area',
+          'Homeowners and small commercial properties within 50km radius',
+          'International tourists, cruise ship passengers, and local food enthusiasts',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Annual Revenue',
+        required: true,
+        prompt: 'What is your approximate annual revenue? This helps us understand the scale of your business.',
+        examples: [
+          'Between $100,000 - $500,000 annually',
+          'Approximately $1.2 million per year',
+          'Around $50,000 - varies with tourist seasons',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Number of Employees',
+        required: true,
+        prompt: 'How many people work for your business? Include full-time, part-time, and seasonal workers.',
+        examples: [
+          '8 full-time employees, 3 part-time during busy season',
+          '15 permanent staff, up to 25 during peak tourist season',
+          'Family business with 3 full-time members, 2 seasonal helpers',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Business Location',
+        required: true,
+        prompt: 'Where is your business located? Include any important details about your location that might affect business continuity.',
+        examples: [
+          'Downtown Kingston, ground floor of historic building, near the waterfront',
+          'Industrial area in Spanish Town, 10 minutes from main highway',
+          'Beachfront location in Negril, tourist area, accessible by main coastal road',
         ],
       },
       {
@@ -233,29 +282,65 @@ const STEPS = {
       {
         type: 'checkbox' as const,
         label: 'Hazards',
-        prompt: 'Select all hazards that may apply to your business. Consider both natural and man-made risks.',
+        prompt: 'Select all hazards that may apply to your business. Our system will help prioritize them based on your location and business type in the next step.',
         options: [
+          // Natural Disasters
           { label: 'Earthquake', value: 'earthquake' },
-          { label: 'Hurricane', value: 'hurricane' },
-          { label: 'Coastal Flood', value: 'coastal_flood' },
-          { label: 'Flood', value: 'flood' },
+          { label: 'Hurricane/Tropical Storm', value: 'hurricane' },
+          { label: 'Coastal Flooding', value: 'coastal_flood' },
+          { label: 'Flash Flooding', value: 'flash_flood' },
+          { label: 'Urban Flooding', value: 'urban_flooding' },
+          { label: 'River Flooding', value: 'river_flooding' },
           { label: 'Landslide', value: 'landslide' },
+          { label: 'Storm Surge', value: 'storm_surge' },
+          { label: 'Coastal Erosion', value: 'coastal_erosion' },
           { label: 'Tsunami', value: 'tsunami' },
-          { label: 'Epidemics', value: 'epidemics' },
-          { label: 'Pandemics', value: 'pandemics' },
-          { label: 'Volcanic activity', value: 'volcanic' },
-          { label: 'Power outage', value: 'power_outage' },
-          { label: 'Cyber Crime', value: 'cyber_crime' },
-          { label: 'Terrorism', value: 'terrorism' },
-          { label: 'Civil Disorder', value: 'civil_disorder' },
-          { label: 'Crime/Theft', value: 'crime' },
-          { label: 'Fire', value: 'fire' },
           { label: 'Drought', value: 'drought' },
+          
+          // Health & Safety
+          { label: 'Epidemic/Health Crisis', value: 'epidemics' },
+          { label: 'Pandemic', value: 'pandemic' },
+          { label: 'Fire', value: 'fire' },
+          
+          // Infrastructure & Technology
+          { label: 'Power Outage', value: 'power_outage' },
+          { label: 'Telecommunications Failure', value: 'telecom_failure' },
+          { label: 'Internet/Cyber Attack', value: 'cyber_crime' },
+          { label: 'Infrastructure Failure', value: 'infrastructure_failure' },
+          
+          // Security & Crime
+          { label: 'Crime/Security Issues', value: 'crime' },
+          { label: 'Civil Disorder', value: 'civil_disorder' },
+          { label: 'Terrorism', value: 'terrorism' },
+          
+          // Business & Economic
+          { label: 'Supply Chain Disruption', value: 'supply_disruption' },
+          { label: 'Staff Unavailability', value: 'staff_unavailable' },
+          { label: 'Economic Downturn', value: 'economic_downturn' },
+          { label: 'Tourism Disruption', value: 'tourism_disruption' },
+          
+          // Environmental & Industrial
+          { label: 'Industrial Accident', value: 'industrial_accident' },
+          { label: 'Chemical Spill', value: 'chemical_spill' },
+          { label: 'Oil Spill', value: 'oil_spill' },
+          { label: 'Environmental Contamination', value: 'environmental_contamination' },
+          { label: 'Air Pollution Event', value: 'air_pollution' },
+          { label: 'Water Contamination', value: 'water_contamination' },
+          { label: 'Water Shortage', value: 'water_shortage' },
+          { label: 'Waste Management Failure', value: 'waste_management_failure' },
+          { label: 'Sargassum Seaweed Impact', value: 'sargassum' },
+          
+          // Urban & Operational
+          { label: 'Traffic/Transport Disruption', value: 'traffic_disruption' },
+          { label: 'Urban Congestion', value: 'urban_congestion' },
+          { label: 'Crowd Management Issues', value: 'crowd_management' },
+          { label: 'Waste Management Issues', value: 'waste_management' },
         ],
         examples: [
-          'A coastal business might select: Hurricane, Coastal Flood, Tsunami',
-          'A technology business might select: Power outage, Cyber Crime',
-          'A retail business might select: Crime/Theft, Fire, Power outage',
+          'Coastal businesses: Hurricane, Coastal Flooding, Storm Surge, Power Outage',
+          'Urban businesses: Power Outage, Crime, Traffic Disruption, Infrastructure Failure', 
+          'Tourism businesses: Hurricane, Tourism Disruption, Power Outage, Health Crisis',
+          'Industrial businesses: Fire, Industrial Accident, Environmental Contamination, Supply Disruption',
         ],
       },
     ],
@@ -321,51 +406,73 @@ const STEPS = {
     ],
   },
   ACTION_PLAN: {
-    title: 'Action Plan',
-    description: 'Finally, let\'s create a detailed action plan to implement your business continuity strategies.',
+    title: 'Smart Action Plan',
+    description: 'Based on your business type and risk assessment, we\'ve generated a customized action plan. Review and modify as needed.',
     inputs: [
       {
-        type: 'text' as const,
-        label: 'Implementation Timeline',
+        type: 'special_smart_action_plan' as const,
+        label: 'Auto-Generated Action Plans',
         required: true,
-        prompt: 'When would you like to start implementing your business continuity plan? Consider any upcoming risks or business cycles.',
+        prompt: 'We\'ve analyzed your business type and high-priority risks to create customized action plans. Please review the generated plans below and modify any details that don\'t fit your specific situation.',
         examples: [
-          'Start immediately with high-priority items, complete full implementation within 3 months',
-          'Begin with critical systems next month, phase in remaining items over 6 months',
-          'Start after the busy season ends, implement over 4 months',
+          'Plans are automatically customized based on your business type (tourism, retail, manufacturing, etc.)',
+          'Each plan includes immediate, short-term, and medium-term actions with specific responsibilities',
+          'Resource requirements and timelines are tailored to your business size and location',
         ],
       },
       {
         type: 'text' as const,
-        label: 'Resource Requirements',
+        label: 'Implementation Priority',
         required: true,
-        prompt: 'What resources (financial, human, technical) will you need to implement your plan?',
+        prompt: 'Which action plans would you like to implement first? Consider your current resources and most critical risks.',
         examples: [
-          'Budget of $10,000 for security systems and training, 2 staff members for implementation',
-          'IT consultant for data backup systems, $5,000 for equipment upgrades',
-          'Training budget of $3,000, 1 day per week from each department head',
+          'Start with Hurricane preparedness (highest risk), then Power Outage backup systems',
+          'Focus on Cyber Security measures first, then Physical Security improvements',
+          'Begin with immediate actions across all risks, then prioritize by business impact',
         ],
       },
       {
         type: 'text' as const,
-        label: 'Responsible Parties',
+        label: 'Budget and Resources',
         required: true,
-        prompt: 'Who will be responsible for implementing and maintaining different aspects of the plan?',
+        prompt: 'What is your estimated budget for implementing these action plans? Include both financial and human resources.',
         examples: [
-          'IT Manager for technical systems, HR Manager for training, Operations Manager for procedures',
-          'Owner for overall coordination, Office Manager for documentation, Department Heads for their areas',
-          'Business Continuity Team (3 staff members) for implementation, Department Managers for maintenance',
+          'Total budget: $15,000 over 6 months, plus 20 hours/week from management team',
+          'Phase 1: $5,000 for immediate needs, Phase 2: $10,000 for infrastructure upgrades',
+          'Limited budget ($3,000), will focus on training and procedures before equipment',
         ],
       },
       {
         type: 'text' as const,
-        label: 'Review and Update Schedule',
+        label: 'Implementation Team',
         required: true,
-        prompt: 'How often will you review and update your business continuity plan?',
+        prompt: 'Who will lead the implementation of your business continuity plan? Assign specific roles and responsibilities.',
         examples: [
-          'Quarterly reviews, annual comprehensive updates',
-          'Bi-annual reviews, update after any major business changes',
-          'Monthly check-ins, quarterly detailed reviews, annual full update',
+          'General Manager (overall coordination), Operations Manager (daily procedures), IT Staff (technical systems)',
+          'Owner (decision-making), Office Manager (documentation), Department Heads (area-specific implementation)',
+          'Business Continuity Coordinator (external consultant), 2 internal staff for day-to-day management',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Review Schedule',
+        required: true,
+        prompt: 'How often will you review and update your action plans? Consider seasonal risks and business changes.',
+        examples: [
+          'Monthly progress reviews, quarterly plan updates, annual comprehensive review',
+          'Before each hurricane season (May), after major business changes, annual full review',
+          'Bi-annual reviews in April and October, immediate updates after any incidents',
+        ],
+      },
+      {
+        type: 'text' as const,
+        label: 'Success Metrics',
+        required: true,
+        prompt: 'How will you measure the success of your business continuity plan implementation?',
+        examples: [
+          'Time to restore operations after incidents, staff training completion rates, system test success rates',
+          'Reduce business interruption time by 50%, achieve 95% staff emergency preparedness, maintain customer satisfaction above 90%',
+          'Complete all immediate actions within 30 days, achieve full plan implementation within 90 days, conduct successful quarterly drills',
         ],
       },
     ],

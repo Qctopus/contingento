@@ -1,14 +1,125 @@
 import { NextResponse } from 'next/server'
 import { jsPDF } from 'jspdf'
 import 'jspdf-autotable'
+import { 
+  HAZARD_ACTION_PLANS, 
+  BUSINESS_TYPE_MODIFIERS, 
+  getBusinessTypeFromFormData 
+} from '../../../data/actionPlansMatrix'
 
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF
-    lastAutoTable: {
-      finalY: number
-    }
+// Transformation functions for consistent labeling
+const HAZARD_LABELS: { [key: string]: string } = {
+  'hurricane': 'Hurricane/Tropical Storm',
+  'power_outage': 'Extended Power Outage',
+  'cyber_attack': 'Cyber Attack/Security Breach',
+  'fire': 'Fire Emergency',
+  'earthquake': 'Earthquake',
+  'flood': 'Flooding',
+  'drought': 'Drought/Water Shortage',
+  'volcanic_activity': 'Volcanic Activity'
+}
+
+const STRATEGY_LABELS: { [key: string]: string } = {
+  'prevention': 'Prevention Strategies',
+  'response': 'Response Strategies', 
+  'recovery': 'Recovery Strategies'
+}
+
+function transformHazardName(hazardCode: string): string {
+  if (typeof hazardCode !== 'string') return String(hazardCode || '')
+  return HAZARD_LABELS[hazardCode] || hazardCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+function transformStrategyName(strategyCode: string): string {
+  if (typeof strategyCode !== 'string') return String(strategyCode || '')
+  return STRATEGY_LABELS[strategyCode] || strategyCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+}
+
+// Generate action plans using the centralized matrix
+function generateHazardActionPlansForPDF(formData: any, riskAssessment: any): any[] {
+  if (!riskAssessment || !riskAssessment['Risk Assessment Matrix']) {
+    return []
   }
+
+  const riskMatrix = riskAssessment['Risk Assessment Matrix']
+  if (!Array.isArray(riskMatrix)) {
+    return []
+  }
+
+  // Filter for high and extreme risk hazards
+  const priorityHazards = riskMatrix.filter(risk => {
+    const riskLevel = (risk.riskLevel || risk.RiskLevel || '').toLowerCase()
+    return riskLevel.includes('high') || riskLevel.includes('extreme')
+  })
+
+  // Get business type for customization
+  const businessType = getBusinessTypeFromFormData(formData)
+  const businessModifiers = BUSINESS_TYPE_MODIFIERS[businessType] || {}
+
+  // Generate action plans for each priority hazard
+  return priorityHazards.map(risk => {
+    const hazardName = transformHazardName(risk.hazard || risk.Hazard || '')
+    const riskLevel = risk.riskLevel || risk.RiskLevel || 'High'
+    
+    // Find matching hazard key in action plans matrix
+    const hazardKey = Object.keys(HAZARD_ACTION_PLANS).find(key => {
+      const planHazardName = transformHazardName(key)
+      return planHazardName.toLowerCase().includes(hazardName.toLowerCase()) || 
+             hazardName.toLowerCase().includes(planHazardName.toLowerCase())
+    })
+
+    // Get base action plan from matrix
+    let actionPlan = hazardKey ? { ...HAZARD_ACTION_PLANS[hazardKey] } : {
+      resourcesNeeded: ['Emergency supplies', 'Communication systems', 'Backup procedures', 'Staff training materials'],
+      immediateActions: [
+        { task: 'Activate emergency response procedures', responsible: 'Management', duration: '1 hour', priority: 'high' as const },
+        { task: 'Ensure staff and customer safety', responsible: 'All Staff', duration: '30 minutes', priority: 'high' as const },
+        { task: 'Assess immediate impact and needs', responsible: 'Management', duration: '2 hours', priority: 'high' as const }
+      ],
+      shortTermActions: [
+        { task: 'Coordinate with emergency services if needed', responsible: 'Management', duration: '4 hours', priority: 'medium' as const },
+        { task: 'Implement alternative business processes', responsible: 'Operations Team', duration: '1 day', priority: 'medium' as const },
+        { task: 'Update stakeholders on status', responsible: 'Management', duration: '4 hours', priority: 'medium' as const }
+      ],
+      mediumTermActions: [
+        { task: 'Assess damage and recovery needs', responsible: 'Management', duration: '1 week', priority: 'medium' as const },
+        { task: 'Implement recovery procedures', responsible: 'Operations Team', duration: '2 weeks', priority: 'medium' as const },
+        { task: 'Document lessons learned', responsible: 'Management', duration: '1 week', priority: 'low' as const }
+      ],
+      longTermReduction: [
+        'Implement prevention measures specific to this hazard',
+        'Improve monitoring and early warning systems',
+        'Strengthen business resilience and backup procedures',
+        'Regular training and plan updates'
+      ]
+    }
+
+    // Apply business type modifications
+    if (businessModifiers.additionalResources) {
+      actionPlan.resourcesNeeded = [...actionPlan.resourcesNeeded, ...businessModifiers.additionalResources]
+    }
+
+    if (businessModifiers.modifiedActions?.immediate) {
+      actionPlan.immediateActions = [...actionPlan.immediateActions, ...businessModifiers.modifiedActions.immediate]
+    }
+
+    if (businessModifiers.modifiedActions?.shortTerm) {
+      actionPlan.shortTermActions = [...actionPlan.shortTermActions, ...businessModifiers.modifiedActions.shortTerm]
+    }
+
+    if (businessModifiers.modifiedActions?.mediumTerm) {
+      actionPlan.mediumTermActions = [...actionPlan.mediumTermActions, ...businessModifiers.modifiedActions.mediumTerm]
+    }
+
+    return {
+      hazard: hazardName,
+      riskLevel: riskLevel,
+      businessType: businessType,
+      affectedFunctions: 'All critical business operations',
+      specificConsiderations: businessModifiers.specificConsiderations || [],
+      ...actionPlan
+    }
+  })
 }
 
 export async function POST(req: Request) {
@@ -22,7 +133,7 @@ export async function POST(req: Request) {
       )
     }
 
-    // Create PDF with proper settings
+    // Create PDF with professional settings
     const doc = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -41,13 +152,15 @@ export async function POST(req: Request) {
     const MAX_Y = PAGE_HEIGHT - MARGIN_BOTTOM
     
     let currentY = MARGIN_TOP
+    let pageNumber = 1
     
     // Helper function to check page break
     const checkPageBreak = (requiredSpace: number = 20) => {
       if (currentY + requiredSpace > MAX_Y) {
         doc.addPage()
         currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
+        pageNumber++
+        addPageFooter(pageNumber)
         return true
       }
       return false
@@ -69,638 +182,681 @@ export async function POST(req: Request) {
         doc.text('UNDP in cooperation with CARICHAM', PAGE_WIDTH / 2, footerY, { align: 'center' })
       }
     }
-    
-    // Company name extraction
-    const companyName = planData.PLAN_INFORMATION?.['Company Name'] || 
-                       planData.PLAN_INFORMATION?.['companyName'] ||
-                       'Your Company'
 
-    // Enhanced header function with proper spacing
+    // Company name extraction
+    const rawCompanyName = planData.PLAN_INFORMATION?.['Company Name'] || 'Your Company'
+    const companyName = rawCompanyName.replace(/^[•\-\*]\s*/, '').trim()
+
+    // Enhanced section header with better styling
     const addSectionHeader = (title: string) => {
       checkPageBreak(25)
       
-      // Add spacing before header
       currentY += 10
       
-      // Background rectangle
+      // Gradient-style background
       doc.setFillColor(41, 84, 121)
-      doc.rect(MARGIN_LEFT - 5, currentY - 6, CONTENT_WIDTH + 10, 12, 'F')
+      doc.rect(MARGIN_LEFT - 5, currentY - 8, CONTENT_WIDTH + 10, 14, 'F')
       
-      // Header text
+      // Header text with better positioning
       doc.setTextColor(255, 255, 255)
-      doc.setFontSize(12)
+      doc.setFontSize(13)
       doc.setFont('helvetica', 'bold')
       doc.text(title, MARGIN_LEFT, currentY)
       
-      // Reset text color and move down
+      // Reset and move down
       doc.setTextColor(33, 33, 33)
-      currentY += 15
+      currentY += 20
     }
 
-    // Enhanced text function with better line spacing and array handling
-    const addLabeledText = (label: string, text: string | string[], options?: {
+    // Enhanced subsection header
+    const addSubSectionHeader = (title: string) => {
+      checkPageBreak(15)
+      
+      currentY += 8
+      
+      // Subsection styling
+      doc.setFillColor(230, 240, 250)
+      doc.rect(MARGIN_LEFT - 2, currentY - 6, CONTENT_WIDTH + 4, 10, 'F')
+      
+      doc.setTextColor(41, 84, 121)
+      doc.setFontSize(11)
+      doc.setFont('helvetica', 'bold')
+      doc.text(title, MARGIN_LEFT, currentY)
+      
+      doc.setTextColor(33, 33, 33)
+      currentY += 12
+    }
+
+    // Enhanced text function with better formatting
+    const addLabeledText = (label: string, text: string | string[] | null | undefined, options?: {
       fontSize?: number,
       lineSpacing?: number,
-      indent?: number
+      indent?: number,
+      isMultiline?: boolean
     }) => {
-      if (!text || text === 'undefined') return
+      if (!text || text === 'undefined' || text === 'null' || text === '') return
       
-      const { fontSize = 10, lineSpacing = 5, indent = 0 } = options || {}
+      const { fontSize = 10, lineSpacing = 5, indent = 0, isMultiline = false } = options || {}
       
       // Handle array inputs
       let textContent = ''
       if (Array.isArray(text)) {
-        textContent = text.filter(item => item && item.trim()).join('. ')
+        textContent = text.filter(item => item && item.trim()).join(isMultiline ? '\n• ' : '. ')
+        if (isMultiline && textContent) textContent = '• ' + textContent
       } else {
-        textContent = text.toString()
+        textContent = text.toString().trim()
       }
       
-      if (!textContent.trim()) return
+      if (!textContent) return
       
       checkPageBreak(20)
       
-      // Label
+      // Label styling
       doc.setFontSize(fontSize)
       doc.setFont('helvetica', 'bold')
       doc.setTextColor(41, 84, 121)
       doc.text(`${label}:`, MARGIN_LEFT + indent, currentY)
       
-      // Calculate label width for text positioning
+      // Calculate positioning
       const labelWidth = doc.getTextWidth(`${label}: `)
       
-      // Content
+      // Content styling
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(33, 33, 33)
       
-      // Split text into lines that fit the available width
       const availableWidth = CONTENT_WIDTH - labelWidth - indent - 5
       const lines = doc.splitTextToSize(textContent, availableWidth)
       
-      // Draw each line
+      // Draw text lines
       lines.forEach((line: string, index: number) => {
         if (index === 0) {
-          // First line goes next to the label
           doc.text(line, MARGIN_LEFT + labelWidth + indent, currentY)
         } else {
-          // Subsequent lines are indented
           currentY += lineSpacing
           checkPageBreak(10)
           doc.text(line, MARGIN_LEFT + labelWidth + indent, currentY)
         }
       })
       
-      currentY += 8
+      currentY += lineSpacing + 3
     }
 
-    // Enhanced table function with better formatting
-    const addDataTable = (data: any, title: string, options?: {
-      maxRows?: number,
-      fontSize?: number
-    }) => {
-      // Handle different data formats
-      let tableData: any[] = []
-      
-      if (Array.isArray(data)) {
-        tableData = data
-      } else if (data && typeof data === 'object') {
-        // Convert object to array if needed
-        tableData = Object.keys(data).map(key => ({
-          Field: key,
-          Value: data[key]
-        }))
-      }
-      
-      if (tableData.length === 0) return
-      
-      const { maxRows = 50, fontSize = 9 } = options || {}
-      
-      checkPageBreak(40)
-      
-      if (title) {
-        addSectionHeader(title)
-      }
-      
-      try {
-        // Process data - handle various formats
-        const processedData = tableData.slice(0, maxRows).map(item => {
-          if (!item || typeof item !== 'object') return {}
-          
-          const row: any = {}
-          Object.keys(item).forEach(key => {
-            const value = item[key]
-            row[key] = value !== null && value !== undefined ? value.toString() : ''
-          })
-          return row
-        }).filter(row => Object.keys(row).length > 0)
-
-        if (processedData.length === 0) {
-          addLabeledText('Data', 'No data available')
-          return
-        }
-
-        // Generate columns
-        const columns = Object.keys(processedData[0] || {}).map(key => ({
-          header: key.replace(/([A-Z])/g, ' $1').trim()
-                     .replace(/^./, str => str.toUpperCase()),
-          dataKey: key
-        }))
-
-        // Table configuration
-        doc.autoTable({
-          startY: currentY,
-          head: [columns.map(col => col.header)],
-          body: processedData.map(row => columns.map(col => row[col.dataKey] || '')),
-          theme: 'grid',
-          styles: {
-            fontSize: fontSize,
-            cellPadding: 3,
-            textColor: [33, 33, 33],
-            lineColor: [200, 200, 200],
-            lineWidth: 0.1,
-            valign: 'middle',
-            overflow: 'linebreak'
-          },
-          headStyles: {
-            fillColor: [41, 84, 121],
-            textColor: [255, 255, 255],
-            fontStyle: 'bold',
-            fontSize: fontSize,
-            halign: 'center'
-          },
-          alternateRowStyles: {
-            fillColor: [245, 245, 245]
-          },
-          margin: { 
-            left: MARGIN_LEFT, 
-            right: MARGIN_RIGHT 
-          },
-          tableWidth: 'auto',
-          columnStyles: {
-            0: { cellWidth: 'auto' }
-          },
-          didDrawPage: (data: any) => {
-            // Add footer on new pages created by table
-            if (data.pageNumber > 1) {
-              addPageFooter(doc.getCurrentPageInfo().pageNumber)
-            }
-          }
-        })
-
-        currentY = (doc as any).lastAutoTable.finalY + 10
-      } catch (error) {
-        console.error('Table generation error:', error)
-        addLabeledText('Data', 'Error generating table. Please check the data format.')
-      }
-    }
-
-    // Enhanced list function
-    const addBulletList = (items: string[], title?: string, options?: {
-      bulletStyle?: string,
-      indent?: number,
-      spacing?: number
-    }) => {
+    // Enhanced bullet list with better formatting
+    const addBulletList = (items: string[] | any[], title?: string) => {
       if (!Array.isArray(items) || items.length === 0) return
       
-      const { bulletStyle = '•', indent = 10, spacing = 6 } = options || {}
-      
       if (title) {
-        addSectionHeader(title)
+        addSubSectionHeader(title)
       }
       
-      items.forEach((item, index) => {
-        checkPageBreak(15)
+      const validItems = items.filter(item => item && item.toString().trim())
+      
+      validItems.forEach((item, index) => {
+        checkPageBreak(12)
+        
+        const itemText = item.toString().trim()
         
         // Bullet point
         doc.setFontSize(10)
         doc.setFont('helvetica', 'normal')
-        doc.text(bulletStyle, MARGIN_LEFT + indent, currentY)
+        doc.setTextColor(33, 33, 33)
+        doc.text('•', MARGIN_LEFT + 5, currentY)
         
-        // Item text
-        const bulletWidth = doc.getTextWidth(bulletStyle + ' ')
-        const availableWidth = CONTENT_WIDTH - indent - bulletWidth - 5
-        const lines = doc.splitTextToSize(item.toString(), availableWidth)
+        // Item text with proper wrapping
+        const availableWidth = CONTENT_WIDTH - 15
+        const lines = doc.splitTextToSize(itemText, availableWidth)
         
         lines.forEach((line: string, lineIndex: number) => {
-          if (lineIndex > 0) {
-            currentY += spacing
-            checkPageBreak(10)
+          if (lineIndex === 0) {
+            doc.text(line, MARGIN_LEFT + 12, currentY)
+          } else {
+            currentY += 5
+            checkPageBreak(8)
+            doc.text(line, MARGIN_LEFT + 12, currentY)
           }
-          doc.text(line, MARGIN_LEFT + indent + bulletWidth, currentY)
         })
         
-        currentY += spacing + 2
+        currentY += 8
       })
       
       currentY += 5
     }
 
-    // START PDF GENERATION
-    try {
-      // PROFESSIONAL COVER PAGE
-      // Add background image
-      try {
-        const coverImg = await fetch('/cover.png').then(res => res.blob())
-        const coverDataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(coverImg)
-        })
-        doc.addImage(coverDataUrl, 'PNG', 0, 0, PAGE_WIDTH, PAGE_HEIGHT)
-      } catch (error) {
-        console.log('Cover image not found, using color background')
-        doc.setFillColor(41, 84, 121)
-        doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F')
+    // Enhanced table function with better styling
+    const addDataTable = (data: any[] | any, title?: string) => {
+      if (!data) return
+      
+      if (title) {
+        addSubSectionHeader(title)
       }
       
-      // Add semi-transparent overlay for better text visibility
-      doc.setFillColor(255, 255, 255)
-      doc.rect(0, 60, PAGE_WIDTH, 180, 'F')
+      // Convert data to array format
+      let tableData: any[] = []
       
-      // Add CARICHAM logo (top left)
-      try {
-        const carichamLogo = await fetch('/caricham.png').then(res => res.blob())
-        const carichamDataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(carichamLogo)
-        })
-        doc.addImage(carichamDataUrl, 'PNG', 20, 20, 40, 20)
-      } catch (error) {
-        console.log('CARICHAM logo not found')
+      if (Array.isArray(data)) {
+        tableData = data.filter(item => item && typeof item === 'object')
+      } else if (typeof data === 'object') {
+        tableData = Object.entries(data).map(([key, value]) => ({
+          Field: key,
+          Value: Array.isArray(value) ? value.join(', ') : String(value || '')
+        }))
       }
       
-      // Add UNDP logo (top right)
-      try {
-        const undpLogo = await fetch('/UNDP.png').then(res => res.blob())
-        const undpDataUrl = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(undpLogo)
-        })
-        doc.addImage(undpDataUrl, 'PNG', PAGE_WIDTH - 60, 20, 40, 20)
-      } catch (error) {
-        console.log('UNDP logo not found')
-      }
+      if (tableData.length === 0) return
       
-      // Main title
-      doc.setTextColor(41, 84, 121)
-      doc.setFontSize(36)
+      checkPageBreak(30)
+      
+      // Get table headers
+      const headers = Object.keys(tableData[0])
+      
+      // Prepare table rows
+      const rows: string[][] = tableData.map(item => 
+        headers.map(header => {
+          const value = item[header]
+          if (Array.isArray(value)) {
+            return value.join(', ')
+          }
+          return String(value || '').replace(/^[•\-\*]\s*/, '').trim()
+        })
+      )
+      
+      // Create table with enhanced styling
+      try {
+        (doc as any).autoTable({
+          head: [headers],
+          body: rows,
+          startY: currentY,
+          margin: { left: MARGIN_LEFT, right: MARGIN_RIGHT },
+          styles: {
+            fontSize: 9,
+            cellPadding: 3,
+            lineColor: [200, 200, 200],
+            lineWidth: 0.5
+          },
+          headStyles: {
+            fillColor: [41, 84, 121],
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            halign: 'center'
+          },
+          alternateRowStyles: {
+            fillColor: [245, 245, 245]
+          },
+          columnStyles: {
+            0: { cellWidth: 'auto' },
+            1: { cellWidth: 'auto' }
+          },
+          didDrawPage: function(data: any) {
+            currentY = data.cursor?.y || currentY
+          }
+        })
+        
+        currentY = ((doc as any).lastAutoTable?.finalY || currentY) + 10
+      } catch (error) {
+        console.error('AutoTable error:', error)
+        // Fallback: create a simple table manually
+        addSimpleTable(headers, rows)
+      }
+    }
+
+    // Fallback simple table function
+    const addSimpleTable = (headers: string[], rows: string[][]) => {
+      checkPageBreak(20 + (rows.length * 6))
+      
+      // Table header
+      doc.setFillColor(41, 84, 121)
+      doc.rect(MARGIN_LEFT, currentY - 4, CONTENT_WIDTH, 8, 'F')
+      
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(9)
       doc.setFont('helvetica', 'bold')
-      doc.text('BUSINESS', PAGE_WIDTH / 2, 110, { align: 'center' })
-      doc.text('CONTINUITY PLAN', PAGE_WIDTH / 2, 130, { align: 'center' })
       
-      // Divider line
-      doc.setDrawColor(41, 84, 121)
-      doc.setLineWidth(2)
-      doc.line(60, 145, PAGE_WIDTH - 60, 145)
-      
-      // Company name (remove any bullet points)
-      doc.setFontSize(24)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(33, 33, 33)
-      const cleanCompanyName = companyName.replace(/^[•\-\*]\s*/, '').trim()
-      doc.text(cleanCompanyName, PAGE_WIDTH / 2, 170, { align: 'center' })
-      
-      // Date and additional info
-      doc.setFontSize(14)
-      doc.setTextColor(100, 100, 100)
-      const currentDate = new Date().toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      const colWidth = CONTENT_WIDTH / headers.length
+      headers.forEach((header, index) => {
+        doc.text(header, MARGIN_LEFT + (index * colWidth) + 2, currentY)
       })
-      doc.text(currentDate, PAGE_WIDTH / 2, 190, { align: 'center' })
       
-      // Bottom section
+      currentY += 8
+      
+      // Table rows
+      doc.setTextColor(33, 33, 33)
+      doc.setFont('helvetica', 'normal')
+      
+      rows.forEach((row, rowIndex) => {
+        checkPageBreak(8)
+        
+        // Alternate row background
+        if (rowIndex % 2 === 1) {
+          doc.setFillColor(245, 245, 245)
+          doc.rect(MARGIN_LEFT, currentY - 4, CONTENT_WIDTH, 8, 'F')
+        }
+        
+        row.forEach((cell, colIndex) => {
+          const cellText = String(cell || '').substring(0, 30) // Truncate if too long
+          doc.text(cellText, MARGIN_LEFT + (colIndex * colWidth) + 2, currentY)
+        })
+        
+        currentY += 6
+      })
+      
+      currentY += 10
+    }
+
+    // Add action plan section with enhanced formatting
+    const addActionPlanDetails = (plan: any) => {
+      checkPageBreak(50)
+      
+      // Plan header with risk level indicator
+      doc.setFillColor(240, 248, 255)
+      doc.rect(MARGIN_LEFT - 2, currentY - 6, CONTENT_WIDTH + 4, 12, 'F')
+      
       doc.setFontSize(12)
-      doc.text('Prepared in accordance with', PAGE_WIDTH / 2, 220, { align: 'center' })
       doc.setFont('helvetica', 'bold')
-      doc.text('CARICHAM Business Continuity Framework', PAGE_WIDTH / 2, 230, { align: 'center' })
+      doc.setTextColor(33, 33, 33)
+      doc.text(plan.hazard, MARGIN_LEFT, currentY)
       
-      // Table of Contents
-      doc.addPage()
-      currentY = MARGIN_TOP
-      addPageFooter(2)
+      // Risk level badge
+      const riskColor = plan.riskLevel.toLowerCase().includes('extreme') ? [0, 0, 0] : [220, 53, 69]
+      doc.setFillColor(riskColor[0], riskColor[1], riskColor[2])
+      doc.rect(MARGIN_LEFT + 120, currentY - 6, 25, 8, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(8)
+      doc.text(plan.riskLevel, MARGIN_LEFT + 122, currentY - 1)
       
-      doc.setFontSize(18)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(41, 84, 121)
-      doc.text('TABLE OF CONTENTS', MARGIN_LEFT, currentY)
       currentY += 15
       
-      const sections = [
-        { num: '1', title: 'Plan Information', page: 3 },
-        { num: '2', title: 'Business Overview', page: 4 },
-        { num: '3', title: 'Essential Business Functions', page: 5 },
-        { num: '4', title: 'Risk Assessment', page: 6 },
-        { num: '5', title: 'Recovery Strategies', page: 7 },
-        { num: '6', title: 'Emergency Response Procedures', page: 8 },
-        { num: '7', title: 'Contacts and Critical Information', page: 9 },
-        { num: '8', title: 'Testing and Maintenance', page: 10 }
-      ]
-      
-      doc.setFontSize(12)
-      doc.setTextColor(33, 33, 33)
-      sections.forEach(section => {
-        doc.setFont('helvetica', 'bold')
-        doc.text(section.num, MARGIN_LEFT, currentY)
-        doc.setFont('helvetica', 'normal')
-        doc.text(section.title, MARGIN_LEFT + 15, currentY)
-        doc.text(section.page.toString(), PAGE_WIDTH - MARGIN_RIGHT - 20, currentY)
-        
-        // Dotted line
-        const titleWidth = doc.getTextWidth(section.title)
-        const dotsStart = MARGIN_LEFT + 15 + titleWidth + 5
-        const dotsEnd = PAGE_WIDTH - MARGIN_RIGHT - 25
-        doc.setLineDashPattern([1, 2], 0)
-        doc.line(dotsStart, currentY - 1, dotsEnd, currentY - 1)
-        doc.setLineDashPattern([], 0)
-        
-        currentY += 10
-      })
-      
-      // SECTION 1: PLAN INFORMATION
-      doc.addPage()
-      currentY = MARGIN_TOP
-      addPageFooter(3)
-      
-      addSectionHeader('1. Plan Information')
-      
-      if (planData.PLAN_INFORMATION) {
-        const info = planData.PLAN_INFORMATION
-        addLabeledText('Company Name', info['Company Name'] || info['companyName'] || 'Not specified')
-        addLabeledText('Plan Manager', info['Plan Manager'] || info['planManager'] || 'Not specified')
-        addLabeledText('Alternate Plan Manager', info['Alternate Manager'] || info['alternateManager'] || 'Not designated')
-        addLabeledText('Physical Plan Location', info['Physical Plan Location'] || info['physicalPlanLocation'] || 'Not specified')
-        addLabeledText('Digital Plan Location', info['Digital Plan Location'] || info['digitalPlanLocation'] || 'Not specified')
+      // Business type indicator
+      if (plan.businessType && plan.businessType !== 'general') {
+        doc.setTextColor(100, 100, 100)
+        doc.setFontSize(9)
+        doc.setFont('helvetica', 'italic')
+        doc.text(`Optimized for ${plan.businessType.replace('_', ' ')} business`, MARGIN_LEFT, currentY)
+        currentY += 8
       }
       
-      // SECTION 2: BUSINESS OVERVIEW
-      if (planData.BUSINESS_OVERVIEW) {
-        checkPageBreak(30)
-        addSectionHeader('2. Business Overview')
-        
-        const business = planData.BUSINESS_OVERVIEW
-        addLabeledText('Business License', business['Business License Number'] || business['businessLicense'] || 'Not specified')
-        addLabeledText('Business Purpose', business['Business Purpose'] || business['businessPurpose'] || 'Not specified')
-        addLabeledText('Products & Services', business['Products and Services'] || business['productsAndServices'] || 'Not specified')
-        addLabeledText('Operating Hours', business['Operating Hours'] || business['operatingHours'] || 'Not specified')
-        addLabeledText('Key Personnel', business['Key Personnel Involved'] || business['keyPersonnel'] || 'Not specified')
-        addLabeledText('Customer Base', business['Customer Base'] || business['customerBase'] || 'Not specified')
-        addLabeledText('Minimum Resources', business['Minimum Resource Requirements'] || business['minimumResources'] || 'Not specified')
+      // Business-specific considerations
+      if (plan.specificConsiderations && plan.specificConsiderations.length > 0) {
+        addSubSectionHeader('🎯 Business-Specific Considerations')
+        addBulletList(plan.specificConsiderations)
       }
       
-      // SECTION 3: ESSENTIAL FUNCTIONS
-      if (planData.ESSENTIAL_FUNCTIONS) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('3. Essential Business Functions')
-        
-        const functions = planData.ESSENTIAL_FUNCTIONS
-        
-        // Handle Function Priority Assessment table
-        if (functions['Function Priority Assessment'] || functions['businessFunctions']) {
-          const tableData = functions['Function Priority Assessment'] || functions['businessFunctions']
-          addDataTable(tableData, 'Function Priority Assessment')
-        }
-        
-        // Handle other function categories
-        const functionCategories = [
-          { key: 'Supply Chain Management Functions', title: 'Supply Chain Management' },
-          { key: 'Staff Management Functions', title: 'Staff Management' },
-          { key: 'Technology Functions', title: 'Technology' },
-          { key: 'Product and Service Delivery', title: 'Products & Services' },
-          { key: 'Infrastructure and Facilities', title: 'Infrastructure' },
-          { key: 'Sales and Marketing Functions', title: 'Sales & Marketing' },
-          { key: 'Administrative Functions', title: 'Administration' }
-        ]
-        
-        functionCategories.forEach(category => {
-          if (functions[category.key]) {
-            const items = functions[category.key]
-            if (Array.isArray(items) && items.length > 0) {
-              addBulletList(items, category.title)
-            }
+      // Resources needed
+      if (plan.resourcesNeeded && plan.resourcesNeeded.length > 0) {
+        addSubSectionHeader('📋 Resources Needed')
+        addBulletList(plan.resourcesNeeded)
+      }
+      
+      // Immediate actions
+      if (plan.immediateActions && plan.immediateActions.length > 0) {
+        addSubSectionHeader('🚨 Immediate Actions (0-24 hours)')
+        plan.immediateActions.forEach((action: any) => {
+          checkPageBreak(15)
+          
+          // Priority indicator
+          const priorityColor = action.priority === 'high' ? [220, 53, 69] : 
+                              action.priority === 'medium' ? [255, 193, 7] : [40, 167, 69]
+          doc.setFillColor(priorityColor[0], priorityColor[1], priorityColor[2])
+          doc.circle(MARGIN_LEFT + 8, currentY - 2, 1.5, 'F')
+          
+          // Action details
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(33, 33, 33)
+          
+          const taskLines = doc.splitTextToSize(action.task, CONTENT_WIDTH - 20)
+          taskLines.forEach((line: string, index: number) => {
+            doc.text(line, MARGIN_LEFT + 15, currentY + (index * 4))
+          })
+          
+          currentY += (taskLines.length * 4) + 2
+          
+          // Responsibility and duration
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 100, 100)
+          doc.setFontSize(8)
+          doc.text(`Responsible: ${action.responsible}`, MARGIN_LEFT + 15, currentY)
+          if (action.duration) {
+            doc.text(`Duration: ${action.duration}`, MARGIN_LEFT + 90, currentY)
           }
+          
+          currentY += 10
         })
       }
       
-      // SECTION 4: RISK ASSESSMENT
-      if (planData.RISK_ASSESSMENT) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('4. Risk Assessment')
-        
-        const risk = planData.RISK_ASSESSMENT
-        
-        if (risk['Potential Hazards'] || risk['potentialHazards']) {
-          const hazards = risk['Potential Hazards'] || risk['potentialHazards']
-          if (Array.isArray(hazards)) {
-            addBulletList(hazards, 'Identified Hazards')
-          }
-        }
-        
-        if (risk['Risk Assessment Matrix'] || risk['riskMatrix']) {
-          const riskMatrix = risk['Risk Assessment Matrix'] || risk['riskMatrix']
-          addDataTable(riskMatrix, 'Risk Assessment Matrix')
-        }
-      }
-      
-      // SECTION 5: RECOVERY STRATEGIES
-      if (planData.RECOVERY_STRATEGIES || planData.STRATEGIES) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('5. Recovery Strategies')
-        
-        const strategies = planData.RECOVERY_STRATEGIES || planData.STRATEGIES
-        
-        if (strategies['Recovery Time Objectives'] || strategies['rto']) {
-          const rtoData = strategies['Recovery Time Objectives'] || strategies['rto']
-          addDataTable(rtoData, 'Recovery Time Objectives')
-        }
-        
-        if (strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies']) {
-          const prevention = strategies['Prevention Strategies (Before Emergencies)'] || strategies['preventionStrategies']
-          if (Array.isArray(prevention)) {
-            addBulletList(prevention, 'Prevention Strategies')
-          }
-        }
-        
-        if (strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies']) {
-          const response = strategies['Response Strategies (During Emergencies)'] || strategies['responseStrategies']
-          if (Array.isArray(response)) {
-            addBulletList(response, 'Response Strategies')
-          }
-        }
-        
-        if (strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies']) {
-          const recovery = strategies['Recovery Strategies (After Emergencies)'] || strategies['recoveryStrategies']
-          if (Array.isArray(recovery)) {
-            addBulletList(recovery, 'Recovery Strategies')
-          }
-        }
-        
-        if (strategies['Backup and Recovery Procedures'] || strategies['backupProcedures']) {
-          const procedures = strategies['Backup and Recovery Procedures'] || strategies['backupProcedures']
-          if (typeof procedures === 'string') {
-            addLabeledText('Backup Procedures', procedures)
-          } else if (Array.isArray(procedures)) {
-            addBulletList(procedures, 'Backup and Recovery Procedures')
-          }
-        }
-        
-        if (strategies['Long-term Risk Reduction Measures'] || strategies['longTermMeasures']) {
-          addLabeledText('Long-term Risk Reduction', strategies['Long-term Risk Reduction Measures'] || strategies['longTermMeasures'])
-        }
-      }
-      
-      // SECTION 6: EMERGENCY RESPONSE
-      if (planData.EMERGENCY_RESPONSE || planData.ACTION_PLAN) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('6. Emergency Response Procedures')
-        
-        const emergency = planData.EMERGENCY_RESPONSE || {}
-        const actionPlan = planData.ACTION_PLAN || {}
-        
-        // Emergency Response fields
-        if (emergency['Evacuation Procedures'] || emergency['evacuationProcedures']) {
-          addLabeledText('Evacuation Procedures', 
-            emergency['Evacuation Procedures'] || emergency['evacuationProcedures'])
-        }
-        
-        if (emergency['Communication Plan'] || emergency['communicationPlan']) {
-          addLabeledText('Communication Plan', 
-            emergency['Communication Plan'] || emergency['communicationPlan'])
-        }
-        
-        if (emergency['First Response Actions'] || emergency['firstResponse']) {
-          const actions = emergency['First Response Actions'] || emergency['firstResponse']
-          if (Array.isArray(actions)) {
-            addBulletList(actions, 'First Response Actions')
-          } else {
-            addLabeledText('First Response Actions', actions)
-          }
-        }
-        
-        // Action Plan fields
-        if (actionPlan['Action Plan by Risk Level'] || actionPlan['actionPlanByRisk']) {
-          const actionData = actionPlan['Action Plan by Risk Level'] || actionPlan['actionPlanByRisk']
-          addDataTable(actionData, 'Action Plan by Risk Level')
-        }
-        
-        if (actionPlan['Implementation Timeline'] || actionPlan['implementationTimeline']) {
-          addLabeledText('Implementation Timeline', 
-            actionPlan['Implementation Timeline'] || actionPlan['implementationTimeline'])
-        }
-        
-        if (actionPlan['Resource Requirements'] || actionPlan['resourceRequirements']) {
-          addLabeledText('Resource Requirements', 
-            actionPlan['Resource Requirements'] || actionPlan['resourceRequirements'])
-        }
-        
-        if (actionPlan['Responsible Parties and Roles'] || actionPlan['responsibleParties']) {
-          addLabeledText('Responsible Parties', 
-            actionPlan['Responsible Parties and Roles'] || actionPlan['responsibleParties'])
-        }
-        
-        if (actionPlan['Testing and Assessment Plan'] || actionPlan['testingPlan']) {
-          const testing = actionPlan['Testing and Assessment Plan'] || actionPlan['testingPlan']
-          addDataTable(testing, 'Testing and Assessment Plan')
-        }
-      }
-      
-      // SECTION 7: CONTACTS
-      if (planData.CONTACTS_AND_INFORMATION) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('7. Contacts and Critical Information')
-        
-        const contacts = planData.CONTACTS_AND_INFORMATION
-        
-        if (contacts['Staff Contact Information'] || contacts['staffContacts']) {
-          addDataTable(contacts['Staff Contact Information'] || contacts['staffContacts'], 'Staff Contacts')
-        }
-        
-        if (contacts['Key Customer Contacts'] || contacts['keyCustomers']) {
-          addDataTable(contacts['Key Customer Contacts'] || contacts['keyCustomers'], 'Key Customers')
-        }
-        
-        if (contacts['Supplier Information'] || contacts['supplierInfo']) {
-          addDataTable(contacts['Supplier Information'] || contacts['supplierInfo'], 'Suppliers')
-        }
-        
-        if (contacts['Emergency Services and Utilities'] || contacts['emergencyServices']) {
-          addDataTable(contacts['Emergency Services and Utilities'] || contacts['emergencyServices'], 'Emergency Services')
-        }
-      }
-      
-      // SECTION 8: TESTING AND MAINTENANCE
-      if (planData.TESTING_AND_MAINTENANCE) {
-        doc.addPage()
-        currentY = MARGIN_TOP
-        addPageFooter(doc.getCurrentPageInfo().pageNumber)
-        
-        addSectionHeader('8. Testing and Maintenance')
-        
-        const testing = planData.TESTING_AND_MAINTENANCE
-        
-        if (testing['Plan Testing Schedule'] || testing['testingSchedule']) {
-          addDataTable(testing['Plan Testing Schedule'] || testing['testingSchedule'], 'Testing Schedule')
-        }
-        
-        if (testing['Plan Revision History'] || testing['revisionHistory']) {
-          addDataTable(testing['Plan Revision History'] || testing['revisionHistory'], 'Revision History')
-        }
-        
-        addLabeledText('Annual Review Process', 
-          testing['Annual Review Process'] || testing['annualReview'] || 'To be established')
-        addLabeledText('Update Triggers', 
-          testing['Trigger Events for Plan Updates'] || testing['triggerEvents'] || 'To be established')
-      }
-      
-      // Add page numbers and footers to all pages
-      const totalPages = doc.getNumberOfPages()
-      for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i)
-        if (i > 1) { // Skip cover page
+      // Short-term actions
+      if (plan.shortTermActions && plan.shortTermActions.length > 0) {
+        addSubSectionHeader('⏱️ Short-term Actions (1-7 days)')
+        plan.shortTermActions.forEach((action: any) => {
+          checkPageBreak(15)
+          
+          const priorityColor = action.priority === 'high' ? [220, 53, 69] : 
+                              action.priority === 'medium' ? [255, 193, 7] : [40, 167, 69]
+          doc.setFillColor(priorityColor[0], priorityColor[1], priorityColor[2])
+          doc.circle(MARGIN_LEFT + 8, currentY - 2, 1.5, 'F')
+          
           doc.setFontSize(9)
-          doc.setTextColor(100, 100, 100)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(33, 33, 33)
+          
+          const taskLines = doc.splitTextToSize(action.task, CONTENT_WIDTH - 20)
+          taskLines.forEach((line: string, index: number) => {
+            doc.text(line, MARGIN_LEFT + 15, currentY + (index * 4))
+          })
+          
+          currentY += (taskLines.length * 4) + 2
+          
           doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 100, 100)
+          doc.setFontSize(8)
+          doc.text(`Responsible: ${action.responsible}`, MARGIN_LEFT + 15, currentY)
+          if (action.duration) {
+            doc.text(`Duration: ${action.duration}`, MARGIN_LEFT + 90, currentY)
+          }
           
-          const footerY = PAGE_HEIGHT - 15
-          
-          // Page numbering
-          doc.text(`Page ${i} of ${totalPages}`, PAGE_WIDTH - MARGIN_RIGHT - 20, footerY)
-          doc.text(companyName, MARGIN_LEFT, footerY)
-        }
+          currentY += 10
+        })
       }
       
-      // Generate PDF
-      const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-      return new NextResponse(pdfBuffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `attachment; filename="${companyName.replace(/[^a-zA-Z0-9]/g, '-')}-BCP-${new Date().toISOString().split('T')[0]}.pdf"`,
-        },
-      })
-
-    } catch (error) {
-      console.error('PDF generation error:', error)
-      throw error
+      // Medium-term actions
+      if (plan.mediumTermActions && plan.mediumTermActions.length > 0) {
+        addSubSectionHeader('📅 Medium-term Actions (1-4 weeks)')
+        plan.mediumTermActions.forEach((action: any) => {
+          checkPageBreak(15)
+          
+          const priorityColor = action.priority === 'high' ? [220, 53, 69] : 
+                              action.priority === 'medium' ? [255, 193, 7] : [40, 167, 69]
+          doc.setFillColor(priorityColor[0], priorityColor[1], priorityColor[2])
+          doc.circle(MARGIN_LEFT + 8, currentY - 2, 1.5, 'F')
+          
+          doc.setFontSize(9)
+          doc.setFont('helvetica', 'bold')
+          doc.setTextColor(33, 33, 33)
+          
+          const taskLines = doc.splitTextToSize(action.task, CONTENT_WIDTH - 20)
+          taskLines.forEach((line: string, index: number) => {
+            doc.text(line, MARGIN_LEFT + 15, currentY + (index * 4))
+          })
+          
+          currentY += (taskLines.length * 4) + 2
+          
+          doc.setFont('helvetica', 'normal')
+          doc.setTextColor(100, 100, 100)
+          doc.setFontSize(8)
+          doc.text(`Responsible: ${action.responsible}`, MARGIN_LEFT + 15, currentY)
+          if (action.duration) {
+            doc.text(`Duration: ${action.duration}`, MARGIN_LEFT + 90, currentY)
+          }
+          
+          currentY += 10
+        })
+      }
+      
+      // Long-term prevention
+      if (plan.longTermReduction && plan.longTermReduction.length > 0) {
+        addSubSectionHeader('🛡️ Long-term Prevention & Risk Reduction')
+        addBulletList(plan.longTermReduction)
+      }
+      
+      currentY += 10
     }
+
+    // COVER PAGE
+    doc.setFillColor(41, 84, 121)
+    doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F')
+    
+    // Title
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(28)
+    doc.setFont('helvetica', 'bold')
+    doc.text('BUSINESS CONTINUITY PLAN', PAGE_WIDTH / 2, 80, { align: 'center' })
+    
+    // Company name
+    doc.setFontSize(20)
+    doc.setFont('helvetica', 'normal')
+    doc.text(companyName, PAGE_WIDTH / 2, 110, { align: 'center' })
+    
+    // Date and version
+    const currentDate = new Date().toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    })
+    doc.setFontSize(14)
+    doc.text(`Generated on ${currentDate}`, PAGE_WIDTH / 2, 140, { align: 'center' })
+    
+    // UNDP Logo area
+    doc.setFontSize(12)
+    doc.text('Developed in partnership with', PAGE_WIDTH / 2, 200, { align: 'center' })
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('UNDP & CARICHAM', PAGE_WIDTH / 2, 220, { align: 'center' })
+    
+    // Add second page for content
+    doc.addPage()
+    currentY = MARGIN_TOP
+    pageNumber++
+    addPageFooter(pageNumber)
+
+    // DOCUMENT CONTROL & HEADER
+    addSectionHeader('DOCUMENT CONTROL & INFORMATION')
+    
+    if (planData.PLAN_INFORMATION) {
+      addLabeledText('Company Name', planData.PLAN_INFORMATION['Company Name'])
+      addLabeledText('Plan Version', planData.PLAN_INFORMATION['Plan Version'] || '1.0')
+      addLabeledText('Date Created', planData.PLAN_INFORMATION['Date Created'] || currentDate)
+      addLabeledText('Last Updated', planData.PLAN_INFORMATION['Last Updated'] || currentDate)
+      addLabeledText('Approved By', planData.PLAN_INFORMATION['Approved By'])
+      addLabeledText('Next Review Date', planData.PLAN_INFORMATION['Next Review Date'])
+    }
+
+    // SECTION 1: BUSINESS ANALYSIS
+    addSectionHeader('SECTION 1: BUSINESS ANALYSIS')
+    
+    if (planData.BUSINESS_OVERVIEW) {
+      addLabeledText('Business Purpose', planData.BUSINESS_OVERVIEW['Business Purpose'])
+      addLabeledText('Products & Services', planData.BUSINESS_OVERVIEW['Products & Services'])
+      addLabeledText('Key Markets', planData.BUSINESS_OVERVIEW['Key Markets'])
+      addLabeledText('Annual Revenue', planData.BUSINESS_OVERVIEW['Annual Revenue'])
+      addLabeledText('Number of Employees', planData.BUSINESS_OVERVIEW['Number of Employees'])
+      addLabeledText('Business Location', planData.BUSINESS_OVERVIEW['Business Location'])
+    }
+    
+    // Essential Functions
+    if (planData.ESSENTIAL_FUNCTIONS) {
+      addSubSectionHeader('Essential Business Functions')
+      Object.entries(planData.ESSENTIAL_FUNCTIONS).forEach(([category, functions]) => {
+        if (Array.isArray(functions) && functions.length > 0) {
+          addBulletList(functions, category.replace(/([A-Z])/g, ' $1').trim())
+        }
+      })
+    }
+
+    // SECTION 2: RISK ASSESSMENT
+    addSectionHeader('SECTION 2: RISK ASSESSMENT')
+    
+    if (planData.RISK_ASSESSMENT) {
+      // Risk summary
+      if (planData.RISK_ASSESSMENT['Risk Assessment Matrix']) {
+        const riskMatrix = planData.RISK_ASSESSMENT['Risk Assessment Matrix']
+        const riskSummary = {
+          'High Risk': riskMatrix.filter((r: any) => (r.riskLevel || r.RiskLevel || '').toLowerCase().includes('high')).length,
+          'Medium Risk': riskMatrix.filter((r: any) => (r.riskLevel || r.RiskLevel || '').toLowerCase().includes('medium')).length,
+          'Low Risk': riskMatrix.filter((r: any) => (r.riskLevel || r.RiskLevel || '').toLowerCase().includes('low')).length,
+          'Extreme Risk': riskMatrix.filter((r: any) => (r.riskLevel || r.RiskLevel || '').toLowerCase().includes('extreme')).length
+        }
+        
+        addSubSectionHeader('Risk Summary Dashboard')
+        Object.entries(riskSummary).forEach(([level, count]) => {
+          if (count > 0) {
+            addLabeledText(level, `${count} identified risks`)
+          }
+        })
+        
+        addDataTable(riskMatrix, 'Complete Risk Assessment Matrix')
+      }
+    }
+
+    // SECTION 3: BUSINESS CONTINUITY STRATEGIES
+    addSectionHeader('SECTION 3: BUSINESS CONTINUITY STRATEGIES')
+    
+    if (planData.STRATEGIES) {
+      const strategies = planData.STRATEGIES
+      
+      if (strategies['Prevention Strategies (Before Emergencies)']) {
+        addBulletList(strategies['Prevention Strategies (Before Emergencies)'], 
+          '🔒 Prevention Strategies (Before Emergencies)')
+      }
+      
+      if (strategies['Response Strategies (During Emergencies)']) {
+        addBulletList(strategies['Response Strategies (During Emergencies)'], 
+          '🚨 Response Strategies (During Emergencies)')
+      }
+      
+      if (strategies['Recovery Strategies (After Emergencies)']) {
+        addBulletList(strategies['Recovery Strategies (After Emergencies)'], 
+          '🔄 Recovery Strategies (After Emergencies)')
+      }
+      
+      if (strategies['Long-term Risk Reduction Measures']) {
+        addBulletList(strategies['Long-term Risk Reduction Measures'], 
+          '🛡️ Long-term Risk Reduction Measures')
+      }
+    }
+
+    // SECTION 4: DETAILED ACTION PLANS
+    addSectionHeader('SECTION 4: DETAILED ACTION PLANS')
+    
+    // Generate action plans using the centralized matrix
+    const hazardActionPlans = generateHazardActionPlansForPDF(planData, planData.RISK_ASSESSMENT)
+    
+    if (hazardActionPlans.length > 0) {
+      const businessType = getBusinessTypeFromFormData(planData)
+      
+      addSubSectionHeader(`Business Type: ${businessType.replace('_', ' ').toUpperCase()} - Customized Action Plans`)
+      
+      hazardActionPlans.forEach((plan, index) => {
+        if (index > 0) {
+          checkPageBreak(60) // Ensure each plan starts on a fresh section
+        }
+        addActionPlanDetails(plan)
+      })
+    } else {
+      addLabeledText('Action Plans', 'No high-priority risks identified requiring detailed action plans.')
+    }
+
+    // SECTION 5: TESTING & MAINTENANCE
+    addSectionHeader('SECTION 5: TESTING & MAINTENANCE')
+    
+    if (planData.TESTING_AND_MAINTENANCE) {
+      const testing = planData.TESTING_AND_MAINTENANCE
+      
+      if (testing['Plan Testing Schedule']) {
+        addDataTable(testing['Plan Testing Schedule'], 'Plan Testing Schedule')
+      }
+      
+      if (testing['Plan Revision History']) {
+        addDataTable(testing['Plan Revision History'], 'Plan Revision History')
+      }
+      
+      if (testing['Annual Review Process']) {
+        addBulletList(testing['Annual Review Process'], 'Annual Review Process')
+      }
+      
+      if (testing['Trigger Events for Plan Updates']) {
+        addBulletList(testing['Trigger Events for Plan Updates'], 'Trigger Events for Plan Updates')
+      }
+      
+      if (testing['Improvement Tracking']) {
+        addDataTable(testing['Improvement Tracking'], 'Improvement Tracking')
+      }
+    }
+
+    // SECTION 6: CONTACT INFORMATION
+    addSectionHeader('SECTION 6: CONTACT INFORMATION')
+    
+    if (planData.CONTACTS_AND_INFORMATION) {
+      const contacts = planData.CONTACTS_AND_INFORMATION
+      
+      if (contacts['Staff Contact Information']) {
+        addDataTable(contacts['Staff Contact Information'], 'Staff Contact Information')
+      }
+      
+      if (contacts['Key Customer Contacts']) {
+        addDataTable(contacts['Key Customer Contacts'], 'Key Customer Contacts')
+      }
+      
+      if (contacts['Supplier Information']) {
+        addDataTable(contacts['Supplier Information'], 'Supplier Information')
+      }
+      
+      if (contacts['Emergency Services and Utilities']) {
+        addDataTable(contacts['Emergency Services and Utilities'], 'Emergency Services and Utilities')
+      }
+      
+      if (contacts['Key External Contacts']) {
+        addDataTable(contacts['Key External Contacts'], 'Key External Contacts')
+      }
+    }
+
+    // SECTION 7: APPENDICES
+    addSectionHeader('SECTION 7: APPENDICES')
+    
+    if (planData.APPENDICES) {
+      const appendices = planData.APPENDICES
+      
+      if (appendices['Vital Records Inventory']) {
+        addDataTable(appendices['Vital Records Inventory'], 'Vital Records Inventory')
+      }
+      
+      if (appendices['Insurance Information']) {
+        addDataTable(appendices['Insurance Information'], 'Insurance Information')
+      }
+      
+      if (appendices['Emergency Supply Checklist']) {
+        addBulletList(appendices['Emergency Supply Checklist'], 'Emergency Supply Checklist')
+      }
+      
+      if (appendices['Communication Templates']) {
+        addBulletList(appendices['Communication Templates'], 'Communication Templates')
+      }
+      
+      if (appendices['Recovery Time Objectives']) {
+        addDataTable(appendices['Recovery Time Objectives'], 'Recovery Time Objectives')
+      }
+      
+      if (appendices['Plan Distribution List']) {
+        addDataTable(appendices['Plan Distribution List'], 'Plan Distribution List')
+      }
+    }
+
+    // Add page numbers and finalize
+    const totalPages = doc.getNumberOfPages()
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i)
+      if (i > 1) { // Skip cover page
+        doc.setFontSize(9)
+        doc.setTextColor(100, 100, 100)
+        doc.setFont('helvetica', 'normal')
+        
+        const footerY = PAGE_HEIGHT - 15
+        
+        // Page numbering
+        doc.text(`Page ${i} of ${totalPages}`, PAGE_WIDTH - MARGIN_RIGHT - 20, footerY)
+        doc.text(companyName, MARGIN_LEFT, footerY)
+      }
+    }
+    
+    // Generate PDF
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${companyName.replace(/[^a-zA-Z0-9]/g, '-')}-BCP-${new Date().toISOString().split('T')[0]}.pdf"`,
+      },
+    })
+
   } catch (error) {
-    console.error('Export PDF error:', error)
+    console.error('PDF generation error:', error)
     return NextResponse.json(
       { 
         error: 'Failed to generate PDF', 

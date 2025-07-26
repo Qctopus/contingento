@@ -42,7 +42,7 @@ export function HazardPrefilter({
   const [prioritizedHazards, setPrioritizedHazards] = useState<string[]>(initialSelection)
   const [hazardInfo, setHazardInfo] = useState<HazardInfo[]>([])
   const [showAllHazards, setShowAllHazards] = useState(false)
-  const [currentStep, setCurrentStep] = useState<'context' | 'selection' | 'confirmation'>('context')
+  const [currentStep, setCurrentStep] = useState<'context' | 'selection'>('context')
   const [expandedGroups, setExpandedGroups] = useState<{[key: string]: boolean}>({
     high: true,
     medium: false,
@@ -203,17 +203,13 @@ export function HazardPrefilter({
   const handleContinue = () => {
     if (currentStep === 'context') {
       setCurrentStep('selection')
-    } else if (currentStep === 'selection') {
-      setCurrentStep('confirmation')
     } else {
       onComplete(prioritizedHazards)
     }
   }
 
   const handleBack = () => {
-    if (currentStep === 'confirmation') {
-      setCurrentStep('selection')
-    } else if (currentStep === 'selection') {
+    if (currentStep === 'selection') {
       setCurrentStep('context')
     }
   }
@@ -242,66 +238,92 @@ export function HazardPrefilter({
     const context = getContextSummary()
     
     return (
-      <div className="space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <span className="text-2xl">🎯</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Smart Risk Prioritization</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Smart Risk Analysis</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Based on your location and business type, we've analyzed the risks most relevant to you.
+            We've analyzed your business context to prioritize the most relevant risks for your assessment.
           </p>
         </div>
 
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">📍 Your Location</h3>
-              <p className="text-gray-700 capitalize">{context.location}</p>
+        {/* Business Context Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900">Location Profile</h3>
+            </div>
+            <p className="text-gray-700 font-medium capitalize">{context.location}</p>
+            <div className="flex flex-wrap gap-2 mt-2">
               {locationData?.nearCoast && (
-                <span className="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                  Coastal Area
+                <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                  🌊 Coastal Area
                 </span>
               )}
               {locationData?.urbanArea && (
-                <span className="inline-block mt-1 ml-2 px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                  Urban Area
+                <span className="inline-block px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
+                  🏙️ Urban Area
                 </span>
               )}
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">🏢 Your Business</h3>
-              <p className="text-gray-700 capitalize">{context.business}</p>
-              {businessData?.businessPurpose && (
-                <p className="text-sm text-gray-600 mt-1">
-                  {businessData.businessPurpose.slice(0, 100)}...
-                </p>
-              )}
+          </div>
+          
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-center space-x-3 mb-3">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m11 0H9m11 0H9m11 0H9" />
+                </svg>
+              </div>
+              <h3 className="font-semibold text-gray-900">Business Profile</h3>
+            </div>
+            <p className="text-gray-700 font-medium capitalize">{context.business}</p>
+            {businessData?.businessPurpose && (
+              <p className="text-sm text-gray-600 mt-2 line-clamp-2">
+                {businessData.businessPurpose.slice(0, 120)}...
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Risk Analysis Summary */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+          <div className="grid md:grid-cols-3 gap-4 text-center">
+            <div className="bg-white bg-opacity-60 rounded-lg p-4">
+              <div className="text-2xl font-bold text-red-600">{context.highPriorityCount}</div>
+              <div className="text-sm text-red-800 font-medium">High Priority Risks</div>
+              <div className="text-xs text-red-600 mt-1">Most relevant to you</div>
+            </div>
+            <div className="bg-white bg-opacity-60 rounded-lg p-4">
+              <div className="text-2xl font-bold text-yellow-600">{context.totalCount - context.highPriorityCount}</div>
+              <div className="text-sm text-yellow-800 font-medium">Additional Risks</div>
+              <div className="text-xs text-yellow-600 mt-1">Worth considering</div>
+            </div>
+            <div className="bg-white bg-opacity-60 rounded-lg p-4">
+              <div className="text-2xl font-bold text-blue-600">✓</div>
+              <div className="text-sm text-blue-800 font-medium">AI-Powered</div>
+              <div className="text-xs text-blue-600 mt-1">Customized analysis</div>
             </div>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{context.highPriorityCount}</div>
-            <div className="text-sm text-red-800">High Priority Risks</div>
-          </div>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{context.totalCount - context.highPriorityCount}</div>
-            <div className="text-sm text-yellow-800">Other Risks to Consider</div>
-          </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">✓</div>
-            <div className="text-sm text-green-800">Customized for You</div>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
+        <div className="text-center">
           <button
             onClick={handleContinue}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2 mx-auto"
           >
-            Review Risk Priorities →
+            <span>Review Risk Selection</span>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
           </button>
         </div>
       </div>
@@ -313,206 +335,297 @@ export function HazardPrefilter({
     const mediumPriorityHazards = hazardInfo.filter(h => h.priority === 'medium')
     const lowPriorityHazards = hazardInfo.filter(h => h.priority === 'low')
 
-    const renderHazardGroup = (hazards: HazardInfo[], title: string, description: string, groupKey: string) => {
-      if (hazards.length === 0) return null
+    const allPriorityGroups = [
+      { key: 'high', hazards: highPriorityHazards, title: "🔴 High Priority Risks", description: "Most relevant to your location and business type", color: 'red' },
+      { key: 'medium', hazards: mediumPriorityHazards, title: "🟡 Medium Priority Risks", description: "Important considerations based on context", color: 'yellow' },
+      { key: 'low', hazards: lowPriorityHazards, title: "⚪ Additional Risks", description: "General risks for comprehensive planning", color: 'gray' }
+    ]
 
-      const isExpanded = expandedGroups[groupKey] || false
+    const selectedCount = prioritizedHazards.length
 
-      return (
-        <div className="border border-gray-200 rounded-lg">
-          <button
-            onClick={() => setExpandedGroups(prev => ({ ...prev, [groupKey]: !isExpanded }))}
-            className="w-full px-4 py-3 text-left flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-t-lg"
-          >
-            <div>
-              <h3 className="font-semibold text-gray-900">{title}</h3>
-              <p className="text-sm text-gray-600">{description}</p>
-            </div>
-            <svg 
-              className={`w-5 h-5 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-          
-          {isExpanded && (
-            <div className="p-4 space-y-3 border-t border-gray-200">
-              {hazards.map(hazard => (
-                <div 
-                  key={hazard.id}
-                  className={`flex items-start space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                    prioritizedHazards.includes(hazard.id)
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                  onClick={() => handleHazardToggle(hazard.id)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={prioritizedHazards.includes(hazard.id)}
-                    onChange={() => {}} // Controlled by parent div
-                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded pointer-events-none"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-gray-900">{hazard.name}</h4>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        hazard.priority === 'high' 
-                          ? 'bg-red-100 text-red-800'
-                          : hazard.priority === 'medium'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {hazard.priority} priority
-                      </span>
+    return (
+      <div className="max-w-7xl mx-auto">
+        {/* Enhanced Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6 mb-6">
+          <h2 className="text-2xl font-bold mb-2">🎯 Smart Risk Prioritization</h2>
+          <p className="text-blue-100">
+            AI-powered analysis based on your {locationData?.parish && `${locationData.parish}, `}
+            {businessData?.industryType && `${businessData.industryType} `}business profile
+          </p>
+        </div>
+
+        {/* Dual-Pane Layout */}
+        <div className="grid lg:grid-cols-4 gap-6">
+          {/* Left Panel: Selection Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white border rounded-lg p-4 sticky top-4 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Risk Selection</h3>
+                {selectedCount > 0 && (
+                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                    {selectedCount} selected
+                  </span>
+                )}
+              </div>
+              
+              {/* Priority Breakdown */}
+              <div className="space-y-3 mb-4">
+                {allPriorityGroups.map(group => {
+                  const selectedInGroup = group.hazards.filter(h => prioritizedHazards.includes(h.id)).length
+                  const totalInGroup = group.hazards.length
+                  const percentage = totalInGroup ? (selectedInGroup / totalInGroup) * 100 : 0
+                  
+                  const colorClasses = {
+                    red: 'bg-red-50 text-red-800 border-red-200',
+                    yellow: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                    gray: 'bg-gray-50 text-gray-800 border-gray-200'
+                  }[group.color]
+                  
+                  return (
+                    <div key={group.key} className={`border rounded-lg p-3 transition-all ${colorClasses} ${selectedInGroup > 0 ? 'ring-1 ring-blue-200' : ''}`}>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-sm">{group.title.split(' ')[1]} Priority</span>
+                        <span className="text-xs font-mono">{selectedInGroup}/{totalInGroup}</span>
+                      </div>
+                      <div className="w-full bg-white bg-opacity-50 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full bg-current transition-all duration-300`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                      {selectedInGroup > 0 && (
+                        <div className="text-xs text-current opacity-75 mt-1">
+                          {Math.round(percentage)}% selected
+                        </div>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-600 mt-1">{hazard.reason}</p>
-                    <p className="text-xs text-gray-500 mt-1">{getContextualInfo(hazard.id)}</p>
+                  )
+                })}
+              </div>
+
+              {/* Total Selection */}
+              <div className={`border rounded-lg p-4 mb-4 transition-all ${
+                selectedCount > 0 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
+                <div className="text-center">
+                  <div className={`text-3xl font-bold ${
+                    selectedCount > 0 ? 'text-blue-900' : 'text-gray-500'
+                  }`}>
+                    {selectedCount}
+                  </div>
+                  <div className={`text-sm ${
+                    selectedCount > 0 ? 'text-blue-700' : 'text-gray-500'
+                  }`}>
+                    Risk{selectedCount !== 1 ? 's' : ''} Selected
+                  </div>
+                  {selectedCount > 0 && (
+                    <div className="mt-2 text-xs text-blue-600">
+                      Ready for assessment
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-2 mb-4">
+                <button
+                  onClick={() => {
+                    const highPriorityIds = highPriorityHazards.map(h => h.id)
+                    setPrioritizedHazards(highPriorityIds)
+                  }}
+                  disabled={highPriorityHazards.length === 0}
+                  className="w-full px-3 py-2 text-sm bg-red-100 text-red-800 rounded-md hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Select All High Priority ({highPriorityHazards.length})</span>
+                </button>
+                
+                {selectedCount > 0 && (
+                  <button
+                    onClick={() => setPrioritizedHazards([])}
+                    className="w-full px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Clear All</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Context Reminder */}
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-xs">
+                <div className="font-medium text-green-900 mb-2 flex items-center space-x-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Your Context</span>
+                </div>
+                <div className="text-green-800 space-y-1">
+                  <div>📍 {locationData?.parish || 'Caribbean location'}</div>
+                  <div>🏢 {businessData?.industryType?.replace(/_/g, ' ') || 'Small business'}</div>
+                  {locationData?.nearCoast && (
+                    <div className="text-blue-600">🌊 Coastal location</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Panel: Risk Selection */}
+          <div className="lg:col-span-3">
+            <div className="space-y-4">
+              {allPriorityGroups.map(group => {
+                if (group.hazards.length === 0) return null
+                
+                const isExpanded = expandedGroups[group.key] || false
+                const selectedInGroup = group.hazards.filter(h => prioritizedHazards.includes(h.id)).length
+
+                return (
+                  <div key={group.key} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setExpandedGroups(prev => ({ ...prev, [group.key]: !isExpanded }))}
+                      className="w-full px-6 py-4 text-left flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-1">
+                          <h3 className="font-semibold text-gray-900">{group.title}</h3>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            group.color === 'red' ? 'bg-red-100 text-red-800' :
+                            group.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {selectedInGroup}/{group.hazards.length} selected
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">{group.description}</p>
+                      </div>
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                    
+                    {isExpanded && (
+                      <div className="p-4 border-t border-gray-200">
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {group.hazards.map(hazard => (
+                            <div 
+                              key={hazard.id}
+                              className={`flex items-start space-x-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                                prioritizedHazards.includes(hazard.id)
+                                  ? `border-${group.color === 'red' ? 'red' : group.color === 'yellow' ? 'yellow' : 'blue'}-500 bg-${group.color === 'red' ? 'red' : group.color === 'yellow' ? 'yellow' : 'blue'}-50`
+                                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              }`}
+                              onClick={() => handleHazardToggle(hazard.id)}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={prioritizedHazards.includes(hazard.id)}
+                                onChange={() => {}}
+                                className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded pointer-events-none"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-medium text-gray-900 text-sm">{hazard.name}</h4>
+                                <p className="text-xs text-gray-600 mt-1">{hazard.reason}</p>
+                                <p className="text-xs text-gray-500 mt-1">{getContextualInfo(hazard.id)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Enhanced Bottom Actions */}
+            <div className="mt-6 bg-white border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  >
+                    ← Back to Context
+                  </button>
+                  {selectedCount > 0 && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span><span className="font-medium text-green-600">{selectedCount}</span> risks ready for assessment</span>
+                    </div>
+                  )}
+                </div>
+                
+                <button
+                  onClick={handleContinue}
+                  disabled={selectedCount === 0}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                    selectedCount === 0 
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md'
+                  }`}
+                >
+                  {selectedCount === 0 ? (
+                    'Select Risks to Continue'
+                  ) : (
+                    <span className="flex items-center space-x-2">
+                      <span>Start Assessment</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </span>
+                  )}
+                </button>
+              </div>
+              
+              {/* Smart recommendations */}
+              {selectedCount > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="text-xs text-gray-500 text-center">
+                    💡 Recommended: Start with high-priority risks for faster completion
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Select Your Priority Risks</h2>
-          <p className="text-gray-600">
-            We've organized risks by priority based on your context. Start with high-priority risks.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {renderHazardGroup(
-            highPriorityHazards,
-            "🔴 High Priority Risks",
-            "Most relevant to your location and business type - recommend assessing these first",
-            "high"
-          )}
-          
-          {renderHazardGroup(
-            mediumPriorityHazards,
-            "🟡 Medium Priority Risks",
-            "Important considerations based on location or industry factors",
-            "medium"
-          )}
-          
-          {renderHazardGroup(
-            lowPriorityHazards,
-            "⚪ Additional Risks",
-            "General risks to consider for comprehensive planning",
-            "low"
-          )}
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start space-x-3">
-            <svg className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-sm">
-              <p className="text-blue-800 font-medium">Recommendation:</p>
-              <p className="text-blue-700">
-                Start with {highPriorityHazards.length} high-priority risks, then add others as needed. 
-                You can always modify your selection later.
-              </p>
+              )}
             </div>
           </div>
-        </div>
-
-        <div className="flex justify-between">
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            ← Back
-          </button>
-          <button
-            onClick={handleContinue}
-            disabled={prioritizedHazards.length === 0}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors font-medium"
-          >
-            Continue with {prioritizedHazards.length} Risk{prioritizedHazards.length !== 1 ? 's' : ''} →
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  const renderConfirmationStep = () => {
-    const selectedHazardInfo = hazardInfo.filter(h => prioritizedHazards.includes(h.id))
-    
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <span className="text-2xl">✓</span>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Ready to Assess These Risks</h2>
-          <p className="text-gray-600">
-            You've selected {prioritizedHazards.length} risk{prioritizedHazards.length !== 1 ? 's' : ''} for detailed assessment.
-          </p>
-        </div>
-
-        <div className="grid gap-3">
-          {selectedHazardInfo.map((hazard, index) => (
-            <div key={hazard.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-              <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                {index + 1}
-              </span>
-              <div className="flex-1">
-                <h4 className="font-medium text-gray-900">{hazard.name}</h4>
-                <p className="text-sm text-gray-600">{getContextualInfo(hazard.id)}</p>
-              </div>
-              <span className={`px-2 py-1 text-xs rounded-full ${
-                hazard.priority === 'high' 
-                  ? 'bg-red-100 text-red-800'
-                  : hazard.priority === 'medium'
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {hazard.priority}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
-          <h3 className="font-semibold text-green-900 mb-2">🎯 What's Next?</h3>
-          <p className="text-green-800 text-sm">
-            You'll assess each risk individually with contextual guidance specific to your business and location. 
-            This focused approach ensures more thoughtful and accurate risk evaluations.
-          </p>
-        </div>
-
-        <div className="flex justify-between">
-          <button
-            onClick={handleBack}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            ← Modify Selection
-          </button>
-          <button
-            onClick={handleContinue}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-          >
-            Start Risk Assessment →
-          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {currentStep === 'context' && renderContextStep()}
-      {currentStep === 'selection' && renderSelectionStep()}
-      {currentStep === 'confirmation' && renderConfirmationStep()}
+    <div className="w-full">
+      {hazardInfo.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
+              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Analyzing Risk Context</h3>
+            <p className="text-gray-600 text-sm">
+              AI is processing your location and business profile to prioritize relevant risks...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {currentStep === 'context' && renderContextStep()}
+          {currentStep === 'selection' && renderSelectionStep()}
+        </>
+      )}
     </div>
   )
 } 

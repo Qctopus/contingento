@@ -1,0 +1,301 @@
+# BUSINESS CONTINUITY PLAN
+## Caribbean Tech Solutions Ltd.
+
+---
+
+### DOCUMENT CONTROL
+
+**Version:** 1.0  
+**Date Created:** July 23, 2025  
+**Last Updated:** July 23, 2025  
+**Next Review Date:** January 2026  
+
+### REVISION LIST
+
+| Version | Details of Changes | Revised By | Revision Date |
+|---------|-------------------|------------|---------------|
+| 1.0 | Initial Plan | Sarah Chen | July 23, 2025 |
+
+---
+
+## BUSINESS CONTINUITY PLAN INFORMATION
+
+| Field | Information |
+|-------|-------------|
+| Company Name | Caribbean Tech Solutions Ltd. |
+| Business Address | 45 Harbor View Plaza, Bridgetown, Barbados |
+| Name of person responsible for this plan | Sarah Chen, Operations Manager |
+| Manager | Michael Thompson |
+| Alternate Manager | Lisa Rodriguez |
+| Business Continuity Plan Location | Digital: SharePoint/BCP folder; Physical: Fireproof safe in main office |
+
+---
+
+## SECTION 1: BUSINESS ANALYSIS
+
+### Purpose of Business
+Caribbean Tech Solutions provides IT support, cybersecurity services, and cloud solutions to small and medium businesses throughout the Caribbean region.
+
+### Products and Services
+- 24/7 IT helpdesk support
+- Cybersecurity monitoring and incident response
+- Cloud infrastructure management
+- Business software implementation
+- Data backup and disaster recovery services
+- Network setup and maintenance
+
+### How We Provide Services
+- Remote support via secure connections
+- On-site technical visits
+- Cloud-based service delivery
+- Emergency response team available 24/7
+
+### Service Provider Dependencies
+- Internet Service Provider: CariNet (Has BCP: Yes)
+- Cloud Infrastructure: AWS Caribbean Region (Has BCP: Yes)
+- Power Company: Barbados Light & Power (Has BCP: Yes)
+
+### Who is Involved
+- 12 full-time employees (6 technicians, 2 cybersecurity specialists, 2 sales, 2 admin)
+- 3 contracted specialists
+- 150+ active business clients
+
+### Minimum Resource Requirements
+- Internet connectivity
+- Power supply/generator
+- Core server infrastructure
+- Remote access tools
+- Client database
+- Communication systems
+
+### Key Customers
+- Regional banks and financial institutions
+- Hotels and tourism businesses
+- Manufacturing companies
+- Government agencies
+
+---
+
+## SECTION 2: ESSENTIAL BUSINESS FUNCTIONS
+
+### Prioritized Business Functions
+
+| Business Function | Priority | Maximum Acceptable Downtime | Notes |
+|------------------|----------|---------------------------|--------|
+| 24/7 Helpdesk Operations | HIGH | 4 hours | Critical for client SLAs |
+| Cybersecurity Monitoring | HIGH | 2 hours | Security breaches need immediate response |
+| Client Data Backup Services | HIGH | 6 hours | Daily backups must not fail |
+| Remote Support Services | MEDIUM | 24 hours | Can temporarily handle via phone |
+| On-site Visits | LOW | 1 week | Can be rescheduled |
+| Billing/Invoicing | MEDIUM | 3 days | Monthly billing cycle |
+| Sales Activities | LOW | 1 week | Focus on existing clients during crisis |
+
+---
+
+## SECTION 3: RISK ASSESSMENT
+
+### Identified Hazards
+
+| Hazard | Applicable | Likelihood | Severity | Risk Level |
+|--------|------------|------------|----------|------------|
+| Hurricane | ✓ | Likely (3) | Major (4) | High (12) |
+| Power Outage | ✓ | Very Likely (4) | Serious (3) | High (12) |
+| Cyber Attack | ✓ | Likely (3) | Major (4) | High (12) |
+| Pandemic | ✓ | Likely (3) | Serious (3) | High (9) |
+| Flood | ✓ | Unlikely (2) | Serious (3) | Medium (6) |
+| Earthquake | ✓ | Very Unlikely (1) | Major (4) | Medium (4) |
+| Fire | ✓ | Unlikely (2) | Serious (3) | Medium (6) |
+
+---
+
+## SECTION 4: BUSINESS CONTINUITY STRATEGIES
+
+### Supply Chain Management
+- Maintain relationships with 3 alternative internet service providers
+- Pre-positioned equipment at secondary location
+- Cloud-based inventory management system
+
+### Technology
+- Redundant internet connections (fiber + satellite backup)
+- Cloud-based systems with automatic failover
+- Mobile hotspots for all critical staff
+- Backup generators at main office
+- Off-site data replication
+
+### Staff
+- All staff trained on remote work procedures
+- Cross-training program for critical functions
+- Emergency communication tree established
+- Work-from-home kits pre-deployed
+
+### Infrastructure
+- Secondary operations center identified
+- Mutual aid agreement with partner IT firm in Trinidad
+- Virtual office capabilities fully tested
+
+---
+
+## SECTION 5: ACTION PLANS
+
+### HAZARD: Hurricane
+**Risk Level:** High  
+**High Priority Functions Affected:** All operations
+
+#### Resources Needed
+- Generator fuel (72 hours supply)
+- Satellite internet backup
+- Emergency cash fund
+- Staff emergency kits
+- Backup mobile devices
+
+#### Immediate Actions (0-24 hours)
+| Task | Responsible |
+|------|-------------|
+| Activate remote operations center | Sarah Chen |
+| Ensure all client data backed up to cloud | Tech Team |
+| Notify clients of potential service impacts | Lisa Rodriguez |
+| Secure physical office (shutters, equipment) | Michael Thompson |
+| Test generator and fuel levels | Maintenance Team |
+| Activate emergency communication system | Sarah Chen |
+
+#### Short-Term Actions (24-72 hours)
+| Task | Responsible |
+|------|-------------|
+| Transition to full remote operations | All Staff |
+| Monitor client systems remotely | Tech Team |
+| Daily client status updates | Account Managers |
+| Coordinate with staff on safety/availability | HR Team |
+
+#### Medium-Term Actions (3-7 days)
+| Task | Responsible |
+|------|-------------|
+| Assess office damage | Michael Thompson |
+| Contact insurance company | Finance Team |
+| Plan for office repairs/reopening | Management |
+| Review and adjust service delivery | Operations Team |
+
+#### Long-Term Risk Reduction
+- Install impact-resistant windows
+- Upgrade to more resilient satellite internet
+- Expand cloud infrastructure
+- Increase generator capacity
+
+---
+
+### HAZARD: Cyber Attack
+**Risk Level:** High  
+**High Priority Functions Affected:** All digital operations, client services
+
+#### Resources Needed
+- Incident response team
+- Forensic analysis tools
+- Backup systems
+- Communication channels
+- Legal counsel contact
+
+#### Immediate Actions (0-4 hours)
+| Task | Responsible |
+|------|-------------|
+| Isolate affected systems | Security Team |
+| Activate incident response plan | CISO |
+| Notify affected clients | Account Managers |
+| Engage forensic team | Security Team |
+| Document all actions taken | All involved |
+| Contact cyber insurance provider | Finance |
+
+#### Short-Term Actions (4-24 hours)
+| Task | Responsible |
+|------|-------------|
+| Implement containment measures | Security Team |
+| Restore from clean backups | Tech Team |
+| Conduct initial impact assessment | CISO |
+| Coordinate with law enforcement | Legal/CISO |
+
+#### Medium-Term Actions (1-7 days)
+| Task | Responsible |
+|------|-------------|
+| Complete forensic analysis | Security Team |
+| Implement additional security measures | IT Team |
+| Provide detailed client reports | Management |
+| Review and update security policies | CISO |
+
+---
+
+## SECTION 6: TESTING AND MAINTENANCE
+
+### Testing Schedule
+- Quarterly: Communication tree test
+- Semi-annually: Remote operations drill
+- Annually: Full business continuity exercise
+- After any incident: Lessons learned review
+
+### Last Test Date: June 15, 2025
+### Next Scheduled Test: September 15, 2025
+
+---
+
+## APPENDIX A: KEY CONTACTS
+
+### Staff Contact Information
+| Name | Position | Mobile | Email | Alternate Contact |
+|------|----------|--------|-------|-------------------|
+| Sarah Chen | Operations Manager | +1-246-555-0101 | s.chen@caribtech.com | +1-246-555-0201 |
+| Michael Thompson | General Manager | +1-246-555-0102 | m.thompson@caribtech.com | +1-246-555-0202 |
+| Lisa Rodriguez | Client Services Manager | +1-246-555-0103 | l.rodriguez@caribtech.com | +1-246-555-0203 |
+| James Mitchell | Lead Technician | +1-246-555-0104 | j.mitchell@caribtech.com | +1-246-555-0204 |
+
+### Critical Vendors
+| Vendor | Service | Account # | 24/7 Contact | Alternate |
+|--------|---------|-----------|--------------|-----------|
+| CariNet | Primary ISP | CTL-2945 | +1-246-555-1000 | +1-246-555-1001 |
+| SkyLink | Backup ISP | SKY-8832 | +1-246-555-2000 | +1-246-555-2001 |
+| PowerGen | Generator Service | PG-445 | +1-246-555-3000 | +1-246-555-3001 |
+| SecureCloud | Backup Services | SC-12234 | +1-246-555-4000 | +1-246-555-4001 |
+
+### Key Clients (Priority Support)
+| Client | Industry | Contact | Emergency # |
+|--------|----------|---------|-------------|
+| First Caribbean Bank | Banking | John Davis | +1-246-555-5001 |
+| Paradise Resort | Tourism | Maria Santos | +1-246-555-5002 |
+| TechManufacturing Ltd | Manufacturing | David Lee | +1-246-555-5003 |
+
+### Emergency Services
+| Service | Contact Number |
+|---------|----------------|
+| Fire Department | 311 |
+| Police | 211 |
+| Medical Emergency | 511 |
+| Hurricane Emergency Operations | +1-246-555-6000 |
+| Chamber of Commerce Emergency Line | +1-246-555-7000 |
+
+---
+
+## APPENDIX B: VITAL RECORDS INVENTORY
+
+| Record Type | Location | Backup Location | Recovery Priority |
+|-------------|----------|-----------------|-------------------|
+| Client Contracts | SharePoint | AWS Cloud | HIGH |
+| Financial Records | QuickBooks Cloud | Local backup | HIGH |
+| Employee Records | HR System | Secure offsite | MEDIUM |
+| Insurance Policies | Fireproof safe | Digital copies | HIGH |
+| Software Licenses | Password manager | Printed copies | HIGH |
+| Network Diagrams | IT Wiki | Offline copies | HIGH |
+
+---
+
+## DISTRIBUTION LIST
+
+| Name/Position | Format | Date Distributed |
+|---------------|---------|------------------|
+| All Staff | Digital (SharePoint) | July 23, 2025 |
+| Board of Directors | Hard Copy | July 23, 2025 |
+| Insurance Company | Digital (PDF) | July 23, 2025 |
+| Key Vendors | Relevant sections only | July 23, 2025 |
+
+---
+
+**Document Prepared By:** Sarah Chen, Operations Manager  
+**Approved By:** Michael Thompson, General Manager  
+**Date:** July 23, 2025
+
+*This plan is a living document and will be updated regularly to reflect changes in business operations, risks, and best practices.*

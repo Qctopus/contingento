@@ -8,6 +8,7 @@ import IndustrySelector from './IndustrySelector'
 import { LocationData, PreFillData } from '../data/types'
 import { generatePreFillData, mergePreFillData, isFieldPreFilled } from '../services/preFillService'
 import { anonymousSessionService } from '@/services/anonymousSessionService'
+import { BusinessPlanReview } from './BusinessPlanReview'
 
 // Development logging utility
 const devLog = (message: string, data?: any) => {
@@ -186,6 +187,7 @@ export function BusinessContinuityForm() {
   const [preFillData, setPreFillData] = useState<PreFillData | null>(null)
   const [hasSelectedIndustry, setHasSelectedIndustry] = useState(false)
   const [examples, setExamples] = useState<any>({})
+  const [showReview, setShowReview] = useState(false)
 
   // Refs for auto-save management
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -512,6 +514,9 @@ export function BusinessContinuityForm() {
       if (currentStepIndex < stepKeys.length - 1) {
         setCurrentStep(stepKeys[currentStepIndex + 1])
         setCurrentQuestionIndex(0)
+      } else {
+        // All steps complete, show review page
+        setShowReview(true)
       }
     }
   }
@@ -637,6 +642,25 @@ export function BusinessContinuityForm() {
       <IndustrySelector
         onSelection={handleIndustrySelection}
         onSkip={handleSkipIndustrySelection}
+      />
+    )
+  }
+
+  // Show review page if all steps are complete
+  const handleBackFromReview = () => {
+    setShowReview(false)
+    // Go to last question of last step
+    const stepKeys = Object.keys(STEPS)
+    setCurrentStep(stepKeys[stepKeys.length - 1])
+    const lastStepData = STEPS[stepKeys[stepKeys.length - 1] as keyof typeof STEPS]
+    setCurrentQuestionIndex(lastStepData.inputs.length - 1)
+  }
+  if (showReview) {
+    return (
+      <BusinessPlanReview
+        formData={formData}
+        onBack={handleBackFromReview}
+        onExportPDF={exportToPDF}
       />
     )
   }
@@ -967,7 +991,7 @@ export function BusinessContinuityForm() {
                 severityOptions: (currentQuestion as any).severityOptions,
               })}
               dependsOn={currentQuestion.dependsOn}
-              stepData={formData[currentStep]}
+              stepData={currentStep === 'ACTION_PLAN' ? formData : formData[currentStep]}
               preFillData={preFillData}
               onComplete={(value) => handleInputComplete(currentStep, currentQuestion.label, value)}
               initialValue={getCurrentValue()}
@@ -1008,7 +1032,7 @@ export function BusinessContinuityForm() {
 
               <button
                 onClick={currentStep === 'TESTING_AND_MAINTENANCE' && currentQuestionIndex === currentStepData.inputs.length - 1 
-                  ? exportToPDF
+                  ? () => setShowReview(true)
                   : handleNext
                 }
                 className="flex items-center px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm"

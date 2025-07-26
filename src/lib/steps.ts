@@ -84,7 +84,24 @@ type SpecialRiskMatrixInput = {
   dependsOn?: never;
 };
 
-export type InputConfig = TextInput | RadioInput | CheckboxInput | TableInput | SpecialRiskMatrixInput;
+type SpecialSmartActionPlanInput = {
+  type: 'special_smart_action_plan';
+  label: string;
+  required: boolean;
+  prompt: string;
+  examples?: string[];
+  options?: never;
+  tableColumns?: never;
+  tableRowsPrompt?: never;
+  priorityOptions?: never;
+  downtimeOptions?: never;
+  reasonForUpdateOptions?: never;
+  improvementStatusOptions?: never;
+  businessFunctionOptions?: never;
+  dependsOn?: never;
+};
+
+export type InputConfig = TextInput | RadioInput | CheckboxInput | TableInput | SpecialRiskMatrixInput | SpecialSmartActionPlanInput;
 
 type StepConfig = {
   title: string;
@@ -107,6 +124,13 @@ export const STEPS: StepsCollection = {
         required: true,
         prompt: 'What is your company name?',
         examples: ['ABC Store', 'Caribbean Delights', 'Island Services Ltd.'],
+      },
+      {
+        type: 'text',
+        label: 'Business Address',
+        required: true,
+        prompt: 'What is your complete business address including street, city, and country?',
+        examples: ['45 Harbor View Plaza, Bridgetown, Barbados', '123 Main Street, Kingston, Jamaica', '67 Independence Avenue, Port of Spain, Trinidad'],
       },
       {
         type: 'text',
@@ -152,6 +176,20 @@ export const STEPS: StepsCollection = {
           'Cloud storage with backup on external drive',
           'Email copies sent to key personnel'
         ],
+      },
+      {
+        type: 'text',
+        label: 'Plan Version',
+        required: true,
+        prompt: 'What version number should this plan be? Start with 1.0 for your first plan.',
+        examples: ['1.0', '1.1', '2.0'],
+      },
+      {
+        type: 'text',
+        label: 'Next Review Date',
+        required: true,
+        prompt: 'When should this plan be reviewed next? Consider your business cycles and risk environment.',
+        examples: ['January 2026', 'June 2025', 'December 2025'],
       },
     ],
   },
@@ -458,52 +496,23 @@ export const STEPS: StepsCollection = {
     description: 'Let\'s identify and assess the risks that could disrupt your business operations.',
     inputs: [
       {
-        type: 'checkbox',
-        label: 'Potential Hazards',
-        required: false,
-        prompt: 'Select all hazards that may affect your business. Consider both natural disasters and human-caused risks that are relevant to your location and industry.',
-        options: [
-          { label: 'Earthquake', value: 'earthquake' },
-          { label: 'Hurricane/Tropical Storm', value: 'hurricane' },
-          { label: 'Coastal Flooding', value: 'coastal_flood' },
-          { label: 'Flash Flooding', value: 'flash_flood' },
-          { label: 'Landslide', value: 'landslide' },
-          { label: 'Tsunami', value: 'tsunami' },
-          { label: 'Volcanic Activity', value: 'volcanic' },
-          { label: 'Drought', value: 'drought' },
-          { label: 'Epidemic (local disease outbreak)', value: 'epidemic' },
-          { label: 'Pandemic (widespread disease)', value: 'pandemic' },
-          { label: 'Extended Power Outage', value: 'power_outage' },
-          { label: 'Telecommunications Failure', value: 'telecom_failure' },
-          { label: 'Internet/Cyber Attacks', value: 'cyber_attack' },
-          { label: 'Fire', value: 'fire' },
-          { label: 'Crime/Theft/Break-in', value: 'crime' },
-          { label: 'Civil Disorder/Unrest', value: 'civil_disorder' },
-          { label: 'Terrorism', value: 'terrorism' },
-          { label: 'Supply Chain Disruption', value: 'supply_disruption' },
-          { label: 'Key Staff Unavailability', value: 'staff_unavailable' },
-          { label: 'Economic Downturn', value: 'economic_downturn' },
-          { label: 'Chemical Spill', value: 'chemical_spill' },
-          { label: 'Environmental Contamination', value: 'environmental_contamination' },
-          { label: 'Air Pollution Event', value: 'air_pollution' },
-          { label: 'Water Contamination', value: 'water_contamination' },
-          { label: 'Industrial Accident', value: 'industrial_accident' },
-          { label: 'Waste Management Failure', value: 'waste_management_failure' },
-          { label: 'Oil Spill', value: 'oil_spill' },
-          { label: 'Sargassum Seaweed Impact', value: 'sargassum' },
-          { label: 'Crowd Management Issues', value: 'crowd_management' },
-          { label: 'Waste Management Issues', value: 'waste_management' },
-        ],
+        type: 'table',
+        label: 'Hazard Applicability Assessment',
+        prompt: 'Review each potential hazard and mark whether it applies to your business and location.',
+        required: true,
+        tableColumns: ['Hazard', 'Applicable', 'Likelihood', 'Severity', 'Risk Level'],
+        tableRowsPrompt: 'Consider both natural disasters and human-caused risks that are relevant to your location and industry.',
         examples: [
-          'Coastal business: Hurricane, Coastal flooding, Tsunami, Power outage',
-          'Technology business: Power outage, Cyber attack, Telecom failure',
-          'Retail business: Crime, Fire, Power outage, Supply disruption',
+          'Hurricane - Yes - Likely (3) - Major (4) - High (12)',
+          'Earthquake - Yes - Very Unlikely (1) - Major (4) - Medium (4)',
+          'Cyber Attack - Yes - Likely (3) - Serious (3) - High (9)',
+          'Volcanic Activity - No - N/A - N/A - N/A',
         ],
       },
       {
         type: 'special_risk_matrix',
         label: 'Risk Assessment Matrix',
-        prompt: 'For each hazard you selected, assess the likelihood and potential severity of impact on your business.',
+        prompt: 'For each applicable hazard, assess the likelihood and potential severity of impact on your business.',
         required: true,
         examples: [
           'Hurricane - Likely (3) - Serious (3) - High (9) - Purchase insurance, prepare shutters, secure inventory',
@@ -608,77 +617,19 @@ export const STEPS: StepsCollection = {
   },
 
   ACTION_PLAN: {
-    title: 'Implementation Action Plan',
-    description: 'Finally, let\'s create a detailed action plan to implement your business continuity strategies.',
+    title: 'Smart Action Plan',
+    description: 'Based on your business type and risk assessment, we\'ve generated a customized action plan. All fields are automatically completed.',
     inputs: [
       {
-        type: 'table',
-        label: 'Action Plan by Risk Level',
-        prompt: 'For your highest-priority risks, create specific action plans with timelines and responsibilities.',
+        type: 'special_smart_action_plan' as const,
+        label: 'Smart Action Plan Generator',
         required: true,
-        tableColumns: ['Hazard/Risk', 'Immediate Actions (0-24 hours)', 'Short-term Actions (1-7 days)', 'Medium-term Actions (1-4 weeks)', 'Responsible Person'],
-        tableRowsPrompt: 'We\'ll focus on your high and medium-risk hazards. For each one, think about what needs to happen immediately, in the first week, and in the first month.',
+        prompt: 'We\'ve analyzed your business type and high-priority risks to create a complete action plan with implementation details, budget estimates, and team assignments.',
         examples: [
-          'Hurricane - Secure building, activate emergency team - Contact staff and customers, assess damage - File insurance claims, resume operations - Operations Manager',
-          'Power Outage - Switch to backup power, secure cash registers - Contact utility company, implement manual processes - Evaluate backup power needs, order equipment - Facility Manager',
-        ],
-      },
-      {
-        type: 'text',
-        label: 'Implementation Timeline',
-        required: true,
-        prompt: 'What is your overall timeline for implementing this business continuity plan? Consider your business cycles, budget constraints, and priority risks.',
-        examples: [
-          'Phase 1 (Immediate - 1 month): Implement high-priority prevention measures and emergency procedures. Phase 2 (1-3 months): Complete staff training and backup system installation. Phase 3 (3-6 months): Finalize all strategies and conduct first full test.',
-          'Start implementation immediately with hurricane season approaching. Complete critical measures within 6 weeks, full implementation within 3 months.',
-          'Begin after the busy season ends in April. Implement high-priority items by June, complete full plan by December before next tourist season.',
-        ],
-      },
-      {
-        type: 'text',
-        label: 'Resource Requirements',
-        required: true,
-        prompt: 'What resources (financial, human, technical) will you need to implement your plan? Be specific about costs and personnel time.',
-        examples: [
-          'Budget: $15,000 for security system ($8,000), generator ($5,000), training ($2,000). Personnel: 20 hours/week from manager for 2 months, 4 hours/week from each staff member.',
-          'Financial: $25,000 total - IT infrastructure ($15,000), insurance increases ($3,000/year), emergency supplies ($2,000), training ($5,000). Human: IT consultant (40 hours), management time (2 days/week for 3 months).',
-          'Equipment budget: $10,000 for backup systems. Training budget: $3,000 for staff certification. Time investment: 1 day per week from department heads for 4 months.',
-        ],
-      },
-      {
-        type: 'text',
-        label: 'Responsible Parties and Roles',
-        required: true,
-        prompt: 'Who will be responsible for implementing and maintaining different aspects of the plan? Assign specific roles and backup responsibilities.',
-        examples: [
-          'Plan Coordinator: General Manager (backup: Operations Supervisor). IT Systems: IT Manager (backup: External consultant). Staff Training: HR Manager (backup: Senior Supervisor). Emergency Response: Operations Manager (backup: Assistant Manager).',
-          'Overall Implementation: Business Owner (backup: Office Manager). Risk Prevention: Facility Manager (backup: Maintenance Staff). Communication: Customer Service Manager (backup: Reception Staff). Financial: Accountant (backup: Office Manager).',
-          'Business Continuity Team: 3 senior staff members with rotating leadership. Department Implementation: Each department head responsible for their area. External Relations: Marketing Manager for media, Admin Manager for government/insurance.',
-        ],
-      },
-      {
-        type: 'text',
-        label: 'Review and Update Schedule',
-        required: true,
-        prompt: 'How often will you review and update your business continuity plan? Include regular reviews and trigger events for updates.',
-        examples: [
-          'Quarterly reviews of risk assessment and contact information. Annual comprehensive plan update. Immediate review after any emergency event or significant business change.',
-          'Monthly check-ins during hurricane season (June-November). Bi-annual full reviews in January and July. Update plan whenever we change suppliers, move locations, or change key staff.',
-          'Ongoing monitoring: Monthly risk assessment updates. Formal reviews: Quarterly team meetings. Major updates: Annually and after any emergency event, business expansion, or regulatory changes.',
-        ],
-      },
-      {
-        type: 'table',
-        label: 'Testing and Assessment Plan',
-        prompt: 'How will you test your business continuity plan to ensure it works effectively?',
-        required: true,
-        tableColumns: ['Test Type', 'Frequency', 'Participants', 'Success Criteria', 'Responsible Person'],
-        tableRowsPrompt: 'Plan different types of tests to validate your business continuity plan.',
-        examples: [
-          'Communication Test - Monthly - All staff - Everyone receives and responds to emergency message within 2 hours - Communications Manager',
-          'Evacuation Drill - Quarterly - All staff and customers - Building evacuated safely within 5 minutes - Safety Officer',
-          'Backup System Test - Monthly - IT staff - All systems switch to backup power/internet successfully - IT Manager',
-          'Full Plan Exercise - Annually - All key staff - Complete scenario exercise completed successfully - Plan Coordinator',
+          'Action plans are automatically generated based on your risk assessment',
+          'Implementation priority is set based on risk levels (Extreme → High → Medium)',
+          'Budget estimates and team assignments are customized for your business type',
+          'All fields are completed automatically - no manual input required',
         ],
       },
     ],
@@ -691,56 +642,57 @@ export const STEPS: StepsCollection = {
       {
         type: 'table',
         label: 'Staff Contact Information',
-        prompt: 'Provide contact information for all staff members.',
+        prompt: 'Provide complete contact information for all staff members including emergency roles.',
         required: true,
-        tableColumns: ['Name', 'Position', 'Phone Number', 'Email Address', 'Emergency Contact'],
+        tableColumns: ['Name', 'Position', 'Mobile Phone', 'Home Phone', 'Email Address', 'Emergency Contact', 'Emergency Role'],
         tableRowsPrompt: 'Include all employees, managers, and key personnel who would need to be contacted during an emergency.',
         examples: [
-          'John Smith - Manager - 876-555-0123 - j.smith@company.com - Wife: 876-555-0124',
-          'Maria Rodriguez - Cashier - 876-555-0125 - m.rodriguez@company.com - Sister: 876-555-0126',
-          'David Thompson - Cook - 876-555-0127 - d.thompson@company.com - Mother: 876-555-0128',
+          'John Smith - General Manager - 876-555-0120 - 876-555-0121 - j.smith@company.com - Wife: 876-555-0122 - Decision Authority',
+          'Maria Rodriguez - Assistant Manager - 876-555-0123 - 876-555-0124 - m.rodriguez@company.com - Husband: 876-555-0125 - Operations Lead',
+          'David Thompson - Head Cashier - 876-555-0126 - 876-555-0127 - d.thompson@company.com - Sister: 876-555-0128 - Customer Service Lead',
         ],
       },
       {
         type: 'table',
         label: 'Key Customer Contacts',
-        prompt: 'List your most important customers who would need special attention during an emergency.',
+        prompt: 'List your most important customers who would need special attention during an emergency, including their specific needs.',
         required: false,
-        tableColumns: ['Customer Name', 'Type/Notes', 'Phone Number', 'Email Address', 'Special Requirements'],
+        tableColumns: ['Customer Name', 'Type/Notes', 'Primary Contact', 'Phone Number', 'Email Address', 'Special Requirements', 'Priority Level'],
         tableRowsPrompt: 'Focus on customers who depend on you for essential services or have special needs.',
         examples: [
-          'Mrs. James - Elderly customer (home delivery) - 876-555-0130 - - Relies on weekly grocery delivery',
-          'Paradise Resort - Major client - 876-555-0131 - orders@paradiseresort.com - Daily fresh produce delivery',
-          'City Hospital - Emergency supplies - 876-555-0132 - procurement@cityhospital.gov - Critical medical supplies',
+          'Mrs. James - Elderly customer (home delivery) - Mrs. James - 876-555-0130 - - Relies on weekly grocery delivery - CRITICAL',
+          'Paradise Resort - Major client - John Doe - 876-555-0131 - orders@paradiseresort.com - Daily fresh produce delivery - HIGH',
+          'City Hospital - Emergency supplies - Jane Smith - 876-555-0132 - procurement@cityhospital.gov - Critical medical supplies - CRITICAL',
         ],
       },
       {
         type: 'table',
         label: 'Supplier Information',
-        prompt: 'List your main suppliers and at least one backup supplier for key goods/services.',
+        prompt: 'List your main suppliers with complete contact information including account numbers for faster service.',
         required: true,
-        tableColumns: ['Supplier Name', 'Goods/Services Supplied', 'Phone Number', 'Email Address', 'Backup Supplier'],
+        tableColumns: ['Supplier Name', 'Goods/Services Supplied', 'Phone Number', '24/7 Contact', 'Email Address', 'Account Number', 'Backup Supplier'],
         tableRowsPrompt: 'Include primary suppliers and identify backup options for critical supplies.',
         examples: [
-          'Caribbean Foods Ltd - Fresh produce - 876-555-0140 - orders@caribbeanfoods.com - Island Fresh Co.',
-          'Island Hardware - Tools & supplies - 876-555-0141 - sales@islandhardware.com - Tools & More Ltd.',
-          'Power Solutions Inc - Generator maintenance - 876-555-0142 - service@powersolutions.com - Electric Pro Services',
+          'Caribbean Foods Ltd - Fresh produce - 876-555-0140 - 876-555-0141 - orders@caribbeanfoods.com - ACC-2024-001 - Island Fresh Co.',
+          'Island Hardware - Tools & supplies - 876-555-0142 - 876-555-0143 - sales@islandhardware.com - HW-789 - Tools & More Ltd.',
+          'Power Solutions Inc - Generator maintenance - 876-555-0144 - 876-555-0145 - service@powersolutions.com - PS-456 - Electric Pro Services',
         ],
       },
       {
         type: 'table',
         label: 'Emergency Services and Utilities',
-        prompt: 'Compile contact information for emergency services and utility providers.',
+        prompt: 'Compile complete contact information for emergency services and utility providers with account numbers.',
         required: true,
-        tableColumns: ['Service Type', 'Organization Name', 'Phone Number', 'Email Address', 'Account Number'],
+        tableColumns: ['Service Type', 'Organization Name', 'Phone Number', '24/7 Emergency', 'Email Address', 'Account Number'],
         tableRowsPrompt: 'Include all essential services you might need to contact during an emergency.',
         examples: [
-          'Police - Royal Police Force - 911 / 876-555-0150 - - N/A',
-          'Fire Department - Kingston Fire Brigade - 911 / 876-555-0151 - - N/A',
-          'Electricity - Jamaica Public Service - 876-555-0152 - customer@jps.com.jm - Account: JPS123456',
-          'Water - National Water Commission - 876-555-0153 - service@nwc.com.jm - Account: NWC789012',
-          'Internet - Flow Jamaica - 876-555-0154 - support@flow.com - Account: FLOW345678',
-          'Insurance - Guardian Life - 876-555-0155 - claims@guardian.com - Policy: GL901234',
+          'Police - Royal Police Force - 911 - 911 - - N/A',
+          'Fire Department - Kingston Fire Brigade - 911 - 911 - - N/A',
+          'Medical Emergency - Ambulance Service - 511 - 511 - - N/A',
+          'Electricity - Jamaica Public Service - 876-555-0152 - 876-555-0153 - customer@jps.com.jm - JPS123456',
+          'Water - National Water Commission - 876-555-0154 - 876-555-0155 - service@nwc.com.jm - NWC789012',
+          'Internet - Flow Jamaica - 876-555-0156 - 876-555-0157 - support@flow.com - FLOW345678',
+          'Insurance - Guardian Life - 876-555-0158 - 876-555-0159 - claims@guardian.com - GL901234',
         ],
       },
       {
@@ -769,22 +721,67 @@ export const STEPS: StepsCollection = {
     ],
   },
 
+  VITAL_RECORDS: {
+    title: 'Vital Records Inventory',
+    description: 'Let\'s identify and document the location of critical business records needed for recovery.',
+    inputs: [
+      {
+        type: 'table',
+        label: 'Vital Records Inventory',
+        prompt: 'List your most important business records, where they are stored, and where backups are kept.',
+        required: true,
+        tableColumns: ['Record Type', 'Primary Location', 'Backup Location', 'Recovery Priority'],
+        tableRowsPrompt: 'Think about the documents you would need to restart your business after a disaster.',
+        examples: [
+          'Client Contracts - SharePoint - AWS Cloud - HIGH',
+          'Financial Records - QuickBooks Cloud - Local backup - HIGH',
+          'Insurance Policies - Fireproof safe - Digital copies - HIGH',
+          'Employee Records - HR System - Secure offsite - MEDIUM',
+          'Software Licenses - Password manager - Printed copies - HIGH',
+        ],
+        priorityOptions: [
+          { label: 'Critical - Needed immediately for business operations', value: 'critical' },
+          { label: 'High - Important for business recovery', value: 'high' },
+          { label: 'Medium - Helpful but can wait a few days', value: 'medium' },
+          { label: 'Low - Nice to have but not essential', value: 'low' },
+        ],
+      },
+    ],
+  },
+
   TESTING_AND_MAINTENANCE: {
     title: 'Testing and Maintenance',
-    description: 'Establish procedures for keeping your business continuity plan current and effective.',
+    description: 'Establish comprehensive procedures for keeping your business continuity plan current and effective.',
     inputs: [
       {
         type: 'table',
         label: 'Plan Testing Schedule',
-        prompt: 'Create a schedule for regularly testing different aspects of your business continuity plan.',
+        prompt: 'Create a comprehensive schedule for regularly testing different aspects of your business continuity plan.',
         required: true,
-        tableColumns: ['Test Type', 'What is Tested', 'Frequency', 'Next Test Date', 'Responsible Person'],
+        tableColumns: ['Test Type', 'What is Tested', 'Frequency', 'Next Test Date', 'Success Criteria', 'Responsible Person'],
         tableRowsPrompt: 'Plan different types of tests to ensure your plan works when needed.',
         examples: [
-          'Communication Test - Emergency contact procedures - Monthly - 2024-02-15 - Office Manager',
-          'Backup Systems - Generator and backup power - Quarterly - 2024-03-15 - Maintenance Staff',
-          'Evacuation Drill - Emergency evacuation procedures - Semi-annually - 2024-06-15 - Safety Officer',
-          'Full Plan Exercise - Complete emergency scenario - Annually - 2024-12-15 - General Manager',
+          'Communication Test - Emergency contact procedures - Monthly - 2025-02-15 - All staff respond within 2 hours - Office Manager',
+          'Backup Systems - Generator and backup power - Quarterly - 2025-03-15 - Systems run for 8+ hours without issues - Maintenance Staff',
+          'Evacuation Drill - Emergency evacuation procedures - Semi-annually - 2025-06-15 - Building evacuated in under 5 minutes - Safety Officer',
+          'Data Backup Test - Critical data recovery - Monthly - 2025-02-28 - All data restored successfully - IT Manager',
+          'Supplier Contact Test - Alternative supplier activation - Quarterly - 2025-04-15 - Backup suppliers respond within 4 hours - Procurement Manager',
+          'Full Plan Exercise - Complete emergency scenario - Annually - 2025-12-15 - All procedures executed successfully - General Manager',
+        ],
+      },
+      {
+        type: 'table',
+        label: 'Training Schedule',
+        prompt: 'Plan regular training sessions to ensure all staff understand their roles in the business continuity plan.',
+        required: true,
+        tableColumns: ['Training Type', 'Target Audience', 'Frequency', 'Next Training Date', 'Training Provider', 'Completion Criteria'],
+        tableRowsPrompt: 'Include both general awareness training and role-specific training.',
+        examples: [
+          'BCP Overview - All staff - Annually - 2025-03-01 - General Manager - All staff complete training module',
+          'Emergency Response - Management team - Semi-annually - 2025-02-15 - External consultant - Role-play exercises completed',
+          'Fire Safety - All staff - Annually - 2025-04-01 - Fire department - Fire drill participation',
+          'Data Recovery - IT staff - Quarterly - 2025-02-01 - IT Manager - Successful data recovery demonstration',
+          'Customer Communication - Customer service staff - Semi-annually - 2025-05-01 - Communications Manager - Crisis communication scenarios',
         ],
       },
       {
@@ -808,6 +805,21 @@ export const STEPS: StepsCollection = {
           { label: 'Risk assessment update', value: 'risk_update' },
           { label: 'Technology upgrade', value: 'technology_upgrade' },
           { label: 'Other (please specify)', value: 'other' }
+        ],
+      },
+      {
+        type: 'table',
+        label: 'Performance Metrics',
+        prompt: 'Define key performance indicators to measure the effectiveness of your business continuity plan.',
+        required: true,
+        tableColumns: ['Metric Name', 'Target Value', 'Measurement Method', 'Review Frequency', 'Current Status', 'Responsible Person'],
+        tableRowsPrompt: 'Include both quantitative and qualitative measures of plan effectiveness.',
+        examples: [
+          'Emergency Response Time - Under 30 minutes - Drill timing records - Monthly - Not yet measured - Emergency Coordinator',
+          'Staff Contact Success Rate - 95% within 2 hours - Communication test results - Monthly - Not yet measured - HR Manager',
+          'Data Recovery Time - Under 4 hours - Backup test records - Quarterly - Not yet measured - IT Manager',
+          'Customer Notification Time - Under 1 hour - Communication logs - Per incident - Not yet measured - Customer Service Manager',
+          'Business Resumption Time - Under 48 hours - Incident records - Per incident - Not yet measured - Operations Manager',
         ],
       },
       {
