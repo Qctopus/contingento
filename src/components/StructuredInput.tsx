@@ -965,9 +965,18 @@ export function StructuredInput({
     const hasAutoCompletedRef = React.useRef(false)
     
     React.useEffect(() => {
+      console.log('🔄 Auto-completion useEffect triggered:', {
+        smartActionPlansLength: smartActionPlans.length,
+        hasAutoCompleted: hasAutoCompletedRef.current,
+        shouldTrigger: smartActionPlans.length > 0 && !hasAutoCompletedRef.current
+      })
+      
       if (smartActionPlans.length > 0 && !hasAutoCompletedRef.current) {
+        console.log('🚀 Starting auto-completion process...')
+        
         // Generate smart suggestions for other fields
         const businessType = getBusinessTypeFromFormData({ BUSINESS_OVERVIEW: stepData?.BUSINESS_OVERVIEW || {} })
+        console.log('🏢 Detected business type for auto-completion:', businessType)
         
         // Create implementation priority based on risk levels
         const priorityOrder = smartActionPlans
@@ -983,6 +992,7 @@ export function StructuredInput({
           .map(plan => plan.hazard)
         
         const implementationPriority = `Start with ${priorityOrder[0]} (highest risk), then ${priorityOrder.slice(1).join(', ')}`
+        console.log('📋 Generated implementation priority:', implementationPriority)
         
         // Generate budget estimate based on business type and number of plans
         const budgetEstimates: Record<string, string> = {
@@ -995,6 +1005,7 @@ export function StructuredInput({
         }
         
         const budgetAndResources = `Total budget: ${budgetEstimates[businessType] || budgetEstimates.general} over 6 months, plus 20 hours/week from management team for implementation and training.`
+        console.log('💰 Generated budget and resources:', budgetAndResources)
         
         // Generate implementation team based on business type
         const teamSuggestions: Record<string, string> = {
@@ -1007,6 +1018,7 @@ export function StructuredInput({
         }
         
         const implementationTeam = teamSuggestions[businessType] || teamSuggestions.general
+        console.log('👥 Generated implementation team:', implementationTeam)
         
         // Auto-complete all ACTION_PLAN fields
         const completeActionPlanData = {
@@ -1016,11 +1028,22 @@ export function StructuredInput({
           'Implementation Team': implementationTeam
         }
         
+        console.log('📦 Complete action plan data to be saved:', completeActionPlanData)
+        console.log('📊 Data validation:', {
+          hasActionPlans: Array.isArray(completeActionPlanData['Auto-Generated Action Plans']),
+          actionPlansLength: completeActionPlanData['Auto-Generated Action Plans'].length,
+          hasPriority: !!completeActionPlanData['Implementation Priority'],
+          hasBudget: !!completeActionPlanData['Budget and Resources'],
+          hasTeam: !!completeActionPlanData['Implementation Team']
+        })
+        
         // Save the complete data
+        console.log('💾 Calling onComplete with complete data...')
         onComplete(completeActionPlanData)
         
         // Mark as user interacted
         if (setUserInteracted) {
+          console.log('👤 Marking as user interacted...')
           setUserInteracted()
         }
         
@@ -1029,8 +1052,19 @@ export function StructuredInput({
         console.log('🏢 Business Type:', businessType)
         console.log('💰 Budget:', budgetAndResources)
         console.log('👥 Team:', implementationTeam)
+        console.log('🎯 All fields populated:', {
+          'Auto-Generated Action Plans': '✅',
+          'Implementation Priority': '✅',
+          'Budget and Resources': '✅',
+          'Implementation Team': '✅'
+        })
         
         hasAutoCompletedRef.current = true
+        console.log('🔒 Auto-completion marked as completed, preventing re-execution')
+      } else {
+        console.log('⏸️ Auto-completion skipped:', {
+          reason: smartActionPlans.length === 0 ? 'No action plans generated' : 'Already auto-completed'
+        })
       }
     }, [smartActionPlans.length, onComplete, setUserInteracted, stepData])
     
@@ -1053,6 +1087,8 @@ export function StructuredInput({
               <p>Step Data Keys: {Object.keys(stepData || {}).join(', ')}</p>
               <p>Risk Assessment Data: {JSON.stringify(stepData?.RISK_ASSESSMENT, null, 2)}</p>
               <p>Business Overview Data: {JSON.stringify(stepData?.BUSINESS_OVERVIEW, null, 2)}</p>
+              <p>Auto-completion Status: {hasAutoCompletedRef.current ? 'Completed' : 'Not triggered'}</p>
+              <p>Smart Action Plans Length: {smartActionPlans.length}</p>
             </div>
           )}
         </div>
@@ -1072,6 +1108,11 @@ export function StructuredInput({
               <p className="text-green-700 text-sm mt-2 font-medium">
                 All fields have been automatically completed based on your risk assessment data.
               </p>
+              {process.env.NODE_ENV === 'development' && (
+                <p className="text-green-600 text-xs mt-2">
+                  Auto-completion triggered at: {new Date().toLocaleTimeString()}
+                </p>
+              )}
             </div>
             <div className="text-green-600">
               <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
