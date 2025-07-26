@@ -470,40 +470,98 @@ export const BUSINESS_TYPE_MODIFIERS: BusinessTypeModifiers = {
 
 // Function to get business type from form data
 export function getBusinessTypeFromFormData(formData: any): string {
+  // Enhanced business type extraction with multiple fallbacks
+  console.log('🔍 Business Type Detection - Form Data:', formData)
+  
+  // Check multiple possible locations for business type data
+  const industryType = formData?.BUSINESS_OVERVIEW?.['Industry Type'] || 
+                      formData?.BUSINESS_OVERVIEW?.['business_type'] ||
+                      formData?.['Industry Type'] ||
+                      formData?.['business_type'] ||
+                      ''
+  
+  console.log('🔍 Extracted Industry Type:', industryType)
+  
+  // If we have a direct industry type, use it
+  if (industryType) {
+    const normalizedType = industryType.toLowerCase().replace(/[^a-z]/g, '')
+    console.log('🔍 Normalized Industry Type:', normalizedType)
+    
+    // Map common industry types to our business types
+    if (normalizedType.includes('tourism') || normalizedType.includes('hotel') || 
+        normalizedType.includes('resort') || normalizedType.includes('accommodation')) {
+      console.log('✅ Detected business type: tourism')
+      return 'tourism'
+    }
+    
+    if (normalizedType.includes('retail') || normalizedType.includes('shop') || 
+        normalizedType.includes('store') || normalizedType.includes('commerce')) {
+      console.log('✅ Detected business type: retail')
+      return 'retail'
+    }
+    
+    if (normalizedType.includes('restaurant') || normalizedType.includes('food') || 
+        normalizedType.includes('catering') || normalizedType.includes('hospitality')) {
+      console.log('✅ Detected business type: food_service')
+      return 'food_service'
+    }
+    
+    if (normalizedType.includes('manufacturing') || normalizedType.includes('production') || 
+        normalizedType.includes('factory') || normalizedType.includes('industrial')) {
+      console.log('✅ Detected business type: manufacturing')
+      return 'manufacturing'
+    }
+    
+    if (normalizedType.includes('technology') || normalizedType.includes('software') || 
+        normalizedType.includes('it') || normalizedType.includes('tech')) {
+      console.log('✅ Detected business type: technology')
+      return 'technology'
+    }
+  }
+  
+  // Fallback to text analysis if no direct industry type
   const businessPurpose = formData?.BUSINESS_OVERVIEW?.['Business Purpose']?.toLowerCase() || ''
-  const productsServices = formData?.BUSINESS_OVERVIEW?.['Products & Services']?.toLowerCase() || ''
+  const productsServices = formData?.BUSINESS_OVERVIEW?.['Products and Services']?.toLowerCase() || ''
   const businessDescription = `${businessPurpose} ${productsServices}`.toLowerCase()
+  
+  console.log('🔍 Business Description Analysis:', businessDescription)
 
   // Business type detection logic
   if (businessDescription.includes('hotel') || businessDescription.includes('resort') || 
       businessDescription.includes('tour') || businessDescription.includes('tourism') ||
       businessDescription.includes('restaurant') || businessDescription.includes('accommodation')) {
+    console.log('✅ Detected business type: tourism (from description)')
     return 'tourism'
   }
   
   if (businessDescription.includes('retail') || businessDescription.includes('shop') || 
       businessDescription.includes('store') || businessDescription.includes('sales') ||
       businessDescription.includes('customer') || businessDescription.includes('merchandise')) {
+    console.log('✅ Detected business type: retail (from description)')
     return 'retail'
   }
   
   if (businessDescription.includes('restaurant') || businessDescription.includes('food') || 
       businessDescription.includes('catering') || businessDescription.includes('kitchen') ||
       businessDescription.includes('dining') || businessDescription.includes('culinary')) {
+    console.log('✅ Detected business type: food_service (from description)')
     return 'food_service'
   }
   
   if (businessDescription.includes('manufacturing') || businessDescription.includes('production') || 
       businessDescription.includes('factory') || businessDescription.includes('assembly') ||
       businessDescription.includes('industrial') || businessDescription.includes('processing')) {
+    console.log('✅ Detected business type: manufacturing (from description)')
     return 'manufacturing'
   }
   
   if (businessDescription.includes('technology') || businessDescription.includes('software') || 
       businessDescription.includes('it ') || businessDescription.includes('tech') ||
       businessDescription.includes('digital') || businessDescription.includes('computer')) {
+    console.log('✅ Detected business type: technology (from description)')
     return 'technology'
   }
   
+  console.log('⚠️ No specific business type detected, using general')
   return 'general' // Default fallback
 } 

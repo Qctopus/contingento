@@ -703,6 +703,23 @@ export function StructuredInput({
         }
       }
       
+      // Enhanced debug logging for risk assessment data structure
+      console.log('🔍 Risk Assessment Data Structure Analysis:')
+      console.log('  - riskAssessment type:', typeof riskAssessment)
+      console.log('  - riskAssessment keys:', Object.keys(riskAssessment || {}))
+      if (riskAssessment && typeof riskAssessment === 'object') {
+        console.log('  - riskAssessment content:', riskAssessment)
+        // Check for nested structures
+        Object.entries(riskAssessment).forEach(([key, value]) => {
+          console.log(`  - ${key}:`, {
+            type: typeof value,
+            isArray: Array.isArray(value),
+            length: Array.isArray(value) ? value.length : 'N/A',
+            sample: Array.isArray(value) && value.length > 0 ? value[0] : 'N/A'
+          })
+        })
+      }
+      
       // Import action plans generation logic
       const { 
         HAZARD_ACTION_PLANS, 
@@ -713,22 +730,40 @@ export function StructuredInput({
       // Try to get risk matrix from different possible field names
       let riskMatrix = null
       
+      console.log('🔍 Risk Matrix Extraction Process:')
+      
       // First try the direct array (most common case)
       if (Array.isArray(riskAssessment)) {
         riskMatrix = riskAssessment
+        console.log('✅ Found risk matrix as direct array')
       }
       // Then try the "Risk Assessment Matrix" field
       else if ((riskAssessment as any)['Risk Assessment Matrix'] && Array.isArray((riskAssessment as any)['Risk Assessment Matrix'])) {
         riskMatrix = (riskAssessment as any)['Risk Assessment Matrix']
+        console.log('✅ Found risk matrix in "Risk Assessment Matrix" field')
       }
       // Then try other possible field names
       else if ((riskAssessment as any)['Risk Matrix'] && Array.isArray((riskAssessment as any)['Risk Matrix'])) {
         riskMatrix = (riskAssessment as any)['Risk Matrix']
+        console.log('✅ Found risk matrix in "Risk Matrix" field')
+      }
+      // Try additional field name variations
+      else if ((riskAssessment as any)['riskMatrix'] && Array.isArray((riskAssessment as any)['riskMatrix'])) {
+        riskMatrix = (riskAssessment as any)['riskMatrix']
+        console.log('✅ Found risk matrix in "riskMatrix" field')
       }
       // Finally, try to find any array field that might contain risk data
       else {
+        console.log('🔍 Searching for risk matrix in all fields...')
         for (const [key, value] of Object.entries(riskAssessment)) {
-          if (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && value[0].hazard) {
+          console.log(`  - Checking field "${key}":`, {
+            type: typeof value,
+            isArray: Array.isArray(value),
+            length: Array.isArray(value) ? value.length : 'N/A',
+            hasHazard: Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].hazard || value[0].Hazard)
+          })
+          
+          if (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].hazard || value[0].Hazard)) {
             riskMatrix = value
             console.log(`✅ Found risk matrix in "${key}" field`)
             break
@@ -761,14 +796,34 @@ export function StructuredInput({
       const priorityHazards = riskMatrix.filter((risk: any) => {
         const riskLevel = (risk.riskLevel || risk.RiskLevel || risk.risk_level || '').toLowerCase()
         const hazardName = risk.hazard || risk.Hazard || ''
-        console.log('Checking risk:', hazardName, 'with level:', riskLevel)
-        return riskLevel.includes('high') || riskLevel.includes('extreme')
+        
+        // Enhanced risk level detection with multiple variations
+        const isHighRisk = riskLevel.includes('high') || 
+                          riskLevel.includes('elevé') || // French
+                          riskLevel.includes('alto') || // Spanish
+                          riskLevel.includes('höchst') || // German
+                          riskLevel.includes('8') || riskLevel.includes('9') // Score-based
+        
+        const isExtremeRisk = riskLevel.includes('extreme') || 
+                             riskLevel.includes('extrême') || // French
+                             riskLevel.includes('extremo') || // Spanish
+                             riskLevel.includes('12') || riskLevel.includes('13') || 
+                             riskLevel.includes('14') || riskLevel.includes('15') || 
+                             riskLevel.includes('16') // Score-based
+        
+        const isPriority = isHighRisk || isExtremeRisk
+        
+        console.log('Checking risk:', hazardName, 'with level:', riskLevel, 'Priority:', isPriority)
+        return isPriority
       })
 
       console.log('Priority hazards found:', priorityHazards.length)
 
       // Get business type for customization with enhanced extraction
-      let businessType = getBusinessTypeFromFormData({ BUSINESS_OVERVIEW: businessOverview })
+      let businessType = getBusinessTypeFromFormData({ 
+        BUSINESS_OVERVIEW: businessOverview || {},
+        ...businessOverview // Also pass businessOverview directly as fallback
+      })
       
       // Fallback: try to extract business type directly from businessOverview
       if (!businessType && businessOverview) {
@@ -781,7 +836,12 @@ export function StructuredInput({
       
       const businessModifiers = BUSINESS_TYPE_MODIFIERS[businessType] || {}
       
-      console.log('Business type detection:', { businessType, businessOverview })
+      console.log('Business type detection:', { 
+        businessType, 
+        businessOverview,
+        hasModifiers: Object.keys(businessModifiers).length > 0,
+        modifierKeys: Object.keys(businessModifiers)
+      })
 
       // Generate action plans for each priority hazard
       return priorityHazards.map((risk: any) => {
@@ -853,8 +913,30 @@ export function StructuredInput({
         }
 
         // Apply business type modifications
+        console.log('🔧 Applying business type modifiers for:', businessType)
+        console.log('🔧 Available modifiers:', Object.keys(businessModifiers))
+        
         if (businessModifiers.additionalResources) {
+          console.log('🔧 Adding additional resources:', businessModifiers.additionalResources)
           actionPlan.resourcesNeeded = [...actionPlan.resourcesNeeded, ...businessModifiers.additionalResources]
+        }
+        
+        if (businessModifiers.modifiedActions) {
+          console.log('🔧 Applying modified actions for business type')
+          if (businessModifiers.modifiedActions.immediate) {
+            actionPlan.immediateActions = [...actionPlan.immediateActions, ...businessModifiers.modifiedActions.immediate]
+          }
+          if (businessModifiers.modifiedActions.shortTerm) {
+            actionPlan.shortTermActions = [...actionPlan.shortTermActions, ...businessModifiers.modifiedActions.shortTerm]
+          }
+          if (businessModifiers.modifiedActions.mediumTerm) {
+            actionPlan.mediumTermActions = [...actionPlan.mediumTermActions, ...businessModifiers.modifiedActions.mediumTerm]
+          }
+        }
+        
+        if (businessModifiers.specificConsiderations) {
+          console.log('🔧 Adding specific considerations:', businessModifiers.specificConsiderations)
+          actionPlan.longTermReduction = [...actionPlan.longTermReduction, ...businessModifiers.specificConsiderations]
         }
 
         const actionPlanResult = {
