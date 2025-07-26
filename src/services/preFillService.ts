@@ -479,8 +479,10 @@ export const generatePreFillData = (
   const preFilledFields: { [stepId: string]: { [fieldName: string]: any } } = {}
 
   // Business Overview pre-fills - using localized field names and examples
+  const businessOverviewData: any = {}
+  
   if (localizedExamples) {
-    preFilledFields['BUSINESS_OVERVIEW'] = {
+    Object.assign(businessOverviewData, {
       [fieldNames.businessPurpose]: localizedExamples.businessPurpose[0] ? 
         localizePlaceholders(localizedExamples.businessPurpose[0], location, locale) : '',
       [fieldNames.productsAndServices]: localizedExamples.productsServices[0] ? 
@@ -490,10 +492,10 @@ export const generatePreFillData = (
       [fieldNames.minimumResourceRequirements]: localizedExamples.minimumResourcesExamples[0] || '',
       [fieldNames.customerBase]: localizedExamples.customerBase[0] ? 
         localizePlaceholders(localizedExamples.customerBase[0], location, locale) : '',
-    }
+    })
   } else {
     // Fallback to English examples
-    preFilledFields['BUSINESS_OVERVIEW'] = {
+    Object.assign(businessOverviewData, {
       [fieldNames.businessPurpose]: industry.examples.businessPurpose[0] ? 
         localizePlaceholders(industry.examples.businessPurpose[0], location, locale) : '',
       [fieldNames.productsAndServices]: industry.examples.productsServices[0] ? 
@@ -503,8 +505,18 @@ export const generatePreFillData = (
       [fieldNames.minimumResourceRequirements]: industry.examples.minimumResourcesExamples[0] || '',
       [fieldNames.customerBase]: industry.examples.customerBase[0] ? 
         localizePlaceholders(industry.examples.customerBase[0], location, locale) : '',
-    }
+    })
   }
+  
+  // Add business type and location data in the exact format needed
+  businessOverviewData['Industry Type'] = industry.id
+  businessOverviewData['business_type'] = industry.id
+  businessOverviewData['Country'] = location.country
+  businessOverviewData['Parish'] = location.parish || ''
+  businessOverviewData['Near Coast'] = location.nearCoast
+  businessOverviewData['Urban Area'] = location.urbanArea
+  
+  preFilledFields['BUSINESS_OVERVIEW'] = businessOverviewData
 
   // Risk Assessment pre-fills
   preFilledFields['RISK_ASSESSMENT'] = {

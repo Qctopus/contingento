@@ -639,8 +639,65 @@ export function StructuredInput({
   if (type === 'special_smart_action_plan') {
     // Generate action plans based on business type and risk assessment
     const generateSmartActionPlans = () => {
-      const businessOverview = stepData?.BUSINESS_OVERVIEW || {}
-      const riskAssessment = stepData?.RISK_ASSESSMENT || {}
+      // Enhanced data extraction with multiple fallbacks
+      let businessOverview = {}
+      let riskAssessment = {}
+      
+      // Debug: Log all available data
+      console.log('🔍 Smart Action Plan - Available stepData:', stepData)
+      console.log('🔍 Smart Action Plan - Available preFillData:', preFillData)
+      
+      // Enhanced debug logging for data structure analysis
+      if (stepData) {
+        console.log('📊 stepData structure analysis:')
+        console.log('  - Type:', typeof stepData)
+        console.log('  - Keys:', Object.keys(stepData))
+        
+        if (stepData.BUSINESS_OVERVIEW) {
+          console.log('  - BUSINESS_OVERVIEW keys:', Object.keys(stepData.BUSINESS_OVERVIEW))
+          console.log('  - BUSINESS_OVERVIEW content:', stepData.BUSINESS_OVERVIEW)
+        }
+        
+        if (stepData.RISK_ASSESSMENT) {
+          console.log('  - RISK_ASSESSMENT keys:', Object.keys(stepData.RISK_ASSESSMENT))
+          console.log('  - RISK_ASSESSMENT content:', stepData.RISK_ASSESSMENT)
+        }
+      }
+      
+      if (preFillData) {
+        console.log('📊 preFillData structure analysis:')
+        console.log('  - Industry:', preFillData.industry)
+        console.log('  - Location:', preFillData.location)
+        console.log('  - Pre-filled fields:', Object.keys(preFillData.preFilledFields))
+      }
+      
+      // Extract business overview data with multiple fallbacks
+      if (stepData?.BUSINESS_OVERVIEW) {
+        businessOverview = stepData.BUSINESS_OVERVIEW
+        console.log('✅ Found BUSINESS_OVERVIEW in stepData:', businessOverview)
+      } else if (stepData && typeof stepData === 'object') {
+        // Check if business data is stored directly in stepData
+        const businessKeys = ['Industry Type', 'business_type', 'Business Purpose', 'Products & Services']
+        const hasBusinessData = businessKeys.some(key => (stepData as any)[key] !== undefined)
+        if (hasBusinessData) {
+          businessOverview = stepData
+          console.log('✅ Found business data directly in stepData:', businessOverview)
+        }
+      }
+      
+      // Extract risk assessment data with multiple fallbacks
+      if (stepData?.RISK_ASSESSMENT) {
+        riskAssessment = stepData.RISK_ASSESSMENT
+        console.log('✅ Found RISK_ASSESSMENT in stepData:', riskAssessment)
+      } else if (stepData && typeof stepData === 'object') {
+        // Check if risk data is stored directly in stepData
+        const riskKeys = ['Risk Assessment Matrix', 'Risk Matrix', 'riskMatrix']
+        const hasRiskData = riskKeys.some(key => (stepData as any)[key] !== undefined)
+        if (hasRiskData) {
+          riskAssessment = stepData
+          console.log('✅ Found risk data directly in stepData:', riskAssessment)
+        }
+      }
       
       // Import action plans generation logic
       const { 
@@ -657,12 +714,12 @@ export function StructuredInput({
         riskMatrix = riskAssessment
       }
       // Then try the "Risk Assessment Matrix" field
-      else if (riskAssessment['Risk Assessment Matrix'] && Array.isArray(riskAssessment['Risk Assessment Matrix'])) {
-        riskMatrix = riskAssessment['Risk Assessment Matrix']
+      else if ((riskAssessment as any)['Risk Assessment Matrix'] && Array.isArray((riskAssessment as any)['Risk Assessment Matrix'])) {
+        riskMatrix = (riskAssessment as any)['Risk Assessment Matrix']
       }
       // Then try other possible field names
-      else if (riskAssessment['Risk Matrix'] && Array.isArray(riskAssessment['Risk Matrix'])) {
-        riskMatrix = riskAssessment['Risk Matrix']
+      else if ((riskAssessment as any)['Risk Matrix'] && Array.isArray((riskAssessment as any)['Risk Matrix'])) {
+        riskMatrix = (riskAssessment as any)['Risk Matrix']
       }
       // Finally, try to find any array field that might contain risk data
       else {
@@ -687,23 +744,36 @@ export function StructuredInput({
       if (!riskMatrix || !Array.isArray(riskMatrix)) {
         console.log('❌ No valid risk assessment data found:', riskAssessment)
         console.log('Available keys in riskAssessment:', Object.keys(riskAssessment))
+        console.log('Risk assessment type:', typeof riskAssessment)
+        console.log('Risk assessment content:', riskAssessment)
         return []
       }
 
       console.log('✅ Found risk matrix:', riskMatrix)
       console.log('📊 Risk matrix length:', riskMatrix.length)
+      console.log('📊 Risk matrix sample:', riskMatrix.slice(0, 2))
 
-      // Filter for high and extreme risk hazards
+      // Filter for high and extreme risk hazards (case-insensitive)
       const priorityHazards = riskMatrix.filter((risk: any) => {
-        const riskLevel = (risk.riskLevel || risk.RiskLevel || '').toLowerCase()
+        const riskLevel = (risk.riskLevel || risk.RiskLevel || risk.risk_level || '').toLowerCase()
         console.log('Checking risk:', risk.hazard || risk.Hazard, 'with level:', riskLevel)
         return riskLevel.includes('high') || riskLevel.includes('extreme')
       })
 
       console.log('Priority hazards found:', priorityHazards.length)
 
-      // Get business type for customization
-      const businessType = getBusinessTypeFromFormData({ BUSINESS_OVERVIEW: businessOverview })
+      // Get business type for customization with enhanced extraction
+      let businessType = getBusinessTypeFromFormData({ BUSINESS_OVERVIEW: businessOverview })
+      
+      // Fallback: try to extract business type directly from businessOverview
+      if (!businessType && businessOverview) {
+        businessType = (businessOverview as any)['Industry Type'] || 
+                      (businessOverview as any)['business_type'] || 
+                      (businessOverview as any)['Business Type'] ||
+                      (businessOverview as any)['industry_type']
+        console.log('Fallback business type extraction:', businessType)
+      }
+      
       const businessModifiers = BUSINESS_TYPE_MODIFIERS[businessType] || {}
       
       console.log('Business type detection:', { businessType, businessOverview })
