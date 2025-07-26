@@ -554,7 +554,11 @@ export function StructuredInput({
   // Special handling for risk matrix type
   const handleRiskMatrixComplete = (riskMatrix: any[]) => {
     setInteracted()
-    onComplete(riskMatrix)
+    // Structure the data properly for the RISK_ASSESSMENT step
+    const structuredData = {
+      'Risk Assessment Matrix': riskMatrix
+    }
+    onComplete(structuredData)
   }
 
   // Get selected hazards from dependency
@@ -756,7 +760,8 @@ export function StructuredInput({
       // Filter for high and extreme risk hazards (case-insensitive)
       const priorityHazards = riskMatrix.filter((risk: any) => {
         const riskLevel = (risk.riskLevel || risk.RiskLevel || risk.risk_level || '').toLowerCase()
-        console.log('Checking risk:', risk.hazard || risk.Hazard, 'with level:', riskLevel)
+        const hazardName = risk.hazard || risk.Hazard || ''
+        console.log('Checking risk:', hazardName, 'with level:', riskLevel)
         return riskLevel.includes('high') || riskLevel.includes('extreme')
       })
 
