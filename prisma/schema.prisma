@@ -188,6 +188,14 @@ model AdminHazardType {
   description      String?
   defaultFrequency String // 'rare', 'unlikely', 'possible', 'likely', 'almost_certain'
   defaultImpact    String // 'minimal', 'minor', 'moderate', 'major', 'catastrophic'
+  
+  // Caribbean-specific risk taxonomy
+  seasonalPattern  String? // e.g., "june-november" for hurricanes, "year-round" for earthquakes
+  peakMonths       String? // JSON array of months when risk is highest, e.g., ["8", "9", "10"]
+  warningTime      String? // e.g., "days", "hours", "minutes", "none"
+  geographicScope  String? // e.g., "localized", "regional", "island-wide", "multi-island"
+  cascadingRisks   String? // JSON array of hazardIds that typically follow this hazard
+  
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -200,6 +208,8 @@ model AdminHazardType {
   AdminActionPlan     AdminActionPlan?
 
   @@index([category])
+  @@index([seasonalPattern])
+  @@index([geographicScope])
 }
 
 model AdminLocation {

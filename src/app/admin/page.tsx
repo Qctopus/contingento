@@ -20,6 +20,11 @@ interface HazardType {
   description?: string
   defaultFrequency: string
   defaultImpact: string
+  seasonalPattern?: string
+  peakMonths?: string
+  warningTime?: string
+  geographicScope?: string
+  cascadingRisks?: string
   isActive: boolean
 }
 
@@ -443,11 +448,11 @@ export default function AdminPage() {
                       onChange={(e) => updateField('defaultFrequency', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="very_low">Very Low</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="very_high">Very High</option>
+                      <option value="rare">Rare</option>
+                      <option value="unlikely">Unlikely</option>
+                      <option value="possible">Possible</option>
+                      <option value="likely">Likely</option>
+                      <option value="almost_certain">Almost Certain</option>
                     </select>
                   </div>
                   <div>
@@ -457,12 +462,93 @@ export default function AdminPage() {
                       onChange={(e) => updateField('defaultImpact', e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="very_low">Very Low</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="very_high">Very High</option>
+                      <option value="minimal">Minimal</option>
+                      <option value="minor">Minor</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="major">Major</option>
+                      <option value="catastrophic">Catastrophic</option>
                     </select>
+                  </div>
+                </div>
+                
+                {/* Caribbean-specific fields */}
+                <div className="border-t border-gray-200 pt-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">🌪️ Caribbean Risk Profile</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Seasonal Pattern</label>
+                      <select
+                        value={formData.seasonalPattern || ''}
+                        onChange={(e) => updateField('seasonalPattern', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select pattern</option>
+                        <option value="june-november">June-November (Hurricane Season)</option>
+                        <option value="december-may">December-May (Dry Season)</option>
+                        <option value="year-round">Year-round</option>
+                        <option value="custom">Custom</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Warning Time</label>
+                      <select
+                        value={formData.warningTime || ''}
+                        onChange={(e) => updateField('warningTime', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select warning time</option>
+                        <option value="none">No warning</option>
+                        <option value="minutes">Minutes</option>
+                        <option value="hours">Hours</option>
+                        <option value="days">Days</option>
+                        <option value="weeks">Weeks</option>
+                        <option value="months">Months</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Geographic Scope</label>
+                      <select
+                        value={formData.geographicScope || ''}
+                        onChange={(e) => updateField('geographicScope', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select scope</option>
+                        <option value="localized">Localized</option>
+                        <option value="regional">Regional</option>
+                        <option value="island-wide">Island-wide</option>
+                        <option value="multi-island">Multi-island</option>
+                        <option value="coastal">Coastal</option>
+                        <option value="global">Global</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Peak Months (JSON array)</label>
+                      <input
+                        type="text"
+                        value={formData.peakMonths || ''}
+                        onChange={(e) => updateField('peakMonths', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder='e.g., ["8", "9", "10"]'
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cascading Risks (JSON array of hazard IDs)</label>
+                    <textarea
+                      value={formData.cascadingRisks || ''}
+                      onChange={(e) => updateField('cascadingRisks', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      rows={2}
+                      placeholder='e.g., ["power_outage", "flooding", "communication_failure"]'
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Enter hazard IDs that typically follow this hazard. Separate with commas.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -837,7 +923,7 @@ export default function AdminPage() {
   const HazardsTab = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900">Hazard Types</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Caribbean Hazard Profiles</h2>
         <button 
           onClick={() => openModal('hazard', 'add')}
           className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -846,85 +932,164 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Default Risk
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {hazards.map((hazard) => (
-                <tr key={hazard.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        {hazard.name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {hazard.hazardId}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
-                      {hazard.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <div>
-                      <div>Frequency: {hazard.defaultFrequency}</div>
-                      <div>Impact: {hazard.defaultImpact}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      hazard.isActive 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {hazard.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <button 
-                      onClick={() => openModal('hazard', 'edit', hazard)}
-                      className="text-blue-600 hover:text-blue-900"
-                    >
-                      Edit
-                    </button>
-                    <button 
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this hazard?')) {
-                          handleDelete('hazard', hazard.id)
-                        }
-                      }}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="font-semibold text-blue-900 mb-2">🌪️ Caribbean Risk Taxonomy</h3>
+        <p className="text-blue-800 text-sm">
+          Comprehensive hazard profiles with seasonal patterns, geographic scope, warning times, and cascading risk relationships specific to the Caribbean region.
+        </p>
       </div>
+
+      {/* Group hazards by category */}
+      {['natural', 'technological', 'human', 'environmental', 'economic'].map(category => {
+        const categoryHazards = hazards.filter(h => h.category === category)
+        const categoryEmoji = {
+          natural: '🌪️',
+          technological: '⚡',
+          human: '👥',
+          environmental: '🌱',
+          economic: '💰'
+        }[category]
+        
+        return (
+          <div key={category} className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-gray-50 px-6 py-3 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center space-x-2">
+                <span>{categoryEmoji}</span>
+                <span>{category.charAt(0).toUpperCase() + category.slice(1)} Hazards</span>
+                <span className="text-sm font-normal text-gray-500">({categoryHazards.length})</span>
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-200">
+              {categoryHazards.map((hazard) => (
+                <div key={hazard.id} className="p-6 hover:bg-gray-50">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <div>
+                          <h4 className="text-lg font-medium text-gray-900">{hazard.name}</h4>
+                          <p className="text-sm text-gray-500">{hazard.hazardId}</p>
+                        </div>
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                          {hazard.category}
+                        </span>
+                      </div>
+                      
+                      {hazard.description && (
+                        <p className="text-sm text-gray-600 mb-3">{hazard.description}</p>
+                      )}
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs">
+                        <div>
+                          <span className="font-medium text-gray-700">Risk Level:</span>
+                          <div className="flex space-x-1 mt-1">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              hazard.defaultFrequency === 'almost_certain' || hazard.defaultImpact === 'catastrophic' ? 'bg-red-200 text-red-900' :
+                              hazard.defaultFrequency === 'likely' || hazard.defaultImpact === 'major' ? 'bg-red-100 text-red-800' :
+                              hazard.defaultFrequency === 'possible' || hazard.defaultImpact === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {hazard.defaultFrequency.replace('_', ' ')}
+                            </span>
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                              hazard.defaultImpact === 'catastrophic' ? 'bg-red-200 text-red-900' :
+                              hazard.defaultImpact === 'major' ? 'bg-red-100 text-red-800' :
+                              hazard.defaultImpact === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {hazard.defaultImpact}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {hazard.seasonalPattern && (
+                          <div>
+                            <span className="font-medium text-gray-700">Season:</span>
+                            <div className="mt-1 text-gray-600">
+                              {hazard.seasonalPattern === 'june-november' ? '🌧️ Hurricane Season' :
+                               hazard.seasonalPattern === 'december-may' ? '☀️ Dry Season' :
+                               hazard.seasonalPattern === 'year-round' ? '🔄 Year-round' :
+                               hazard.seasonalPattern}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {hazard.warningTime && (
+                          <div>
+                            <span className="font-medium text-gray-700">Warning:</span>
+                            <div className="mt-1 text-gray-600">
+                              {hazard.warningTime === 'none' ? '🚨 No warning' :
+                               hazard.warningTime === 'minutes' ? '⚡ Minutes' :
+                               hazard.warningTime === 'hours' ? '⏰ Hours' :
+                               hazard.warningTime === 'days' ? '📅 Days' :
+                               hazard.warningTime === 'weeks' ? '📆 Weeks' :
+                               hazard.warningTime === 'months' ? '📅 Months' :
+                               hazard.warningTime}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {hazard.geographicScope && (
+                          <div>
+                            <span className="font-medium text-gray-700">Scope:</span>
+                            <div className="mt-1 text-gray-600">
+                              {hazard.geographicScope === 'localized' ? '📍 Localized' :
+                               hazard.geographicScope === 'regional' ? '🗺️ Regional' :
+                               hazard.geographicScope === 'island-wide' ? '🏝️ Island-wide' :
+                               hazard.geographicScope === 'multi-island' ? '🌊 Multi-island' :
+                               hazard.geographicScope === 'coastal' ? '🏖️ Coastal' :
+                               hazard.geographicScope === 'global' ? '🌍 Global' :
+                               hazard.geographicScope}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {hazard.cascadingRisks && (
+                        <div className="mt-3">
+                          <span className="text-xs font-medium text-gray-700">Cascading Risks:</span>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {JSON.parse(hazard.cascadingRisks).map((riskId: string) => (
+                              <span key={riskId} className="inline-flex px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
+                                {riskId.replace('_', ' ')}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        hazard.isActive 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {hazard.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                      <button 
+                        onClick={() => openModal('hazard', 'edit', hazard)}
+                        className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this hazard?')) {
+                            handleDelete('hazard', hazard.id)
+                          }
+                        }}
+                        className="text-red-600 hover:text-red-900 text-sm font-medium"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 
