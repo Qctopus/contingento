@@ -599,27 +599,7 @@
               { "label": "Partiellement - Certains fournisseurs ont des plans, d'autres non", "value": "partial" },
               { "label": "Inconnu - Nous ne savons pas si nos fournisseurs ont des plans de continuité", "value": "unknown" }
             ]
-          },
-          "keyMarkets": "Marchés Clés",
-          "keyMarketsPrompt": "Qui sont vos principaux clients ou marchés cibles ? Pensez à qui bénéficie le plus de vos produits ou services.",
-          "keyMarketsExample1": "Résidents locaux, touristes et petites entreprises de la région",
-          "keyMarketsExample2": "Propriétaires et petites propriétés commerciales dans un rayon de 50 km",
-          "keyMarketsExample3": "Touristes internationaux, passagers de croisière et amateurs de cuisine locale",
-          "annualRevenue": "Chiffre d'Affaires Annuel",
-          "annualRevenuePrompt": "Quel est votre chiffre d'affaires annuel approximatif ? Cela nous aide à comprendre l'échelle de votre entreprise.",
-          "annualRevenueExample1": "Entre 100 000 $ et 500 000 $ par an",
-          "annualRevenueExample2": "Environ 1,2 million de dollars par an",
-          "annualRevenueExample3": "Environ 50 000 $ - varie selon les saisons touristiques",
-          "numberOfEmployees": "Nombre d'Employés",
-          "numberOfEmployeesPrompt": "Combien de personnes travaillent pour votre entreprise ? Incluez les employés à temps plein, à temps partiel et saisonniers.",
-          "numberOfEmployeesExample1": "8 employés à temps plein, 3 à temps partiel pendant la haute saison",
-          "numberOfEmployeesExample2": "15 employés permanents, jusqu'à 25 pendant la haute saison touristique",
-          "numberOfEmployeesExample3": "Entreprise familiale avec 3 membres à temps plein, 2 aides saisonniers",
-          "businessLocation": "Localisation de l'Entreprise",
-          "businessLocationPrompt": "Où est située votre entreprise ? Incluez tous les détails importants sur votre emplacement qui pourraient affecter la continuité des activités.",
-          "businessLocationExample1": "Centre-ville de Kingston, rez-de-chaussée d'un bâtiment historique, près du front de mer",
-          "businessLocationExample2": "Zone industrielle de Spanish Town, à 10 minutes de l'autoroute principale",
-          "businessLocationExample3": "Emplacement en bord de mer à Negril, zone touristique, accessible par la route côtière principale"
+          }
         }
       },
       "essentialFunctions": {
@@ -837,43 +817,35 @@
         }
       },
       "actionPlan": {
-        "title": "Plan d'Action Intelligent",
-        "description": "Basé sur votre type d'entreprise et évaluation des risques, nous avons généré un plan d'action personnalisé. Révisez et modifiez selon vos besoins.",
+        "title": "Plan d'Action de Mise en Œuvre",
+        "description": "Finalement, créons un plan d'action détaillé pour implémenter vos stratégies de continuité d'activité.",
         "inputs": {
-          "smartActionPlans": {
-            "label": "Plans d'Action Auto-Générés",
-            "prompt": "Nous avons analysé votre type d'entreprise et les risques haute priorité pour créer des plans d'action personnalisés. Veuillez réviser les plans générés ci-dessous et modifier tout détail qui ne correspond pas à votre situation spécifique.",
+          "actionPlanByRisk": {
+            "label": "Plan d'Action par Niveau de Risque",
+            "prompt": "Pour vos risques de plus haute priorité, créez des plans d'action spécifiques avec calendriers et responsabilités.",
+            "tableColumns": ["Danger/Risque", "Actions Immédiates (0-24 heures)", "Actions Court Terme (1-7 jours)", "Actions Moyen Terme (1-4 semaines)", "Personne Responsable"],
+            "tableRowsPrompt": "Nous nous concentrerons sur vos dangers à risque élevé et moyen. Pour chacun, pensez à ce qui doit se passer immédiatement, dans la première semaine, et dans le premier mois.",
             "examples": [
-              "Les plans sont automatiquement personnalisés selon votre type d'entreprise (tourisme, vente au détail, fabrication, etc.)",
-              "Chaque plan inclut des actions immédiates, à court terme et moyen terme avec responsabilités spécifiques",
-              "Les exigences de ressources et calendriers sont adaptés à la taille et localisation de votre entreprise"
+              "Ouragan - Sécuriser bâtiment, activer équipe urgence - Contacter personnel et clients, évaluer dommages - Déposer réclamations assurance, reprendre opérations - Directeur Opérations",
+              "Panne Courant - Passer à alimentation secours, sécuriser caisses - Contacter compagnie électricité, implémenter processus manuels - Évaluer besoins alimentation secours, commander équipement - Gestionnaire Installations"
             ]
           },
-          "implementationPriority": {
-            "label": "Priorité de Mise en Œuvre",
-            "prompt": "Quels plans d'action aimeriez-vous implémenter en premier ? Considérez vos ressources actuelles et risques les plus critiques.",
+          "implementationTimeline": {
+            "label": "Calendrier de Mise en Œuvre",
+            "prompt": "Quel est votre calendrier global pour implémenter ce plan de continuité d'activité ? Considérez vos cycles d'affaires, contraintes budgétaires et risques prioritaires.",
             "examples": [
-              "Commencer avec préparation ouragan (risque le plus élevé), puis systèmes de secours pour pannes électriques",
-              "Se concentrer d'abord sur mesures cybersécurité, puis améliorations sécurité physique",
-              "Commencer avec actions immédiates pour tous risques, puis prioriser par impact commercial"
+              "Phase 1 (Immédiat - 1 mois) : Implémenter mesures prévention haute priorité et procédures d'urgence. Phase 2 (1-3 mois) : Compléter formation personnel et installation systèmes secours. Phase 3 (3-6 mois) : Finaliser toutes stratégies et conduire premier test complet.",
+              "Commencer implémantation immédiatement avec saison ouragans approchant. Compléter mesures critiques dans 6 semaines, implémantation complète dans 3 mois.",
+              "Commencer après fin saison chargée en avril. Implémenter éléments haute priorité d'ici juin, compléter plan entier d'ici décembre avant prochaine saison touristique."
             ]
           },
-          "budgetResources": {
-            "label": "Budget et Ressources",
-            "prompt": "Quel est votre budget estimé pour implémenter ces plans d'action ? Incluez à la fois ressources financières et humaines.",
+          "resourceRequirements": {
+            "label": "Exigences de Ressources",
+            "prompt": "Quelles ressources (financières, humaines, techniques) aurez-vous besoin pour implémenter votre plan ? Soyez spécifique sur les coûts et temps personnel.",
             "examples": [
-              "Budget total : 15 000$ sur 6 mois, plus 20 heures/semaine de l'équipe de gestion",
-              "Phase 1 : 5 000$ pour besoins immédiats, Phase 2 : 10 000$ pour améliorations infrastructure",
-              "Budget limité (3 000$), se concentrera sur formation et procédures avant équipement"
-            ]
-          },
-          "implementationTeam": {
-            "label": "Équipe de Mise en Œuvre",
-            "prompt": "Qui dirigera la mise en œuvre de votre plan de continuité d'activité ? Assignez rôles et responsabilités spécifiques.",
-            "examples": [
-              "Chef de Projet : Directeur Opérations, Coordinateur Urgence : Directeur RH, Responsable Communication : Directeur Marketing",
-              "Équipe Mise en Œuvre : Propriétaire (chef général), Directeur Adjoint (opérations quotidiennes), Personnel Senior (coordination formation)",
-              "Leadership rotatif : Directeur gère éléments haut risque, Directeur Adjoint coordonne formation personnel, Consultant externe pour systèmes techniques"
+              "Budget : 15 000$ pour système sécurité (8 000$), générateur (5 000$), formation (2 000$). Personnel : 20 heures/semaine du gérant pendant 2 mois, 4 heures/semaine de chaque employé.",
+              "Financier : 25 000$ total - infrastructure IT (15 000$), augmentations assurance (3 000$/an), fournitures urgence (2 000$), formation (5 000$). Humain : consultant IT (40 heures), temps gestion (2 jours/semaine pendant 3 mois).",
+              "Budget équipement : 10 000$ pour systèmes secours. Budget formation : 3 000$ pour certification personnel. Investissement temps : 1 jour par semaine des chefs département pendant 4 mois."
             ]
           },
           "responsibleParties": {
@@ -1383,52 +1355,5 @@
       "privacyBullet2": "• Votre PIN est votre clé - gardez-le en sécurité",
       "privacyBullet3": "• Les données sont cryptées et expirent automatiquement après 30 jours d'inactivité",
       "privacyBullet4": "• Les liens partageables permettent un accès en lecture seule pour les prêteurs/conseillers"
-    },
-    "smartActionPlan": {
-      "title": "Plan d'Action Intelligent",
-      "description": "Basé sur votre type d'entreprise et votre évaluation des risques, nous avons généré un plan d'action personnalisé. Examinez et modifiez selon vos besoins.",
-      "autoGenerated": "Plans d'Action Auto-Générés",
-      "autoGeneratedPrompt": "Nous avons analysé votre type d'entreprise et les risques prioritaires pour créer des plans d'action personnalisés. Veuillez examiner les plans générés ci-dessous et modifier tous les détails qui ne correspondent pas à votre situation spécifique.",
-      "autoGeneratedExample1": "Les plans sont automatiquement personnalisés selon votre type d'entreprise (tourisme, commerce de détail, fabrication, etc.)",
-      "autoGeneratedExample2": "Chaque plan inclut des actions immédiates, à court terme et à moyen terme avec des responsabilités spécifiques",
-      "autoGeneratedExample3": "Les exigences en ressources et les délais sont adaptés à la taille et à l'emplacement de votre entreprise",
-      "implementationPriority": "Priorité de Mise en Œuvre",
-      "implementationPriorityPrompt": "Quels plans d'action souhaitez-vous mettre en œuvre en premier ? Considérez vos ressources actuelles et les risques les plus critiques.",
-      "implementationPriorityExample1": "Commencer par la préparation aux ouragans (risque le plus élevé), puis les systèmes de sauvegarde électrique",
-      "implementationPriorityExample2": "Se concentrer d'abord sur les mesures de cybersécurité, puis les améliorations de sécurité physique",
-      "implementationPriorityExample3": "Commencer par les actions immédiates sur tous les risques, puis prioriser par impact commercial",
-      "budgetAndResources": "Budget et Ressources",
-      "budgetAndResourcesPrompt": "Quel est votre budget estimé pour la mise en œuvre de ces plans d'action ? Incluez les ressources financières et humaines.",
-      "budgetAndResourcesExample1": "Budget total : 15 000 $ sur 6 mois, plus 20 heures/semaine de l'équipe de direction",
-      "budgetAndResourcesExample2": "Phase 1 : 5 000 $ pour les besoins immédiats, Phase 2 : 10 000 $ pour les améliorations d'infrastructure",
-      "budgetAndResourcesExample3": "Budget limité (3 000 $), se concentrera sur la formation et les procédures avant l'équipement",
-      "implementationTeam": "Équipe de Mise en Œuvre",
-      "implementationTeamPrompt": "Qui dirigera la mise en œuvre de votre plan de continuité des activités ? Assignez des rôles et responsabilités spécifiques.",
-      "implementationTeamExample1": "Directeur général (coordination générale), Directeur des opérations (procédures quotidiennes), Personnel informatique (systèmes techniques)",
-      "implementationTeamExample2": "Propriétaire (prise de décision), Directeur de bureau (documentation), Chefs de département (mise en œuvre spécifique par zone)",
-      "implementationTeamExample3": "Coordinateur de continuité des activités (consultant externe), 2 employés internes pour la gestion quotidienne",
-      "reviewSchedule": "Calendrier de Révision",
-      "reviewSchedulePrompt": "À quelle fréquence examinerez-vous et mettrez-vous à jour vos plans d'action ? Considérez les risques saisonniers et les changements commerciaux.",
-      "reviewScheduleExample1": "Examens mensuels des progrès, mises à jour trimestrielles du plan, examen annuel complet",
-      "reviewScheduleExample2": "Avant chaque saison d'ouragans (mai), après des changements commerciaux majeurs, examen annuel complet",
-      "reviewScheduleExample3": "Examens semestriels en avril et octobre, mises à jour immédiates après tout incident",
-      "successMetrics": "Métriques de Succès",
-      "successMetricsPrompt": "Comment mesurerez-vous le succès de la mise en œuvre de votre plan de continuité des activités ?",
-      "successMetricsExample1": "Temps de restauration des opérations après incidents, taux de completion de formation du personnel, taux de succès des tests système",
-      "successMetricsExample2": "Réduire le temps d'interruption des activités de 50%, atteindre 95% de préparation d'urgence du personnel, maintenir la satisfaction client au-dessus de 90%",
-      "successMetricsExample3": "Compléter toutes les actions immédiates dans les 30 jours, atteindre la mise en œuvre complète du plan dans les 90 jours, conduire des exercices trimestriels réussis",
-      "plansGenerated": "Plans d'Action Intelligents Générés",
-      "noHighPriorityRisks": "Aucun Risque Prioritaire Trouvé",
-      "completeRiskAssessment": "Complétez d'abord votre évaluation des risques pour générer des plans d'action personnalisés.",
-      "optimizedForBusiness": "Optimisé pour les entreprises {businessType}",
-      "resourcesNeeded": "Ressources Nécessaires",
-      "immediateActions": "Actions Immédiates (0-24h)",
-      "shortTermActions": "actions à court terme (1-7 jours)",
-      "mediumTermActions": "actions à moyen terme (1-4 semaines)",
-      "longTermPrevention": "mesures de prévention à long terme",
-      "additionalActionsAvailable": "Actions Supplémentaires Disponibles",
-      "nextSteps": "Prochaines Étapes",
-      "nextStepsDescription": "Ces plans d'action seront inclus dans votre plan final de continuité des activités. Continuez vers les sections suivantes pour spécifier les détails de mise en œuvre, le budget et les responsabilités.",
-      "approveGeneratedPlans": "Approuver les Plans Générés"
     }
   }

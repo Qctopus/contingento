@@ -797,43 +797,35 @@
       }
     },
     "actionPlan": {
-      "title": "Smart Action Plan",
-      "description": "Based on your business type and risk assessment, we've generated a customized action plan. Review and modify as needed.",
+      "title": "Implementation Action Plan",
+      "description": "Finally, let's create a detailed action plan to implement your business continuity strategies.",
       "inputs": {
-        "smartActionPlans": {
-          "label": "Auto-Generated Action Plans",
-          "prompt": "We've analyzed your business type and high-priority risks to create customized action plans. Please review the generated plans below and modify any details that don't fit your specific situation.",
+        "actionPlanByRisk": {
+          "label": "Action Plan by Risk Level",
+          "prompt": "For your highest-priority risks, create specific action plans with timelines and responsibilities.",
+          "tableColumns": ["Hazard/Risk", "Immediate Actions (0-24 hours)", "Short-term Actions (1-7 days)", "Medium-term Actions (1-4 weeks)", "Responsible Person"],
+          "tableRowsPrompt": "We'll focus on your high and medium-risk hazards. For each one, think about what needs to happen immediately, in the first week, and in the first month.",
           "examples": [
-            "Plans are automatically customized based on your business type (tourism, retail, manufacturing, etc.)",
-            "Each plan includes immediate, short-term, and medium-term actions with specific responsibilities",
-            "Resource requirements and timelines are tailored to your business size and location"
+            "Hurricane - Secure building, activate emergency team - Contact staff and customers, assess damage - File insurance claims, resume operations - Operations Manager",
+            "Power Outage - Switch to backup power, secure cash registers - Contact utility company, implement manual processes - Evaluate backup power needs, order equipment - Facility Manager"
           ]
         },
-        "implementationPriority": {
-          "label": "Implementation Priority",
-          "prompt": "Which action plans would you like to implement first? Consider your current resources and most critical risks.",
+        "implementationTimeline": {
+          "label": "Implementation Timeline",
+          "prompt": "What is your overall timeline for implementing this business continuity plan? Consider your business cycles, budget constraints, and priority risks.",
           "examples": [
-            "Start with Hurricane preparedness (highest risk), then Power Outage backup systems",
-            "Focus on Cyber Security measures first, then Physical Security improvements",
-            "Begin with immediate actions across all risks, then prioritize by business impact"
+            "Phase 1 (Immediate - 1 month): Implement high-priority prevention measures and emergency procedures. Phase 2 (1-3 months): Complete staff training and backup system installation. Phase 3 (3-6 months): Finalize all strategies and conduct first full test.",
+            "Start implementation immediately with hurricane season approaching. Complete critical measures within 6 weeks, full implementation within 3 months.",
+            "Begin after the busy season ends in April. Implement high-priority items by June, complete full plan by December before next tourist season."
           ]
         },
-        "budgetResources": {
-          "label": "Budget and Resources",
-          "prompt": "What is your estimated budget for implementing these action plans? Include both financial and human resources.",
+        "resourceRequirements": {
+          "label": "Resource Requirements",
+          "prompt": "What resources (financial, human, technical) will you need to implement your plan? Be specific about costs and personnel time.",
           "examples": [
-            "Total budget: $15,000 over 6 months, plus 20 hours/week from management team",
-            "Phase 1: $5,000 for immediate needs, Phase 2: $10,000 for infrastructure upgrades",
-            "Limited budget ($3,000), will focus on training and procedures before equipment"
-          ]
-        },
-        "implementationTeam": {
-          "label": "Implementation Team",
-          "prompt": "Who will lead the implementation of your business continuity plan? Assign specific roles and responsibilities.",
-          "examples": [
-            "Project Manager: Operations Manager, Emergency Coordinator: HR Director, Communication Lead: Marketing Manager",
-            "Implementation Team: Owner (overall lead), Assistant Manager (daily operations), Senior Staff (training coordination)",
-            "Rotating leadership: Manager handles high-risk items, Assistant Manager coordinates staff training, External consultant for technical systems"
+            "Budget: $15,000 for security system ($8,000), generator ($5,000), training ($2,000). Personnel: 20 hours/week from manager for 2 months, 4 hours/week from each staff member.",
+            "Financial: $25,000 total - IT infrastructure ($15,000), insurance increases ($3,000/year), emergency supplies ($2,000), training ($5,000). Human: IT consultant (40 hours), management time (2 days/week for 3 months).",
+            "Equipment budget: $10,000 for backup systems. Training budget: $3,000 for staff certification. Time investment: 1 day per week from department heads for 4 months."
           ]
         },
         "responsibleParties": {
@@ -1200,6 +1192,45 @@
     "insurancePolicies": "Important insurance information including policy numbers, coverage details, and contact information for quick access.",
     "testingSchedule": "Regular testing ensures your plan works when needed. Include frequency, who's responsible, and what gets tested.",
     "reviewSchedule": "Plans need updates as your business changes. Set regular review dates and triggers for unscheduled updates."
+  },
+  "actionPlans": {
+    "sectionTitle": "ACTION PLANS",
+    "businessTypeConsiderations": "Business Type Considerations",
+    "customizedFor": "This action plan has been customized for a",
+    "businessWithSpecific": "business with specific requirements and procedures.",
+    "resourcesEquipmentNeeded": "Resources & Equipment Needed",
+    "item": "Item",
+    "quantitySpecification": "Quantity/Specification",
+    "priority": "Priority",
+    "estimatedCost": "Est. Cost",
+    "leadTime": "Lead Time",
+    "recommendedSuppliers": "Recommended Suppliers:",
+    "preEventPreparation": "Pre-Event Preparation Phase",
+    "preEventDescription": "Actions to take when threat is identified but before impact occurs",
+    "immediateResponse": "Immediate Response Phase (0-6 hours)",
+    "immediateDescription": "Critical actions during and immediately after impact",
+    "shortTermResponse": "Short-Term Response Phase (6-24 hours)",
+    "shortTermDescription": "Assessment and initial recovery actions",
+    "recoveryPhase": "Recovery Phase (1-7 days)",
+    "recoveryDescription": "Business resumption and full recovery activities",
+    "longTermReduction": "Long-Term Risk Reduction Measures",
+    "longTermDescription": "Strategic investments to reduce future risk exposure",
+    "phase": "Phase",
+    "timing": "Timing",
+    "task": "Task",
+    "responsible": "Responsible",
+    "duration": "Duration",
+    "successCheckpoint": "Success Checkpoint",
+    "measure": "Measure",
+    "timeline": "Timeline",
+    "noHighPriorityHazards": "No High-Priority Hazards Identified",
+    "completeRiskAssessment": "Complete your risk assessment with HIGH or EXTREME risk hazards to generate detailed action plans.",
+    "hazard": "HAZARD",
+    "highPriorityFunctions": "High Priority Functions Affected",
+    "contactSupplier": "Contact supplier for pricing",
+    "businessDays": "business days",
+    "sameDay": "Same day/next day",
+    "weeks": "weeks"
   },
   "pdfGenerator": {
     "generating": "Generating PDF...",

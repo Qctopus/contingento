@@ -14,6 +14,44 @@ body {
   touch-action: manipulation;
 }
 
+/* Date picker custom styles */
+.react-datepicker {
+  font-size: 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.react-datepicker__header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.react-datepicker__current-month {
+  font-weight: 600;
+  color: #374151;
+}
+
+.react-datepicker__day--selected {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.react-datepicker__day--selected:hover {
+  background-color: #2563eb;
+}
+
+.react-datepicker__day:hover {
+  background-color: #eff6ff;
+  border-radius: 0.25rem;
+}
+
+.react-datepicker__day--keyboard-selected {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
 /* Mobile-first improvements */
 @media (max-width: 768px) {
   /* Ensure minimum touch target size */

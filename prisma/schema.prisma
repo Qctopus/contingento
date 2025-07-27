@@ -23,87 +23,87 @@ model BusinessContinuityPlan {
 }
 
 model PlanInformation {
-  id                     String   @id @default(cuid())
-  planId                 String   @unique
-  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  companyName            String
-  planManager            String
-  alternateManager       String?
-  physicalPlanLocation   String
-  digitalPlanLocation    String?
+  id                   String                 @id @default(cuid())
+  planId               String                 @unique
+  plan                 BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  companyName          String
+  planManager          String
+  alternateManager     String?
+  physicalPlanLocation String
+  digitalPlanLocation  String?
 }
 
 model BusinessOverview {
-  id                    String   @id @default(cuid())
-  planId                String   @unique
-  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  businessLicenseNumber String
-  businessPurpose       String
-  productsAndServices   String
+  id                     String                 @id @default(cuid())
+  planId                 String                 @unique
+  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  businessLicenseNumber  String
+  businessPurpose        String
+  productsAndServices    String
   serviceDeliveryMethods String
-  operatingHours        String
-  keyPersonnel          String
-  minimumResources      String
-  customerBase          String
-  serviceProviderBCP    String
+  operatingHours         String
+  keyPersonnel           String
+  minimumResources       String
+  customerBase           String
+  serviceProviderBCP     String
 }
 
 model EssentialFunction {
-  id                    String   @id @default(cuid())
-  planId                String   @unique
-  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  supplyChainManagement String   // JSON array of selected functions
-  staffManagement       String   // JSON array of selected functions
-  technology            String   // JSON array of selected functions
-  productsServices      String   // JSON array of selected functions
+  id                       String                 @id @default(cuid())
+  planId                   String                 @unique
+  plan                     BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  supplyChainManagement    String // JSON array of selected functions
+  staffManagement          String // JSON array of selected functions
+  technology               String // JSON array of selected functions
+  productsServices         String // JSON array of selected functions
   infrastructureFacilities String // JSON array of selected functions
-  sales                 String   // JSON array of selected functions
-  administration        String   // JSON array of selected functions
+  sales                    String // JSON array of selected functions
+  administration           String // JSON array of selected functions
 }
 
 model RiskAssessment {
-  id                  String   @id @default(cuid())
-  planId              String   @unique
-  plan                BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  potentialHazards    String   // JSON array of selected hazards
-  hazards             String   // JSON array of selected hazards
+  id               String                 @id @default(cuid())
+  planId           String                 @unique
+  plan             BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  potentialHazards String // JSON array of selected hazards
+  hazards          String // JSON array of selected hazards
 }
 
 model Strategy {
-  id                  String   @id @default(cuid())
-  planId              String   @unique
-  plan                BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  preventionStrategies String  // JSON array of selected strategies
-  responseStrategies   String  // JSON array of selected strategies
-  recoveryStrategies   String  // JSON array of selected strategies
+  id                    String                 @id @default(cuid())
+  planId                String                 @unique
+  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  preventionStrategies  String // JSON array of selected strategies
+  responseStrategies    String // JSON array of selected strategies
+  recoveryStrategies    String // JSON array of selected strategies
   longTermRiskReduction String // JSON string of long-term risk reduction measures
 }
 
 model ActionPlan {
-  id                    String   @id @default(cuid())
-  planId                String   @unique
-  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  actionPlanByRisk      String   // JSON string of action plan by risk level
+  id                     String                 @id @default(cuid())
+  planId                 String                 @unique
+  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
+  actionPlanByRisk       String // JSON string of action plan by risk level
   implementationTimeline String
   resourceRequirements   String
   responsibleParties     String
   reviewUpdateSchedule   String
-  testingAssessmentPlan String   // JSON string of testing and assessment plan
+  testingAssessmentPlan  String // JSON string of testing and assessment plan
 }
 
 model Session {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String           @id @default(cuid())
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
   currentStep     String
   stepData        String
   businessProfile BusinessProfile?
 }
 
 model BusinessProfile {
-  id        String   @id @default(cuid())
-  sessionId String   @unique
-  session   Session  @relation(fields: [sessionId], references: [id])
+  id        String  @id @default(cuid())
+  sessionId String  @unique
+  session   Session @relation(fields: [sessionId], references: [id])
   name      String
   industry  String
   size      String
@@ -134,19 +134,204 @@ model TestingMaintenance {
 }
 
 model AnonymousSession {
-  id                   String   @id @default(cuid())
-  sessionId            String   @unique
-  businessName         String   // Lowercase for searching
-  displayBusinessName  String   // Original casing for display
-  pin                  String   // 6-digit PIN
-  email                String?  // Optional email for recovery
-  planData             String   // JSON string of the BCP data
-  shareableId          String?  // Unique ID for shareable links
-  allowSharing         Boolean  @default(false)
-  createdAt            DateTime @default(now())
-  lastAccessed         DateTime @default(now())
-  
+  id                  String   @id @default(cuid())
+  sessionId           String   @unique
+  businessName        String // Lowercase for searching
+  displayBusinessName String // Original casing for display
+  pin                 String // 6-digit PIN
+  email               String? // Optional email for recovery
+  planData            String // JSON string of the BCP data
+  shareableId         String? // Unique ID for shareable links
+  allowSharing        Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  lastAccessed        DateTime @default(now())
+
   @@unique([businessName, pin])
   @@index([businessName])
   @@index([shareableId])
-} 
+}
+
+// Admin Management Tables
+model AdminBusinessType {
+  id                      String   @id @default(cuid())
+  businessTypeId          String   @unique // e.g., 'grocery_store', 'restaurant'
+  name                    String // e.g., 'Grocery Store'
+  localName               String // e.g., 'Local Grocery/Mini-Mart'
+  category                String // e.g., 'retail', 'hospitality'
+  description             String?
+  typicalOperatingHours   String?
+  minimumStaff            String?
+  minimumEquipment        String? // JSON array
+  minimumUtilities        String? // JSON array
+  minimumSpace            String?
+  essentialFunctions      String? // JSON object with core, support, administrative
+  criticalSuppliers       String? // JSON array
+  exampleBusinessPurposes String? // JSON array
+  exampleProducts         String? // JSON array
+  exampleKeyPersonnel     String? // JSON array
+  exampleCustomerBase     String? // JSON array
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  // Relations
+  businessTypeHazards AdminBusinessTypeHazard[]
+
+  @@index([category])
+}
+
+model AdminHazardType {
+  id               String   @id @default(cuid())
+  hazardId         String   @unique // e.g., 'hurricane', 'power_outage'
+  name             String // e.g., 'Hurricane/Tropical Storm'
+  category         String // e.g., 'natural', 'technological', 'human'
+  description      String?
+  defaultFrequency String // 'rare', 'unlikely', 'possible', 'likely', 'almost_certain'
+  defaultImpact    String // 'minimal', 'minor', 'moderate', 'major', 'catastrophic'
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  businessTypeHazards AdminBusinessTypeHazard[]
+  locationHazards     AdminLocationHazard[]
+  hazardStrategies    AdminHazardStrategy[]
+  hazardActionPlans   AdminHazardActionPlan[]
+  AdminActionPlan     AdminActionPlan?
+
+  @@index([category])
+}
+
+model AdminLocation {
+  id          String   @id @default(cuid())
+  country     String // e.g., 'Jamaica'
+  countryCode String // e.g., 'JM'
+  parish      String? // e.g., 'Kingston', null for country-level
+  isCoastal   Boolean  @default(false) // coastal modifier
+  isUrban     Boolean  @default(false) // urban modifier
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  locationHazards AdminLocationHazard[]
+
+  @@unique([countryCode, parish])
+  @@index([countryCode])
+}
+
+model AdminBusinessTypeHazard {
+  id             String   @id @default(cuid())
+  businessTypeId String
+  hazardId       String
+  riskLevel      String // 'low', 'medium', 'high', 'very_high'
+  frequency      String? // Override default frequency
+  impact         String? // Override default impact
+  notes          String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  businessType AdminBusinessType @relation(fields: [businessTypeId], references: [businessTypeId], onDelete: Cascade)
+  hazard       AdminHazardType   @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+
+  @@unique([businessTypeId, hazardId])
+  @@index([businessTypeId])
+  @@index([hazardId])
+}
+
+model AdminLocationHazard {
+  id         String   @id @default(cuid())
+  locationId String
+  hazardId   String
+  riskLevel  String // 'low', 'medium', 'high', 'very_high'
+  frequency  String? // Override default frequency
+  impact     String? // Override default impact
+  notes      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  location AdminLocation   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  hazard   AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+
+  @@unique([locationId, hazardId])
+  @@index([locationId])
+  @@index([hazardId])
+}
+
+model AdminStrategy {
+  id          String   @id @default(cuid())
+  strategyId  String   @unique // e.g., 'maintenance', 'physical_security'
+  title       String // e.g., 'Regular Maintenance'
+  description String // Description of the strategy
+  category    String // 'prevention', 'response', 'recovery'
+  reasoning   String? // Why this strategy is effective
+  icon        String? // Emoji or icon identifier
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  hazardStrategies AdminHazardStrategy[]
+
+  @@index([category])
+}
+
+model AdminHazardStrategy {
+  id            String   @id @default(cuid())
+  hazardId      String
+  strategyId    String
+  businessTypes String? // JSON array of business types this applies to (null = all)
+  priority      String   @default("medium") // 'low', 'medium', 'high'
+  isRecommended Boolean  @default(false) // Auto-selected for matching business types
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  hazard   AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  strategy AdminStrategy   @relation(fields: [strategyId], references: [strategyId], onDelete: Cascade)
+
+  @@unique([hazardId, strategyId])
+  @@index([hazardId])
+  @@index([strategyId])
+}
+
+model AdminActionPlan {
+  id                    String   @id @default(cuid())
+  hazardId              String   @unique
+  resourcesNeeded       String // JSON array
+  immediateActions      String // JSON array of action items
+  shortTermActions      String // JSON array of action items
+  mediumTermActions     String // JSON array of action items
+  longTermReduction     String // JSON array
+  businessTypeModifiers String? // JSON object with business type specific modifications
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  hazard                AdminHazardType         @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  AdminHazardActionPlan AdminHazardActionPlan[]
+}
+
+model AdminHazardActionPlan {
+  id            String   @id @default(cuid())
+  hazardId      String
+  actionPlanId  String
+  businessTypes String? // JSON array of business types this applies to (null = all)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations  
+  hazard     AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  actionPlan AdminActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([hazardId, actionPlanId])
+  @@index([hazardId])
+}

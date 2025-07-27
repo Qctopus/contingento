@@ -84,8 +84,8 @@ type SpecialRiskMatrixInput = {
   dependsOn?: never;
 };
 
-type SpecialSmartActionPlanInput = {
-  type: 'special_smart_action_plan';
+type SpecialStrategyCardsInput = {
+  type: 'special_strategy_cards';
   label: string;
   required: boolean;
   prompt: string;
@@ -101,7 +101,7 @@ type SpecialSmartActionPlanInput = {
   dependsOn?: never;
 };
 
-export type InputConfig = TextInput | RadioInput | CheckboxInput | TableInput | SpecialRiskMatrixInput | SpecialSmartActionPlanInput;
+export type InputConfig = TextInput | RadioInput | CheckboxInput | TableInput | SpecialRiskMatrixInput | SpecialStrategyCardsInput;
 
 type StepConfig = {
   title: string;
@@ -518,118 +518,6 @@ export const STEPS: StepsCollection = {
           'Hurricane - Likely (3) - Serious (3) - High (9) - Purchase insurance, prepare shutters, secure inventory',
           'Power Outage - Very Likely (4) - Minor (2) - Medium (8) - Install backup generator, UPS for computers',
           'Fire - Unlikely (2) - Major (4) - Medium (8) - Install fire alarms, sprinkler system, fire extinguishers',
-        ],
-      },
-    ],
-  },
-
-  STRATEGIES: {
-    title: 'Business Continuity Strategies',
-    description: 'Now let\'s develop comprehensive strategies to prevent, respond to, and recover from the risks you\'ve identified.',
-    inputs: [
-      {
-        type: 'checkbox',
-        label: 'Prevention Strategies (Before Emergencies)',
-        required: false,
-        prompt: 'Which prevention strategies will you implement to reduce the likelihood or impact of risks? Select all that apply.',
-        options: [
-          { label: 'Regular maintenance of equipment and facilities', value: 'maintenance' },
-          { label: 'Physical security systems (alarms, cameras, locks)', value: 'physical_security' },
-          { label: 'Cybersecurity measures and data protection', value: 'cybersecurity' },
-          { label: 'Comprehensive insurance coverage', value: 'insurance' },
-          { label: 'Employee training and emergency preparedness', value: 'employee_training' },
-          { label: 'Supplier diversification and backup suppliers', value: 'supplier_diversity' },
-          { label: 'Financial reserves and emergency funds', value: 'financial_reserves' },
-          { label: 'Regular data backup and off-site storage', value: 'data_backup' },
-          { label: 'Building modifications for disaster resistance', value: 'building_upgrades' },
-          { label: 'Emergency supplies and equipment stockpiling', value: 'emergency_supplies' },
-          { label: 'Regular risk assessments and plan updates', value: 'risk_monitoring' },
-          { label: 'Community partnerships and mutual aid agreements', value: 'community_partnerships' },
-        ],
-        examples: [
-          'Retail store: Physical security, Insurance, Employee training, Emergency supplies',
-          'Technology business: Cybersecurity, Data backup, Employee training, Financial reserves',
-          'Restaurant: Maintenance, Insurance, Emergency supplies, Building upgrades',
-        ],
-      },
-      {
-        type: 'checkbox',
-        label: 'Response Strategies (During Emergencies)',
-        required: false,
-        prompt: 'Which response strategies will you implement during an emergency? Select all that apply.',
-        options: [
-          { label: 'Emergency response team activation', value: 'emergency_team' },
-          { label: 'Staff and customer safety procedures', value: 'safety_procedures' },
-          { label: 'Emergency communication plan', value: 'emergency_communication' },
-          { label: 'Alternative work locations', value: 'alternative_locations' },
-          { label: 'Remote work and virtual operations', value: 'remote_work' },
-          { label: 'Emergency inventory and supply management', value: 'emergency_inventory' },
-          { label: 'Customer service continuity procedures', value: 'customer_continuity' },
-          { label: 'Media and public relations management', value: 'media_management' },
-          { label: 'Emergency financial procedures', value: 'emergency_finance' },
-          { label: 'Coordination with emergency services', value: 'emergency_services' },
-          { label: 'Temporary closure and securing procedures', value: 'closure_procedures' },
-          { label: 'Essential services only operations', value: 'essential_operations' },
-        ],
-        examples: [
-          'Service business: Emergency team, Remote work, Customer continuity, Emergency communication',
-          'Retail business: Safety procedures, Emergency inventory, Closure procedures, Emergency services',
-          'Manufacturing: Emergency team, Alternative locations, Essential operations, Emergency finance',
-        ],
-      },
-      {
-        type: 'checkbox',
-        label: 'Recovery Strategies (After Emergencies)',
-        required: false,
-        prompt: 'Which recovery strategies will help you restore normal operations after an emergency? Select all that apply.',
-        options: [
-          { label: 'Damage assessment and documentation', value: 'damage_assessment' },
-          { label: 'Insurance claims and financial recovery', value: 'insurance_claims' },
-          { label: 'Business resumption and restart procedures', value: 'business_resumption' },
-          { label: 'Employee support and counseling programs', value: 'employee_support' },
-          { label: 'Customer retention and win-back strategies', value: 'customer_retention' },
-          { label: 'Supplier relationship restoration', value: 'supplier_restoration' },
-          { label: 'Marketing and reputation management', value: 'reputation_management' },
-          { label: 'Financial assistance and loan applications', value: 'financial_assistance' },
-          { label: 'Facility repair and reconstruction', value: 'facility_repair' },
-          { label: 'Equipment replacement and upgrades', value: 'equipment_replacement' },
-          { label: 'Lessons learned and plan improvements', value: 'lessons_learned' },
-          { label: 'Community support and collaboration', value: 'community_support' },
-        ],
-        examples: [
-          'Small business: Insurance claims, Business resumption, Customer retention, Financial assistance',
-          'Service business: Employee support, Customer retention, Reputation management, Lessons learned',
-          'Manufacturing: Damage assessment, Facility repair, Equipment replacement, Supplier restoration',
-        ],
-      },
-      {
-        type: 'text',
-        label: 'Long-term Risk Reduction Measures',
-        required: true,
-        prompt: 'What long-term measures will you implement to reduce future risks? Consider climate adaptation, sustainable practices, and building resilience over time.',
-        examples: [
-          'Install solar panels for energy independence, relocate critical equipment above flood levels, diversify supply chains across multiple islands',
-          'Implement sustainable waste management, use local suppliers to reduce transportation risks, build stronger community partnerships',
-          'Invest in climate-resilient building materials, develop staff cross-training programs, establish emergency fund equivalent to 3 months operating costs',
-        ],
-      },
-    ],
-  },
-
-  ACTION_PLAN: {
-    title: 'Smart Action Plan',
-    description: 'Based on your business type and risk assessment, we\'ve generated a customized action plan. All fields are automatically completed.',
-    inputs: [
-      {
-        type: 'special_smart_action_plan' as const,
-        label: 'Smart Action Plan Generator',
-        required: true,
-        prompt: 'We\'ve analyzed your business type and high-priority risks to create a complete action plan with implementation details, budget estimates, and team assignments.',
-        examples: [
-          'Action plans are automatically generated based on your risk assessment',
-          'Implementation priority is set based on risk levels (Extreme → High → Medium)',
-          'Budget estimates and team assignments are customized for your business type',
-          'All fields are completed automatically - no manual input required',
         ],
       },
     ],

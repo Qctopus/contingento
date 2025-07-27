@@ -113,13 +113,13 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     
     console.log(`🧮 Calculating risk level: ${likelihood} × ${severity} = ${score}`)
     
-    // Get translation values with fallbacks
-    const extremeRisk = t('extremeRisk') || 'Extreme'
-    const highRisk = t('highRisk') || 'High'
-    const mediumRisk = t('mediumRisk') || 'Medium'
-    const lowRisk = t('lowRisk') || 'Low'
+    // Get translation values with fallbacks and ensure consistent casing
+    const extremeRisk = (t('extremeRisk') || 'Extreme').charAt(0).toUpperCase() + (t('extremeRisk') || 'Extreme').slice(1).toLowerCase()
+    const highRisk = (t('highRisk') || 'High').charAt(0).toUpperCase() + (t('highRisk') || 'High').slice(1).toLowerCase()
+    const mediumRisk = (t('mediumRisk') || 'Medium').charAt(0).toUpperCase() + (t('mediumRisk') || 'Medium').slice(1).toLowerCase()
+    const lowRisk = (t('lowRisk') || 'Low').charAt(0).toUpperCase() + (t('lowRisk') || 'Low').slice(1).toLowerCase()
     
-    console.log(`🌐 Translation values:`, {
+    console.log(`🌐 Translation values with consistent casing:`, {
       extremeRisk,
       highRisk,
       mediumRisk,
@@ -336,7 +336,25 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
 
   // Notify parent of changes using useCallback to prevent unnecessary re-renders
   const notifyParent = useCallback((items: RiskItem[]) => {
-    onComplete(items)
+    // Format risk items with consistent property names
+    const formattedRiskItems = items.map(item => ({
+      hazard: item.hazard,
+      likelihood: item.likelihood,
+      severity: item.severity,
+      riskLevel: item.riskLevel,  // Ensure this is always 'riskLevel', not 'Risk Level'
+      riskScore: item.riskScore,
+      planningMeasures: item.planningMeasures
+    }))
+
+    // Add logging to verify the data structure when saving
+    console.log('Saving risk matrix with structure:', {
+      key: 'Risk Assessment Matrix',
+      data: formattedRiskItems,
+      sampleItem: formattedRiskItems[0],
+      totalItems: formattedRiskItems.length
+    })
+
+    onComplete(formattedRiskItems)
   }, [onComplete])
 
   // Call parent when risk items change - debounced to prevent excessive calls
@@ -349,11 +367,14 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
   }, [riskItems, notifyParent])
 
   const updateRiskItem = useCallback((index: number, field: keyof RiskItem, value: string) => {
+    console.log('🔄 updateRiskItem called:', { index, field, value })
+    
     if (setUserInteracted) {
       setUserInteracted()
     }
     
     setRiskItems(prevItems => {
+      console.log('🔄 Updating risk items, current state:', prevItems)
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
       
@@ -396,6 +417,7 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       }
       
       updatedItems[index] = currentItem
+      console.log('🔄 Updated items:', updatedItems)
       return updatedItems
     })
   }, [setUserInteracted, calculateRiskLevel])
@@ -792,7 +814,10 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
               isActive ? 'ring-2 ring-primary-500 shadow-lg' : 'hover:shadow-md'
             } ${isExtremeRisk ? 'border-black border-2' : isHighRisk ? 'border-gray-600' : ''}`}>
               <button
-                onClick={() => setActiveRisk(isActive ? null : index)}
+                onClick={() => {
+                  console.log('🖱️ Risk item header clicked:', { index, hazard: risk.hazard, currentActive: activeRisk, newActive: isActive ? null : index })
+                  setActiveRisk(isActive ? null : index)
+                }}
                 className="w-full p-4 text-left flex items-center justify-between"
                 type="button"
               >
@@ -850,9 +875,13 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                           key={`likelihood-${index}-${option.value}`} 
                           className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${risk.likelihood === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
                           onClick={(e) => {
+                            console.log('🖱️ Likelihood option clicked:', { option: option.value, index, hazard: risk.hazard })
                             e.preventDefault()
                             e.stopPropagation()
                             updateRiskItem(index, 'likelihood', option.value)
+                          }}
+                          onMouseDown={(e) => {
+                            console.log('🖱️ Likelihood option mouse down:', { option: option.value, index, hazard: risk.hazard })
                           }}
                         >
                           <input
@@ -861,10 +890,9 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                             value={option.value}
                             checked={risk.likelihood === option.value}
                             onChange={() => {}} // Controlled by parent div click
-                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500 pointer-events-none"
-                            readOnly
+                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500"
                           />
-                          <div className="pointer-events-none">
+                          <div>
                             <div className="font-medium">{option.label}</div>
                             <div className="text-sm text-gray-600">{option.description}</div>
                           </div>
@@ -884,9 +912,13 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                           key={`severity-${index}-${option.value}`} 
                           className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${risk.severity === option.value ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:bg-gray-50'}`}
                           onClick={(e) => {
+                            console.log('🖱️ Severity option clicked:', { option: option.value, index, hazard: risk.hazard })
                             e.preventDefault()
                             e.stopPropagation()
                             updateRiskItem(index, 'severity', option.value)
+                          }}
+                          onMouseDown={(e) => {
+                            console.log('🖱️ Severity option mouse down:', { option: option.value, index, hazard: risk.hazard })
                           }}
                         >
                           <input
@@ -895,10 +927,9 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                             value={option.value}
                             checked={risk.severity === option.value}
                             onChange={() => {}} // Controlled by parent div click
-                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500 pointer-events-none"
-                            readOnly
+                            className="h-4 w-4 text-primary-600 mr-3 focus:ring-primary-500"
                           />
-                          <div className="pointer-events-none">
+                          <div>
                             <div className="font-medium">{option.label}</div>
                             <div className="text-sm text-gray-600">{option.description}</div>
                           </div>

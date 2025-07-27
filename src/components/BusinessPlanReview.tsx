@@ -786,8 +786,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         <h2 className="text-lg opacity-90">{companyName}</h2>
         <div className="mt-4 text-sm opacity-80">
           Version {planVersion} • {currentDate}
+          </div>
         </div>
-      </div>
 
       {/* Compact Document Control & Business Info */}
       <div className="grid lg:grid-cols-3 gap-6">
@@ -811,7 +811,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             { label: 'Physical Plan Location', value: formData.PLAN_INFORMATION?.['Physical Plan Location'] },
           ]} />
         </CompactCard>
-      </div>
+        </div>
 
       {/* Section 1: Business Analysis */}
       <CompactCard>
@@ -824,14 +824,14 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               {formData.BUSINESS_OVERVIEW?.['Business Purpose'] || 'Not specified'}
             </div>
           </div>
-          
+
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Products & Services</h4>
             <div className="bg-green-50 rounded-lg p-4 text-sm text-gray-800">
               {formData.BUSINESS_OVERVIEW?.['Products & Services'] || 'Not specified'}
             </div>
+            </div>
           </div>
-        </div>
 
         {/* Essential Functions - Complete Display */}
         {formData.ESSENTIAL_FUNCTIONS && (
@@ -849,13 +849,13 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                       .map((func: any, idx: number) => (
                         <div key={idx} className="text-xs text-gray-600">
                           • {transformFunctionName(func)}
-                        </div>
-                      )) : null}
-                  </div>
-                </div>
-              ))}
             </div>
+                      )) : null}
           </div>
+            </div>
+              ))}
+          </div>
+            </div>
         )}
       </CompactCard>
 
@@ -885,22 +885,22 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                   <div key={risk.label} className={`${risk.color} rounded-lg p-4 text-center`}>
                     <div className="text-2xl font-bold">{risk.count}</div>
                     <div className="text-sm opacity-90">{risk.label} Risk</div>
-                  </div>
+            </div>
                 ))
               })()}
-            </div>
+                </div>
 
             {/* Compact Risk Matrix */}
             <CompactTable 
               data={formData.RISK_ASSESSMENT['Risk Assessment Matrix']} 
               maxHeight="400px"
-            />
-          </div>
+                  />
+                </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
             Risk assessment not completed
-          </div>
-        )}
+                </div>
+              )}
       </CompactCard>
 
       {/* Section 4: Business Continuity Strategies - Compact Layout */}
@@ -924,15 +924,15 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                   ?.map((item: any, index: number) => (
                     <div key={index} className={`text-sm text-${strategy.color}-800 bg-white bg-opacity-50 rounded p-2`}>
                       • {transformStrategyName(item)}
-                    </div>
-                  )) || <div className="text-gray-500 text-sm italic">No strategies specified</div>}
-              </div>
             </div>
-          ))}
+                  )) || <div className="text-gray-500 text-sm italic">No strategies specified</div>}
+            </div>
         </div>
+          ))}
+            </div>
 
         {/* Long-term Risk Reduction */}
-        {formData.STRATEGIES?.['Long-term Risk Reduction Measures'] && (
+          {formData.STRATEGIES?.['Long-term Risk Reduction Measures'] && (
           <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
             <h4 className="font-medium text-purple-900 mb-2 flex items-center space-x-2">
               <span>🎯</span>
@@ -940,9 +940,9 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             </h4>
             <div className="text-sm text-purple-800">
               {formData.STRATEGIES['Long-term Risk Reduction Measures']}
+              </div>
             </div>
-          </div>
-        )}
+          )}
       </CompactCard>
 
       {/* Section 5: Action Plans */}
@@ -982,17 +982,17 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     <span>Communication & Recovery Overview</span>
                   </h4>
                   <div className="grid md:grid-cols-2 gap-4 text-sm">
-                    <div>
+                  <div>
                       <h5 className="font-medium text-blue-800 mb-1">Emergency Contacts</h5>
                       <p className="text-blue-700">Emergency services, management team, and key stakeholders will be notified according to established protocols.</p>
                     </div>
-                    <div>
+                  <div>
                       <h5 className="font-medium text-blue-800 mb-1">Recovery Targets</h5>
                       <p className="text-blue-700">Recovery time objectives range from 24-72 hours depending on hazard severity and business impact.</p>
                     </div>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )
         })()}
@@ -1022,66 +1022,66 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
             {/* Compact Tables */}
             <div className="grid lg:grid-cols-2 gap-6">
-              {formData.TESTING_AND_MAINTENANCE['Plan Testing Schedule'] && (
-                <div>
+            {formData.TESTING_AND_MAINTENANCE['Plan Testing Schedule'] && (
+              <div>
                   <h4 className="font-medium text-gray-900 mb-3">Testing Schedule</h4>
                   <CompactTable 
                     data={formData.TESTING_AND_MAINTENANCE['Plan Testing Schedule']} 
                     maxHeight="200px" 
                   />
-                </div>
-              )}
+              </div>
+            )}
 
-              {formData.TESTING_AND_MAINTENANCE['Training Schedule'] && (
-                <div>
+            {formData.TESTING_AND_MAINTENANCE['Training Schedule'] && (
+              <div>
                   <h4 className="font-medium text-gray-900 mb-3">Training Schedule</h4>
                   <CompactTable 
                     data={formData.TESTING_AND_MAINTENANCE['Training Schedule']} 
                     maxHeight="200px" 
                   />
-                </div>
-              )}
+              </div>
+            )}
 
-              {formData.TESTING_AND_MAINTENANCE['Performance Metrics'] && (
-                <div>
+            {formData.TESTING_AND_MAINTENANCE['Performance Metrics'] && (
+              <div>
                   <h4 className="font-medium text-gray-900 mb-3">Performance Metrics</h4>
                   <CompactTable 
                     data={formData.TESTING_AND_MAINTENANCE['Performance Metrics']} 
                     maxHeight="200px" 
                   />
-                </div>
-              )}
+              </div>
+            )}
 
-              {formData.TESTING_AND_MAINTENANCE['Improvement Tracking'] && (
-                <div>
+            {formData.TESTING_AND_MAINTENANCE['Improvement Tracking'] && (
+              <div>
                   <h4 className="font-medium text-gray-900 mb-3">Improvement Tracking</h4>
                   <CompactTable 
                     data={formData.TESTING_AND_MAINTENANCE['Improvement Tracking']} 
                     maxHeight="200px" 
                   />
-                </div>
-              )}
+              </div>
+            )}
             </div>
 
             {/* Compact Info Sections */}
             <div className="grid md:grid-cols-2 gap-4">
-              {formData.TESTING_AND_MAINTENANCE['Annual Review Process'] && (
+            {formData.TESTING_AND_MAINTENANCE['Annual Review Process'] && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <h4 className="font-medium text-green-900 mb-2">Annual Review Process</h4>
                   <div className="text-sm text-green-800">
                     {formData.TESTING_AND_MAINTENANCE['Annual Review Process']}
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {formData.TESTING_AND_MAINTENANCE['Trigger Events for Plan Updates'] && (
+            {formData.TESTING_AND_MAINTENANCE['Trigger Events for Plan Updates'] && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                   <h4 className="font-medium text-orange-900 mb-2">Trigger Events</h4>
                   <div className="text-sm text-orange-800">
                     {formData.TESTING_AND_MAINTENANCE['Trigger Events for Plan Updates']}
-                  </div>
                 </div>
-              )}
+              </div>
+            )}
             </div>
           </div>
         ) : (

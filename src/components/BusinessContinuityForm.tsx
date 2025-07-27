@@ -188,6 +188,7 @@ export function BusinessContinuityForm() {
   const [hasSelectedIndustry, setHasSelectedIndustry] = useState(false)
   const [examples, setExamples] = useState<any>({})
   const [showReview, setShowReview] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Refs for auto-save management
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -399,32 +400,35 @@ export function BusinessContinuityForm() {
 
   // Handle industry selection
   const handleIndustrySelection = (industryId: string, location: LocationData) => {
-    const preFillData = generatePreFillData(industryId, location, locale, messages)
-    
-    if (preFillData) {
-      // Merge pre-fill data with any existing form data
-      const mergedData = mergePreFillData(formData, preFillData)
+    devLog('Industry selected', { industryId, location })
+    setPreFillData(null) // Clear previous data
+    setIsLoading(true)
+
+    // Using a timeout to ensure the loading spinner is visible
+    setTimeout(() => {
+      const locale = 'en' // Or get from context
+      const data = generatePreFillData(industryId, location, locale, messages)
       
-      devLog('Industry selection complete', { 
-        industryId, 
-        location, 
-        locale,
-        preFillDataGenerated: !!preFillData,
-        fieldsPreFilled: Object.keys(preFillData.preFilledFields).length
-      })
+      if (data) {
+        // Store industry selection
+        localStorage.setItem('bcp-industry-selected', 'true')
+        localStorage.setItem('bcp-prefill-data', JSON.stringify(data))
+        
+        const mergedData = mergePreFillData({}, data)
+        setFormData(mergedData)
+        setPreFillData(data)
+        devLog('Pre-fill data loaded and merged', {
+          preFillData: data,
+          mergedData
+        })
+      } else {
+        devLog('No pre-fill data found for industry', { industryId })
+      }
       
-      setFormData(mergedData)
-      setExamples(preFillData.contextualExamples)
-      setPreFillData(preFillData)
-      
-      // Store selection state
-      localStorage.setItem('bcp-industry-selected', 'true')
-      localStorage.setItem('bcp-prefill-data', JSON.stringify(preFillData))
-      
+      setIsLoading(false)
       setHasSelectedIndustry(true)
-    }
-    
-    setShowIndustrySelector(false)
+      setShowIndustrySelector(false)
+    }, 500)
   }
 
   // Handle skipping industry selection
@@ -494,13 +498,31 @@ export function BusinessContinuityForm() {
   }, [formData])
 
   const handleInputComplete = (step: string, label: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [step]: {
-        ...prev[step],
-        [label]: value
+    console.log('🔄 Handling input complete:', { step, label, value })
+    
+    setFormData(prev => {
+      const updatedData = {
+        ...prev,
+        [step]: {
+          ...prev[step],
+          [label]: value
+        }
       }
-    }))
+      
+      // When moving to ACTION_PLAN step, ensure all data is available
+      if (step === 'ACTION_PLAN') {
+        console.log('📋 Navigating to ACTION_PLAN with data:', {
+          allSteps: Object.keys(updatedData),
+          hasRiskAssessment: !!updatedData.RISK_ASSESSMENT,
+          riskMatrixLength: updatedData.RISK_ASSESSMENT?.['Risk Assessment Matrix']?.length,
+          businessOverview: !!updatedData.BUSINESS_OVERVIEW,
+          essentialFunctions: !!updatedData.ESSENTIAL_FUNCTIONS,
+          strategies: !!updatedData.STRATEGIES
+        })
+      }
+      
+      return updatedData
+    })
   }
 
   const handleNext = () => {
@@ -512,8 +534,21 @@ export function BusinessContinuityForm() {
       const stepKeys = Object.keys(STEPS)
       const currentStepIndex = stepKeys.indexOf(currentStep)
       if (currentStepIndex < stepKeys.length - 1) {
-        setCurrentStep(stepKeys[currentStepIndex + 1])
+        const nextStep = stepKeys[currentStepIndex + 1]
+        setCurrentStep(nextStep)
         setCurrentQuestionIndex(0)
+        
+        // When moving to ACTION_PLAN, ensure all data is available
+        if (nextStep === 'ACTION_PLAN') {
+          console.log('📋 Navigating to ACTION_PLAN with complete stepData:', {
+            allSteps: Object.keys(formData),
+            hasRiskAssessment: !!formData.RISK_ASSESSMENT,
+            riskMatrixLength: formData.RISK_ASSESSMENT?.['Risk Assessment Matrix']?.length,
+            businessOverview: !!formData.BUSINESS_OVERVIEW,
+            essentialFunctions: !!formData.ESSENTIAL_FUNCTIONS,
+            strategies: !!formData.STRATEGIES
+          })
+        }
       } else {
         // All steps complete, show review page
         setShowReview(true)
@@ -991,7 +1026,7 @@ export function BusinessContinuityForm() {
                 severityOptions: (currentQuestion as any).severityOptions,
               })}
               dependsOn={currentQuestion.dependsOn}
-              stepData={currentStep === 'ACTION_PLAN' ? formData : formData[currentStep]}
+              stepData={formData[currentStep]}
               preFillData={preFillData}
               onComplete={(value) => handleInputComplete(currentStep, currentQuestion.label, value)}
               initialValue={getCurrentValue()}

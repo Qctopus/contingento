@@ -14,7 +14,10 @@ export interface IndustryProfile {
   name: string
   localName: string
   category: 'retail' | 'hospitality' | 'services' | 'agriculture' | 'manufacturing' | 'tourism' | 'industrial' | 'other'
-  commonHazards: string[]
+  vulnerabilities: {
+    hazardId: string
+    defaultRiskLevel: 'low' | 'medium' | 'high' | 'very_high'
+  }[]
   essentialFunctions: {
     core: string[]
     support: string[]
@@ -60,7 +63,7 @@ export interface LocationHazards {
 export interface PreFillData {
   industry: IndustryProfile
   location: LocationData
-  hazards: HazardRiskLevel[]
+  hazards: any[]
   preFilledFields: {
     [stepId: string]: {
       [fieldName: string]: any
@@ -75,7 +78,8 @@ export interface PreFillData {
     prevention: string[]
     response: string[]
     recovery: string[]
-  }
+  },
+  smartActionPlans?: any[]
 }
 
 // New type definitions for enhanced BCP features

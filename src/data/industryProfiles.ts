@@ -6,7 +6,14 @@ export const industryProfiles: IndustryProfile[] = [
     name: 'Grocery Store',
     localName: 'Local Grocery/Mini-Mart',
     category: 'retail',
-    commonHazards: ['hurricane', 'flash_flood', 'power_outage', 'supply_disruption', 'economic_downturn', 'crime'],
+    vulnerabilities: [
+      { hazardId: 'hurricane', defaultRiskLevel: 'high' },
+      { hazardId: 'flash_flood', defaultRiskLevel: 'medium' },
+      { hazardId: 'power_outage', defaultRiskLevel: 'high' },
+      { hazardId: 'supply_disruption', defaultRiskLevel: 'high' },
+      { hazardId: 'economic_downturn', defaultRiskLevel: 'medium' },
+      { hazardId: 'crime', defaultRiskLevel: 'medium' }
+    ],
     essentialFunctions: {
       core: [
         'Customer service and sales',
@@ -81,7 +88,15 @@ export const industryProfiles: IndustryProfile[] = [
     name: 'Restaurant',
     localName: 'Local Restaurant/Eatery',
     category: 'hospitality',
-    commonHazards: ['hurricane', 'flash_flood', 'power_outage', 'supply_disruption', 'fire', 'pandemic', 'economic_downturn'],
+    vulnerabilities: [
+      { hazardId: 'hurricane', defaultRiskLevel: 'high' },
+      { hazardId: 'flash_flood', defaultRiskLevel: 'medium' },
+      { hazardId: 'power_outage', defaultRiskLevel: 'high' },
+      { hazardId: 'supply_disruption', defaultRiskLevel: 'high' },
+      { hazardId: 'fire', defaultRiskLevel: 'medium' },
+      { hazardId: 'pandemic', defaultRiskLevel: 'high' },
+      { hazardId: 'economic_downturn', defaultRiskLevel: 'medium' }
+    ],
     essentialFunctions: {
       core: [
         'Food preparation and cooking',
@@ -152,10 +167,17 @@ export const industryProfiles: IndustryProfile[] = [
   },
   {
     id: 'beauty_salon',
-    name: 'Beauty Salon',
-    localName: 'Hair Salon/Beauty Parlour',
+    name: 'Beauty Salon/Barbershop',
+    localName: 'Local Hair Salon/Barbershop',
     category: 'services',
-    commonHazards: ['hurricane', 'power_outage', 'flash_flood', 'economic_downturn', 'supply_disruption', 'staff_unavailable'],
+    vulnerabilities: [
+      { hazardId: 'power_outage', defaultRiskLevel: 'high' },
+      { hazardId: 'water_contamination', defaultRiskLevel: 'medium' },
+      { hazardId: 'hurricane', defaultRiskLevel: 'medium' },
+      { hazardId: 'pandemic', defaultRiskLevel: 'high' },
+      { hazardId: 'economic_downturn', defaultRiskLevel: 'high' },
+      { hazardId: 'crime', defaultRiskLevel: 'low' }
+    ],
     essentialFunctions: {
       core: [
         'Hair cutting and styling',
@@ -229,7 +251,15 @@ export const industryProfiles: IndustryProfile[] = [
     name: 'Chemical Processing Plant',
     localName: 'Chemical/Petrochemical Facility',
     category: 'industrial',
-    commonHazards: ['chemical_spill', 'industrial_accident', 'fire', 'environmental_contamination', 'power_outage', 'hurricane', 'air_pollution'],
+    vulnerabilities: [
+      { hazardId: 'chemical_spill', defaultRiskLevel: 'medium' },
+      { hazardId: 'industrial_accident', defaultRiskLevel: 'medium' },
+      { hazardId: 'fire', defaultRiskLevel: 'medium' },
+      { hazardId: 'environmental_contamination', defaultRiskLevel: 'medium' },
+      { hazardId: 'power_outage', defaultRiskLevel: 'high' },
+      { hazardId: 'hurricane', defaultRiskLevel: 'high' },
+      { hazardId: 'air_pollution', defaultRiskLevel: 'low' }
+    ],
     essentialFunctions: {
       core: [
         'Chemical processing and production',
@@ -303,7 +333,14 @@ export const industryProfiles: IndustryProfile[] = [
     name: 'Waste Management Facility',
     localName: 'Waste Treatment/Recycling Center',
     category: 'industrial',
-    commonHazards: ['waste_management_failure', 'environmental_contamination', 'fire', 'water_contamination', 'air_pollution', 'industrial_accident'],
+    vulnerabilities: [
+      { hazardId: 'waste_management_failure', defaultRiskLevel: 'medium' },
+      { hazardId: 'environmental_contamination', defaultRiskLevel: 'medium' },
+      { hazardId: 'fire', defaultRiskLevel: 'medium' },
+      { hazardId: 'water_contamination', defaultRiskLevel: 'low' },
+      { hazardId: 'air_pollution', defaultRiskLevel: 'low' },
+      { hazardId: 'industrial_accident', defaultRiskLevel: 'medium' }
+    ],
     essentialFunctions: {
       core: [
         'Waste collection and sorting',
@@ -377,7 +414,14 @@ export const industryProfiles: IndustryProfile[] = [
     name: 'Water Treatment Plant',
     localName: 'Water/Wastewater Treatment Facility',
     category: 'industrial',
-    commonHazards: ['water_contamination', 'chemical_spill', 'power_outage', 'equipment_failure', 'environmental_contamination', 'hurricane'],
+    vulnerabilities: [
+      { hazardId: 'water_contamination', defaultRiskLevel: 'medium' },
+      { hazardId: 'chemical_spill', defaultRiskLevel: 'low' },
+      { hazardId: 'power_outage', defaultRiskLevel: 'high' },
+      { hazardId: 'equipment_failure', defaultRiskLevel: 'medium' },
+      { hazardId: 'environmental_contamination', defaultRiskLevel: 'medium' },
+      { hazardId: 'hurricane', defaultRiskLevel: 'high' }
+    ],
     essentialFunctions: {
       core: [
         'Water purification and treatment',

@@ -484,27 +484,7 @@
             { "label": "Parcialmente - Algunos proveedores tienen planes de continuidad, otros no", "value": "partial" },
             { "label": "Desconocido - No estamos seguros si nuestros proveedores tienen planes de continuidad", "value": "unknown" }
           ]
-        },
-        "keyMarkets": "Mercados Clave",
-        "keyMarketsPrompt": "¿Quiénes son sus principales clientes o mercados objetivo? Piense en quién se beneficia más de sus productos o servicios.",
-        "keyMarketsExample1": "Residentes locales, turistas y pequeñas empresas del área",
-        "keyMarketsExample2": "Propietarios y pequeñas propiedades comerciales dentro de un radio de 50km",
-        "keyMarketsExample3": "Turistas internacionales, pasajeros de cruceros y entusiastas de la comida local",
-        "annualRevenue": "Ingresos Anuales",
-        "annualRevenuePrompt": "¿Cuáles son sus ingresos anuales aproximados? Esto nos ayuda a entender la escala de su negocio.",
-        "annualRevenueExample1": "Entre $100,000 - $500,000 anuales",
-        "annualRevenueExample2": "Aproximadamente $1.2 millones por año",
-        "annualRevenueExample3": "Alrededor de $50,000 - varía con las temporadas turísticas",
-        "numberOfEmployees": "Número de Empleados",
-        "numberOfEmployeesPrompt": "¿Cuántas personas trabajan para su negocio? Incluya empleados de tiempo completo, medio tiempo y estacionales.",
-        "numberOfEmployeesExample1": "8 empleados de tiempo completo, 3 de medio tiempo durante temporada alta",
-        "numberOfEmployeesExample2": "15 personal permanente, hasta 25 durante la temporada turística alta",
-        "numberOfEmployeesExample3": "Negocio familiar con 3 miembros de tiempo completo, 2 ayudantes estacionales",
-        "businessLocation": "Ubicación del Negocio",
-        "businessLocationPrompt": "¿Dónde está ubicado su negocio? Incluya cualquier detalle importante sobre su ubicación que pueda afectar la continuidad del negocio.",
-        "businessLocationExample1": "Centro de Kingston, planta baja de edificio histórico, cerca del malecón",
-        "businessLocationExample2": "Área industrial en Spanish Town, a 10 minutos de la carretera principal",
-        "businessLocationExample3": "Ubicación frente a la playa en Negril, área turística, accesible por la carretera costera principal"
+        }
       }
     },
     "essentialFunctions": {
@@ -722,43 +702,35 @@
       }
     },
     "actionPlan": {
-      "title": "Plan de Acción Inteligente",
-      "description": "Basado en su tipo de negocio y evaluación de riesgos, hemos generado un plan de acción personalizado. Revise y modifique según sea necesario.",
+      "title": "Plan de Acción de Implementación",
+      "description": "Finalmente, creemos un plan de acción detallado para implementar sus estrategias de continuidad del negocio.",
       "inputs": {
-        "smartActionPlans": {
-          "label": "Planes de Acción Auto-Generados",
-          "prompt": "Hemos analizado su tipo de negocio y riesgos de alta prioridad para crear planes de acción personalizados. Por favor revise los planes generados a continuación y modifique cualquier detalle que no se ajuste a su situación específica.",
+        "actionPlanByRisk": {
+          "label": "Plan de Acción por Nivel de Riesgo",
+          "prompt": "Para sus riesgos de mayor prioridad, cree planes de acción específicos con cronogramas y responsabilidades.",
+          "tableColumns": ["Peligro/Riesgo", "Acciones Inmediatas (0-24 horas)", "Acciones a Corto Plazo (1-7 días)", "Acciones a Mediano Plazo (1-4 semanas)", "Persona Responsable"],
+          "tableRowsPrompt": "Nos enfocaremos en sus peligros de riesgo alto y medio. Para cada uno, piense en lo que debe suceder inmediatamente, en la primera semana y en el primer mes.",
           "examples": [
-            "Los planes se personalizan automáticamente según su tipo de negocio (turismo, retail, manufactura, etc.)",
-            "Cada plan incluye acciones inmediatas, a corto plazo y mediano plazo con responsabilidades específicas",
-            "Los requisitos de recursos y cronogramas se adaptan al tamaño y ubicación de su negocio"
+            "Huracán - Asegurar edificio, activar equipo de emergencia - Contactar personal y clientes, evaluar daños - Presentar reclamos de seguro, reanudar operaciones - Gerente de Operaciones",
+            "Corte de Energía - Cambiar a energía de respaldo, asegurar cajas registradoras - Contactar compañía eléctrica, implementar procesos manuales - Evaluar necesidades de energía de respaldo, ordenar equipos - Gerente de Instalaciones"
           ]
         },
-        "implementationPriority": {
-          "label": "Prioridad de Implementación",
-          "prompt": "¿Qué planes de acción le gustaría implementar primero? Considere sus recursos actuales y riesgos más críticos.",
+        "implementationTimeline": {
+          "label": "Cronograma de Implementación",
+          "prompt": "¿Cuál es su cronograma general para implementar este plan de continuidad del negocio? Considere sus ciclos comerciales, restricciones presupuestarias y riesgos prioritarios.",
           "examples": [
-            "Comenzar con preparación para huracanes (riesgo más alto), luego sistemas de respaldo para cortes de energía",
-            "Enfocarse primero en medidas de ciberseguridad, luego mejoras de seguridad física",
-            "Comenzar con acciones inmediatas en todos los riesgos, luego priorizar por impacto comercial"
+            "Fase 1 (Inmediato - 1 mes): Implementar medidas de prevención de alta prioridad y procedimientos de emergencia. Fase 2 (1-3 meses): Completar capacitación del personal e instalación de sistemas de respaldo. Fase 3 (3-6 meses): Finalizar todas las estrategias y realizar la primera prueba completa.",
+            "Comenzar implementación inmediatamente con la temporada de huracanes acercándose. Completar medidas críticas en 6 semanas, implementación completa en 3 meses.",
+            "Comenzar después de que termine la temporada alta en abril. Implementar elementos de alta prioridad para junio, completar plan completo para diciembre antes de la próxima temporada turística."
           ]
         },
-        "budgetResources": {
-          "label": "Presupuesto y Recursos",
-          "prompt": "¿Cuál es su presupuesto estimado para implementar estos planes de acción? Incluya tanto recursos financieros como humanos.",
+        "resourceRequirements": {
+          "label": "Requisitos de Recursos",
+          "prompt": "¿Qué recursos (financieros, humanos, técnicos) necesitará para implementar su plan? Sea específico sobre costos y tiempo del personal.",
           "examples": [
-            "Presupuesto total: $15,000 durante 6 meses, más 20 horas/semana del equipo de gestión",
-            "Fase 1: $5,000 para necesidades inmediatas, Fase 2: $10,000 para mejoras de infraestructura",
-            "Presupuesto limitado ($3,000), se enfocará en capacitación y procedimientos antes que equipos"
-          ]
-        },
-        "implementationTeam": {
-          "label": "Equipo de Implementación",
-          "prompt": "¿Quién liderará la implementación de su plan de continuidad del negocio? Asigne roles y responsabilidades específicas.",
-          "examples": [
-            "Gerente de Proyecto: Gerente de Operaciones, Coordinador de Emergencias: Director de RRHH, Líder de Comunicaciones: Gerente de Marketing",
-            "Equipo de Implementación: Propietario (líder general), Gerente Asistente (operaciones diarias), Personal Senior (coordinación de capacitación)",
-            "Liderazgo rotativo: Gerente maneja elementos de alto riesgo, Gerente Asistente coordina capacitación del personal, Consultor externo para sistemas técnicos"
+            "Presupuesto: $15,000 para sistema de seguridad ($8,000), generador ($5,000), capacitación ($2,000). Personal: 20 horas/semana del gerente por 2 meses, 4 horas/semana de cada miembro del personal.",
+            "Financiero: $25,000 total - infraestructura TI ($15,000), aumentos de seguros ($3,000/año), suministros de emergencia ($2,000), capacitación ($5,000). Humano: consultor TI (40 horas), tiempo de gestión (2 días/semana por 3 meses).",
+            "Presupuesto de equipos: $10,000 para sistemas de respaldo. Presupuesto de capacitación: $3,000 para certificación del personal. Inversión de tiempo: 1 día por semana de jefes de departamento por 4 meses."
           ]
         },
         "responsibleParties": {
@@ -1269,52 +1241,5 @@
     "privacyBullet2": "• Tu PIN es tu clave - manténlo seguro",
     "privacyBullet3": "• Los datos están encriptados y expiran automáticamente después de 30 días de inactividad",
     "privacyBullet4": "• Los enlaces compartibles permiten acceso de solo lectura para prestamistas/asesores"
-  },
-  "smartActionPlan": {
-    "title": "Plan de Acción Inteligente",
-    "description": "Basado en su tipo de negocio y evaluación de riesgos, hemos generado un plan de acción personalizado. Revise y modifique según sea necesario.",
-    "autoGenerated": "Planes de Acción Auto-Generados",
-    "autoGeneratedPrompt": "Hemos analizado su tipo de negocio y riesgos prioritarios para crear planes de acción personalizados. Por favor revise los planes generados a continuación y modifique cualquier detalle que no se ajuste a su situación específica.",
-    "autoGeneratedExample1": "Los planes se personalizan automáticamente según su tipo de negocio (turismo, comercio minorista, manufactura, etc.)",
-    "autoGeneratedExample2": "Cada plan incluye acciones inmediatas, a corto plazo y mediano plazo con responsabilidades específicas",
-    "autoGeneratedExample3": "Los requisitos de recursos y cronogramas se adaptan al tamaño y ubicación de su negocio",
-    "implementationPriority": "Prioridad de Implementación",
-    "implementationPriorityPrompt": "¿Qué planes de acción le gustaría implementar primero? Considere sus recursos actuales y los riesgos más críticos.",
-    "implementationPriorityExample1": "Comenzar con preparación para huracanes (riesgo más alto), luego sistemas de respaldo eléctrico",
-    "implementationPriorityExample2": "Enfocarse primero en medidas de ciberseguridad, luego mejoras de seguridad física",
-    "implementationPriorityExample3": "Comenzar con acciones inmediatas en todos los riesgos, luego priorizar por impacto comercial",
-    "budgetAndResources": "Presupuesto y Recursos",
-    "budgetAndResourcesPrompt": "¿Cuál es su presupuesto estimado para implementar estos planes de acción? Incluya recursos financieros y humanos.",
-    "budgetAndResourcesExample1": "Presupuesto total: $15,000 durante 6 meses, más 20 horas/semana del equipo directivo",
-    "budgetAndResourcesExample2": "Fase 1: $5,000 para necesidades inmediatas, Fase 2: $10,000 para mejoras de infraestructura",
-    "budgetAndResourcesExample3": "Presupuesto limitado ($3,000), se enfocará en capacitación y procedimientos antes que equipo",
-    "implementationTeam": "Equipo de Implementación",
-    "implementationTeamPrompt": "¿Quién liderará la implementación de su plan de continuidad del negocio? Asigne roles y responsabilidades específicas.",
-    "implementationTeamExample1": "Gerente General (coordinación general), Gerente de Operaciones (procedimientos diarios), Personal de TI (sistemas técnicos)",
-    "implementationTeamExample2": "Propietario (toma de decisiones), Gerente de Oficina (documentación), Jefes de Departamento (implementación específica por área)",
-    "implementationTeamExample3": "Coordinador de Continuidad del Negocio (consultor externo), 2 empleados internos para gestión diaria",
-    "reviewSchedule": "Cronograma de Revisión",
-    "reviewSchedulePrompt": "¿Con qué frecuencia revisará y actualizará sus planes de acción? Considere riesgos estacionales y cambios comerciales.",
-    "reviewScheduleExample1": "Revisiones mensuales de progreso, actualizaciones trimestrales del plan, revisión anual integral",
-    "reviewScheduleExample2": "Antes de cada temporada de huracanes (mayo), después de cambios comerciales importantes, revisión anual completa",
-    "reviewScheduleExample3": "Revisiones semestrales en abril y octubre, actualizaciones inmediatas después de cualquier incidente",
-    "successMetrics": "Métricas de Éxito",
-    "successMetricsPrompt": "¿Cómo medirá el éxito de la implementación de su plan de continuidad del negocio?",
-    "successMetricsExample1": "Tiempo para restaurar operaciones después de incidentes, tasas de finalización de capacitación del personal, tasas de éxito de pruebas del sistema",
-    "successMetricsExample2": "Reducir el tiempo de interrupción del negocio en 50%, lograr 95% de preparación de emergencia del personal, mantener satisfacción del cliente arriba del 90%",
-    "successMetricsExample3": "Completar todas las acciones inmediatas dentro de 30 días, lograr implementación completa del plan dentro de 90 días, realizar ejercicios trimestrales exitosos",
-    "plansGenerated": "Planes de Acción Inteligentes Generados",
-    "noHighPriorityRisks": "No se Encontraron Riesgos de Alta Prioridad",
-    "completeRiskAssessment": "Complete primero su evaluación de riesgos para generar planes de acción personalizados.",
-    "optimizedForBusiness": "Optimizado para negocios de {businessType}",
-    "resourcesNeeded": "Recursos Necesarios",
-    "immediateActions": "Acciones Inmediatas (0-24h)",
-    "shortTermActions": "acciones a corto plazo (1-7 días)",
-    "mediumTermActions": "acciones a mediano plazo (1-4 semanas)",
-    "longTermPrevention": "medidas de prevención a largo plazo",
-    "additionalActionsAvailable": "Acciones Adicionales Disponibles",
-    "nextSteps": "Próximos Pasos",
-    "nextStepsDescription": "Estos planes de acción se incluirán en su plan final de continuidad del negocio. Continúe a las siguientes secciones para especificar detalles de implementación, presupuesto y responsabilidades.",
-    "approveGeneratedPlans": "Aprobar Planes Generados"
   }
 } 

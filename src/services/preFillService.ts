@@ -1,6 +1,9 @@
-import { LocationData, PreFillData, IndustryProfile } from '../data/types'
+import { LocationData, PreFillData, IndustryProfile, HazardRiskLevel } from '../data/types'
 import { getIndustryProfile } from '../data/industryProfiles'
 import { calculateLocationRisk } from '../data/hazardMappings'
+import { 
+  generateSmartActionPlans 
+} from './actionPlanService'
 
 // Localized location terms
 const getLocationTerms = (locale: string) => {
@@ -372,71 +375,344 @@ const generateContextualExamples = (industry: IndustryProfile, location: Locatio
 
   // Risk Assessment examples
   examples['RISK_ASSESSMENT'] = {
-    [fieldNames.potentialHazards]: generalLocalizedExamples.riskAssessment
+    [fieldNames.potentialHazards]: generalLocalizedExamples.riskAssessment,
+    // Add the auto-generated matrix here
+    [fieldNames.riskAssessmentMatrix]: generateRiskAssessmentMatrix(location, industry)
   }
 
   return examples
 }
 
-// Generate recommended strategies based on identified risks and industry
-const generateRecommendedStrategies = (industry: IndustryProfile, hazards: any[], location: LocationData, locale: string = 'en') => {
+// Helper function to determine risk score from likelihood and severity
+const calculateRiskScore = (likelihood: string, severity: string): number => {
+  const likelihoodMap: { [key: string]: number } = {
+    'almost_certain': 4,
+    'likely': 3,
+    'possible': 2,
+    'unlikely': 1
+  }
+  const severityMap: { [key: string]: number } = {
+    'catastrophic': 4,
+    'major': 3,
+    'moderate': 2,
+    'minor': 1
+  }
+  return likelihoodMap[likelihood] * severityMap[severity]
+}
+
+// Convert numeric risk score to a qualitative level
+const getRiskLevel = (score: number): string => {
+  if (score >= 12) return 'Extreme'
+  if (score >= 8) return 'High'
+  if (score >= 4) return 'Medium'
+  return 'Low'
+}
+
+// Automatically generate a risk assessment matrix based on location and industry
+const generateRiskAssessmentMatrix = (
+  location: LocationData, 
+  industry: IndustryProfile
+): any[] => {
+  const locationHazards = calculateLocationRisk(
+    location.countryCode, 
+    location.parish, 
+    location.nearCoast, 
+    location.urbanArea
+  )
+
+  const industryHazards: HazardRiskLevel[] = industry.vulnerabilities.map(vuln => ({
+    hazardId: vuln.hazardId,
+    riskLevel: vuln.defaultRiskLevel,
+    hazardName: vuln.hazardId.replace(/_/g, ' '), // Provide default hazardName
+    frequency: 'possible', // Provide default frequency
+    impact: 'moderate', // Provide default impact
+  }))
+
+  const combinedHazards: HazardRiskLevel[] = [...locationHazards, ...industryHazards]
+  const uniqueHazards = combinedHazards.reduce((acc: HazardRiskLevel[], current) => {
+    if (!acc.find(item => item.hazardId === current.hazardId)) {
+      acc.push(current)
+    }
+    return acc
+  }, [])
+
+  // Define default likelihood and severity based on risk level
+  const riskMappings: { [key: string]: { likelihood: string, severity: string } } = {
+    'very_high': { likelihood: 'almost_certain', severity: 'catastrophic' },
+    'high': { likelihood: 'likely', severity: 'major' },
+    'medium': { likelihood: 'possible', severity: 'moderate' },
+    'low': { likelihood: 'unlikely', severity: 'minor' }
+  }
+
+  return uniqueHazards.map(hazard => {
+    const { likelihood, severity } = riskMappings[hazard.riskLevel] || riskMappings.low
+    const riskScore = calculateRiskScore(likelihood, severity)
+    const riskLevel = getRiskLevel(riskScore)
+    
+    return {
+      hazard: hazard.hazardId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      likelihood,
+      severity,
+      riskScore,
+      riskLevel
+    }
+  })
+}
+
+// Generate formatted text for action plans
+const generateFormattedActionPlanText = (actionPlans: any[]): { 
+  prevention: string, 
+  response: string, 
+  recovery: string,
+  implementationPriority: string,
+  budgetResources: string,
+  implementationTeam: string,
+  resourceRequirements: string,
+  responsibleParties: string,
+  reviewSchedule: string,
+  testingPlan: any[]
+} => {
+  if (!actionPlans || actionPlans.length === 0) {
+    return { 
+      prevention: '', 
+      response: '', 
+      recovery: '',
+      implementationPriority: '',
+      budgetResources: '',
+      implementationTeam: '',
+      resourceRequirements: '',
+      responsibleParties: '',
+      reviewSchedule: '',
+      testingPlan: []
+    }
+  }
+
+  const formatSection = (title: string, items: any[], taskField = 'task', detailField = 'responsible') => {
+    if (!items || items.length === 0) return ''
+    let text = `**${title}**\n`
+    text += items.map(item => `- ${item[taskField]} (${detailField}: ${item[detailField]})`).join('\n')
+    return text + '\n\n'
+  }
+
+  const formatReductionMeasures = (title: string, items: string[]) => {
+    if (!items || items.length === 0) return ''
+    let text = `**${title}**\n`
+    text += items.map(item => `- ${item}`).join('\n')
+    return text + '\n\n'
+  }
+
+  let preventionText = ''
+  let responseText = ''
+  let recoveryText = ''
+
+  actionPlans.forEach(plan => {
+    preventionText += `**For ${plan.hazard} (${plan.riskLevel} Risk):**\n`
+    preventionText += formatReductionMeasures('Long-term Prevention & Risk Reduction', plan.longTermReduction)
+    
+    responseText += `**For ${plan.hazard} (${plan.riskLevel} Risk):**\n`
+    responseText += formatSection('Immediate Actions (0-24 hours)', plan.immediateActions)
+    responseText += formatSection('Short-term Actions (1-7 days)', plan.shortTermActions)
+    
+    recoveryText += `**For ${plan.hazard} (${plan.riskLevel} Risk):**\n`
+    recoveryText += formatSection('Medium-term Actions (1-4 weeks)', plan.mediumTermActions, 'task', 'responsible')
+  })
+
+  // Generate Implementation Priority based on risk levels
+  const highRiskPlans = actionPlans.filter(p => p.riskLevel.toLowerCase().includes('high') || p.riskLevel.toLowerCase().includes('extreme'))
+  const mediumRiskPlans = actionPlans.filter(p => p.riskLevel.toLowerCase().includes('medium'))
+  
+  let implementationPriority = '**Implementation Priority (Risk-Based):**\n\n'
+  implementationPriority += '**Phase 1 (Immediate - 0-30 days):**\n'
+  highRiskPlans.forEach(plan => {
+    implementationPriority += `- ${plan.hazard} response preparations (${plan.riskLevel} risk)\n`
+  })
+  implementationPriority += '\n**Phase 2 (Short-term - 1-6 months):**\n'
+  mediumRiskPlans.forEach(plan => {
+    implementationPriority += `- ${plan.hazard} prevention measures (${plan.riskLevel} risk)\n`
+  })
+  implementationPriority += '\n**Phase 3 (Long-term - 6+ months):**\n'
+  actionPlans.forEach(plan => {
+    implementationPriority += `- Long-term risk reduction for ${plan.hazard}\n`
+  })
+
+  // Generate Budget Resources estimation
+  let budgetResources = '**Estimated Budget Requirements:**\n\n'
+  budgetResources += '**Immediate Implementation (Phase 1):**\n'
+  budgetResources += '- Emergency supplies and equipment: $2,000 - $5,000\n'
+  budgetResources += '- Staff training and preparation: $500 - $1,500\n'
+  budgetResources += '- Communication systems: $500 - $2,000\n\n'
+  budgetResources += '**Medium-term Implementation (Phase 2):**\n'
+  budgetResources += '- Infrastructure improvements: $5,000 - $15,000\n'
+  budgetResources += '- Technology upgrades: $2,000 - $8,000\n'
+  budgetResources += '- Insurance and contracts: $1,000 - $3,000\n\n'
+  budgetResources += '**Long-term Investment (Phase 3):**\n'
+  budgetResources += '- Major structural improvements: $10,000 - $50,000\n'
+  budgetResources += '- Advanced systems and automation: $5,000 - $20,000\n'
+  budgetResources += '**Total Estimated Range: $26,000 - $104,500**'
+
+  // Generate Implementation Team structure
+  let implementationTeam = '**Implementation Team Structure:**\n\n'
+  implementationTeam += '**BCP Coordinator (Primary):**\n'
+  implementationTeam += '- Plan Manager or Business Owner\n'
+  implementationTeam += '- Overall responsibility for implementation\n'
+  implementationTeam += '- Coordinates all phases and team members\n\n'
+  implementationTeam += '**Operations Team:**\n'
+  implementationTeam += '- Assistant Manager or Senior Staff\n'
+  implementationTeam += '- Handles day-to-day implementation tasks\n'
+  implementationTeam += '- Manages supply procurement and logistics\n\n'
+  implementationTeam += '**Emergency Response Team:**\n'
+  implementationTeam += '- All staff members with assigned roles\n'
+  implementationTeam += '- Regular training and drill participation\n'
+  implementationTeam += '- Specific responsibilities during emergencies'
+
+  // Generate Resource Requirements
+  let resourceRequirements = '**Critical Resource Requirements:**\n\n'
+  const allResources = new Set()
+  actionPlans.forEach(plan => {
+    plan.resourcesNeeded?.forEach((resource: string) => allResources.add(resource))
+  })
+  Array.from(allResources).forEach(resource => {
+    resourceRequirements += `- ${resource}\n`
+  })
+
+  // Generate Responsible Parties
+  let responsibleParties = '**Responsibility Assignment:**\n\n'
+  responsibleParties += '**Plan Manager:**\n'
+  responsibleParties += '- Overall plan oversight and updates\n'
+  responsibleParties += '- Stakeholder communication\n'
+  responsibleParties += '- Resource allocation decisions\n\n'
+  responsibleParties += '**Operations Team:**\n'
+  responsibleParties += '- Daily implementation tasks\n'
+  responsibleParties += '- Equipment maintenance and checks\n'
+  responsibleParties += '- Staff coordination\n\n'
+  responsibleParties += '**All Staff:**\n'
+  responsibleParties += '- Individual emergency role training\n'
+  responsibleParties += '- Procedure familiarization\n'
+  responsibleParties += '- Regular drill participation'
+
+  // Generate Review Schedule
+  let reviewSchedule = '**Business Continuity Plan Review Schedule:**\n\n'
+  reviewSchedule += '**Monthly Reviews (Ongoing):**\n'
+  reviewSchedule += '- Contact information updates\n'
+  reviewSchedule += '- Supply inventory checks\n'
+  reviewSchedule += '- Equipment functionality tests\n\n'
+  reviewSchedule += '**Quarterly Reviews:**\n'
+  reviewSchedule += '- Full plan walkthrough\n'
+  reviewSchedule += '- Staff training refreshers\n'
+  reviewSchedule += '- Risk assessment updates\n\n'
+  reviewSchedule += '**Annual Reviews:**\n'
+  reviewSchedule += '- Complete plan revision\n'
+  reviewSchedule += '- Major risk reassessment\n'
+  reviewSchedule += '- Stakeholder feedback integration\n\n'
+  reviewSchedule += '**Next Scheduled Review:** ' + new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString()
+
+  // Generate Testing Plan
+  const testingPlan = [
+    {
+      'Scenario': 'Power Outage Simulation',
+      'Frequency': 'Quarterly',
+      'Duration': '2 hours',
+      'Participants': 'All staff',
+      'Success Criteria': 'Business continues with backup systems within 30 minutes'
+    },
+    {
+      'Scenario': 'Communication System Failure',
+      'Frequency': 'Semi-annually',
+      'Duration': '1 hour',
+      'Participants': 'Management team',
+      'Success Criteria': 'Alternative communication established within 15 minutes'
+    },
+    {
+      'Scenario': 'Key Staff Unavailability',
+      'Frequency': 'Annually',
+      'Duration': '4 hours',
+      'Participants': 'Backup staff',
+      'Success Criteria': 'Essential functions maintained with substitute personnel'
+    }
+  ]
+
+  // Add hazard-specific testing scenarios
+  highRiskPlans.forEach(plan => {
+    testingPlan.push({
+      'Scenario': `${plan.hazard} Response Drill`,
+      'Frequency': 'Semi-annually',
+      'Duration': '3 hours',
+      'Participants': 'All staff',
+      'Success Criteria': `${plan.hazard} procedures executed successfully within target timeframes`
+    })
+  })
+  
+  return { 
+    prevention: preventionText, 
+    response: responseText, 
+    recovery: recoveryText,
+    implementationPriority,
+    budgetResources,
+    implementationTeam,
+    resourceRequirements,
+    responsibleParties,
+    reviewSchedule,
+    testingPlan
+  }
+}
+
+// Generate auto-selected strategies based on action plans and business type
+const generateAutoSelectedStrategies = (actionPlans: any[], businessType: string): {
+  prevention: string[],
+  response: string[],
+  recovery: string[]
+} => {
   const strategies = {
     prevention: [] as string[],
     response: [] as string[],
     recovery: [] as string[]
   }
 
-  const localizedStrategies = getLocalizedStrategies(locale)
+  // Base strategies for all businesses
+  strategies.prevention.push('insurance', 'employee_training', 'emergency_supplies')
+  strategies.response.push('emergency_team', 'safety_procedures', 'emergency_communication')
+  strategies.recovery.push('damage_assessment', 'business_resumption', 'lessons_learned')
 
-  // Industry-specific prevention strategies
-  switch (industry.category) {
-    case 'retail':
-      strategies.prevention.push(...localizedStrategies.retail.prevention)
-      break
-    case 'hospitality':
-      strategies.prevention.push(...localizedStrategies.hospitality.prevention)
-      break
-    case 'services':
-      strategies.prevention.push(...localizedStrategies.services.prevention)
-      break
+  // Add strategies based on detected hazards
+  const hazardTypes = actionPlans.map(plan => plan.hazard.toLowerCase())
+  
+  if (hazardTypes.some(h => h.includes('power') || h.includes('outage'))) {
+    strategies.prevention.push('maintenance')
+    strategies.response.push('essential_operations')
+    strategies.recovery.push('equipment_replacement')
+  }
+  
+  if (hazardTypes.some(h => h.includes('hurricane') || h.includes('storm') || h.includes('flood'))) {
+    strategies.prevention.push('building_upgrades')
+    strategies.response.push('closure_procedures')
+    strategies.recovery.push('facility_repair')
+  }
+  
+  if (hazardTypes.some(h => h.includes('cyber') || h.includes('data'))) {
+    strategies.prevention.push('cybersecurity', 'data_backup')
+    strategies.response.push('alternative_locations')
+    strategies.recovery.push('reputation_management')
   }
 
-  // Location-specific strategies
-  if (location.nearCoast) {
-    strategies.prevention.push(localizedStrategies.coastal.prevention)
-    strategies.response.push(localizedStrategies.coastal.response)
+  // Business type specific strategies
+  if (businessType === 'retail') {
+    strategies.prevention.push('physical_security', 'supplier_diversity')
+    strategies.response.push('emergency_inventory', 'customer_continuity')
+    strategies.recovery.push('customer_retention', 'supplier_restoration')
+  } else if (businessType === 'hospitality' || businessType === 'tourism') {
+    strategies.prevention.push('community_partnerships')
+    strategies.response.push('media_management', 'customer_continuity')
+    strategies.recovery.push('customer_retention', 'reputation_management')
+  } else if (businessType === 'services') {
+    strategies.prevention.push('data_backup', 'supplier_diversity')
+    strategies.response.push('remote_work', 'alternative_locations')
+    strategies.recovery.push('employee_support', 'customer_retention')
   }
-
-  if (location.urbanArea) {
-    strategies.prevention.push(localizedStrategies.urban.prevention)
-    strategies.response.push(localizedStrategies.urban.response)
-  }
-
-  // Hazard-specific strategies
-  hazards.forEach(hazard => {
-    switch (hazard.hazardId) {
-      case 'hurricane':
-        strategies.prevention.push('Secure outdoor signage and equipment before storm season')
-        strategies.response.push('Activate storm closure procedures and secure premises')
-        strategies.recovery.push('Assess structural damage before reopening operations')
-        break
-      case 'power_outage':
-        strategies.prevention.push('Install surge protectors and backup power systems')
-        strategies.response.push('Switch to manual processes and backup communications')
-        strategies.recovery.push('Check all electronic equipment before resuming normal operations')
-        break
-      case 'flash_flood':
-        strategies.prevention.push('Elevate critical equipment and inventory above flood levels')
-        strategies.response.push('Move inventory to higher levels and cease electrical operations')
-        strategies.recovery.push('Thoroughly dry and disinfect affected areas before reopening')
-        break
-    }
-  })
 
   return strategies
 }
 
-// Main function to generate pre-fill data
+// Main function to generate all pre-fill data
 export const generatePreFillData = (
   industryId: string,
   location: LocationData,
@@ -446,150 +722,64 @@ export const generatePreFillData = (
   const industry = getIndustryProfile(industryId)
   if (!industry) return null
 
-  const fieldNames = getLocalizedFieldNames(locale)
-  const businessFunctions = getLocalizedBusinessFunctions(locale)
-
-  // Get localized examples from translation system
-  const localizedExamples = getLocalizedExamples(industryId, locale, translations)
-
-  // Calculate location-based hazards
-  const locationHazards = calculateLocationRisk(
-    location.countryCode,
-    location.parish,
-    location.nearCoast,
-    location.urbanArea
-  )
-
-  // Combine industry and location hazards
-  const allHazards = [
-    ...locationHazards,
-    // Add industry-specific hazards that might not be location-based
-    ...industry.commonHazards
-      .filter(hazardName => !locationHazards.some(h => h.hazardId === hazardName))
-      .map(hazardName => ({
-        hazardId: hazardName,
-        hazardName: hazardName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        riskLevel: 'medium' as const,
-        frequency: 'possible' as const,
-        impact: 'moderate' as const
-      }))
-  ]
-
-  // Generate pre-filled form fields using localized examples
-  const preFilledFields: { [stepId: string]: { [fieldName: string]: any } } = {}
-
-  // Business Overview pre-fills - using localized field names and examples
-  const businessOverviewData: any = {}
-  
-  if (localizedExamples) {
-    Object.assign(businessOverviewData, {
-      [fieldNames.businessPurpose]: localizedExamples.businessPurpose[0] ? 
-        localizePlaceholders(localizedExamples.businessPurpose[0], location, locale) : '',
-      [fieldNames.productsAndServices]: localizedExamples.productsServices[0] ? 
-        localizePlaceholders(localizedExamples.productsServices[0], location, locale) : '',
-      [fieldNames.keyPersonnelInvolved]: localizedExamples.keyPersonnel[0] || '',
-      [fieldNames.operatingHours]: industry.typicalOperatingHours,
-      [fieldNames.minimumResourceRequirements]: localizedExamples.minimumResourcesExamples[0] || '',
-      [fieldNames.customerBase]: localizedExamples.customerBase[0] ? 
-        localizePlaceholders(localizedExamples.customerBase[0], location, locale) : '',
-    })
-  } else {
-    // Fallback to English examples
-    Object.assign(businessOverviewData, {
-      [fieldNames.businessPurpose]: industry.examples.businessPurpose[0] ? 
-        localizePlaceholders(industry.examples.businessPurpose[0], location, locale) : '',
-      [fieldNames.productsAndServices]: industry.examples.productsServices[0] ? 
-        localizePlaceholders(industry.examples.productsServices[0], location, locale) : '',
-      [fieldNames.keyPersonnelInvolved]: industry.examples.keyPersonnel[0] || '',
-      [fieldNames.operatingHours]: industry.typicalOperatingHours,
-      [fieldNames.minimumResourceRequirements]: industry.examples.minimumResourcesExamples[0] || '',
-      [fieldNames.customerBase]: industry.examples.customerBase[0] ? 
-        localizePlaceholders(industry.examples.customerBase[0], location, locale) : '',
-    })
-  }
-  
-  // Add business type and location data in the exact format needed
-  businessOverviewData['Industry Type'] = industry.id
-  businessOverviewData['business_type'] = industry.id
-  businessOverviewData['Country'] = location.country
-  businessOverviewData['Parish'] = location.parish || ''
-  businessOverviewData['Near Coast'] = location.nearCoast
-  businessOverviewData['Urban Area'] = location.urbanArea
-  
-  preFilledFields['BUSINESS_OVERVIEW'] = businessOverviewData
-
-  // Risk Assessment pre-fills
-  preFilledFields['RISK_ASSESSMENT'] = {
-    [fieldNames.potentialHazards]: allHazards.map(hazard => hazard.hazardId),
-    [fieldNames.riskAssessmentMatrix]: allHazards.map(hazard => ({
-      hazard: hazard.hazardId,
-      likelihood: hazard.frequency === 'rare' ? '1' : 
-                  hazard.frequency === 'unlikely' ? '2' : 
-                  hazard.frequency === 'possible' ? '3' : 
-                  hazard.frequency === 'likely' ? '4' : 
-                  hazard.frequency === 'almost_certain' ? '4' : '',
-      severity: hazard.impact === 'minimal' ? '1' : 
-                hazard.impact === 'minor' ? '2' : 
-                hazard.impact === 'moderate' ? '3' : 
-                hazard.impact === 'major' ? '4' : 
-                hazard.impact === 'catastrophic' ? '4' : '',
-      riskLevel: '',
-      riskScore: 0,
-      planningMeasures: `${getLocalizedStrategies(locale).implementPrevention} ${hazard.hazardId.replace(/_/g, ' ')}`
-    }))
-  }
-
-  // Essential Functions pre-fills
-  preFilledFields['ESSENTIAL_FUNCTIONS'] = {
-    [fieldNames.businessFunctions]: [
-      {
-        [fieldNames.businessFunction]: businessFunctions.customerService.function,
-        [fieldNames.description]: businessFunctions.customerService.description,
-        [fieldNames.priorityLevel]: businessFunctions.customerService.priority,
-        [fieldNames.maximumAcceptableDowntime]: businessFunctions.customerService.downtime,
-        [fieldNames.criticalResourcesNeeded]: businessFunctions.customerService.resources
-      },
-      {
-        [fieldNames.businessFunction]: businessFunctions.inventoryManagement.function,
-        [fieldNames.description]: businessFunctions.inventoryManagement.description,
-        [fieldNames.priorityLevel]: businessFunctions.inventoryManagement.priority,
-        [fieldNames.maximumAcceptableDowntime]: businessFunctions.inventoryManagement.downtime,
-        [fieldNames.criticalResourcesNeeded]: businessFunctions.inventoryManagement.resources
-      },
-      {
-        [fieldNames.businessFunction]: businessFunctions.supplierRelationships.function,
-        [fieldNames.description]: businessFunctions.supplierRelationships.description,
-        [fieldNames.priorityLevel]: businessFunctions.supplierRelationships.priority,
-        [fieldNames.maximumAcceptableDowntime]: businessFunctions.supplierRelationships.downtime,
-        [fieldNames.criticalResourcesNeeded]: businessFunctions.supplierRelationships.resources
-      }
-    ]
-  }
-
-  // Generate contextual examples
   const contextualExamples = generateContextualExamples(industry, location, locale, translations)
-
-  // Generate recommended strategies
-  const recommendedStrategies = generateRecommendedStrategies(industry, allHazards, location, locale)
-
-  // Store the generated data for debugging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[PreFill Service]: Pre-fill data generated', {
-      industryId,
-      location: location.parish,
-      locale,
-      fieldsGenerated: Object.keys(preFilledFields).length,
-      examplesGenerated: Object.keys(contextualExamples).length
-    })
+  
+  const riskMatrix = generateRiskAssessmentMatrix(location, industry)
+  const businessOverview = {
+    'Business Purpose': industry.examples.businessPurpose[0],
+    'Products & Services': industry.examples.productsServices[0]
   }
+
+  const actionPlans = generateSmartActionPlans({
+    BUSINESS_OVERVIEW: businessOverview,
+    RISK_ASSESSMENT: { 'Risk Assessment Matrix': riskMatrix }
+  })
+  
+  const formattedPlans = generateFormattedActionPlanText(actionPlans)
+  const autoSelectedStrategies = generateAutoSelectedStrategies(actionPlans, industry.category)
 
   return {
     industry,
     location,
-    hazards: allHazards,
-    preFilledFields,
+    hazards: riskMatrix, // Use the generated matrix
+    preFilledFields: {
+      BUSINESS_OVERVIEW: {
+        'Business Purpose': contextualExamples.BUSINESS_OVERVIEW?.['Business Purpose']?.[0] || '',
+        'Products and Services': contextualExamples.BUSINESS_OVERVIEW?.['Products and Services']?.[0] || '',
+        'Key Personnel Involved': contextualExamples.BUSINESS_OVERVIEW?.['Key Personnel Involved']?.[0] || '',
+        'Operating Hours': contextualExamples.BUSINESS_OVERVIEW?.['Operating Hours']?.[0] || '',
+        'Minimum Resource Requirements': contextualExamples.BUSINESS_OVERVIEW?.['Minimum Resource Requirements']?.[0] || '',
+        'Customer Base': contextualExamples.BUSINESS_OVERVIEW?.['Customer Base']?.[0] || ''
+      },
+      ESSENTIAL_FUNCTIONS: {
+        'Business Functions': Object.values(getLocalizedBusinessFunctions(locale)).map(bf => {
+          return `${bf.function} - ${bf.description} - Priority: ${bf.priority}, Downtime: ${bf.downtime}, Resources: ${bf.resources}`
+        }).join('\n\n')
+      },
+      RISK_ASSESSMENT: {
+        'Risk Assessment Matrix': riskMatrix,
+      },
+      STRATEGIES: {
+        'Business Continuity Strategies': [
+          ...autoSelectedStrategies.prevention,
+          ...autoSelectedStrategies.response, 
+          ...autoSelectedStrategies.recovery
+        ],
+        'Long-term Risk Reduction Measures': formattedPlans.prevention
+      },
+      ACTION_PLAN: {
+        'Smart Action Plan Generator': actionPlans,
+        'Implementation Priority': formattedPlans.implementationPriority,
+        'Budget and Resource Requirements': formattedPlans.budgetResources,
+        'Implementation Team Structure': formattedPlans.implementationTeam,
+        'Resource Requirements': formattedPlans.resourceRequirements,
+        'Responsible Parties': formattedPlans.responsibleParties,
+        'Review and Update Schedule': formattedPlans.reviewSchedule,
+        'Testing and Drill Plan': formattedPlans.testingPlan
+      }
+    },
     contextualExamples,
-    recommendedStrategies
+    recommendedStrategies: { prevention: [], response: [], recovery: [] }, // This is now handled by the formatted plans
   }
 }
 
@@ -620,14 +810,25 @@ export const isFieldPreFilled = (
   currentValue: any,
   preFillData: PreFillData | null
 ): boolean => {
-  if (!preFillData?.preFilledFields[stepId]?.[fieldName]) return false
-  
+  if (!preFillData || !preFillData.preFilledFields[stepId] || !preFillData.preFilledFields[stepId][fieldName]) {
+    return false
+  }
   const preFillValue = preFillData.preFilledFields[stepId][fieldName]
-  
-  // Handle different value types
+
+  if (currentValue === preFillValue) {
+    return true
+  }
+
+  // Handle case where pre-fill is an array of objects (like risk matrix)
   if (Array.isArray(preFillValue) && Array.isArray(currentValue)) {
+    // A simple JSON.stringify comparison is sufficient for this use case
     return JSON.stringify(preFillValue) === JSON.stringify(currentValue)
   }
   
-  return preFillValue === currentValue
+  // For risk matrix, check if it's an array and has items
+  if (fieldName.toLowerCase().includes('matrix')) {
+    return Array.isArray(preFillValue) && preFillValue.length > 0
+  }
+  
+  return preFillValue && preFillValue.trim() !== ''
 } 

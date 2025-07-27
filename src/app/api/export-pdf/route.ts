@@ -182,7 +182,7 @@ export async function POST(req: Request) {
         doc.text('UNDP in cooperation with CARICHAM', PAGE_WIDTH / 2, footerY, { align: 'center' })
       }
     }
-
+    
     // Company name extraction
     const rawCompanyName = planData.PLAN_INFORMATION?.['Company Name'] || 'Your Company'
     const companyName = rawCompanyName.replace(/^[•\-\*]\s*/, '').trim()
@@ -336,8 +336,8 @@ export async function POST(req: Request) {
       if (Array.isArray(data)) {
         tableData = data.filter(item => item && typeof item === 'object')
       } else if (typeof data === 'object') {
-        tableData = Object.entries(data).map(([key, value]) => ({
-          Field: key,
+          tableData = Object.entries(data).map(([key, value]) => ({
+            Field: key,
           Value: Array.isArray(value) ? value.join(', ') : String(value || '')
         }))
       }
@@ -416,7 +416,7 @@ export async function POST(req: Request) {
         doc.text(header, MARGIN_LEFT + (index * colWidth) + 2, currentY)
       })
       
-      currentY += 8
+        currentY += 8
       
       // Table rows
       doc.setTextColor(33, 33, 33)
@@ -569,7 +569,7 @@ export async function POST(req: Request) {
           doc.circle(MARGIN_LEFT + 8, currentY - 2, 1.5, 'F')
           
           doc.setFontSize(9)
-          doc.setFont('helvetica', 'bold')
+      doc.setFont('helvetica', 'bold')
           doc.setTextColor(33, 33, 33)
           
           const taskLines = doc.splitTextToSize(action.task, CONTENT_WIDTH - 20)
@@ -609,38 +609,38 @@ export async function POST(req: Request) {
     doc.setFontSize(28)
     doc.setFont('helvetica', 'bold')
     doc.text('BUSINESS CONTINUITY PLAN', PAGE_WIDTH / 2, 80, { align: 'center' })
-    
-    // Company name
+      
+      // Company name
     doc.setFontSize(20)
-    doc.setFont('helvetica', 'normal')
+      doc.setFont('helvetica', 'normal')
     doc.text(companyName, PAGE_WIDTH / 2, 110, { align: 'center' })
-    
+      
     // Date and version
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    })
+      const currentDate = new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      })
     doc.setFontSize(14)
     doc.text(`Generated on ${currentDate}`, PAGE_WIDTH / 2, 140, { align: 'center' })
-    
+      
     // UNDP Logo area
-    doc.setFontSize(12)
+      doc.setFontSize(12)
     doc.text('Developed in partnership with', PAGE_WIDTH / 2, 200, { align: 'center' })
     doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
+      doc.setFont('helvetica', 'bold')
     doc.text('UNDP & CARICHAM', PAGE_WIDTH / 2, 220, { align: 'center' })
     
     // Add second page for content
-    doc.addPage()
-    currentY = MARGIN_TOP
-    pageNumber++
-    addPageFooter(pageNumber)
-
+      doc.addPage()
+      currentY = MARGIN_TOP
+      pageNumber++
+      addPageFooter(pageNumber)
+      
     // DOCUMENT CONTROL & HEADER
     addSectionHeader('DOCUMENT CONTROL & INFORMATION')
-    
-    if (planData.PLAN_INFORMATION) {
+      
+      if (planData.PLAN_INFORMATION) {
       addLabeledText('Company Name', planData.PLAN_INFORMATION['Company Name'])
       addLabeledText('Plan Version', planData.PLAN_INFORMATION['Plan Version'] || '1.0')
       addLabeledText('Date Created', planData.PLAN_INFORMATION['Date Created'] || currentDate)
@@ -651,8 +651,8 @@ export async function POST(req: Request) {
 
     // SECTION 1: BUSINESS ANALYSIS
     addSectionHeader('SECTION 1: BUSINESS ANALYSIS')
-    
-    if (planData.BUSINESS_OVERVIEW) {
+      
+      if (planData.BUSINESS_OVERVIEW) {
       addLabeledText('Business Purpose', planData.BUSINESS_OVERVIEW['Business Purpose'])
       addLabeledText('Products & Services', planData.BUSINESS_OVERVIEW['Products & Services'])
       addLabeledText('Key Markets', planData.BUSINESS_OVERVIEW['Key Markets'])
@@ -698,27 +698,27 @@ export async function POST(req: Request) {
 
     // SECTION 3: BUSINESS CONTINUITY STRATEGIES
     addSectionHeader('SECTION 3: BUSINESS CONTINUITY STRATEGIES')
-    
-    if (planData.STRATEGIES) {
-      const strategies = planData.STRATEGIES
       
+      if (planData.STRATEGIES) {
+        const strategies = planData.STRATEGIES
+        
       if (strategies['Prevention Strategies (Before Emergencies)']) {
-        addBulletList(strategies['Prevention Strategies (Before Emergencies)'], 
+          addBulletList(strategies['Prevention Strategies (Before Emergencies)'], 
           '🔒 Prevention Strategies (Before Emergencies)')
-      }
-      
+        }
+        
       if (strategies['Response Strategies (During Emergencies)']) {
-        addBulletList(strategies['Response Strategies (During Emergencies)'], 
+          addBulletList(strategies['Response Strategies (During Emergencies)'], 
           '🚨 Response Strategies (During Emergencies)')
-      }
-      
+        }
+        
       if (strategies['Recovery Strategies (After Emergencies)']) {
-        addBulletList(strategies['Recovery Strategies (After Emergencies)'], 
+          addBulletList(strategies['Recovery Strategies (After Emergencies)'], 
           '🔄 Recovery Strategies (After Emergencies)')
-      }
-      
-      if (strategies['Long-term Risk Reduction Measures']) {
-        addBulletList(strategies['Long-term Risk Reduction Measures'], 
+        }
+        
+        if (strategies['Long-term Risk Reduction Measures']) {
+            addBulletList(strategies['Long-term Risk Reduction Measures'], 
           '🛡️ Long-term Risk Reduction Measures')
       }
     }
@@ -740,7 +740,7 @@ export async function POST(req: Request) {
         }
         addActionPlanDetails(plan)
       })
-    } else {
+          } else {
       addLabeledText('Action Plans', 'No high-priority risks identified requiring detailed action plans.')
     }
 
@@ -773,31 +773,31 @@ export async function POST(req: Request) {
 
     // SECTION 6: CONTACT INFORMATION
     addSectionHeader('SECTION 6: CONTACT INFORMATION')
-    
-    if (planData.CONTACTS_AND_INFORMATION) {
-      const contacts = planData.CONTACTS_AND_INFORMATION
       
-      if (contacts['Staff Contact Information']) {
-        addDataTable(contacts['Staff Contact Information'], 'Staff Contact Information')
+      if (planData.CONTACTS_AND_INFORMATION) {
+        const contacts = planData.CONTACTS_AND_INFORMATION
+        
+        if (contacts['Staff Contact Information']) {
+          addDataTable(contacts['Staff Contact Information'], 'Staff Contact Information')
+        }
+        
+        if (contacts['Key Customer Contacts']) {
+          addDataTable(contacts['Key Customer Contacts'], 'Key Customer Contacts')
+        }
+        
+        if (contacts['Supplier Information']) {
+          addDataTable(contacts['Supplier Information'], 'Supplier Information')
+        }
+        
+        if (contacts['Emergency Services and Utilities']) {
+          addDataTable(contacts['Emergency Services and Utilities'], 'Emergency Services and Utilities')
+        }
+        
+        if (contacts['Key External Contacts']) {
+          addDataTable(contacts['Key External Contacts'], 'Key External Contacts')
+        }
       }
       
-      if (contacts['Key Customer Contacts']) {
-        addDataTable(contacts['Key Customer Contacts'], 'Key Customer Contacts')
-      }
-      
-      if (contacts['Supplier Information']) {
-        addDataTable(contacts['Supplier Information'], 'Supplier Information')
-      }
-      
-      if (contacts['Emergency Services and Utilities']) {
-        addDataTable(contacts['Emergency Services and Utilities'], 'Emergency Services and Utilities')
-      }
-      
-      if (contacts['Key External Contacts']) {
-        addDataTable(contacts['Key External Contacts'], 'Key External Contacts')
-      }
-    }
-
     // SECTION 7: APPENDICES
     addSectionHeader('SECTION 7: APPENDICES')
     
@@ -830,33 +830,33 @@ export async function POST(req: Request) {
     }
 
     // Add page numbers and finalize
-    const totalPages = doc.getNumberOfPages()
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i)
-      if (i > 1) { // Skip cover page
-        doc.setFontSize(9)
-        doc.setTextColor(100, 100, 100)
-        doc.setFont('helvetica', 'normal')
-        
-        const footerY = PAGE_HEIGHT - 15
-        
-        // Page numbering
-        doc.text(`Page ${i} of ${totalPages}`, PAGE_WIDTH - MARGIN_RIGHT - 20, footerY)
-        doc.text(companyName, MARGIN_LEFT, footerY)
+      const totalPages = doc.getNumberOfPages()
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i)
+        if (i > 1) { // Skip cover page
+          doc.setFontSize(9)
+          doc.setTextColor(100, 100, 100)
+          doc.setFont('helvetica', 'normal')
+          
+          const footerY = PAGE_HEIGHT - 15
+          
+          // Page numbering
+          doc.text(`Page ${i} of ${totalPages}`, PAGE_WIDTH - MARGIN_RIGHT - 20, footerY)
+          doc.text(companyName, MARGIN_LEFT, footerY)
+        }
       }
-    }
-    
-    // Generate PDF
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-    return new NextResponse(pdfBuffer, {
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${companyName.replace(/[^a-zA-Z0-9]/g, '-')}-BCP-${new Date().toISOString().split('T')[0]}.pdf"`,
-      },
-    })
+      
+      // Generate PDF
+      const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
+      return new NextResponse(pdfBuffer, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename="${companyName.replace(/[^a-zA-Z0-9]/g, '-')}-BCP-${new Date().toISOString().split('T')[0]}.pdf"`,
+        },
+      })
 
-  } catch (error) {
-    console.error('PDF generation error:', error)
+    } catch (error) {
+      console.error('PDF generation error:', error)
     return NextResponse.json(
       { 
         error: 'Failed to generate PDF', 

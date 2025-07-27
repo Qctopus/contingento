@@ -6,7 +6,8 @@ import { ExcelUpload } from './ExcelUpload'
 import { useTranslations } from 'next-intl'
 import { useUserInteraction } from '@/lib/hooks'
 import React from 'react' // Added for useEffect
-import { getBusinessTypeFromFormData } from '../data/actionPlansMatrix'
+import DatePicker from 'react-datepicker'
+import "react-datepicker/dist/react-datepicker.css"
 
 interface Option {
   label: string
@@ -18,7 +19,7 @@ interface TableRow {
 }
 
 interface StructuredInputProps {
-  type: 'text' | 'radio' | 'checkbox' | 'table' | 'special_risk_matrix' | 'special_smart_action_plan'
+  type: 'text' | 'radio' | 'checkbox' | 'table' | 'special_risk_matrix' | 'special_strategy_cards'
   label: string
   required?: boolean
   prompt: string
@@ -61,11 +62,25 @@ export function StructuredInput({
   const [value, setValue] = useState<string | string[] | TableRow[]>(
     type === 'checkbox' ? [] : type === 'table' ? [] : ''
   )
+
+  // State for dynamic table rows (used by table input types)
   const [tableRows, setTableRows] = useState<TableRow[]>([])
+
   const t = useTranslations('common')
   
   // Use custom hook for user interaction tracking
   const { hasUserInteracted, didMount, setUserInteracted: setInteracted, resetInteraction } = useUserInteraction()
+
+  // Auto-add initial row for tables when component first loads
+  useEffect(() => {
+    if (type === 'table' && tableColumns.length > 0 && tableRows.length === 0 && !hasUserInteracted && (!initialValue || (Array.isArray(initialValue) && initialValue.length === 0))) {
+      const newRow: TableRow = {}
+      tableColumns.forEach(column => {
+        newRow[column] = ''
+      })
+      setTableRows([newRow])
+    }
+  }, [type, tableColumns, tableRows.length, hasUserInteracted, initialValue])
 
   // Auto-save functionality: only call onComplete after user interaction
   useEffect(() => {
@@ -277,15 +292,22 @@ export function StructuredInput({
         </table>
       </div>
       
-      <button
-        onClick={addTableRow}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm"
-      >
-        <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M12 4v16m8-8H4" />
-        </svg>
-        <span>{t('addRow')}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={addTableRow}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm transition-colors"
+        >
+          <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{t('addRow')}</span>
+        </button>
+        {tableRows.length > 1 && (
+          <span className="text-sm text-gray-500">
+            {tableRows.length} rows
+          </span>
+        )}
+      </div>
     </div>
   )
 
@@ -339,23 +361,39 @@ export function StructuredInput({
                         type="email"
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
-                        placeholder={`Enter ${column.toLowerCase()}`}
+                        placeholder="name@example.com"
                         className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                       />
-                    ) : column.toLowerCase().includes('phone') ? (
+                    ) : column.toLowerCase().includes('phone') || column.toLowerCase().includes('contact') || column.toLowerCase().includes('number') ? (
                       <input
                         type="tel"
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
-                        placeholder={`Enter ${column.toLowerCase()}`}
+                        placeholder="(123) 456-7890"
                         className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                       />
-                    ) : column.toLowerCase().includes('date') ? (
+                    ) : column.toLowerCase().includes('website') || column.toLowerCase().includes('url') || column.toLowerCase().includes('link') ? (
                       <input
-                        type="date"
+                        type="url"
                         value={row[column] || ''}
                         onChange={(e) => updateTableRow(rowIndex, column, e.target.value)}
+                        placeholder="https://example.com"
                         className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
+                      />
+                    ) : column.toLowerCase().includes('date') || column.toLowerCase().includes('deadline') || column.toLowerCase().includes('due') || column.toLowerCase().includes('schedule') ? (
+                      <DatePicker
+                        selected={row[column] && row[column] !== '' ? (() => {
+                          const date = new Date(row[column]);
+                          return isNaN(date.getTime()) ? null : date;
+                        })() : null}
+                        onChange={(date) => updateTableRow(rowIndex, column, date ? date.toISOString().split('T')[0] : '')}
+                        className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
+                        placeholderText={`Select ${column.toLowerCase()}`}
+                        dateFormat="yyyy-MM-dd"
+                        showYearDropdown
+                        showMonthDropdown
+                        dropdownMode="select"
+                        isClearable
                       />
                     ) : (
                       <textarea
@@ -391,15 +429,22 @@ export function StructuredInput({
         </table>
       </div>
       
-      <button
-        onClick={addTableRow}
-        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm"
-      >
-        <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M12 4v16m8-8H4" />
-        </svg>
-        <span>{t('addRow')}</span>
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={addTableRow}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center space-x-2 text-sm transition-colors"
+        >
+          <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
+            <path d="M12 4v16m8-8H4" />
+          </svg>
+          <span>{t('addRow')}</span>
+        </button>
+        {tableRows.length > 1 && (
+          <span className="text-sm text-gray-500">
+            {tableRows.length} rows
+          </span>
+        )}
+      </div>
     </div>
   )
 
@@ -551,14 +596,216 @@ export function StructuredInput({
     )
   }
 
+  // Enhanced strategy cards component
+  const renderStrategyCards = () => {
+    const strategies = [
+      {
+        id: 'maintenance',
+        title: 'Regular Maintenance',
+        description: 'Systematic upkeep of equipment and facilities',
+        category: 'prevention',
+        reasoning: 'Prevents equipment failures and reduces downtime',
+        icon: '🔧'
+      },
+      {
+        id: 'physical_security',
+        title: 'Physical Security',
+        description: 'Alarms, cameras, locks, and access controls',
+        category: 'prevention',
+        reasoning: 'Protects against theft and unauthorized access',
+        icon: '🔒'
+      },
+      {
+        id: 'cybersecurity',
+        title: 'Cybersecurity',
+        description: 'Data protection and network security measures',
+        category: 'prevention',
+        reasoning: 'Guards against cyber threats and data breaches',
+        icon: '🛡️'
+      },
+      {
+        id: 'insurance',
+        title: 'Insurance Coverage',
+        description: 'Comprehensive business insurance policies',
+        category: 'prevention',
+        reasoning: 'Financial protection against major losses',
+        icon: '📋'
+      },
+      {
+        id: 'employee_training',
+        title: 'Staff Training',
+        description: 'Emergency preparedness and safety training',
+        category: 'prevention',
+        reasoning: 'Ensures staff know how to respond to emergencies',
+        icon: '👥'
+      },
+      {
+        id: 'emergency_supplies',
+        title: 'Emergency Supplies',
+        description: 'First aid, flashlights, backup equipment',
+        category: 'prevention',
+        reasoning: 'Provides immediate resources during emergencies',
+        icon: '🏥'
+      },
+      {
+        id: 'emergency_team',
+        title: 'Emergency Response Team',
+        description: 'Designated team with clear roles and responsibilities',
+        category: 'response',
+        reasoning: 'Ensures coordinated response during crises',
+        icon: '🚨'
+      },
+      {
+        id: 'safety_procedures',
+        title: 'Safety Procedures',
+        description: 'Staff and customer safety protocols',
+        category: 'response',
+        reasoning: 'Protects lives during emergency situations',
+        icon: '⚡'
+      },
+              {
+          id: 'emergency_communication',
+          title: 'Emergency Communication',
+          description: 'Communication plan for stakeholders',
+          category: 'response',
+          reasoning: 'Keeps everyone informed during emergencies',
+          icon: '📞'
+        },
+        {
+          id: 'alternative_locations',
+          title: 'Alternative Locations',
+          description: 'Backup facilities and remote work options',
+          category: 'response',
+          reasoning: 'Maintains operations when primary location is unusable',
+          icon: '🏢'
+        },
+      {
+        id: 'damage_assessment',
+        title: 'Damage Assessment',
+        description: 'Systematic evaluation of impacts and losses',
+        category: 'recovery',
+        reasoning: 'Identifies priorities for recovery efforts',
+        icon: '📊'
+      },
+      {
+        id: 'business_resumption',
+        title: 'Business Resumption',
+        description: 'Procedures to restart operations',
+        category: 'recovery',
+        reasoning: 'Gets business back to normal as quickly as possible',
+        icon: '🔄'
+      },
+      {
+        id: 'customer_retention',
+        title: 'Customer Retention',
+        description: 'Strategies to maintain customer relationships',
+        category: 'recovery',
+        reasoning: 'Preserves revenue and market position',
+        icon: '🤝'
+      }
+    ]
+
+    const selectedStrategies = Array.isArray(value) ? value as string[] : []
+
+    const getRecommendationReason = (strategyId: string) => {
+      // Get reasoning based on pre-fill data if available
+      if (preFillData?.preFilledFields?.STRATEGIES) {
+        const preFilledStrategies = preFillData.preFilledFields.STRATEGIES
+        const recommendedStrategies = preFilledStrategies['Business Continuity Strategies'] || []
+        
+        if (Array.isArray(recommendedStrategies) && recommendedStrategies.includes(strategyId)) {
+          return 'Recommended based on your business type and identified risks'
+        }
+      }
+      return null
+    }
+
+    const groupedStrategies = {
+      prevention: strategies.filter(s => s.category === 'prevention'),
+      response: strategies.filter(s => s.category === 'response'),
+      recovery: strategies.filter(s => s.category === 'recovery')
+    }
+
+    const categoryTitles = {
+      prevention: 'Prevention Strategies (Before Emergencies)',
+      response: 'Response Strategies (During Emergencies)',
+      recovery: 'Recovery Strategies (After Emergencies)'
+    }
+
+    const categoryColors = {
+      prevention: 'border-blue-200 bg-blue-50',
+      response: 'border-yellow-200 bg-yellow-50',
+      recovery: 'border-green-200 bg-green-50'
+    }
+
+    return (
+      <div className="space-y-8">
+        {Object.entries(groupedStrategies).map(([category, categoryStrategies]) => (
+          <div key={category} className={`p-6 rounded-lg border-2 ${categoryColors[category as keyof typeof categoryColors]}`}>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              {categoryTitles[category as keyof typeof categoryTitles]}
+            </h3>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {categoryStrategies.map((strategy) => {
+                const isSelected = selectedStrategies.includes(strategy.id)
+                const isRecommended = getRecommendationReason(strategy.id)
+                
+                return (
+                  <div
+                    key={strategy.id}
+                    onClick={() => {
+                      const newValue = isSelected 
+                        ? selectedStrategies.filter(id => id !== strategy.id)
+                        : [...selectedStrategies, strategy.id]
+                      handleChange(newValue)
+                    }}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                      isSelected 
+                        ? 'border-primary-500 bg-primary-50 shadow-md' 
+                        : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                    } ${isRecommended ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="text-2xl">{strategy.icon}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-gray-900">{strategy.title}</h4>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {}} // Handled by div onClick
+                            className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">{strategy.description}</p>
+                        <p className="text-xs text-gray-500 mt-2">{strategy.reasoning}</p>
+                        {isRecommended && (
+                          <div className="mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full inline-block">
+                            ✨ Recommended for your business
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   // Special handling for risk matrix type
   const handleRiskMatrixComplete = (riskMatrix: any[]) => {
     setInteracted()
-    // Structure the data properly for the RISK_ASSESSMENT step
-    const structuredData = {
-      'Risk Assessment Matrix': riskMatrix
-    }
-    onComplete(structuredData)
+    onComplete(riskMatrix)
+  }
+
+  // Special handling for strategy cards
+  const handleStrategyCardsComplete = (strategies: string[]) => {
+    setInteracted()
+    onComplete(strategies)
   }
 
   // Get selected hazards from dependency
@@ -640,627 +887,8 @@ export function StructuredInput({
     return { locationData, businessData }
   }
 
-  if (type === 'special_smart_action_plan') {
-    // Generate action plans based on business type and risk assessment
-    const generateSmartActionPlans = () => {
-      // Enhanced data extraction with multiple fallbacks
-      let businessOverview = {}
-      let riskAssessment = {}
-      
-      // Debug: Log all available data
-      console.log('🔍 Smart Action Plan - Available stepData:', stepData)
-      console.log('🔍 Smart Action Plan - Available preFillData:', preFillData)
-      
-      // Enhanced debug logging for data structure analysis
-      if (stepData) {
-        console.log('📊 stepData structure analysis:')
-        console.log('  - Type:', typeof stepData)
-        console.log('  - Keys:', Object.keys(stepData))
-        
-        if (stepData.BUSINESS_OVERVIEW) {
-          console.log('  - BUSINESS_OVERVIEW keys:', Object.keys(stepData.BUSINESS_OVERVIEW))
-          console.log('  - BUSINESS_OVERVIEW content:', stepData.BUSINESS_OVERVIEW)
-        }
-        
-        if (stepData.RISK_ASSESSMENT) {
-          console.log('  - RISK_ASSESSMENT keys:', Object.keys(stepData.RISK_ASSESSMENT))
-          console.log('  - RISK_ASSESSMENT content:', stepData.RISK_ASSESSMENT)
-        }
-      }
-      
-      if (preFillData) {
-        console.log('📊 preFillData structure analysis:')
-        console.log('  - Industry:', preFillData.industry)
-        console.log('  - Location:', preFillData.location)
-        console.log('  - Pre-filled fields:', Object.keys(preFillData.preFilledFields))
-      }
-      
-      // Extract business overview data with multiple fallbacks
-      if (stepData?.BUSINESS_OVERVIEW) {
-        businessOverview = stepData.BUSINESS_OVERVIEW
-        console.log('✅ Found BUSINESS_OVERVIEW in stepData:', businessOverview)
-      } else if (stepData && typeof stepData === 'object') {
-        // Check if business data is stored directly in stepData
-        const businessKeys = ['Industry Type', 'business_type', 'Business Purpose', 'Products & Services']
-        const hasBusinessData = businessKeys.some(key => (stepData as any)[key] !== undefined)
-        if (hasBusinessData) {
-          businessOverview = stepData
-          console.log('✅ Found business data directly in stepData:', businessOverview)
-        }
-      }
-      
-      // Extract risk assessment data with multiple fallbacks
-      if (stepData?.RISK_ASSESSMENT) {
-        riskAssessment = stepData.RISK_ASSESSMENT
-        console.log('✅ Found RISK_ASSESSMENT in stepData:', riskAssessment)
-      } else if (stepData && typeof stepData === 'object') {
-        // Check if risk data is stored directly in stepData
-        const riskKeys = ['Risk Assessment Matrix', 'Risk Matrix', 'riskMatrix']
-        const hasRiskData = riskKeys.some(key => (stepData as any)[key] !== undefined)
-        if (hasRiskData) {
-          riskAssessment = stepData
-          console.log('✅ Found risk data directly in stepData:', riskAssessment)
-        }
-      }
-      
-      // Enhanced debug logging for risk assessment data structure
-      console.log('🔍 Risk Assessment Data Structure Analysis:')
-      console.log('  - riskAssessment type:', typeof riskAssessment)
-      console.log('  - riskAssessment keys:', Object.keys(riskAssessment || {}))
-      if (riskAssessment && typeof riskAssessment === 'object') {
-        console.log('  - riskAssessment content:', riskAssessment)
-        // Check for nested structures
-        Object.entries(riskAssessment).forEach(([key, value]) => {
-          console.log(`  - ${key}:`, {
-            type: typeof value,
-            isArray: Array.isArray(value),
-            length: Array.isArray(value) ? value.length : 'N/A',
-            sample: Array.isArray(value) && value.length > 0 ? value[0] : 'N/A'
-          })
-        })
-      }
-      
-      // Import action plans generation logic
-      const { 
-        HAZARD_ACTION_PLANS, 
-        BUSINESS_TYPE_MODIFIERS, 
-        getBusinessTypeFromFormData 
-      } = require('../data/actionPlansMatrix')
-
-      // Try to get risk matrix from different possible field names
-      let riskMatrix = null
-      
-      console.log('🔍 Risk Matrix Extraction Process:')
-      
-      // First try the direct array (most common case)
-      if (Array.isArray(riskAssessment)) {
-        riskMatrix = riskAssessment
-        console.log('✅ Found risk matrix as direct array')
-      }
-      // Then try the "Risk Assessment Matrix" field
-      else if ((riskAssessment as any)['Risk Assessment Matrix'] && Array.isArray((riskAssessment as any)['Risk Assessment Matrix'])) {
-        riskMatrix = (riskAssessment as any)['Risk Assessment Matrix']
-        console.log('✅ Found risk matrix in "Risk Assessment Matrix" field')
-      }
-      // Then try other possible field names
-      else if ((riskAssessment as any)['Risk Matrix'] && Array.isArray((riskAssessment as any)['Risk Matrix'])) {
-        riskMatrix = (riskAssessment as any)['Risk Matrix']
-        console.log('✅ Found risk matrix in "Risk Matrix" field')
-      }
-      // Try additional field name variations
-      else if ((riskAssessment as any)['riskMatrix'] && Array.isArray((riskAssessment as any)['riskMatrix'])) {
-        riskMatrix = (riskAssessment as any)['riskMatrix']
-        console.log('✅ Found risk matrix in "riskMatrix" field')
-      }
-      // Finally, try to find any array field that might contain risk data
-      else {
-        console.log('🔍 Searching for risk matrix in all fields...')
-        for (const [key, value] of Object.entries(riskAssessment)) {
-          console.log(`  - Checking field "${key}":`, {
-            type: typeof value,
-            isArray: Array.isArray(value),
-            length: Array.isArray(value) ? value.length : 'N/A',
-            hasHazard: Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].hazard || value[0].Hazard)
-          })
-          
-          if (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object' && (value[0].hazard || value[0].Hazard)) {
-            riskMatrix = value
-            console.log(`✅ Found risk matrix in "${key}" field`)
-            break
-          }
-        }
-      }
-      
-      // Additional fallback: check if riskAssessment itself is an array of risk objects
-      if (!riskMatrix && Array.isArray(riskAssessment) && riskAssessment.length > 0) {
-        const firstItem = riskAssessment[0]
-        if (firstItem && typeof firstItem === 'object' && (firstItem.hazard || firstItem.Hazard)) {
-          riskMatrix = riskAssessment
-          console.log('✅ Found risk matrix as direct array in riskAssessment')
-        }
-      }
-
-      if (!riskMatrix || !Array.isArray(riskMatrix)) {
-        console.log('❌ No valid risk assessment data found:', riskAssessment)
-        console.log('Available keys in riskAssessment:', Object.keys(riskAssessment))
-        console.log('Risk assessment type:', typeof riskAssessment)
-        console.log('Risk assessment content:', riskAssessment)
-        return []
-      }
-
-      console.log('✅ Found risk matrix:', riskMatrix)
-      console.log('📊 Risk matrix length:', riskMatrix.length)
-      console.log('📊 Risk matrix sample:', riskMatrix.slice(0, 2))
-
-      // Filter for high and extreme risk hazards (case-insensitive)
-      const priorityHazards = riskMatrix.filter((risk: any) => {
-        const riskLevel = (risk.riskLevel || risk.RiskLevel || risk.risk_level || '').toLowerCase()
-        const hazardName = risk.hazard || risk.Hazard || ''
-        
-        // Enhanced risk level detection with multiple variations
-        const isHighRisk = riskLevel.includes('high') || 
-                          riskLevel.includes('elevé') || // French
-                          riskLevel.includes('alto') || // Spanish
-                          riskLevel.includes('höchst') || // German
-                          riskLevel.includes('8') || riskLevel.includes('9') // Score-based
-        
-        const isExtremeRisk = riskLevel.includes('extreme') || 
-                             riskLevel.includes('extrême') || // French
-                             riskLevel.includes('extremo') || // Spanish
-                             riskLevel.includes('12') || riskLevel.includes('13') || 
-                             riskLevel.includes('14') || riskLevel.includes('15') || 
-                             riskLevel.includes('16') // Score-based
-        
-        const isPriority = isHighRisk || isExtremeRisk
-        
-        console.log('Checking risk:', hazardName, 'with level:', riskLevel, 'Priority:', isPriority)
-        return isPriority
-      })
-
-      console.log('Priority hazards found:', priorityHazards.length)
-
-      // Get business type for customization with enhanced extraction
-      let businessType = getBusinessTypeFromFormData({ 
-        BUSINESS_OVERVIEW: businessOverview || {},
-        ...businessOverview // Also pass businessOverview directly as fallback
-      })
-      
-      // Fallback: try to extract business type directly from businessOverview
-      if (!businessType && businessOverview) {
-        businessType = (businessOverview as any)['Industry Type'] || 
-                      (businessOverview as any)['business_type'] || 
-                      (businessOverview as any)['Business Type'] ||
-                      (businessOverview as any)['industry_type']
-        console.log('Fallback business type extraction:', businessType)
-      }
-      
-      const businessModifiers = BUSINESS_TYPE_MODIFIERS[businessType] || {}
-      
-      console.log('Business type detection:', { 
-        businessType, 
-        businessOverview,
-        hasModifiers: Object.keys(businessModifiers).length > 0,
-        modifierKeys: Object.keys(businessModifiers)
-      })
-
-      // Generate action plans for each priority hazard
-      return priorityHazards.map((risk: any) => {
-        const hazardName = risk.hazard || risk.Hazard || ''
-        const riskLevel = risk.riskLevel || risk.RiskLevel || 'High'
-        
-        // Find matching hazard key in action plans matrix
-        const hazardKey = Object.keys(HAZARD_ACTION_PLANS).find((key: string) => {
-          const normalizedKey = key.toLowerCase().replace(/_/g, ' ')
-          const normalizedHazard = hazardName.toLowerCase().replace(/_/g, ' ')
-          
-          // Direct matches
-          if (normalizedKey === normalizedHazard) return true
-          
-          // Partial matches
-          if (normalizedKey.includes(normalizedHazard) || normalizedHazard.includes(normalizedKey)) return true
-          
-          // Special mappings for common variations
-          const hazardMappings: { [key: string]: string[] } = {
-            'hurricane': ['hurricane', 'tropical storm', 'storm', 'cyclone'],
-            'power_outage': ['power outage', 'electrical failure', 'blackout', 'extended power outage'],
-            'cyber_attack': ['cyber attack', 'cybercrime', 'hacking', 'data breach', 'cyber attack'],
-            'fire': ['fire', 'blaze', 'conflagration'],
-            'flood': ['flood', 'flooding', 'flash flood', 'coastal flood', 'flash flooding'],
-            'earthquake': ['earthquake', 'seismic', 'quake']
-          }
-          
-          const possibleMatches = hazardMappings[key] || [key]
-          return possibleMatches.some(match => 
-            normalizedHazard.includes(match.toLowerCase()) || 
-            match.toLowerCase().includes(normalizedHazard)
-          )
-        })
-
-        console.log('Hazard matching:', { hazardName, hazardKey })
-
-        // Get base action plan from matrix
-        let actionPlan = hazardKey ? { ...HAZARD_ACTION_PLANS[hazardKey] } : {
-          resourcesNeeded: [
-            'Emergency supplies and first aid kit',
-            'Communication systems (radio, phone backup)',
-            'Backup procedures and documentation',
-            'Emergency contact list',
-            'Alternative work location plan',
-            'Insurance documentation'
-          ],
-          immediateActions: [
-            { task: 'Activate emergency response procedures', responsible: 'Management', duration: '1 hour', priority: 'high' },
-            { task: 'Ensure staff and customer safety', responsible: 'All Staff', duration: '30 minutes', priority: 'high' },
-            { task: 'Contact emergency services if needed', responsible: 'Management', duration: '15 minutes', priority: 'high' },
-            { task: 'Assess immediate impact and needs', responsible: 'Management', duration: '2 hours', priority: 'high' }
-          ],
-          shortTermActions: [
-            { task: 'Implement alternative business processes', responsible: 'Operations Team', duration: '1 day', priority: 'medium' },
-            { task: 'Coordinate with staff on availability', responsible: 'HR Manager', duration: '4 hours', priority: 'medium' },
-            { task: 'Update stakeholders on status', responsible: 'Management', duration: '2 hours', priority: 'medium' }
-          ],
-          mediumTermActions: [
-            { task: 'Assess damage and recovery needs', responsible: 'Management', duration: '1 week', priority: 'medium' },
-            { task: 'Implement recovery procedures', responsible: 'Operations Team', duration: '2 weeks', priority: 'medium' },
-            { task: 'Document lessons learned', responsible: 'Management', duration: '1 week', priority: 'low' }
-          ],
-          longTermReduction: [
-            'Implement prevention measures specific to this hazard',
-            'Improve monitoring and early warning systems',
-            'Strengthen business resilience and backup procedures',
-            'Regular training and plan updates'
-          ]
-        }
-
-        // Apply business type modifications
-        console.log('🔧 Applying business type modifiers for:', businessType)
-        console.log('🔧 Available modifiers:', Object.keys(businessModifiers))
-        
-        if (businessModifiers.additionalResources) {
-          console.log('🔧 Adding additional resources:', businessModifiers.additionalResources)
-          actionPlan.resourcesNeeded = [...actionPlan.resourcesNeeded, ...businessModifiers.additionalResources]
-        }
-        
-        if (businessModifiers.modifiedActions) {
-          console.log('🔧 Applying modified actions for business type')
-          if (businessModifiers.modifiedActions.immediate) {
-            actionPlan.immediateActions = [...actionPlan.immediateActions, ...businessModifiers.modifiedActions.immediate]
-          }
-          if (businessModifiers.modifiedActions.shortTerm) {
-            actionPlan.shortTermActions = [...actionPlan.shortTermActions, ...businessModifiers.modifiedActions.shortTerm]
-          }
-          if (businessModifiers.modifiedActions.mediumTerm) {
-            actionPlan.mediumTermActions = [...actionPlan.mediumTermActions, ...businessModifiers.modifiedActions.mediumTerm]
-          }
-        }
-        
-        if (businessModifiers.specificConsiderations) {
-          console.log('🔧 Adding specific considerations:', businessModifiers.specificConsiderations)
-          actionPlan.longTermReduction = [...actionPlan.longTermReduction, ...businessModifiers.specificConsiderations]
-        }
-
-        const actionPlanResult = {
-          hazard: hazardName,
-          riskLevel: riskLevel,
-          businessType: businessType,
-          ...actionPlan
-        }
-        
-        console.log('Generated action plan for:', hazardName, actionPlanResult)
-        
-        return actionPlanResult
-      })
-    }
-
-    const smartActionPlans = generateSmartActionPlans()
-    
-    // Debug: Log what data is available
-    console.log('🔍 Smart Action Plan Debug:')
-    console.log('Step Data Keys:', Object.keys(stepData || {}))
-    console.log('Business Overview:', stepData?.BUSINESS_OVERVIEW)
-    console.log('Risk Assessment:', stepData?.RISK_ASSESSMENT)
-    console.log('Generated Plans:', smartActionPlans.length)
-    
-    // Auto-complete the entire ACTION_PLAN step when plans are generated
-    const hasAutoCompletedRef = React.useRef(false)
-    
-    React.useEffect(() => {
-      console.log('🔄 Auto-completion useEffect triggered:', {
-        smartActionPlansLength: smartActionPlans.length,
-        hasAutoCompleted: hasAutoCompletedRef.current,
-        shouldTrigger: smartActionPlans.length > 0 && !hasAutoCompletedRef.current
-      })
-      
-      if (smartActionPlans.length > 0 && !hasAutoCompletedRef.current) {
-        console.log('🚀 Starting auto-completion process...')
-        
-        // Generate smart suggestions for other fields
-        const businessType = getBusinessTypeFromFormData({ BUSINESS_OVERVIEW: stepData?.BUSINESS_OVERVIEW || {} })
-        console.log('🏢 Detected business type for auto-completion:', businessType)
-        
-        // Create implementation priority based on risk levels
-        const priorityOrder = smartActionPlans
-          .sort((a, b) => {
-            const aLevel = a.riskLevel.toLowerCase()
-            const bLevel = b.riskLevel.toLowerCase()
-            if (aLevel.includes('extreme') && !bLevel.includes('extreme')) return -1
-            if (bLevel.includes('extreme') && !aLevel.includes('extreme')) return 1
-            if (aLevel.includes('high') && !bLevel.includes('high')) return -1
-            if (bLevel.includes('high') && !aLevel.includes('high')) return 1
-            return 0
-          })
-          .map(plan => plan.hazard)
-        
-        const implementationPriority = `Start with ${priorityOrder[0]} (highest risk), then ${priorityOrder.slice(1).join(', ')}`
-        console.log('📋 Generated implementation priority:', implementationPriority)
-        
-        // Generate budget estimate based on business type and number of plans
-        const budgetEstimates: Record<string, string> = {
-          'tourism': '$15,000 - $25,000',
-          'retail': '$10,000 - $20,000', 
-          'food_service': '$8,000 - $15,000',
-          'manufacturing': '$20,000 - $40,000',
-          'technology': '$12,000 - $25,000',
-          'general': '$10,000 - $20,000'
-        }
-        
-        const budgetAndResources = `Total budget: ${budgetEstimates[businessType] || budgetEstimates.general} over 6 months, plus 20 hours/week from management team for implementation and training.`
-        console.log('💰 Generated budget and resources:', budgetAndResources)
-        
-        // Generate implementation team based on business type
-        const teamSuggestions: Record<string, string> = {
-          'tourism': 'Project Manager: Operations Manager, Emergency Coordinator: HR Director, Communication Lead: Marketing Manager',
-          'retail': 'Implementation Lead: Store Manager, Operations Coordinator: Assistant Manager, Training Lead: Senior Staff',
-          'food_service': 'Kitchen Manager: Emergency Response Lead, Service Manager: Customer Communication, Owner: Overall Coordination',
-          'manufacturing': 'Plant Manager: Overall Lead, Safety Manager: Emergency Procedures, Production Manager: Operations Continuity',
-          'technology': 'IT Manager: Technical Implementation, Operations Manager: Process Coordination, HR Manager: Staff Training',
-          'general': 'Manager: Overall Lead, Assistant Manager: Daily Operations, Senior Staff: Training Coordination'
-        }
-        
-        const implementationTeam = teamSuggestions[businessType] || teamSuggestions.general
-        console.log('👥 Generated implementation team:', implementationTeam)
-        
-        // Auto-complete all ACTION_PLAN fields
-        const completeActionPlanData = {
-          'Auto-Generated Action Plans': smartActionPlans,
-          'Implementation Priority': implementationPriority,
-          'Budget and Resources': budgetAndResources,
-          'Implementation Team': implementationTeam
-        }
-        
-        console.log('📦 Complete action plan data to be saved:', completeActionPlanData)
-        console.log('📊 Data validation:', {
-          hasActionPlans: Array.isArray(completeActionPlanData['Auto-Generated Action Plans']),
-          actionPlansLength: completeActionPlanData['Auto-Generated Action Plans'].length,
-          hasPriority: !!completeActionPlanData['Implementation Priority'],
-          hasBudget: !!completeActionPlanData['Budget and Resources'],
-          hasTeam: !!completeActionPlanData['Implementation Team']
-        })
-        
-        // Save the complete data
-        console.log('💾 Calling onComplete with complete data...')
-        onComplete(completeActionPlanData)
-        
-        // Mark as user interacted
-        if (setUserInteracted) {
-          console.log('👤 Marking as user interacted...')
-          setUserInteracted()
-        }
-        
-        console.log('✅ Smart Action Plan Auto-Completed Successfully!')
-        console.log('📋 Generated Plans:', smartActionPlans.length)
-        console.log('🏢 Business Type:', businessType)
-        console.log('💰 Budget:', budgetAndResources)
-        console.log('👥 Team:', implementationTeam)
-        console.log('🎯 All fields populated:', {
-          'Auto-Generated Action Plans': '✅',
-          'Implementation Priority': '✅',
-          'Budget and Resources': '✅',
-          'Implementation Team': '✅'
-        })
-        
-        hasAutoCompletedRef.current = true
-        console.log('🔒 Auto-completion marked as completed, preventing re-execution')
-      } else {
-        console.log('⏸️ Auto-completion skipped:', {
-          reason: smartActionPlans.length === 0 ? 'No action plans generated' : 'Already auto-completed'
-        })
-      }
-    }, [smartActionPlans.length, onComplete, setUserInteracted, stepData])
-    
-    if (smartActionPlans.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <div className="text-gray-500 mb-4">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No High-Priority Risks Found</h3>
-          <p className="text-gray-600">
-            Complete your risk assessment first to generate customized action plans. 
-            The smart action plan requires risks with "High" or "Extreme" risk levels to generate action plans.
-          </p>
-          {process.env.NODE_ENV === 'development' && (
-            <div className="mt-4 p-4 bg-gray-100 rounded text-left text-sm">
-              <p className="font-semibold">Debug Info:</p>
-              <p>Step Data Keys: {Object.keys(stepData || {}).join(', ')}</p>
-              <p>Risk Assessment Data: {JSON.stringify(stepData?.RISK_ASSESSMENT, null, 2)}</p>
-              <p>Business Overview Data: {JSON.stringify(stepData?.BUSINESS_OVERVIEW, null, 2)}</p>
-              <p>Auto-completion Status: {hasAutoCompletedRef.current ? 'Completed' : 'Not triggered'}</p>
-              <p>Smart Action Plans Length: {smartActionPlans.length}</p>
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-green-900 mb-2">✅ Smart Action Plans Generated & Auto-Completed</h3>
-              <p className="text-green-800 text-sm">
-                Based on your business type and high-priority risks, we've created {smartActionPlans.length} customized action plan(s) 
-                and automatically filled in all required fields. The step is now 100% complete!
-              </p>
-              <p className="text-green-700 text-sm mt-2 font-medium">
-                All fields have been automatically completed based on your risk assessment data.
-              </p>
-              {process.env.NODE_ENV === 'development' && (
-                <p className="text-green-600 text-xs mt-2">
-                  Auto-completion triggered at: {new Date().toLocaleTimeString()}
-                </p>
-              )}
-            </div>
-            <div className="text-green-600">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {smartActionPlans.map((plan: any, index: number) => (
-          <div key={index} className="border border-gray-200 rounded-lg p-6 bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-xl font-bold text-gray-900">{plan.hazard}</h4>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                plan.riskLevel.toLowerCase().includes('extreme') 
-                  ? 'bg-black text-white'
-                  : 'bg-red-100 text-red-800'
-              }`}>
-                {plan.riskLevel} Risk
-              </span>
-            </div>
-
-            {plan.businessType && plan.businessType !== 'general' && (
-              <div className="mb-4">
-                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                  📊 Optimized for {plan.businessType.replace('_', ' ')} business
-                </span>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Resources */}
-              <div>
-                <h5 className="font-semibold text-gray-900 mb-3">📋 Resources Needed:</h5>
-                <ul className="space-y-2">
-                  {plan.resourcesNeeded?.slice(0, 5).map((resource: string, idx: number) => (
-                    <li key={idx} className="text-sm text-gray-700 flex items-start">
-                      <span className="text-gray-400 mr-2">•</span>
-                      {resource}
-                    </li>
-                  ))}
-                  {plan.resourcesNeeded?.length > 5 && (
-                    <li className="text-sm text-gray-500 italic">
-                      + {plan.resourcesNeeded.length - 5} more resources
-                    </li>
-                  )}
-                </ul>
-              </div>
-
-              {/* Immediate Actions */}
-              <div>
-                <h5 className="font-semibold text-gray-900 mb-3">🚨 Immediate Actions (0-24h):</h5>
-                <ul className="space-y-2">
-                  {plan.immediateActions?.slice(0, 3).map((action: any, idx: number) => (
-                    <li key={idx} className="text-sm">
-                      <div className="font-medium text-gray-900">{action.task}</div>
-                      <div className="text-gray-600 text-xs">
-                        {action.responsible} • {action.duration}
-                      </div>
-                    </li>
-                  ))}
-                  {plan.immediateActions?.length > 3 && (
-                    <li className="text-sm text-gray-500 italic">
-                      + {plan.immediateActions.length - 3} more actions
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t">
-              <h5 className="font-semibold text-gray-900 mb-2">📝 Additional Actions Available:</h5>
-              <div className="text-sm text-gray-600">
-                • {plan.shortTermActions?.length || 0} short-term actions (1-7 days)
-                • {plan.mediumTermActions?.length || 0} medium-term actions (1-4 weeks)  
-                • {plan.longTermReduction?.length || 0} long-term prevention measures
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Auto-Completed Implementation Details */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h4 className="font-medium text-blue-900 mb-4">📋 Auto-Completed Implementation Details</h4>
-          
-          <div className="space-y-4">
-            {/* Implementation Priority */}
-            <div>
-              <h5 className="font-semibold text-blue-900 mb-2">🎯 Implementation Priority</h5>
-              <div className="bg-white p-3 rounded border text-sm">
-                {smartActionPlans.length > 0 && (() => {
-                  const priorityOrder = smartActionPlans
-                    .sort((a, b) => {
-                      const aLevel = a.riskLevel.toLowerCase()
-                      const bLevel = b.riskLevel.toLowerCase()
-                      if (aLevel.includes('extreme') && !bLevel.includes('extreme')) return -1
-                      if (bLevel.includes('extreme') && !aLevel.includes('extreme')) return 1
-                      if (aLevel.includes('high') && !bLevel.includes('high')) return -1
-                      if (bLevel.includes('high') && !aLevel.includes('high')) return 1
-                      return 0
-                    })
-                    .map(plan => plan.hazard)
-                  return `Start with ${priorityOrder[0]} (highest risk), then ${priorityOrder.slice(1).join(', ')}`
-                })()}
-              </div>
-            </div>
-
-            {/* Budget and Resources */}
-            <div>
-              <h5 className="font-semibold text-blue-900 mb-2">💰 Budget and Resources</h5>
-              <div className="bg-white p-3 rounded border text-sm">
-                {smartActionPlans.length > 0 && (() => {
-                  const businessType = smartActionPlans[0]?.businessType || 'general'
-                  const budgetEstimates: Record<string, string> = {
-                    'tourism': '$15,000 - $25,000',
-                    'retail': '$10,000 - $20,000', 
-                    'food_service': '$8,000 - $15,000',
-                    'manufacturing': '$20,000 - $40,000',
-                    'technology': '$12,000 - $25,000',
-                    'general': '$10,000 - $20,000'
-                  }
-                  return `Total budget: ${budgetEstimates[businessType] || budgetEstimates.general} over 6 months, plus 20 hours/week from management team for implementation and training.`
-                })()}
-              </div>
-            </div>
-
-            {/* Implementation Team */}
-            <div>
-              <h5 className="font-semibold text-blue-900 mb-2">👥 Implementation Team</h5>
-              <div className="bg-white p-3 rounded border text-sm">
-                {smartActionPlans.length > 0 && (() => {
-                  const businessType = smartActionPlans[0]?.businessType || 'general'
-                  const teamSuggestions: Record<string, string> = {
-                    'tourism': 'Project Manager: Operations Manager, Emergency Coordinator: HR Director, Communication Lead: Marketing Manager',
-                    'retail': 'Implementation Lead: Store Manager, Operations Coordinator: Assistant Manager, Training Lead: Senior Staff',
-                    'food_service': 'Kitchen Manager: Emergency Response Lead, Service Manager: Customer Communication, Owner: Overall Coordination',
-                    'manufacturing': 'Plant Manager: Overall Lead, Safety Manager: Emergency Procedures, Production Manager: Operations Continuity',
-                    'technology': 'IT Manager: Technical Implementation, Operations Manager: Process Coordination, HR Manager: Staff Training',
-                    'general': 'Manager: Overall Lead, Assistant Manager: Daily Operations, Senior Staff: Training Coordination'
-                  }
-                  return teamSuggestions[businessType] || teamSuggestions.general
-                })()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+  if (type === 'special_strategy_cards') {
+    return renderStrategyCards()
   }
 
   if (type === 'special_risk_matrix') {
@@ -1343,11 +971,16 @@ export function StructuredInput({
       )}
 
       {(type === 'table' && tableRows.length > 0) && (
-        <div className="text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-200 flex items-center space-x-2">
+        <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg border border-blue-200 flex items-center space-x-2">
           <svg className="h-4 w-4" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-            <path d="M5 13l4 4L19 7" />
+            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>{tableRows.length} row(s) added</span>
+          <span>
+            {tableRows.length === 1 && !hasUserInteracted 
+              ? "Ready to enter data - start typing in the fields above" 
+              : `${tableRows.length} row(s) added`
+            }
+          </span>
         </div>
       )}
     </div>
