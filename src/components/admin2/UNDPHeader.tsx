@@ -14,9 +14,9 @@ export function UNDPHeader() {
             <Image 
               src="/undp-logo.png" 
               alt="UNDP Logo" 
-              width={80} 
-              height={30}
-              className="h-8 w-auto"
+              width={120} 
+              height={45}
+              className="h-12 w-auto"
             />
             <div className="border-l border-blue-400 pl-4">
               <h1 className="text-lg font-medium">

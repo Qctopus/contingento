@@ -147,6 +147,32 @@ export function LocationRisksTab() {
     </button>
   )
 
+  const RiskIndicator = ({ level }: { level: number }) => {
+    const getRiskColor = (level: number) => {
+      if (level >= 8) return 'bg-red-500'
+      if (level >= 6) return 'bg-orange-500'
+      if (level >= 4) return 'bg-yellow-500'
+      if (level >= 2) return 'bg-blue-500'
+      return 'bg-gray-300'
+    }
+
+    const getRiskText = (level: number) => {
+      if (level >= 8) return 'Critical'
+      if (level >= 6) return 'High'
+      if (level >= 4) return 'Medium'
+      if (level >= 2) return 'Low'
+      return 'None'
+    }
+
+    return (
+      <div className="flex items-center space-x-2">
+        <div className={`w-3 h-3 rounded-full ${getRiskColor(level)}`}></div>
+        <span className="text-sm font-medium text-gray-900">{level}</span>
+        <span className="text-xs text-gray-500">{getRiskText(level)}</span>
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -159,37 +185,20 @@ export function LocationRisksTab() {
   }
 
   return (
-          <div>
+    <div>
       {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
-            <h1 className="text-xl font-semibold text-gray-900">Parish Risk Management</h1>
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span className="flex items-center">
-                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                High: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) >= 8).length : 0}
-              </span>
-              <span className="flex items-center">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                Medium: {Array.isArray(parishes) ? parishes.filter(p => {
-                  const risk = getMaxRiskLevel(p.riskProfile)
-                  return risk >= 5 && risk < 8
-                }).length : 0}
-              </span>
-              <span className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                Low: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) < 5).length : 0}
-              </span>
-              <span className="text-gray-500">
-                {parishes.length} total • {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0} coastal
-              </span>
-            </div>
+            <h1 className="text-lg font-semibold text-gray-900">Administrative Units</h1>
+            <span className="text-sm text-gray-600">
+              {parishes.length} parishes • {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0} coastal
+            </span>
           </div>
           
           <div className="flex items-center space-x-3">
             <nav className="flex border border-gray-300 rounded-md">
-              <ViewModeButton mode="overview" label="Overview" />
+              <ViewModeButton mode="overview" label="List" />
               <ViewModeButton mode="matrix" label="Matrix" />
               {selectedParish && (
                 <ViewModeButton mode="editor" label="Edit" />
@@ -198,13 +207,13 @@ export function LocationRisksTab() {
             <div className="flex space-x-2">
               <button
                 onClick={handleExportParishes}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
               >
                 Export
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700"
               >
                 Import
               </button>
@@ -216,13 +225,90 @@ export function LocationRisksTab() {
       {/* Content */}
       <div>
         {viewMode === 'overview' && (
-          <ParishOverview
-            parishes={parishes}
-            onParishSelect={(parish: Parish) => {
-              setSelectedParish(parish)
-              setViewMode('editor')
-            }}
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parish</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Population</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hurricane</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flood</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earthquake</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drought</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Landslide</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Power</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {parishes.map((parish) => {
+                  const maxRisk = getMaxRiskLevel(parish.riskProfile)
+                  return (
+                    <tr key={parish.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="font-medium text-gray-900">{parish.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {parish.region}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex space-x-1">
+                          {parish.isCoastal && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              Coastal
+                            </span>
+                          )}
+                          {parish.isUrban && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                              Urban
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {parish.population?.toLocaleString() || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.hurricane?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.flood?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.earthquake?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.drought?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.landslide?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={parish.riskProfile.powerOutage?.level || 0} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <RiskIndicator level={maxRisk} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => {
+                            setSelectedParish(parish)
+                            setViewMode('editor')
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
         
         {viewMode === 'matrix' && (

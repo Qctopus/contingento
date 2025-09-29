@@ -583,7 +583,9 @@ export function RiskCalculatorTab() {
       {/* No Selection State */}
       {(!selectedParish || !selectedBusinessType) && (
         <div className="text-center py-12 text-gray-500">
-          <span className="text-4xl mb-4 block">🧮</span>
+          <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-gray-400 rounded"></div>
+          </div>
           <h3 className="text-lg font-medium mb-2">Ready to Calculate Risk</h3>
           <p>Select both a parish location and business type above to see the combined risk assessment</p>
         </div>
