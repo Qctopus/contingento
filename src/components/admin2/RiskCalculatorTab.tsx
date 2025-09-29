@@ -367,7 +367,7 @@ export function RiskCalculatorTab() {
                         <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900 capitalize">
-                            {risk.riskType.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                            {riskLabels[risk.riskType as keyof typeof riskLabels] || risk.riskType.replace(/([A-Z])/g, ' $1').toLowerCase()}
                           </h4>
                           <p className="text-sm text-gray-600">{risk.reasoning}</p>
                         </div>

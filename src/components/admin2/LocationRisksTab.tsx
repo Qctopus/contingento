@@ -137,10 +137,10 @@ export function LocationRisksTab() {
   const ViewModeButton = ({ mode, label }: { mode: ViewMode; label: string }) => (
     <button
       onClick={() => setViewMode(mode)}
-      className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
+      className={`px-4 py-2 text-sm font-medium transition-colors first:rounded-l-md last:rounded-r-md border-r border-gray-300 last:border-r-0 ${
         viewMode === mode
-          ? 'border-blue-600 text-blue-600'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ? 'bg-blue-600 text-white'
+          : 'bg-white text-gray-700 hover:bg-gray-50'
       }`}
     >
       {label}
@@ -159,77 +159,62 @@ export function LocationRisksTab() {
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-light text-gray-900 tracking-tight">
-              Jamaica Parish Risk Assessment
-            </h2>
-            <p className="text-gray-600 mt-2 text-lg font-light">
-              Manage environmental risk levels across all 14 Jamaica parishes
-            </p>
+      {/* Toolbar */}
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-6">
+            <h1 className="text-xl font-semibold text-gray-900">Parish Risk Management</h1>
+            <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <span className="flex items-center">
+                <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                High: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) >= 8).length : 0}
+              </span>
+              <span className="flex items-center">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                Medium: {Array.isArray(parishes) ? parishes.filter(p => {
+                  const risk = getMaxRiskLevel(p.riskProfile)
+                  return risk >= 5 && risk < 8
+                }).length : 0}
+              </span>
+              <span className="flex items-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                Low: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) < 5).length : 0}
+              </span>
+              <span className="text-gray-500">
+                {parishes.length} total • {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0} coastal
+              </span>
+            </div>
           </div>
           
-          {/* Action Buttons */}
           <div className="flex items-center space-x-3">
-            {/* Bulk Operations */}
+            <nav className="flex border border-gray-300 rounded-md">
+              <ViewModeButton mode="overview" label="Overview" />
+              <ViewModeButton mode="matrix" label="Matrix" />
+              {selectedParish && (
+                <ViewModeButton mode="editor" label="Edit" />
+              )}
+            </nav>
+            <div className="flex space-x-2">
               <button
                 onClick={handleExportParishes}
-              className="admin-btn-outline"
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
               >
-              Download Data
+                Export
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-              className="admin-btn-primary"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
               >
-              Upload Data
-            </button>
-          </div>
-        </div>
-            
-        {/* View Mode Selector */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <ViewModeButton mode="overview" label="Parish Overview" />
-            <ViewModeButton mode="matrix" label="Risk Matrix" />
-            {selectedParish && (
-              <ViewModeButton mode="editor" label="Edit Parish" />
-            )}
-          </nav>
-        </div>
-      </div>
-      
-      {/* Statistics Overview */}
-      <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
-              <span className="text-gray-700">High Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) >= 8).length : 0}</span>
+                Import
+              </button>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
-              <span className="text-gray-700">Medium Risk: {Array.isArray(parishes) ? parishes.filter(p => {
-                const risk = getMaxRiskLevel(p.riskProfile)
-                return risk >= 5 && risk < 8
-              }).length : 0}</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-              <span className="text-gray-700">Low Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) < 5).length : 0}</span>
-            </div>
-          </div>
-          <div className="text-gray-600">
-            Total: {parishes.length} parishes • Coastal: {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="p-8">
+      <div>
         {viewMode === 'overview' && (
           <ParishOverview
             parishes={parishes}
