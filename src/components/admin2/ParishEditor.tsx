@@ -112,73 +112,73 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
     { 
       key: 'hurricane', 
       name: 'Hurricane/Tropical Storm', 
-      icon: '🌀',
+      color: 'bg-red-500',
       description: 'Tropical cyclones with strong winds and heavy rainfall'
     },
     { 
       key: 'flood', 
       name: 'Flooding', 
-      icon: '🌊',
+      color: 'bg-blue-500',
       description: 'Water overflow from rivers, rainfall, or storm surge'
     },
     { 
       key: 'earthquake', 
       name: 'Earthquake', 
-      icon: '🏔️',
+      color: 'bg-yellow-600',
       description: 'Seismic activity and ground shaking'
     },
     { 
       key: 'drought', 
       name: 'Drought', 
-      icon: '🌵',
+      color: 'bg-orange-500',
       description: 'Extended periods of water scarcity'
     },
     { 
       key: 'landslide', 
       name: 'Landslide/Rockfall', 
-      icon: '⛰️',
+      color: 'bg-gray-600',
       description: 'Slope failure and mass movement'
     },
     { 
       key: 'powerOutage', 
       name: 'Power Outage', 
-      icon: '⚡',
+      color: 'bg-purple-500',
       description: 'Electrical grid failures and disruptions'
     },
     { 
       key: 'cyberAttack', 
       name: 'Cyber Attack', 
-      icon: '💻',
+      color: 'bg-indigo-500',
       description: 'Digital security threats and data breaches'
     },
     { 
       key: 'terrorism', 
       name: 'Terrorism/Security Threat', 
-      icon: '🔒',
+      color: 'bg-red-700',
       description: 'Security threats and terrorist activities'
     },
     { 
       key: 'pandemicDisease', 
       name: 'Pandemic/Disease Outbreak', 
-      icon: '🦠',
+      color: 'bg-green-500',
       description: 'Public health emergencies and disease outbreaks'
     },
     { 
       key: 'economicDownturn', 
       name: 'Economic Downturn', 
-      icon: '📉',
+      color: 'bg-red-600',
       description: 'Economic recession or financial market collapse'
     },
     { 
       key: 'supplyChainDisruption', 
       name: 'Supply Chain Disruption', 
-      icon: '🚛',
+      color: 'bg-blue-600',
       description: 'Interruption of goods and services supply'
     },
     { 
       key: 'civilUnrest', 
       name: 'Civil Unrest', 
-      icon: '⚡',
+      color: 'bg-orange-600',
       description: 'Social disorder and public disturbances'
     }
   ]
@@ -383,70 +383,72 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white">
       {/* Header */}
-      <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center space-x-2">
-              <span>📍</span>
-              <span>{editedParish.name} Parish</span>
-            </h2>
-            <p className="text-gray-600 mt-1">
-              {editedParish.region} • Population: {editedParish.population.toLocaleString()}
-            </p>
-            <div className="mt-2">
-              <AutoSaveIndicator autoSaveStatus={autoSaveStatus} className="text-sm" />
+          <div className="flex items-center space-x-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {editedParish.name} Parish
+              </h2>
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
+                <span>{editedParish.region} Region</span>
+                <span>•</span>
+                <span>{editedParish.population.toLocaleString()} residents</span>
+                {editedParish.isCoastal && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                      Coastal
+                    </span>
+                  </>
+                )}
+                {editedParish.isUrban && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      Urban
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
+            <AutoSaveIndicator autoSaveStatus={autoSaveStatus} className="text-sm" />
           </div>
           
           <div className="flex items-center space-x-3">
+            <span className="text-xs text-gray-500">
+              Updated: {new Date(editedParish.riskProfile.lastUpdated).toLocaleDateString()}
+            </span>
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
             >
-              Close
+              ← Back to List
             </button>
           </div>
-        </div>
-        
-        {/* Parish Characteristics */}
-        <div className="flex items-center space-x-4 mt-3">
-          {editedParish.isCoastal && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              🌊 Coastal Parish
-            </span>
-          )}
-          {editedParish.isUrban && (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-              🏙️ Urban Center
-            </span>
-          )}
-          <span className="text-xs text-gray-500">
-            Last updated: {new Date(editedParish.riskProfile.lastUpdated).toLocaleDateString()}
-          </span>
         </div>
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
-        <nav className="flex">
+      <div className="border-b border-gray-200 px-6">
+        <nav className="flex space-x-8">
           {[
-            { key: 'overview', label: 'Overview', icon: '📊' },
-            { key: 'risks', label: 'Risk Assessment', icon: '⚠️' },
-            { key: 'history', label: 'Change History', icon: '📝' }
+            { key: 'overview', label: 'Overview' },
+            { key: 'risks', label: 'Risk Assessment' },
+            { key: 'history', label: 'Change History' }
           ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`flex items-center space-x-2 px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
+              {tab.label}
             </button>
           ))}
         </nav>
@@ -465,8 +467,8 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
                     key={risk.key}
                     className={`p-4 rounded-lg border-2 ${getRiskColor(riskData.level)}`}
                   >
-                    <div className="flex items-center space-x-2 mb-2">
-                      <span className="text-xl">{risk.icon}</span>
+                    <div className="flex items-center space-x-3 mb-2">
+                      <div className={`w-4 h-4 rounded ${risk.color}`}></div>
                       <span className="font-medium">{risk.name}</span>
                     </div>
                     <div className="text-2xl font-bold mb-1">
@@ -541,7 +543,7 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{risk.icon}</span>
+                          <div className={`w-5 h-5 rounded-full ${risk.color} flex-shrink-0`}></div>
                           <div>
                             <h4 className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
                               {risk.name}

@@ -185,7 +185,7 @@ export function LocationRisksTab() {
   }
 
   return (
-    <div>
+          <div>
       {/* Toolbar */}
       <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
         <div className="flex items-center justify-between">
@@ -240,7 +240,6 @@ export function LocationRisksTab() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Landslide</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Power</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -249,7 +248,18 @@ export function LocationRisksTab() {
                   return (
                     <tr key={parish.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{parish.name}</div>
+                        <div className="flex items-center space-x-3">
+                          <div className="font-medium text-gray-900">{parish.name}</div>
+                          <button
+                            onClick={() => {
+              setSelectedParish(parish)
+              setViewMode('editor')
+            }}
+                            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {parish.region}
@@ -291,17 +301,6 @@ export function LocationRisksTab() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <RiskIndicator level={maxRisk} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => {
-                            setSelectedParish(parish)
-                            setViewMode('editor')
-                          }}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          Edit
-                        </button>
                       </td>
                     </tr>
                   )
