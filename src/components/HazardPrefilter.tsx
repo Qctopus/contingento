@@ -20,6 +20,7 @@ interface HazardPrefilterProps {
     businessPurpose?: string
     productsServices?: string
   }
+  preFillData?: any // Add preFillData prop
   initialSelection?: string[]
 }
 
@@ -30,6 +31,45 @@ interface HazardInfo {
   reason: string
   locationBased: boolean
   industryBased: boolean
+  isSeasonallyActive?: boolean
+  cascadingRisks?: string[]
+  warningTime?: string
+  geographicScope?: string
+}
+
+interface SmartRecommendation {
+  risks: Array<{
+    hazardId: string
+    hazardName: string
+    baseRiskLevel: string
+    locationModifier: string
+    finalRiskLevel: string
+    reasoning: string
+    isSeasonallyActive: boolean
+    cascadingRisks: string[]
+    warningTime?: string
+    geographicScope?: string
+  }>
+  strategies: Array<{
+    strategyId: string
+    title: string
+    category: string
+    hazards: string[]
+    priority: string
+    effectiveness: number
+  }>
+  businessContext: {
+    vulnerabilities: any
+    criticalDependencies: string[]
+    typicalImpacts: string[]
+  }
+  metadata?: {
+    locationFound: boolean
+    nearCoast: boolean
+    urbanArea: boolean
+    currentMonth: number
+    businessTypeName: string
+  }
 }
 
 export function HazardPrefilter({
@@ -37,6 +77,7 @@ export function HazardPrefilter({
   onComplete,
   locationData,
   businessData,
+  preFillData,
   initialSelection = []
 }: HazardPrefilterProps) {
   const [prioritizedHazards, setPrioritizedHazards] = useState<string[]>(initialSelection)
@@ -48,6 +89,12 @@ export function HazardPrefilter({
     medium: false,
     low: false
   })
+  
+  // New state for smart recommendations
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [smartRecommendations, setSmartRecommendations] = useState<SmartRecommendation | null>(null)
+  const [usingFallback, setUsingFallback] = useState(false)
   
   const t = useTranslations('common')
   const tSteps = useTranslations('steps.riskAssessment')
@@ -67,8 +114,29 @@ export function HazardPrefilter({
     }
   }
 
-  // Get contextual risk information
+  // Get contextual risk information - enhanced with API data
   const getContextualInfo = (hazardId: string): string => {
+    // First try to get info from smart recommendations
+    if (smartRecommendations) {
+      const risk = smartRecommendations.risks.find(r => r.hazardId === hazardId)
+      if (risk) {
+        let info = risk.reasoning
+        
+        // Add seasonal information
+        if (risk.isSeasonallyActive) {
+          info += '. Currently in peak season'
+        }
+        
+        // Add warning time
+        if (risk.warningTime) {
+          info += `. Warning time: ${risk.warningTime}`
+        }
+        
+        return info
+      }
+    }
+    
+    // Fallback to original contextual logic
     const location = locationData?.parish || locationData?.country || 'your area'
     const businessType = businessData?.industryType || 'your business'
     
@@ -92,85 +160,182 @@ export function HazardPrefilter({
     return contextualMessages[hazardId] || `This risk may impact ${business} operations in ${location}.`
   }
 
-  // Analyze and prioritize hazards based on context
+  // Fetch smart recommendations from API
+  useEffect(() => {
+    const fetchSmartRecommendations = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        
+        // Get businessTypeId from preFillData or fallback to businessData
+        const businessTypeId = preFillData?.industry?.id || businessData?.industryType
+        
+        // Get location data from preFillData or fallback to locationData
+        const location = preFillData?.location || locationData
+        
+        if (!businessTypeId || !location?.countryCode) {
+          console.warn('Missing businessTypeId or countryCode, falling back to hardcoded analysis')
+          setUsingFallback(true)
+          setLoading(false)
+          return
+        }
+        
+        const requestBody = {
+          businessTypeId,
+          countryCode: location.countryCode,
+          parish: location.parish || null,
+          nearCoast: location.nearCoast || false,
+          urbanArea: location.urbanArea || false
+        }
+        
+        console.log('Fetching smart recommendations with:', requestBody)
+        
+        const response = await fetch('/api/wizard/get-smart-recommendations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        })
+        
+        if (!response.ok) {
+          throw new Error(`API request failed: ${response.status}`)
+        }
+        
+        const recommendations: SmartRecommendation = await response.json()
+        console.log('Smart recommendations received:', recommendations)
+        
+        setSmartRecommendations(recommendations)
+        setUsingFallback(false)
+        
+      } catch (error) {
+        console.error('Error fetching smart recommendations:', error)
+        setError('Failed to load smart recommendations')
+        setUsingFallback(true)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchSmartRecommendations()
+  }, [preFillData, businessData, locationData])
+
+  // Analyze and prioritize hazards based on smart recommendations or fallback to original logic
   useEffect(() => {
     const analyzeHazards = () => {
-      const hazardAnalysis: HazardInfo[] = []
+      let hazardAnalysis: HazardInfo[] = []
       
-      // Debug logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('HazardPrefilter - Analyzing hazards with context:', {
-          locationData,
-          businessData,
-          selectedHazards
-        })
-      }
-      
-      // Get location-based risk data
-      let locationRisks: any[] = []
-      if (locationData?.countryCode) {
-        locationRisks = calculateLocationRisk(
-          locationData.countryCode,
-          locationData.parish,
-          locationData.nearCoast,
-          locationData.urbanArea
+      if (smartRecommendations && !usingFallback) {
+        // Use smart recommendations from API
+        console.log('Using smart recommendations for hazard analysis')
+        
+        // Filter risks to only include selected hazards
+        const relevantRisks = smartRecommendations.risks.filter(risk => 
+          selectedHazards.includes(risk.hazardId)
         )
-      }
-      
-      // Get industry-based risk data
-      let industryRisks: string[] = []
-      if (businessData?.industryType) {
-        const industryProfile = industryProfiles.find(p => p.id === businessData.industryType)
-        if (industryProfile) {
-          industryRisks = industryProfile.commonHazards
-        }
+        
+        hazardAnalysis = relevantRisks.map(risk => {
+          // Map API risk levels to our priority system
+          let priority: 'high' | 'medium' | 'low' = 'low'
+          if (risk.finalRiskLevel === 'very_high' || risk.finalRiskLevel === 'high') {
+            priority = 'high'
+          } else if (risk.finalRiskLevel === 'medium') {
+            priority = 'medium'
+          }
+          
+          return {
+            id: risk.hazardId,
+            name: risk.hazardName,
+            priority,
+            reason: risk.reasoning,
+            locationBased: risk.locationModifier !== 'none',
+            industryBased: true, // Assume true since it came from business type mapping
+            isSeasonallyActive: risk.isSeasonallyActive,
+            cascadingRisks: risk.cascadingRisks,
+            warningTime: risk.warningTime,
+            geographicScope: risk.geographicScope
+          }
+        })
+        
+      } else {
+        // Fallback to original hardcoded logic
+        console.log('Using fallback hazard analysis')
         
         // Debug logging
         if (process.env.NODE_ENV === 'development') {
-          console.log('Industry profile found:', industryProfile)
-          console.log('Industry risks:', industryRisks)
-        }
-      }
-      
-      // Analyze each selected hazard
-      selectedHazards.forEach(hazardId => {
-        const hazardName = getHazardLabel(hazardId)
-        
-        // Check if hazard is location-based
-        const locationMatch = locationRisks.find(lr => lr.hazardId === hazardId)
-        const isLocationBased = !!locationMatch
-        
-        // Check if hazard is industry-based
-        const isIndustryBased = industryRisks.includes(hazardId)
-        
-        // Determine priority
-        let priority: 'high' | 'medium' | 'low' = 'low'
-        let reason = ''
-        
-        if (isLocationBased && isIndustryBased) {
-          priority = 'high'
-          reason = `High priority: Common for ${businessData?.industryType || 'your business'} in ${locationData?.parish || locationData?.country}`
-        } else if (isLocationBased) {
-          const riskLevel = locationMatch?.riskLevel || 'medium'
-          priority = riskLevel === 'high' || riskLevel === 'very_high' ? 'high' : 'medium'
-          reason = `Location-based: ${riskLevel} risk in ${locationData?.parish || locationData?.country}`
-        } else if (isIndustryBased) {
-          priority = 'medium'
-          reason = `Industry-based: Common for ${businessData?.industryType || 'your business type'}`
-        } else {
-          priority = 'low'
-          reason = 'General risk to consider'
+          console.log('HazardPrefilter - Analyzing hazards with context:', {
+            locationData,
+            businessData,
+            selectedHazards
+          })
         }
         
-        hazardAnalysis.push({
-          id: hazardId,
-          name: hazardName,
-          priority,
-          reason,
-          locationBased: isLocationBased,
-          industryBased: isIndustryBased
+        // Get location-based risk data
+        let locationRisks: any[] = []
+        if (locationData?.countryCode) {
+          locationRisks = calculateLocationRisk(
+            locationData.countryCode,
+            locationData.parish,
+            locationData.nearCoast,
+            locationData.urbanArea
+          )
+        }
+        
+                 // Get industry-based risk data
+         let industryRisks: string[] = []
+         if (businessData?.industryType) {
+           const industryProfile = industryProfiles.find(p => p.id === businessData.industryType)
+           if (industryProfile) {
+             industryRisks = industryProfile.vulnerabilities.map(v => v.hazardId)
+           }
+           
+           // Debug logging
+           if (process.env.NODE_ENV === 'development') {
+             console.log('Industry profile found:', industryProfile)
+             console.log('Industry risks:', industryRisks)
+           }
+         }
+        
+        // Analyze each selected hazard
+        selectedHazards.forEach(hazardId => {
+          const hazardName = getHazardLabel(hazardId)
+          
+          // Check if hazard is location-based
+          const locationMatch = locationRisks.find(lr => lr.hazardId === hazardId)
+          const isLocationBased = !!locationMatch
+          
+          // Check if hazard is industry-based
+          const isIndustryBased = industryRisks.includes(hazardId)
+          
+          // Determine priority
+          let priority: 'high' | 'medium' | 'low' = 'low'
+          let reason = ''
+          
+          if (isLocationBased && isIndustryBased) {
+            priority = 'high'
+            reason = `High priority: Common for ${businessData?.industryType || 'your business'} in ${locationData?.parish || locationData?.country}`
+          } else if (isLocationBased) {
+            const riskLevel = locationMatch?.riskLevel || 'medium'
+            priority = riskLevel === 'high' || riskLevel === 'very_high' ? 'high' : 'medium'
+            reason = `Location-based: ${riskLevel} risk in ${locationData?.parish || locationData?.country}`
+          } else if (isIndustryBased) {
+            priority = 'medium'
+            reason = `Industry-based: Common for ${businessData?.industryType || 'your business type'}`
+          } else {
+            priority = 'low'
+            reason = 'General risk to consider'
+          }
+          
+          hazardAnalysis.push({
+            id: hazardId,
+            name: hazardName,
+            priority,
+            reason,
+            locationBased: isLocationBased,
+            industryBased: isIndustryBased
+          })
         })
-      })
+      }
       
       // Sort by priority
       hazardAnalysis.sort((a, b) => {
@@ -189,8 +354,10 @@ export function HazardPrefilter({
       }
     }
     
-    analyzeHazards()
-  }, [selectedHazards, locationData, businessData, initialSelection])
+    if (!loading) {
+      analyzeHazards()
+    }
+  }, [selectedHazards, locationData, businessData, smartRecommendations, usingFallback, loading, initialSelection])
 
   const handleHazardToggle = (hazardId: string) => {
     setPrioritizedHazards(prev => 
@@ -241,12 +408,24 @@ export function HazardPrefilter({
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center">
           <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <span className="text-2xl">🎯</span>
+            <span className="text-2xl">{smartRecommendations && !usingFallback ? '🤖' : '🎯'}</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Smart Risk Analysis</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {smartRecommendations && !usingFallback ? 'AI-Powered Risk Analysis' : 'Smart Risk Analysis'}
+          </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            We've analyzed your business context to prioritize the most relevant risks for your assessment.
+            {smartRecommendations && !usingFallback 
+              ? 'Our AI has analyzed your business context using admin-configured data to provide personalized risk recommendations.'
+              : 'We\'ve analyzed your business context to prioritize the most relevant risks for your assessment.'
+            }
           </p>
+          {usingFallback && (
+            <div className="mt-3 max-w-lg mx-auto p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm">
+                <span className="font-medium">⚠️ Limited Smart Features:</span> Using standard analysis due to missing data or configuration.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Business Context Cards */}
@@ -308,11 +487,45 @@ export function HazardPrefilter({
               <div className="text-xs text-yellow-600 mt-1">Worth considering</div>
             </div>
             <div className="bg-white bg-opacity-60 rounded-lg p-4">
-              <div className="text-2xl font-bold text-blue-600">✓</div>
-              <div className="text-sm text-blue-800 font-medium">AI-Powered</div>
-              <div className="text-xs text-blue-600 mt-1">Customized analysis</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {smartRecommendations && !usingFallback ? '🤖' : '✓'}
+              </div>
+              <div className="text-sm text-blue-800 font-medium">
+                {smartRecommendations && !usingFallback ? 'AI-Powered' : 'Smart Analysis'}
+              </div>
+              <div className="text-xs text-blue-600 mt-1">
+                {smartRecommendations && !usingFallback ? 'Admin-configured' : 'Customized analysis'}
+              </div>
             </div>
           </div>
+          
+          {/* Smart recommendations insights */}
+          {smartRecommendations && !usingFallback && (
+            <div className="mt-4 pt-4 border-t border-blue-200">
+              <div className="grid md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-blue-900">🎯 Analysis Type:</span>
+                  <div className="text-blue-700 mt-1">
+                    • Location-specific risk modifiers
+                    <br />
+                    • Industry vulnerability mapping  
+                    <br />
+                    • Seasonal risk patterns
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium text-blue-900">📊 Data Sources:</span>
+                  <div className="text-blue-700 mt-1">
+                    • Admin-configured hazard profiles
+                    <br />
+                    • Business type dependencies
+                    <br />
+                    • Environmental risk factors
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="text-center">
@@ -346,12 +559,46 @@ export function HazardPrefilter({
     return (
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-6 mb-6">
-          <h2 className="text-2xl font-bold mb-2">🎯 Smart Risk Prioritization</h2>
-          <p className="text-blue-100">
-            AI-powered analysis based on your {locationData?.parish && `${locationData.parish}, `}
-            {businessData?.industryType && `${businessData.industryType} `}business profile
+        <div className={`bg-gradient-to-r text-white rounded-lg p-6 mb-6 ${
+          smartRecommendations && !usingFallback 
+            ? 'from-blue-600 to-blue-700' 
+            : 'from-gray-600 to-gray-700'
+        }`}>
+          <h2 className="text-2xl font-bold mb-2">
+            {smartRecommendations && !usingFallback ? '🤖 AI-Powered Risk Analysis' : '🎯 Smart Risk Prioritization'}
+          </h2>
+          <p className={smartRecommendations && !usingFallback ? 'text-blue-100' : 'text-gray-100'}>
+            {smartRecommendations && !usingFallback ? (
+              <>
+                Admin-configured analysis for {smartRecommendations.metadata?.businessTypeName || 'your business'} in{' '}
+                {locationData?.parish && `${locationData.parish}, `}
+                {locationData?.country || 'the Caribbean'}
+                {smartRecommendations.metadata?.nearCoast && ' (coastal area)'}
+                {smartRecommendations.metadata?.urbanArea && ' (urban area)'}
+              </>
+            ) : (
+              <>
+                Standard analysis based on your {locationData?.parish && `${locationData.parish}, `}
+                {businessData?.industryType && `${businessData.industryType} `}business profile
+              </>
+            )}
           </p>
+          {smartRecommendations && !usingFallback && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="px-2 py-1 bg-blue-800 bg-opacity-50 rounded text-xs">
+                ✨ Seasonal Analysis
+              </span>
+              <span className="px-2 py-1 bg-blue-800 bg-opacity-50 rounded text-xs">
+                🔗 Cascading Risks
+              </span>
+              <span className="px-2 py-1 bg-blue-800 bg-opacity-50 rounded text-xs">
+                📊 Risk Calculation
+              </span>
+              <span className="px-2 py-1 bg-blue-800 bg-opacity-50 rounded text-xs">
+                🎯 Context-Aware
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Dual-Pane Layout */}
@@ -533,9 +780,55 @@ export function HazardPrefilter({
                                 className="mt-1 h-4 w-4 text-blue-600 border-gray-300 rounded pointer-events-none"
                               />
                               <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-gray-900 text-sm">{hazard.name}</h4>
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="font-medium text-gray-900 text-sm">{hazard.name}</h4>
+                                  <div className="flex flex-wrap gap-1 ml-2">
+                                    {/* Smart risk badges */}
+                                    {hazard.locationBased && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full whitespace-nowrap">
+                                        📍 Location
+                                      </span>
+                                    )}
+                                    {hazard.industryBased && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full whitespace-nowrap">
+                                        🏢 Industry
+                                      </span>
+                                    )}
+                                    {/* Seasonal indicators */}
+                                    {hazard.isSeasonallyActive && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full whitespace-nowrap">
+                                        🔥 Peak Season
+                                      </span>
+                                    )}
+                                    {/* Warning time indicator */}
+                                    {hazard.warningTime && (
+                                      <span className="inline-block px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full whitespace-nowrap">
+                                        ⏰ {hazard.warningTime}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                                 <p className="text-xs text-gray-600 mt-1">{hazard.reason}</p>
                                 <p className="text-xs text-gray-500 mt-1">{getContextualInfo(hazard.id)}</p>
+                                
+                                {/* Cascading risk warnings */}
+                                {hazard.cascadingRisks && hazard.cascadingRisks.length > 0 && (
+                                  <div className="mt-2 p-2 bg-gray-50 rounded border-l-2 border-amber-400">
+                                    <p className="text-xs text-amber-700 font-medium">
+                                      ⚠️ Often leads to: {hazard.cascadingRisks.slice(0, 3).join(', ')}
+                                      {hazard.cascadingRisks.length > 3 && ` +${hazard.cascadingRisks.length - 3} more`}
+                                    </p>
+                                  </div>
+                                )}
+                                
+                                {/* Geographic scope */}
+                                {hazard.geographicScope && (
+                                  <div className="mt-1">
+                                    <span className="text-xs text-gray-500">
+                                      📍 Scope: {hazard.geographicScope}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -606,7 +899,7 @@ export function HazardPrefilter({
 
   return (
     <div className="w-full">
-      {hazardInfo.length === 0 ? (
+      {loading ? (
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
             <div className="mx-auto w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-4 animate-pulse">
@@ -614,10 +907,20 @@ export function HazardPrefilter({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Analyzing Risk Context</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {usingFallback ? 'Analyzing Risk Context' : 'Loading Smart Recommendations'}
+            </h3>
             <p className="text-gray-600 text-sm">
-              AI is processing your location and business profile to prioritize relevant risks...
+              {usingFallback 
+                ? 'Using standard risk analysis...'
+                : 'AI is processing your location and business profile to prioritize relevant risks...'
+              }
             </p>
+            {error && (
+              <p className="text-yellow-600 text-sm mt-2">
+                ⚠️ Using fallback analysis - some smart features may be limited
+              </p>
+            )}
           </div>
         </div>
       ) : (

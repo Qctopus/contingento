@@ -7,6 +7,7 @@ import { StructuredInput } from './StructuredInput'
 import IndustrySelector from './IndustrySelector'
 import { LocationData, PreFillData } from '../data/types'
 import { generatePreFillData, mergePreFillData, isFieldPreFilled } from '../services/preFillService'
+import { generateDynamicPreFillData } from '../services/dynamicPreFillService'
 import { anonymousSessionService } from '@/services/anonymousSessionService'
 import { BusinessPlanReview } from './BusinessPlanReview'
 
@@ -398,31 +399,99 @@ export function BusinessContinuityForm() {
     }
   }, [])
 
+
+
   // Handle industry selection
   const handleIndustrySelection = (industryId: string, location: LocationData) => {
     devLog('Industry selected', { industryId, location })
-    setPreFillData(null) // Clear previous data
     setIsLoading(true)
 
-    // Using a timeout to ensure the loading spinner is visible
-    setTimeout(() => {
-      const locale = 'en' // Or get from context
-      const data = generatePreFillData(industryId, location, locale, messages)
-      
-      if (data) {
-        // Store industry selection
-        localStorage.setItem('bcp-industry-selected', 'true')
-        localStorage.setItem('bcp-prefill-data', JSON.stringify(data))
+    // Use the pre-fill data that IndustrySelector already prepared
+    setTimeout(async () => {
+      try {
+        // Get the smart admin data that IndustrySelector prepared
+        const storedPreFillData = localStorage.getItem('bcp-prefill-data')
         
-        const mergedData = mergePreFillData({}, data)
-        setFormData(mergedData)
-        setPreFillData(data)
-        devLog('Pre-fill data loaded and merged', {
-          preFillData: data,
-          mergedData
-        })
-      } else {
-        devLog('No pre-fill data found for industry', { industryId })
+        if (storedPreFillData) {
+          const data = JSON.parse(storedPreFillData)
+          
+          // Store industry selection flag
+          localStorage.setItem('bcp-industry-selected', 'true')
+          
+          const mergedData = mergePreFillData({}, data)
+          setFormData(mergedData)
+          setPreFillData(data)
+          devLog('Smart admin pre-fill data loaded and merged', {
+            preFillData: data,
+            mergedData,
+            source: 'admin-api'
+          })
+        } else {
+          // Fallback to dynamic admin data if API call failed
+          devLog('No admin pre-fill data found, trying dynamic service')
+          try {
+            const dynamicData = await generateDynamicPreFillData(industryId, location)
+            
+            if (dynamicData) {
+              // Convert dynamic data to expected format
+              const convertedData = {
+                industry: { id: industryId, ...dynamicData.businessType },
+                location,
+                hazards: dynamicData.riskAssessments,
+                preFilledFields: dynamicData.preFilledFields,
+                contextualExamples: {},
+                recommendedStrategies: dynamicData.recommendedStrategies
+              }
+              
+              localStorage.setItem('bcp-industry-selected', 'true')
+              localStorage.setItem('bcp-prefill-data', JSON.stringify(convertedData))
+              
+              const mergedData = mergePreFillData({}, convertedData)
+              setFormData(mergedData)
+              setPreFillData(convertedData)
+              devLog('Dynamic admin pre-fill data loaded and merged', {
+                preFillData: convertedData,
+                mergedData,
+                source: 'dynamic-admin'
+              })
+            } else {
+              throw new Error('Dynamic service returned null')
+            }
+          } catch (dynamicError) {
+            console.warn('Dynamic service failed, using static fallback:', dynamicError)
+            // Final fallback to static system
+            const locale = 'en'
+            const data = generatePreFillData(industryId, location, locale, messages)
+            
+            if (data) {
+              localStorage.setItem('bcp-industry-selected', 'true')
+              localStorage.setItem('bcp-prefill-data', JSON.stringify(data))
+              
+              const mergedData = mergePreFillData({}, data)
+              setFormData(mergedData)
+              setPreFillData(data)
+              devLog('Static fallback pre-fill data loaded and merged', {
+                preFillData: data,
+                mergedData,
+                source: 'static-fallback'
+              })
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading pre-fill data:', error)
+        devLog('Pre-fill data loading failed, using fallback')
+        
+        // Final fallback to old system
+        const locale = 'en'
+        const data = generatePreFillData(industryId, location, locale, messages)
+        if (data) {
+          localStorage.setItem('bcp-industry-selected', 'true')
+          localStorage.setItem('bcp-prefill-data', JSON.stringify(data))
+          const mergedData = mergePreFillData({}, data)
+          setFormData(mergedData)
+          setPreFillData(data)
+        }
       }
       
       setIsLoading(false)
@@ -989,25 +1058,7 @@ export function BusinessContinuityForm() {
               <p className="text-gray-600 leading-relaxed">{currentQuestion.prompt}</p>
             </div>
 
-            {/* Examples */}
-            {getIndustryExamples() && getIndustryExamples()!.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <h4 className="text-sm font-medium text-blue-900 mb-2">
-                  {t('common.examples')}
-                  {preFillData?.contextualExamples?.[currentStep]?.[currentQuestion.label] && (
-                    <span className="ml-2 text-xs font-normal text-blue-700">({t('industrySelector.industrySpecific')})</span>
-                  )}
-                </h4>
-                <ul>
-                  {getIndustryExamples()!.map((example, i) => (
-                    <li key={i} className="text-sm text-blue-800 flex items-start mb-1 last:mb-0">
-                      <span className="text-blue-400 mr-2">•</span>
-                      <span>{example}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {/* Examples are rendered inside StructuredInput with de-duplication */}
 
             {/* Input Component */}
             <StructuredInput

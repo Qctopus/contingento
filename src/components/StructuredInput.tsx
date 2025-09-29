@@ -66,10 +66,101 @@ export function StructuredInput({
   // State for dynamic table rows (used by table input types)
   const [tableRows, setTableRows] = useState<TableRow[]>([])
 
+  // Smart suggestions state
+  const [smartSuggestions, setSmartSuggestions] = useState<{
+    examples: string[]
+    preFillValue: any
+    contextualInfo: string | null
+    isSmartSuggestion: boolean
+  } | null>(null)
+  const [isLoadingSmartSuggestions, setIsLoadingSmartSuggestions] = useState(false)
+  const [hasSmartPreFill, setHasSmartPreFill] = useState(false)
+  const [smartExamples, setSmartExamples] = useState<string[]>([])
+
   const t = useTranslations('common')
   
   // Use custom hook for user interaction tracking
   const { hasUserInteracted, didMount, setUserInteracted: setInteracted, resetInteraction } = useUserInteraction()
+
+  // Fetch smart suggestions based on business type and location
+  useEffect(() => {
+    const fetchSmartSuggestions = async () => {
+      if (!preFillData || !label || isLoadingSmartSuggestions || smartSuggestions) return
+      
+      try {
+        setIsLoadingSmartSuggestions(true)
+        
+        const businessTypeId = preFillData.industry?.id
+        const location = preFillData.location
+        
+        if (!businessTypeId) {
+          setIsLoadingSmartSuggestions(false)
+          return
+        }
+        
+        // Determine the current step from context or defaults
+        let currentStep = 'BUSINESS_OVERVIEW'
+        if (label.toLowerCase().includes('function')) {
+          currentStep = 'ESSENTIAL_FUNCTIONS'
+        } else if (label.toLowerCase().includes('risk') || label.toLowerCase().includes('planning')) {
+          currentStep = 'RISK_ASSESSMENT'
+        } else if (label.toLowerCase().includes('strategy') || label.toLowerCase().includes('mitigation')) {
+          currentStep = 'STRATEGIES'
+        } else if (label.toLowerCase().includes('resource') || label.toLowerCase().includes('equipment') || label.toLowerCase().includes('staff')) {
+          currentStep = 'RESOURCES'
+        }
+        
+        const requestBody = {
+          fieldName: label,
+          businessTypeId,
+          step: currentStep,
+          countryCode: location?.countryCode,
+          parish: location?.parish
+        }
+        
+        const response = await fetch('/api/wizard/get-field-suggestions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        })
+        
+        if (response.ok) {
+          const suggestions = await response.json()
+          setSmartSuggestions(suggestions)
+          setSmartExamples(suggestions.examples || [])
+          
+          // Auto-populate if there's a pre-fill value and user hasn't interacted yet
+          if (suggestions.preFillValue && !hasUserInteracted && (!initialValue || initialValue === '')) {
+            if (type === 'text') {
+              setValue(suggestions.preFillValue)
+              setHasSmartPreFill(true)
+            } else if (type === 'table' && Array.isArray(suggestions.preFillValue)) {
+              const preFilledRows = suggestions.preFillValue.map((item: any) => {
+                const row: TableRow = {}
+                tableColumns.forEach(column => {
+                  row[column] = typeof item === 'string' ? item : item[column] || ''
+                })
+                return row
+              })
+              setTableRows(preFilledRows)
+              setHasSmartPreFill(true)
+            } else if (type === 'checkbox' && Array.isArray(suggestions.preFillValue)) {
+              setValue(suggestions.preFillValue)
+              setHasSmartPreFill(true)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching smart suggestions:', error)
+      } finally {
+        setIsLoadingSmartSuggestions(false)
+      }
+    }
+    
+    fetchSmartSuggestions()
+  }, [preFillData?.industry?.id, label, type, hasUserInteracted, initialValue])
 
   // Auto-add initial row for tables when component first loads
   useEffect(() => {
@@ -321,6 +412,43 @@ export function StructuredInput({
         className="mb-6"
       />
       
+      {/* Smart Table Examples */}
+      {displayExamples.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm font-medium text-gray-700">
+              {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+            </span>
+            {smartExamples.length > 0 && (
+              <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                AI-Generated
+              </span>
+            )}
+          </div>
+          <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+            {displayExamples.slice(0, 3).map((example, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => {
+                  // Add example as a new table row
+                  const newRow: TableRow = {}
+                  tableColumns.forEach((column, colIndex) => {
+                    newRow[column] = colIndex === 0 ? example : ''
+                  })
+                  setTableRows(prev => [...prev, newRow])
+                  setInteracted()
+                  setHasSmartPreFill(false)
+                }}
+                className="block w-full text-left p-2 text-sm text-gray-600 bg-white hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      
       {/* Divider */}
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
@@ -353,7 +481,7 @@ export function StructuredInput({
           </thead>
           <tbody>
             {tableRows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="hover:bg-gray-50">
+              <tr key={rowIndex} className={`hover:bg-gray-50 ${hasSmartPreFill && rowIndex < tableRows.length ? 'bg-blue-50 border-l-4 border-l-blue-400' : ''}`}>
                 {tableColumns.map((column, colIndex) => (
                   <td key={colIndex} className="border border-gray-300 px-4 py-4 align-top">
                     {column.toLowerCase().includes('email') ? (
@@ -918,45 +1046,186 @@ export function StructuredInput({
         setUserInteracted={() => { setInteracted() }}
         locationData={locationData}
         businessData={businessData}
+        preFillData={preFillData}
       />
     )
   }
 
+  // Function to reset smart suggestions
+  const resetSmartSuggestions = () => {
+    setHasSmartPreFill(false)
+    setValue('')
+    setTableRows(type === 'table' ? [{
+      ...tableColumns.reduce((acc, col) => ({ ...acc, [col]: '' }), {} as TableRow)
+    }] : [])
+    resetInteraction()
+  }
+
+  // Get the current examples to display (prioritize smart examples, avoid duplicates)
+  const displayExamples = smartExamples.length > 0 ? smartExamples : (examples || [])
+  
+  // Remove duplicates if any exist
+  const uniqueExamples = Array.from(new Set(displayExamples))
+
   return (
     <div className="space-y-4">
-      {type === 'text' && (
-        <textarea
-          value={value as string}
-          onChange={handleTextChange}
-          className="w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
-          placeholder={t('typeAnswerHere')}
-          required={required}
-        />
-      )}
-
-      {type === 'radio' && options && (
-        <div className="space-y-2">
-          {options.map((option) => (
-            <label
-              key={option.value}
-              className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-            >
-              <input
-                type="radio"
-                name={label}
-                value={option.value}
-                checked={value === option.value}
-                onChange={() => handleRadioChange(option.value)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500"
-                required={required}
-              />
-              <span className="text-gray-700 text-sm">{option.label}</span>
-            </label>
-          ))}
+      {/* Smart Pre-fill Indicator */}
+      {hasSmartPreFill && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs">🤖</span>
+            </div>
+            <span className="text-blue-800 text-sm font-medium">
+              AI Suggested based on your profile
+            </span>
+            {smartSuggestions?.contextualInfo && (
+              <span className="text-blue-600 text-xs">
+                • {smartSuggestions.contextualInfo}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={resetSmartSuggestions}
+            className="text-blue-600 hover:text-blue-800 text-xs underline"
+            type="button"
+          >
+            Clear & Start Fresh
+          </button>
         </div>
       )}
 
-      {type === 'checkbox' && options && renderEnhancedCheckbox()}
+      {/* Loading indicator for smart suggestions */}
+      {isLoadingSmartSuggestions && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center space-x-2">
+          <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+          <span className="text-gray-600 text-sm">Loading smart suggestions...</span>
+        </div>
+      )}
+
+      {type === 'text' && (
+        <div className="space-y-3">
+          <textarea
+            value={value as string}
+            onChange={handleTextChange}
+            className={`w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400 ${
+              hasSmartPreFill ? 'bg-blue-50 border-blue-300' : ''
+            }`}
+            placeholder={t('typeAnswerHere')}
+            required={required}
+          />
+          
+          {/* Smart Examples Display */}
+          {uniqueExamples.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                </span>
+                {smartExamples.length > 0 && (
+                  <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    AI-Generated
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-2">
+                {uniqueExamples.slice(0, 3).map((example, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => {
+                      setValue(example)
+                      setInteracted()
+                      setHasSmartPreFill(false)
+                    }}
+                    className="text-left p-2 text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition-colors"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {type === 'radio' && options && (
+        <div className="space-y-3">
+          {uniqueExamples.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                </span>
+                {smartExamples.length > 0 && (
+                  <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    AI-Generated
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-2">
+                {uniqueExamples.slice(0, 3).map((example, index) => (
+                  <div
+                    key={index}
+                    className="p-2 text-sm text-gray-600 bg-gray-50 rounded border border-gray-200"
+                  >
+                    {example}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="space-y-2">
+            {options.map((option) => (
+              <label
+                key={option.value}
+                className="flex items-center space-x-2 p-2 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                <input
+                  type="radio"
+                  name={label}
+                  value={option.value}
+                  checked={value === option.value}
+                  onChange={() => handleRadioChange(option.value)}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500"
+                  required={required}
+                />
+                <span className="text-gray-700 text-sm">{option.label}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {type === 'checkbox' && options && (
+        <div className="space-y-3">
+          {displayExamples.length > 0 && !label.toLowerCase().includes('hazard') && (
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium text-gray-700">
+                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                </span>
+                {smartExamples.length > 0 && (
+                  <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    AI-Generated
+                  </span>
+                )}
+              </div>
+              <div className="grid gap-2">
+                {displayExamples.slice(0, 3).map((example, index) => (
+                  <div
+                    key={index}
+                    className="p-2 text-sm text-gray-600 bg-gray-50 rounded border border-gray-200"
+                  >
+                    {example}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {renderEnhancedCheckbox()}
+        </div>
+      )}
 
       {type === 'table' && renderTable()}
 

@@ -170,14 +170,22 @@ model AdminBusinessType {
   exampleProducts         String? // JSON array
   exampleKeyPersonnel     String? // JSON array
   exampleCustomerBase     String? // JSON array
+  
+  // Characteristic-based dependency system
+  dependencies            String? // JSON object with ratings 1-5 for: powerCritical, waterIntensive, touristDependent, supplyChainReliant, perishableGoods, outdoorOperations, coastalExposure
+  vulnerabilityMatrix     String? // JSON object mapping each dependency to impact severity
+  operationalThresholds   String? // JSON object defining minimum requirements to operate
+  
   isActive                Boolean  @default(true)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
   // Relations
   businessTypeHazards AdminBusinessTypeHazard[]
+  riskProfiles        AdminRiskProfile[]
 
   @@index([category])
+  @@index([dependencies])
 }
 
 model AdminHazardType {
@@ -225,6 +233,7 @@ model AdminLocation {
 
   // Relations
   locationHazards AdminLocationHazard[]
+  riskProfiles    AdminRiskProfile[]
 
   @@unique([countryCode, parish])
   @@index([countryCode])
@@ -344,4 +353,256 @@ model AdminHazardActionPlan {
 
   @@unique([hazardId, actionPlanId])
   @@index([hazardId])
+}
+
+model AdminRiskProfile {
+  id                    String   @id @default(cuid())
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  businessTypeId        String
+  locationId            String
+  calculatedRisks       String   // JSON array of {hazardId, riskLevel, reasoning, seasonalAdjustment, coastalMultiplier}
+  recommendedStrategies String   // JSON array of {strategyId, priority, effectiveness, cost, roi, conflicts}
+  lastCalculated        DateTime @default(now())
+  riskScore             Int      // Overall risk score (1-100)
+  businessType          AdminBusinessType @relation(fields: [businessTypeId], references: [id])
+  location              AdminLocation @relation(fields: [locationId], references: [id])
+
+  @@unique([businessTypeId, locationId])
+  @@index([businessTypeId])
+  @@index([locationId])
+}
+
+// Parish Risk Management System
+model Parish {
+  id          String   @id @default(cuid())
+  name        String   // e.g., 'Kingston', 'St. Andrew'
+  region      String   // e.g., 'Kingston Metropolitan', 'North Coast'
+  countryCode String   @default("JM") // ISO country code
+  isCoastal   Boolean  @default(false)
+  isUrban     Boolean  @default(false)
+  population  Int      @default(0)
+  area        Float?   // Square kilometers
+  elevation   Float?   // Meters above sea level
+  coordinates String?  // JSON: {"lat": 18.0179, "lng": -76.8099}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+
+  // Relations
+  parishRisk ParishRisk?
+  businessRiskProfiles BusinessRiskProfile[]
+
+  @@index([region])
+  @@index([countryCode])
+  @@index([isCoastal])
+  @@index([isUrban])
+}
+
+model ParishRisk {
+  id           String   @id @default(cuid())
+  parishId     String   @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastUpdated  DateTime @default(now())
+  updatedBy    String   @default("system")
+
+  // Risk levels (0-10 scale)
+  hurricaneLevel    Int    @default(0)
+  hurricaneNotes    String @default("")
+  floodLevel        Int    @default(0)
+  floodNotes        String @default("")
+  earthquakeLevel   Int    @default(0)
+  earthquakeNotes   String @default("")
+  droughtLevel      Int    @default(0)
+  droughtNotes      String @default("")
+  landslideLevel    Int    @default(0)
+  landslideNotes    String @default("")
+  powerOutageLevel  Int    @default(0)
+  powerOutageNotes  String @default("")
+
+  // Complete risk profile as JSON to support dynamic risk types
+  riskProfileJson   String @default("{}")
+
+  isActive Boolean @default(true)
+
+  // Relations
+  parish     Parish          @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  changeLogs RiskChangeLog[]
+
+  @@index([parishId])
+}
+
+model RiskChangeLog {
+  id            String   @id @default(cuid())
+  parishRiskId  String
+  riskType      String   // 'hurricane', 'flood', etc.
+  oldLevel      Int
+  newLevel      Int
+  oldNotes      String   @default("")
+  newNotes      String   @default("")
+  changedBy     String
+  changeReason  String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  parishRisk ParishRisk @relation(fields: [parishRiskId], references: [id], onDelete: Cascade)
+
+  @@index([parishRiskId])
+  @@index([riskType])
+  @@index([createdAt])
+}
+
+// Business Type Risk Management System
+model BusinessType {
+  id                    String   @id @default(cuid())
+  businessTypeId        String   @unique // e.g., 'restaurant', 'grocery_store'
+  name                  String   // e.g., 'Restaurant', 'Grocery Store'
+  category              String   // e.g., 'hospitality', 'retail', 'services'
+  subcategory           String?  // e.g., 'casual_dining', 'convenience_store'
+  description           String?
+  typicalRevenue        String?  // e.g., 'JMD 2M-10M annually'
+  typicalEmployees      String?  // e.g., '5-15 employees'
+  operatingHours        String?  // e.g., '6AM-10PM'
+  seasonalityFactor     Float?   @default(1.0) // 0.5-2.0, where 1.0 = no seasonality
+  touristDependency     Int?     @default(0)   // 0-10 scale
+  supplyChainComplexity Int?     @default(1)   // 1-10 scale
+  digitalDependency     Int?     @default(1)   // 1-10 scale
+  cashFlowPattern       String?  @default("stable") // 'stable', 'seasonal', 'volatile'
+  physicalAssetIntensity Int?    @default(3)   // 1-10 scale
+  customerConcentration Int?     @default(3)   // 1-10 scale (higher = more concentrated)
+  regulatoryBurden      Int?     @default(2)   // 1-10 scale
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  // Relations
+  riskVulnerabilities BusinessRiskVulnerability[]
+  businessTypeStrategies BusinessTypeStrategy[]
+  businessRiskProfiles BusinessRiskProfile[]
+
+  @@index([category])
+  @@index([businessTypeId])
+}
+
+model BusinessRiskVulnerability {
+  id                   String   @id @default(cuid())
+  businessTypeId       String
+  riskType             String   // 'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage'
+  vulnerabilityLevel   Int      @default(5) // 1-10 scale (how vulnerable this business type is)
+  impactSeverity       Int      @default(5) // 1-10 scale (how severe impact would be)
+  recoveryTime         String?  @default("medium") // 'hours', 'days', 'weeks', 'months'
+  reasoning            String   @default("")
+  mitigationDifficulty Int?     @default(3) // 1-10 scale (how hard to mitigate)
+  costToRecover        String?  @default("medium") // 'low', 'medium', 'high', 'very_high'
+  businessImpactAreas  String?  // JSON: ['operations', 'supply_chain', 'customers', 'staff', 'assets']
+  criticalDependencies String?  // JSON: ['power', 'water', 'internet', 'suppliers', 'transportation']
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  // Relations
+  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, riskType])
+  @@index([businessTypeId])
+  @@index([riskType])
+}
+
+model RiskMitigationStrategy {
+  id                     String   @id @default(cuid())
+  strategyId             String   @unique // e.g., 'backup_generator', 'emergency_fund'
+  name                   String   // e.g., 'Backup Generator System'
+  category               String   // 'prevention', 'preparation', 'response', 'recovery'
+  description            String
+  smeDescription         String?  // Simplified description for SMEs
+  whyImportant           String?  // Why this strategy matters
+  implementationCost     String?  @default("medium") // 'low', 'medium', 'high', 'very_high'
+  timeToImplement        String?  @default("medium") // 'hours', 'days', 'weeks', 'months'
+  effectiveness          Int?     @default(7) // 1-10 scale
+  applicableRisks        String   // JSON array of risk types this strategy addresses
+  applicableBusinessTypes String? // JSON array of business type categories (null = all)
+  prerequisites          String?  // JSON array of requirements
+  maintenanceRequirement String?  @default("low") // 'low', 'medium', 'high'
+  roi                    Float?   @default(3.0) // Return on investment multiplier
+  priority               String?  @default("medium") // 'low', 'medium', 'high', 'critical'
+  helpfulTips            String?  // JSON array of tips
+  commonMistakes         String?  // JSON array of common mistakes
+  successMetrics         String?  // JSON array of success metrics
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  businessTypeStrategies BusinessTypeStrategy[]
+  actionSteps            ActionStep[]
+
+  @@index([category])
+  @@index([strategyId])
+}
+
+model ActionStep {
+  id                String                 @id @default(cuid())
+  strategyId        String
+  stepId            String                 // e.g., 'step_1', 'step_2'
+  phase             String                 @default("immediate") // 'immediate', 'short_term', 'medium_term', 'long_term'
+  title             String
+  description       String
+  smeAction         String?                // Simplified action description for SMEs
+  timeframe         String?
+  responsibility    String?
+  estimatedCost     String?
+  estimatedCostJMD  String?
+  resources         String?                // JSON array of required resources
+  checklist         String?                // JSON array of checklist items
+  sortOrder         Int                    @default(0) // For ordering steps within a strategy
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  // Relations
+  strategy RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, stepId])
+  @@index([strategyId])
+  @@index([phase])
+}
+
+model BusinessTypeStrategy {
+  id             String   @id @default(cuid())
+  businessTypeId String
+  strategyId     String
+  relevanceScore Int?     @default(7) // 1-10 scale for this specific business type
+  customNotes    String?
+  isRecommended  Boolean? @default(true)
+  priority       String?  @default("medium") // 'low', 'medium', 'high', 'critical'
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  businessType BusinessType          @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  strategy     RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, strategyId])
+}
+
+model BusinessRiskProfile {
+  id                    String   @id @default(cuid())
+  businessTypeId        String
+  parishId              String
+  combinedRisks         String   // JSON: combined location + business type risks
+  recommendedStrategies String   // JSON: top recommended strategies
+  overallRiskScore      Int      // 1-100 combined risk score
+  priorityActions       String?  // JSON: immediate actions to take
+  calculatedAt          DateTime @default(now())
+  calculatedBy          String?  @default("system")
+  isActive              Boolean  @default(true)
+
+  // Relations
+  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  parish       Parish       @relation(fields: [parishId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, parishId])
+  @@index([businessTypeId])
+  @@index([parishId])
 }

@@ -32,6 +32,7 @@ interface RiskAssessmentWizardProps {
     businessPurpose?: string
     productsServices?: string
   }
+  preFillData?: any // Add preFillData prop
 }
 
 type WizardPhase = 'intelligent_filtering' | 'smart_assessment' | 'summary'
@@ -42,7 +43,8 @@ export function RiskAssessmentWizard({
   initialValue, 
   setUserInteracted,
   locationData,
-  businessData
+  businessData,
+  preFillData
 }: RiskAssessmentWizardProps) {
   const [currentPhase, setCurrentPhase] = useState<WizardPhase>('intelligent_filtering')
   const [prioritizedHazards, setPrioritizedHazards] = useState<string[]>([])
@@ -215,6 +217,7 @@ export function RiskAssessmentWizard({
           onComplete={handleFilteringComplete}
           locationData={locationData}
           businessData={businessData}
+          preFillData={preFillData}
           initialSelection={prioritizedHazards}
         />
       )}

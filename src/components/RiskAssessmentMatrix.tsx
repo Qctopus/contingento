@@ -10,6 +10,9 @@ interface RiskItem {
   riskLevel: string
   riskScore: number
   planningMeasures: string
+  isCalculated?: boolean
+  reasoning?: string
+  confidence?: string
 }
 
 interface RiskAssessmentProps {
@@ -17,6 +20,19 @@ interface RiskAssessmentProps {
   onComplete: (riskMatrix: RiskItem[]) => void
   initialValue?: RiskItem[]
   setUserInteracted?: () => void
+  locationData?: {
+    country?: string
+    countryCode?: string
+    parish?: string
+    nearCoast?: boolean
+    urbanArea?: boolean
+  }
+  businessData?: {
+    industryType?: string
+    businessPurpose?: string
+    productsServices?: string
+  }
+  preFillData?: any
 }
 
 interface RiskLevelDistribution {
@@ -26,11 +42,98 @@ interface RiskLevelDistribution {
   Low: number;
 }
 
-export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue, setUserInteracted }: RiskAssessmentProps) {
+export function RiskAssessmentMatrix({ 
+  selectedHazards, 
+  onComplete, 
+  initialValue, 
+  setUserInteracted,
+  locationData,
+  businessData,
+  preFillData
+}: RiskAssessmentProps) {
   const [riskItems, setRiskItems] = useState<RiskItem[]>([])
   const [activeRisk, setActiveRisk] = useState<number | null>(null)
+  
+  // Admin calculations state
+  const [adminCalculations, setAdminCalculations] = useState<any[]>([])
+  const [adminStrategies, setAdminStrategies] = useState<any>({})
+  const [isLoadingCalculations, setIsLoadingCalculations] = useState(false)
+  const [calculationError, setCalculationError] = useState<string | null>(null)
+  const [hasAdminData, setHasAdminData] = useState(false)
+  const [manualOverrides, setManualOverrides] = useState<Set<string>>(new Set())
+  const [confidenceLevels, setConfidenceLevels] = useState<Map<string, string>>(new Map())
+  
   const t = useTranslations('common')
   const tSteps = useTranslations('steps.riskAssessment')
+
+  // Fetch admin risk calculations
+  useEffect(() => {
+    const fetchAdminCalculations = async () => {
+      if (selectedHazards.length === 0) return
+      
+      try {
+        setIsLoadingCalculations(true)
+        setCalculationError(null)
+        
+        // Get business type ID and location data
+        const businessTypeId = preFillData?.industry?.id || businessData?.industryType
+        const location = preFillData?.location || locationData
+        
+        if (!businessTypeId) {
+          console.warn('No business type ID available for admin calculations')
+          setHasAdminData(false)
+          return
+        }
+
+        const requestBody = {
+          hazardIds: selectedHazards,
+          businessTypeId,
+          countryCode: location?.countryCode,
+          parish: location?.parish,
+          nearCoast: location?.nearCoast || false,
+          urbanArea: location?.urbanArea || false
+        }
+
+        console.log('Fetching admin risk calculations:', requestBody)
+
+        const response = await fetch('/api/wizard/get-risk-calculations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Admin risk calculations received:', data)
+          
+          setAdminCalculations(data.riskCalculations || [])
+          setAdminStrategies(data.strategies || {})
+          setHasAdminData(true)
+          
+          // Set confidence levels
+          const newConfidenceLevels = new Map()
+          data.riskCalculations?.forEach((calc: any) => {
+            newConfidenceLevels.set(calc.hazardId, calc.confidence)
+          })
+          setConfidenceLevels(newConfidenceLevels)
+          
+        } else {
+          throw new Error(`Failed to fetch calculations: ${response.status}`)
+        }
+
+      } catch (error) {
+        console.error('Error fetching admin calculations:', error)
+        setCalculationError('Failed to load smart risk calculations')
+        setHasAdminData(false)
+      } finally {
+        setIsLoadingCalculations(false)
+      }
+    }
+
+    fetchAdminCalculations()
+  }, [selectedHazards, preFillData, businessData, locationData])
 
   // Define a mapping of common hazard IDs for reverse lookup
   const hazardMappings: Record<string, string> = {
@@ -163,7 +266,30 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     return { level: '', score: 0, color: 'bg-gray-50 text-gray-500 border border-gray-200' }
   }, [t])
 
-  // Initialize risk items when selectedHazards or initialValue changes
+  // Helper function to map admin calculation values to UI values
+  const mapAdminToUIValue = (adminValue: string, type: 'likelihood' | 'severity'): string => {
+    if (type === 'likelihood') {
+      const mapping: Record<string, string> = {
+        'rare': '1',
+        'unlikely': '2', 
+        'possible': '3',
+        'likely': '4',
+        'almost_certain': '4'
+      }
+      return mapping[adminValue] || '3'
+    } else {
+      const mapping: Record<string, string> = {
+        'minimal': '1',
+        'minor': '2',
+        'moderate': '3',
+        'major': '4',
+        'catastrophic': '4'
+      }
+      return mapping[adminValue] || '3'
+    }
+  }
+
+  // Initialize risk items when selectedHazards, initialValue, or adminCalculations changes
   useEffect(() => {
     if (selectedHazards.length === 0) {
       setRiskItems([])
@@ -189,15 +315,24 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       })
     }
 
+    // Create a map of admin calculations by hazard ID
+    const adminCalculationsMap = new Map()
+    adminCalculations.forEach(calc => {
+      adminCalculationsMap.set(calc.hazardId, calc)
+    })
+
     // Create risk items for all selected hazards
     const newRiskItems = selectedHazards.map(hazardKey => {
       const hazardLabel = getHazardLabel(hazardKey)
       
-      // Use existing data if available (check both by key and by label)
+      // Check for existing data first (manual entries take precedence)
       const existingItem = existingRisksMap.get(hazardKey) || existingRisksMap.get(hazardLabel)
       
-      if (existingItem) {
-        // Update the hazard field to use the translated label and ALWAYS recalculate risk level
+      // Check if this hazard has been manually overridden
+      const isManualOverride = manualOverrides.has(hazardKey)
+      
+      if (existingItem && (isManualOverride || !hasAdminData)) {
+        // Use existing data if manual override or no admin data
         const updatedItem = {
           ...existingItem,
           hazard: hazardLabel
@@ -224,6 +359,38 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         return updatedItem
       }
       
+      // Check for admin calculation data
+      const adminCalc = adminCalculationsMap.get(hazardKey)
+      if (adminCalc && hasAdminData && !isManualOverride) {
+        // Auto-populate with admin data
+        const likelihoodValue = mapAdminToUIValue(adminCalc.likelihood, 'likelihood')
+        const severityValue = mapAdminToUIValue(adminCalc.severity, 'severity')
+        const { level, score } = calculateRiskLevel(likelihoodValue, severityValue)
+        
+        console.log(`Auto-populating risk for ${hazardLabel} with admin data:`, {
+          adminLikelihood: adminCalc.likelihood,
+          adminSeverity: adminCalc.severity,
+          uiLikelihood: likelihoodValue,
+          uiSeverity: severityValue,
+          calculatedLevel: level,
+          calculatedScore: score,
+          reasoning: adminCalc.reasoning
+        })
+
+        return {
+          hazard: hazardLabel,
+          likelihood: likelihoodValue,
+          severity: severityValue,
+          riskLevel: level,
+          riskScore: score,
+          planningMeasures: '',
+          isCalculated: true,
+          reasoning: adminCalc.reasoning,
+          confidence: adminCalc.confidence
+        }
+      }
+      
+      // Default empty item
       return {
         hazard: hazardLabel,
         likelihood: '',
@@ -231,11 +398,12 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         riskLevel: '',
         riskScore: 0,
         planningMeasures: '',
+        isCalculated: false
       }
     })
 
     setRiskItems(newRiskItems)
-  }, [selectedHazards, initialValue, tSteps, calculateRiskLevel])
+  }, [selectedHazards, initialValue, adminCalculations, hasAdminData, manualOverrides, tSteps, calculateRiskLevel])
 
   // Additional effect to ensure risk levels are calculated after component fully loads
   useEffect(() => {
@@ -378,6 +546,16 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
       
+      // Mark as manual override when user changes likelihood or severity
+      if (field === 'likelihood' || field === 'severity') {
+        const hazardKey = selectedHazards[index]
+        if (hazardKey) {
+          setManualOverrides(prev => new Set(prev).add(hazardKey))
+          currentItem.isCalculated = false
+          console.log(`🔄 Marked ${hazardKey} as manual override`)
+        }
+      }
+      
       // Handle string fields
       if (field === 'hazard' || field === 'likelihood' || field === 'severity' || field === 'riskLevel' || field === 'planningMeasures') {
         currentItem[field] = value
@@ -420,7 +598,41 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
       console.log('🔄 Updated items:', updatedItems)
       return updatedItems
     })
-  }, [setUserInteracted, calculateRiskLevel])
+  }, [setUserInteracted, calculateRiskLevel, selectedHazards])
+
+  // Function to reset to admin-calculated values
+  const resetToCalculatedValues = useCallback((hazardKey: string, index: number) => {
+    const adminCalc = adminCalculations.find(calc => calc.hazardId === hazardKey)
+    if (adminCalc) {
+      const likelihoodValue = mapAdminToUIValue(adminCalc.likelihood, 'likelihood')
+      const severityValue = mapAdminToUIValue(adminCalc.severity, 'severity')
+      const { level, score } = calculateRiskLevel(likelihoodValue, severityValue)
+      
+      setRiskItems(prevItems => {
+        const updatedItems = [...prevItems]
+        updatedItems[index] = {
+          ...updatedItems[index],
+          likelihood: likelihoodValue,
+          severity: severityValue,
+          riskLevel: level,
+          riskScore: score,
+          isCalculated: true,
+          reasoning: adminCalc.reasoning,
+          confidence: adminCalc.confidence
+        }
+        return updatedItems
+      })
+      
+      // Remove from manual overrides
+      setManualOverrides(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(hazardKey)
+        return newSet
+      })
+      
+      console.log(`Reset ${hazardKey} to calculated values`)
+    }
+  }, [adminCalculations, calculateRiskLevel, mapAdminToUIValue])
 
   const getRiskLevelColor = (riskLevel: string): string => {
     if (riskLevel === t('extremeRisk')) return 'bg-black text-white border-4 border-black shadow-lg font-bold'
@@ -492,6 +704,46 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
     response: string[];
     recovery: string[];
   } => {
+    // First check for admin strategies
+    if (hasAdminData && adminStrategies) {
+      const adminStrategyData = {
+        prevention: adminStrategies.prevention || [],
+        response: adminStrategies.response || [],
+        recovery: adminStrategies.recovery || []
+      }
+      
+      // Filter strategies that apply to this specific hazard
+      const hazardStrategies = {
+        prevention: adminStrategyData.prevention.filter((s: any) => 
+          s.hazards.includes(hazardKey) || s.hazards.includes(getHazardKey(hazardKey))
+        ).map((s: any) => {
+          const effectiveness = s.effectiveness ? ` (${s.effectiveness}% effective)` : ''
+          const reasoning = s.reasoning ? ` - ${s.reasoning}` : ''
+          return `${s.title}${effectiveness}${reasoning}`
+        }),
+        response: adminStrategyData.response.filter((s: any) => 
+          s.hazards.includes(hazardKey) || s.hazards.includes(getHazardKey(hazardKey))
+        ).map((s: any) => {
+          const effectiveness = s.effectiveness ? ` (${s.effectiveness}% effective)` : ''
+          const reasoning = s.reasoning ? ` - ${s.reasoning}` : ''
+          return `${s.title}${effectiveness}${reasoning}`
+        }),
+        recovery: adminStrategyData.recovery.filter((s: any) => 
+          s.hazards.includes(hazardKey) || s.hazards.includes(getHazardKey(hazardKey))
+        ).map((s: any) => {
+          const effectiveness = s.effectiveness ? ` (${s.effectiveness}% effective)` : ''
+          const reasoning = s.reasoning ? ` - ${s.reasoning}` : ''
+          return `${s.title}${effectiveness}${reasoning}`
+        })
+      }
+      
+      // If we have admin strategies for this hazard, return them
+      if (hazardStrategies.prevention.length > 0 || hazardStrategies.response.length > 0 || hazardStrategies.recovery.length > 0) {
+        return hazardStrategies
+      }
+    }
+
+    // Fallback to hardcoded strategies
     const strategies = {
       prevention: [] as string[],
       response: [] as string[],
@@ -785,10 +1037,57 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t('individualRiskAssessments')}</h3>
           {/* Progress indicator */}
-          <div className="text-sm text-gray-600">
-            {completedRisks.length} {t('of')} {riskItems.length} {t('completed')}
+          <div className="flex items-center space-x-4">
+            {hasAdminData && (
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-blue-700">AI-Calculated</span>
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span className="text-gray-700">Manual Entry</span>
+              </div>
+            )}
+            <div className="text-sm text-gray-600">
+              {completedRisks.length} {t('of')} {riskItems.length} {t('completed')}
+            </div>
           </div>
         </div>
+
+        {/* Loading indicator */}
+        {isLoadingCalculations && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center space-x-3">
+            <div className="animate-spin w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            <span className="text-blue-700">Loading smart risk calculations...</span>
+          </div>
+        )}
+
+        {/* Error indicator */}
+        {calculationError && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center space-x-3">
+            <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <div>
+              <p className="text-yellow-800 font-medium">Smart calculations unavailable</p>
+              <p className="text-yellow-700 text-sm">Using standard risk assessment. {calculationError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Admin data quality indicator */}
+        {hasAdminData && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-green-800 font-medium">Smart Risk Analysis Active</span>
+            </div>
+            <p className="text-green-700 text-sm">
+              Risk calculations are based on admin-configured data for your business type and location. 
+              You can manually adjust any values and reset to calculated values if needed.
+            </p>
+          </div>
+        )}
         
         <div className="bg-white border rounded-lg p-4 mb-4">
           <div className="flex items-center space-x-2 mb-2">
@@ -808,11 +1107,17 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
           const isCompleted = risk.likelihood && risk.severity
           const isHighRisk = risk.riskScore >= 8
           const isExtremeRisk = risk.riskScore >= 12
+          const hazardKey = selectedHazards[index]
+          const isManualOverride = manualOverrides.has(hazardKey)
+          const confidence = confidenceLevels.get(hazardKey)
           
           return (
             <div key={`${risk.hazard}-${index}`} className={`bg-white border rounded-lg transition-all duration-200 ${
               isActive ? 'ring-2 ring-primary-500 shadow-lg' : 'hover:shadow-md'
-            } ${isExtremeRisk ? 'border-black border-2' : isHighRisk ? 'border-gray-600' : ''}`}>
+            } ${isExtremeRisk ? 'border-black border-2' : isHighRisk ? 'border-gray-600' : ''} ${
+              risk.isCalculated && !isManualOverride ? 'border-l-4 border-l-blue-500' : 
+              isManualOverride ? 'border-l-4 border-l-gray-500' : ''
+            }`}>
               <button
                 onClick={() => {
                   console.log('🖱️ Risk item header clicked:', { index, hazard: risk.hazard, currentActive: activeRisk, newActive: isActive ? null : index })
@@ -827,6 +1132,31 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
                   
                   {/* Hazard Name */}
                   <h4 className="font-medium">{risk.hazard}</h4>
+                  
+                  {/* Calculation Indicator */}
+                  {risk.isCalculated && !isManualOverride && (
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span className="text-xs text-blue-600 font-medium">AI</span>
+                    </div>
+                  )}
+                  {isManualOverride && (
+                    <div className="flex items-center space-x-1">
+                      <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                      <span className="text-xs text-gray-600 font-medium">Manual</span>
+                    </div>
+                  )}
+                  
+                  {/* Confidence Level */}
+                  {confidence && (
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      confidence === 'high' ? 'bg-green-100 text-green-700' :
+                      confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {confidence} confidence
+                    </span>
+                  )}
                   
                   {/* Risk Level Badge */}
                   {risk.riskLevel && (
@@ -864,6 +1194,51 @@ export function RiskAssessmentMatrix({ selectedHazards, onComplete, initialValue
               
               {isActive && (
                 <div className="px-4 pb-4 space-y-4 border-t">
+                  {/* Admin Calculation Info */}
+                  {risk.isCalculated && !isManualOverride && risk.reasoning && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-blue-800 font-medium text-sm">AI Risk Calculation</span>
+                        {confidence && (
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            confidence === 'high' ? 'bg-green-100 text-green-700' :
+                            confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {confidence} confidence
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-blue-700 text-sm">{risk.reasoning}</p>
+                    </div>
+                  )}
+
+                  {/* Manual Override Info */}
+                  {isManualOverride && hasAdminData && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                          <span className="text-gray-800 font-medium text-sm">Manual Override Active</span>
+                        </div>
+                        <button
+                          onClick={() => resetToCalculatedValues(hazardKey, index)}
+                          className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          type="button"
+                        >
+                          Reset to AI Values
+                        </button>
+                      </div>
+                      <p className="text-gray-700 text-sm">
+                        You've manually adjusted this risk assessment. The values below override the AI calculations.
+                      </p>
+                    </div>
+                  )}
                   {/* Likelihood Assessment */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
