@@ -79,14 +79,14 @@ export function LocationRisksTab() {
       }
       
       const blob = await response.blob()
-      const url = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `jamaica_parishes_${new Date().toISOString().split('T')[0]}.csv`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `jamaica_parishes_${new Date().toISOString().split('T')[0]}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
     } catch (error) {
       logger.error('LocationRisksTab', 'Failed to export parishes', error)
       alert('Failed to download parishes data. Please try again.')
@@ -134,17 +134,16 @@ export function LocationRisksTab() {
   }
 
 
-  const ViewModeButton = ({ mode, label, icon }: { mode: ViewMode; label: string; icon: string }) => (
+  const ViewModeButton = ({ mode, label }: { mode: ViewMode; label: string }) => (
     <button
       onClick={() => setViewMode(mode)}
-      className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+      className={`py-4 px-6 text-sm font-medium border-b-2 transition-colors ${
         viewMode === mode
-          ? 'bg-blue-600 text-white shadow-sm'
-          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+          ? 'border-blue-600 text-blue-600'
+          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
       }`}
     >
-      <span>{icon}</span>
-      <span>{label}</span>
+      {label}
     </button>
   )
 
@@ -160,79 +159,77 @@ export function LocationRisksTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex justify-between items-center mb-6">
+      <div className="mb-8">
+        <div className="flex justify-between items-start mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 flex items-center space-x-3">
-              <span>🌊</span>
-              <span>Jamaica Parish Risk Assessment</span>
+            <h2 className="text-2xl font-light text-gray-900 tracking-tight">
+              Jamaica Parish Risk Assessment
             </h2>
-            <p className="text-gray-600 mt-2">
+            <p className="text-gray-600 mt-2 text-lg font-light">
               Manage environmental risk levels across all 14 Jamaica parishes
             </p>
           </div>
           
           {/* Action Buttons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {/* Bulk Operations */}
-            <div className="flex items-center space-x-2">
               <button
                 onClick={handleExportParishes}
-                className="inline-flex items-center px-5 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="admin-btn-outline"
               >
-                <span className="mr-2">📊</span>
-                Download Parishes
+              Download Data
               </button>
               <button
                 onClick={() => setShowImportModal(true)}
-                className="inline-flex items-center px-5 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm hover:shadow-md"
+              className="admin-btn-primary"
               >
-                <span className="mr-2">📥</span>
-                Bulk Upload
-              </button>
-            </div>
-            
-            {/* View Mode Selector */}
-            <div className="flex space-x-2">
-              <ViewModeButton mode="overview" label="Parish Overview" icon="📊" />
-              <ViewModeButton mode="matrix" label="Risk Matrix" icon="🎯" />
-              {selectedParish && (
-                <ViewModeButton mode="editor" label="Edit Parish" icon="✏️" />
-              )}
-            </div>
+              Upload Data
+            </button>
           </div>
         </div>
-        
-        {/* Stats Bar */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="flex items-center space-x-8 text-sm text-gray-600">
+            
+        {/* View Mode Selector */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            <ViewModeButton mode="overview" label="Parish Overview" />
+            <ViewModeButton mode="matrix" label="Risk Matrix" />
+            {selectedParish && (
+              <ViewModeButton mode="editor" label="Edit Parish" />
+            )}
+          </nav>
+        </div>
+      </div>
+      
+      {/* Statistics Overview */}
+      <div className="bg-gray-50 border-b border-gray-200 px-8 py-4">
+        <div className="flex items-center justify-between text-sm">
+          <div className="flex items-center space-x-8">
             <div className="flex items-center space-x-2">
-              <span className="h-2 w-2 bg-red-500 rounded-full"></span>
-              <span>High Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) >= 8).length : 0} parishes</span>
+              <span className="w-3 h-3 bg-red-500 rounded-full"></span>
+              <span className="text-gray-700">High Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) >= 8).length : 0}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="h-2 w-2 bg-yellow-500 rounded-full"></span>
-              <span>Medium Risk: {Array.isArray(parishes) ? parishes.filter(p => {
+              <span className="w-3 h-3 bg-yellow-500 rounded-full"></span>
+              <span className="text-gray-700">Medium Risk: {Array.isArray(parishes) ? parishes.filter(p => {
                 const risk = getMaxRiskLevel(p.riskProfile)
                 return risk >= 5 && risk < 8
-              }).length : 0} parishes</span>
+              }).length : 0}</span>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="h-2 w-2 bg-green-500 rounded-full"></span>
-              <span>Low Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) < 5).length : 0} parishes</span>
+              <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+              <span className="text-gray-700">Low Risk: {Array.isArray(parishes) ? parishes.filter(p => getMaxRiskLevel(p.riskProfile) < 5).length : 0}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <span className="h-2 w-2 bg-blue-500 rounded-full"></span>
-              <span>Coastal: {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0} parishes</span>
-            </div>
+          </div>
+          <div className="text-gray-600">
+            Total: {parishes.length} parishes • Coastal: {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div>
+      <div className="p-8">
         {viewMode === 'overview' && (
           <ParishOverview
             parishes={parishes}

@@ -261,13 +261,13 @@ export function RiskCalculatorTab() {
     return 'Very Low'
   }
 
-  const riskIcons = {
-    hurricane: '🌀',
-    flood: '🌊',
-    earthquake: '🏔️',
-    drought: '🌵',
-    landslide: '⛰️',
-    powerOutage: '⚡'
+  const riskLabels = {
+    hurricane: 'Hurricane',
+    flood: 'Flood', 
+    earthquake: 'Earthquake',
+    drought: 'Drought',
+    landslide: 'Landslide',
+    powerOutage: 'Power Outage'
   }
 
   if (isLoading) {
@@ -282,18 +282,15 @@ export function RiskCalculatorTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-8">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center space-x-3 mb-4">
-          <span className="text-2xl">🧮</span>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">SME Risk Calculator Demo</h2>
-            <p className="text-gray-600">
-              Preview how SME users will receive parish-specific risk profiles and strategy recommendations based on their location and business type
-            </p>
-          </div>
-        </div>
+      <div className="mb-8">
+        <h2 className="text-2xl font-light text-gray-900 tracking-tight mb-2">
+          SME Risk Calculator
+        </h2>
+        <p className="text-lg font-light text-gray-600 mb-8">
+          Interactive risk assessment combining parish location and business type data to generate customized risk profiles and strategy recommendations
+        </p>
         
         {/* Selection Controls */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -304,7 +301,7 @@ export function RiskCalculatorTab() {
             <select
               value={selectedParish}
               onChange={(e) => setSelectedParish(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="admin-select"
             >
               <option value="">Choose a parish...</option>
               {parishes.map(parish => (
@@ -324,7 +321,7 @@ export function RiskCalculatorTab() {
             <select
               value={selectedBusinessType}
               onChange={(e) => setSelectedBusinessType(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="admin-select"
             >
               <option value="">Choose a business type...</option>
               {businessTypes.map(bt => (
@@ -367,7 +364,7 @@ export function RiskCalculatorTab() {
                   <div key={risk.riskType} className="border border-gray-200 rounded-lg p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{riskIcons[risk.riskType as keyof typeof riskIcons]}</span>
+                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                         <div>
                           <h4 className="text-lg font-semibold text-gray-900 capitalize">
                             {risk.riskType.replace(/([A-Z])/g, ' $1').toLowerCase()}
@@ -503,7 +500,7 @@ export function RiskCalculatorTab() {
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
+              <div>
                     <h4 className="font-medium text-blue-800 mb-3">🚀 Immediate Actions (Next 2 weeks)</h4>
                     <div className="space-y-3">
                       {immediateActions.length > 0 ? immediateActions.map((item, idx) => (
@@ -527,9 +524,9 @@ export function RiskCalculatorTab() {
                         </div>
                       )}
                     </div>
-                  </div>
+              </div>
                   
-                  <div>
+              <div>
                     <h4 className="font-medium text-blue-800 mb-3">📈 Strategic Planning (1-6 months)</h4>
                     <div className="space-y-3">
                       {priorityStrategies.length > 0 ? priorityStrategies.map((item, idx) => (

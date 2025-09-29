@@ -7,6 +7,7 @@ import { StrategiesActionsTab } from '@/components/admin2/StrategiesActionsTab'
 import { RiskCalculatorTab } from '@/components/admin2/RiskCalculatorTab'
 import { Navigation } from '@/components/admin2/Navigation'
 import { GlobalAutoSaveProvider, GlobalAutoSaveIndicator } from '@/contexts/GlobalAutoSaveContext'
+import Image from 'next/image'
 
 interface Parish {
   id: string
@@ -32,25 +33,22 @@ type MainTab = 'locations' | 'business-types' | 'strategies-actions' | 'risk-cal
 export default function Admin2Page() {
   const [activeTab, setActiveTab] = useState<MainTab>('locations')
 
-  const TabButton = ({ tab, label, icon, description }: { tab: MainTab; label: string; icon: string; description: string }) => (
+  const TabButton = ({ tab, label, description }: { tab: MainTab; label: string; description: string }) => (
     <button
       onClick={() => {
         setActiveTab(tab)
         console.log('🎯 Admin2 tab switched to:', tab)
       }}
-      className={`flex-1 text-left p-6 rounded-lg border-2 transition-all ${
+      className={`text-left p-8 transition-all duration-200 border-l-4 ${
         activeTab === tab
-          ? 'border-blue-500 bg-blue-50 shadow-md'
-          : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+          ? 'border-l-blue-600 bg-white shadow-sm'
+          : 'border-l-transparent bg-gray-50 hover:bg-white hover:shadow-sm'
       }`}
     >
-      <div className="flex items-center space-x-3 mb-2">
-        <span className="text-2xl">{icon}</span>
-        <h3 className={`text-lg font-semibold ${activeTab === tab ? 'text-blue-900' : 'text-gray-900'}`}>
-          {label}
-        </h3>
-      </div>
-      <p className={`text-sm ${activeTab === tab ? 'text-blue-700' : 'text-gray-600'}`}>
+      <h3 className={`text-xl font-medium mb-3 ${activeTab === tab ? 'text-blue-600' : 'text-gray-700'}`}>
+        {label}
+      </h3>
+      <p className="text-sm text-gray-600 leading-relaxed">
         {description}
       </p>
     </button>
@@ -62,56 +60,64 @@ export default function Admin2Page() {
         <Navigation />
         
         {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
-              🏝️ Jamaica Business Risk Management Platform
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Professional risk assessment combining location-based hazards with business-type vulnerabilities 
-              to create customized risk profiles for Jamaica SMEs
-            </p>
-            <GlobalAutoSaveIndicator className="text-center mt-4" />
-          </div>
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-6 py-12">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <Image 
+                  src="/undp-logo.png" 
+                  alt="UNDP Logo" 
+                  width={60} 
+                  height={60}
+                  className="h-15 w-auto"
+                />
+                <div>
+                  <h1 className="text-3xl font-light text-gray-900 tracking-tight">
+                    Jamaica Business Risk Management Platform
+                  </h1>
+                  <p className="text-lg text-gray-600 font-light mt-1">
+                    Professional risk assessment and business continuity planning
+                  </p>
+                </div>
+              </div>
+              <GlobalAutoSaveIndicator />
+            </div>
 
-          {/* Main Tab Navigation */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <TabButton
-              tab="locations"
-              label="Location Risks"
-              icon="🌊"
-              description="Manage parish-level environmental risks: hurricanes, floods, earthquakes, and more across all 14 Jamaica parishes"
-            />
-            <TabButton
-              tab="business-types"
-              label="Business Types"
-              icon="🏢"
-              description="Configure SME vulnerability profiles: understand how different business types are affected by various risks"
-            />
-            <TabButton
-              tab="strategies-actions"
-              label="Strategies & Actions"
-              icon="🛡️"
-              description="Manage the library of risk mitigation strategies and detailed action plans for businesses"
-            />
-            <TabButton
-              tab="risk-calculator"
-              label="Risk Calculator"
-              icon="🎯"
-              description="Interactive risk calculator: combine location + business type to generate customized risk profiles and strategies"
-            />
+            {/* Main Tab Navigation */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-1 bg-gray-100 rounded-lg p-1">
+              <TabButton
+                tab="locations"
+                label="Location Risks"
+                description="Manage parish-level environmental risks: hurricanes, floods, earthquakes, and more across all 14 Jamaica parishes"
+              />
+              <TabButton
+                tab="business-types"
+                label="Business Types"
+                description="Configure SME vulnerability profiles: understand how different business types are affected by various risks"
+              />
+              <TabButton
+                tab="strategies-actions"
+                label="Strategies & Actions"
+                description="Manage the library of risk mitigation strategies and detailed action plans for businesses"
+              />
+              <TabButton
+                tab="risk-calculator"
+                label="Risk Calculator"
+                description="Interactive risk calculator: combine location + business type to generate customized risk profiles and strategies"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'locations' && <LocationRisksTab />}
-        {activeTab === 'business-types' && <BusinessTypesTab />}
-        {activeTab === 'strategies-actions' && <StrategiesActionsTab />}
-        {activeTab === 'risk-calculator' && <RiskCalculatorTab />}
-      </div>
+        {/* Tab Content */}
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            {activeTab === 'locations' && <LocationRisksTab />}
+            {activeTab === 'business-types' && <BusinessTypesTab />}
+            {activeTab === 'strategies-actions' && <StrategiesActionsTab />}
+            {activeTab === 'risk-calculator' && <RiskCalculatorTab />}
+          </div>
+        </div>
       </div>
     </GlobalAutoSaveProvider>
   )
