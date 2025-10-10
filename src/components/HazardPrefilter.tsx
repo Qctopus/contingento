@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { calculateLocationRisk } from '../data/hazardMappings'
-import { industryProfiles } from '../data/industryProfiles'
+import { centralDataService } from '../services/centralDataService'
+import type { BusinessType } from '../types/admin'
+import type { Locale } from '../i18n/config'
 
 interface HazardPrefilterProps {
   selectedHazards: string[]
@@ -95,22 +97,29 @@ export function HazardPrefilter({
   const [error, setError] = useState<string | null>(null)
   const [smartRecommendations, setSmartRecommendations] = useState<SmartRecommendation | null>(null)
   const [usingFallback, setUsingFallback] = useState(false)
+  const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
   
   const t = useTranslations('common')
   const tSteps = useTranslations('steps.riskAssessment')
+  const locale = useLocale() as Locale
 
   // Get localized hazard label
-  const getHazardLabel = (hazardKey: string): string => {
+  const getHazardLabel = (hazardKey: string | any): string => {
     try {
-      const translatedLabel = tSteps(`hazardLabels.${hazardKey}`)
+      // Ensure hazardKey is a string
+      const key = typeof hazardKey === 'string' ? hazardKey : 
+                  hazardKey?.id || hazardKey?.hazardId || hazardKey?.toString() || 'unknown'
       
-      if (translatedLabel && translatedLabel !== `hazardLabels.${hazardKey}` && translatedLabel !== `steps.riskAssessment.hazardLabels.${hazardKey}`) {
+      const translatedLabel = tSteps(`hazardLabels.${key}`)
+      
+      if (translatedLabel && translatedLabel !== `hazardLabels.${key}` && translatedLabel !== `steps.riskAssessment.hazardLabels.${key}`) {
         return translatedLabel
       }
       
-      return hazardKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     } catch (error) {
-      return hazardKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+      const key = typeof hazardKey === 'string' ? hazardKey : 'unknown'
+      return key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     }
   }
 
@@ -143,8 +152,8 @@ export function HazardPrefilter({
     // Get a more readable business name
     let business = businessType
     if (businessType && businessType !== 'your business') {
-      const industryProfile = industryProfiles.find(p => p.id === businessType)
-      business = industryProfile ? industryProfile.name : businessType.replace(/_/g, ' ')
+      const businessProfile = businessTypes.find(p => p.businessTypeId === businessType)
+      business = businessProfile ? businessProfile.name : businessType.replace(/_/g, ' ')
     }
     
     const contextualMessages: { [key: string]: string } = {
@@ -160,8 +169,72 @@ export function HazardPrefilter({
     return contextualMessages[hazardId] || `This risk may impact ${business} operations in ${location}.`
   }
 
-  // Fetch smart recommendations from API
+  // Load business types from database with current locale
   useEffect(() => {
+    const loadBusinessTypes = async () => {
+      try {
+        const types = await centralDataService.getBusinessTypes(true, locale)
+        setBusinessTypes(types)
+      } catch (error) {
+        console.error('Failed to load business types:', error)
+      }
+    }
+    
+    loadBusinessTypes()
+  }, [locale])
+
+  // Initialize hazards from prefill data when available
+  useEffect(() => {
+    if (preFillData?.hazards && preFillData.hazards.length > 0) {
+      console.log('Initializing hazards from prefill data:', preFillData.hazards)
+      
+      // Create hazard info from prefill data
+      const hazardAnalysis: HazardInfo[] = preFillData.hazards.map((hazard: any) => {
+        let priority: 'high' | 'medium' | 'low' = 'low'
+        if (hazard.riskLevel === 'very_high' || hazard.riskLevel === 'high') {
+          priority = 'high'
+        } else if (hazard.riskLevel === 'medium') {
+          priority = 'medium'
+        }
+
+        return {
+          id: hazard.hazardId,
+          name: hazard.hazardName || getHazardLabel(hazard.hazardId),
+          priority,
+          reason: `Based on ${businessData?.industryType || 'business type'} in ${locationData?.parish || 'your location'}`,
+          locationBased: true,
+          industryBased: true,
+          isSeasonallyActive: hazard.seasonalPattern !== 'year-round',
+          cascadingRisks: [],
+          warningTime: hazard.warningTime,
+          geographicScope: hazard.geographicScope
+        }
+      })
+      
+      setHazardInfo(hazardAnalysis)
+      
+      // Auto-select high priority hazards from prefill data
+      const highPriorityHazards = hazardAnalysis
+        .filter(h => h.priority === 'high')
+        .map(h => h.id)
+      
+      if (highPriorityHazards.length > 0) {
+        setPrioritizedHazards(highPriorityHazards)
+        console.log('Auto-selected high priority hazards:', highPriorityHazards)
+      }
+      
+      // Skip loading state since we have prefill data
+      setLoading(false)
+    }
+  }, [preFillData, businessData, locationData])
+
+  // Fetch smart recommendations from API (only if no prefill data)
+  useEffect(() => {
+    // Skip if we already have prefill data
+    if (preFillData?.hazards && preFillData.hazards.length > 0) {
+      return
+    }
+    
     const fetchSmartRecommendations = async () => {
       try {
         setLoading(true)
@@ -222,6 +295,11 @@ export function HazardPrefilter({
 
   // Analyze and prioritize hazards based on smart recommendations or fallback to original logic
   useEffect(() => {
+    // Skip analysis if we already have prefill data
+    if (preFillData?.hazards && preFillData.hazards.length > 0) {
+      return
+    }
+    
     const analyzeHazards = () => {
       let hazardAnalysis: HazardInfo[] = []
       
@@ -281,23 +359,25 @@ export function HazardPrefilter({
           )
         }
         
-                 // Get industry-based risk data
-         let industryRisks: string[] = []
-         if (businessData?.industryType) {
-           const industryProfile = industryProfiles.find(p => p.id === businessData.industryType)
-           if (industryProfile) {
-             industryRisks = industryProfile.vulnerabilities.map(v => v.hazardId)
-           }
-           
-           // Debug logging
-           if (process.env.NODE_ENV === 'development') {
-             console.log('Industry profile found:', industryProfile)
-             console.log('Industry risks:', industryRisks)
-           }
-         }
+        // Get industry-based risk data
+        let industryRisks: string[] = []
+        if (businessData?.industryType) {
+          const businessProfile = businessTypes.find(p => p.businessTypeId === businessData.industryType)
+          if (businessProfile && businessProfile.riskVulnerabilities) {
+            industryRisks = businessProfile.riskVulnerabilities.map(v => v.riskType)
+          }
+          
+          // Debug logging
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Business profile found:', businessProfile)
+            console.log('Industry risks:', industryRisks)
+          }
+        }
         
         // Analyze each selected hazard
-        selectedHazards.forEach(hazardId => {
+        selectedHazards.forEach((hazard: any) => {
+          // Ensure we have a proper hazard ID
+          const hazardId = typeof hazard === 'string' ? hazard : hazard?.id || hazard?.hazardId || hazard
           const hazardName = getHazardLabel(hazardId)
           
           // Check if hazard is location-based
@@ -345,12 +425,15 @@ export function HazardPrefilter({
       
       setHazardInfo(hazardAnalysis)
       
-      // Auto-select high priority hazards initially
+      // Auto-select high priority hazards initially (if no initial selection provided)
       if (initialSelection.length === 0) {
         const highPriorityHazards = hazardAnalysis
           .filter(h => h.priority === 'high')
           .map(h => h.id)
         setPrioritizedHazards(highPriorityHazards)
+      } else {
+        // Use provided initial selection
+        setPrioritizedHazards(initialSelection)
       }
     }
     
@@ -388,9 +471,9 @@ export function HazardPrefilter({
     // Get a more readable business name
     let businessDisplay = businessType
     if (businessType && businessType !== 'your business') {
-      // Find the industry profile to get a better display name
-      const industryProfile = industryProfiles.find(p => p.id === businessType)
-      businessDisplay = industryProfile ? industryProfile.localName : businessType.replace(/_/g, ' ')
+      // Find the business profile to get a better display name
+      const businessProfile = businessTypes.find(p => p.businessTypeId === businessType)
+      businessDisplay = businessProfile ? businessProfile.name : businessType.replace(/_/g, ' ')
     }
     
     return {

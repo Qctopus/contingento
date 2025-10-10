@@ -461,7 +461,7 @@ export function BusinessContinuityForm() {
             console.warn('Dynamic service failed, using static fallback:', dynamicError)
             // Final fallback to static system
             const locale = 'en'
-            const data = generatePreFillData(industryId, location, locale, messages)
+            const data = await generatePreFillData(industryId, location, locale, messages)
             
             if (data) {
               localStorage.setItem('bcp-industry-selected', 'true')
@@ -484,7 +484,7 @@ export function BusinessContinuityForm() {
         
         // Final fallback to old system
         const locale = 'en'
-        const data = generatePreFillData(industryId, location, locale, messages)
+        const data = await generatePreFillData(industryId, location, locale, messages)
         if (data) {
           localStorage.setItem('bcp-industry-selected', 'true')
           localStorage.setItem('bcp-prefill-data', JSON.stringify(data))
@@ -512,13 +512,13 @@ export function BusinessContinuityForm() {
     
     const stepDefaults = preFillData.preFilledFields[stepId]
     if (stepDefaults) {
+      // COMPLETELY REPLACE step data with defaults (don't merge)
+      // This ensures reset actually resets, not just overlays defaults
       setFormData(prev => ({
         ...prev,
-        [stepId]: {
-          ...prev[stepId],
-          ...stepDefaults
-        }
+        [stepId]: stepDefaults  // Direct replacement, no spreading prev[stepId]
       }))
+      console.log(`🔄 Reset ${stepId} to industry defaults:`, stepDefaults)
     }
   }
 

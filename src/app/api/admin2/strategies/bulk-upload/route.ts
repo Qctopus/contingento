@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Create/update strategies and their action steps in database
-      for (const [strategyId, strategyInfo] of strategiesMap.entries()) {
+      for (const [strategyId, strategyInfo] of Array.from(strategiesMap.entries())) {
         try {
           const existingStrategy = await prisma.riskMitigationStrategy.findFirst({
             where: { strategyId }
@@ -344,7 +344,7 @@ export async function GET() {
         strategy.whyImportant || '', // Why Important from database
         strategy.implementationCost,
         strategy.timeToImplement,
-        strategy.effectiveness.toString(),
+        strategy.effectiveness?.toString() || '5',
         strategy.roi?.toString() || '3.0',
         Array.isArray(applicableRisks) ? applicableRisks.join(';') : '',
         Array.isArray(businessTypes) ? businessTypes.join(';') : '',

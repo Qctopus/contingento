@@ -97,26 +97,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get location data for risk modifiers
-    let location = null
-    if (countryCode) {
-      location = await (prisma as any).adminLocation.findFirst({
+    // Get location data for risk modifiers - USE NEW PARISH SYSTEM
+    let parishData = null
+    if (parish) {
+      console.log('🔍 get-risk-calculations: Looking up parish:', parish)
+      parishData = await (prisma as any).parish.findFirst({
         where: {
-          countryCode,
-          parish: parish || null
+          OR: [
+            { id: parish },  // Try by ID first
+            { name: parish } // Fallback to name
+          ]
         },
         include: {
-          locationHazards: {
-            include: {
-              hazard: true
-            },
-            where: { 
-              isActive: true,
-              hazardId: { in: hazardIds }
-            }
-          }
+          parishRisk: true
         }
       })
+      
+      if (parishData) {
+        console.log('✅ get-risk-calculations: Found parish:', parishData.name)
+      } else {
+        console.log('⚠️ get-risk-calculations: Parish not found')
+      }
     }
 
     // Process each hazard and calculate risks
@@ -130,18 +131,103 @@ export async function POST(request: NextRequest) {
       )
 
       if (!businessTypeHazard) {
-        // If no specific mapping, create default calculation
-        riskCalculations.push({
-          hazardId,
-          hazardName: hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-          likelihood: 'possible',
-          severity: 'moderate',
-          riskLevel: 'medium',
-          reasoning: 'Default assessment - no specific data available for this business type',
-          confidence: 'low',
-          isCalculated: false,
-          dataSource: 'default'
-        })
+        // Check if we have parish risk data for this hazard (including DYNAMIC risk types)
+        let parishRiskLevel = 0
+        if (parishData?.parishRisk) {
+          const parishRisk = parishData.parishRisk
+          
+          // FIRST: Try hardcoded fields for backward compatibility
+          switch (hazardId) {
+            case 'hurricane':
+              parishRiskLevel = parishRisk.hurricaneLevel || 0
+              break
+            case 'flood':
+            case 'flooding':
+              parishRiskLevel = parishRisk.floodLevel || 0
+              break
+            case 'earthquake':
+              parishRiskLevel = parishRisk.earthquakeLevel || 0
+              break
+            case 'drought':
+              parishRiskLevel = parishRisk.droughtLevel || 0
+              break
+            case 'landslide':
+              parishRiskLevel = parishRisk.landslideLevel || 0
+              break
+            case 'power_outage':
+            case 'powerOutage':
+              parishRiskLevel = parishRisk.powerOutageLevel || 0
+              break
+            default:
+              // SECOND: Try dynamic risks from riskProfileJson (cyber_attack, pandemic, etc.)
+              if (parishRisk.riskProfileJson) {
+                try {
+                  const dynamicRisks = typeof parishRisk.riskProfileJson === 'string' 
+                    ? JSON.parse(parishRisk.riskProfileJson) 
+                    : parishRisk.riskProfileJson
+                  
+                  // Try both snake_case and camelCase formats (cyber_attack vs cyberAttack)
+                  const camelCaseKey = hazardId.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
+                  const riskData = dynamicRisks[hazardId] || dynamicRisks[camelCaseKey]
+                  
+                  if (riskData && riskData.level !== undefined) {
+                    parishRiskLevel = riskData.level || 0
+                    console.log(`  ✅ get-risk-calculations: Found dynamic parish risk ${hazardId} (${riskData === dynamicRisks[hazardId] ? 'snake_case' : 'camelCase'}) = ${parishRiskLevel}`)
+                  }
+                } catch (error) {
+                  console.error(`  ⚠️ Failed to parse riskProfileJson for ${hazardId}:`, error)
+                }
+              }
+          }
+        }
+        
+        // Determine if this risk should be pre-selected or just available
+        const isPreSelected = parishRiskLevel > 0
+        
+        if (isPreSelected) {
+          // Parish has significant risk data - pre-select this risk
+          let parishLikelihoodScore = 1
+          if (parishRiskLevel >= 9) parishLikelihoodScore = 5  // almost_certain
+          else if (parishRiskLevel >= 7) parishLikelihoodScore = 4  // likely
+          else if (parishRiskLevel >= 5) parishLikelihoodScore = 3  // possible
+          else if (parishRiskLevel >= 3) parishLikelihoodScore = 2  // unlikely
+          else parishLikelihoodScore = 1  // rare
+          
+          const parishLikelihood = Object.keys(LIKELIHOOD_SCORES).find(
+            key => LIKELIHOOD_SCORES[key] === parishLikelihoodScore
+          ) || 'possible'
+          
+          const calculatedRiskLevel = calculateRiskLevel(parishLikelihood, 'moderate')
+          
+          riskCalculations.push({
+            hazardId,
+            hazardName: hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            likelihood: parishLikelihood,
+            severity: 'moderate',
+            riskLevel: calculatedRiskLevel,
+            reasoning: `Based on ${parishData.name} parish risk data (level ${parishRiskLevel}/10). No specific business type vulnerability data available, using moderate impact assumption.`,
+            confidence: 'medium',
+            isCalculated: true,
+            isPreSelected: true,
+            dataSource: 'parish_only',
+            locationModifier: `${parishData.name} parish risk data (level ${parishRiskLevel}/10)`,
+            environmentalModifiers: []
+          })
+        } else {
+          // Parish has no/low risk data - make available but not pre-selected
+          riskCalculations.push({
+            hazardId,
+            hazardName: hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            likelihood: 'possible',
+            severity: 'moderate',
+            riskLevel: 'not_applicable',
+            reasoning: `This risk is not significant in ${parishData?.name || 'this location'} (parish risk level: ${parishRiskLevel}/10). Available for manual selection if you believe it applies to your situation.`,
+            confidence: 'low',
+            isCalculated: false,
+            isPreSelected: false,
+            dataSource: 'available'
+          })
+        }
         continue
       }
 
@@ -152,33 +238,64 @@ export async function POST(request: NextRequest) {
       let baseSeverity = businessTypeHazard.impact || hazard.impact || 'moderate'
       let baseRiskLevel = businessTypeHazard.riskLevel || 'medium'
 
-      // Apply location modifiers if available
+      // Apply location modifiers from Parish risk data
       let locationModifier = ''
-      const locationHazard = location?.locationHazards?.find(
-        (lh: any) => lh.hazardId === hazardId
-      )
-
-      if (locationHazard) {
-        const locationRiskLevel = RISK_LEVELS[locationHazard.riskLevel] || 2
-        const baseRiskScore = RISK_LEVELS[baseRiskLevel] || 2
+      let parishRiskLevel = 0
+      
+      if (parishData?.parishRisk) {
+        const parishRisk = parishData.parishRisk
         
-        if (locationRiskLevel > baseRiskScore) {
-          locationModifier = 'increased due to location factors'
-          // Adjust likelihood or severity based on location
-          if (LIKELIHOOD_SCORES[baseLikelihood] < 5) {
-            const newScore = Math.min(5, LIKELIHOOD_SCORES[baseLikelihood] + 1)
+        // Map hazardId to parishRisk field (0-10 scale)
+        switch (hazardId) {
+          case 'hurricane':
+            parishRiskLevel = parishRisk.hurricaneLevel || 0
+            break
+          case 'flood':
+          case 'flooding':
+            parishRiskLevel = parishRisk.floodLevel || 0
+            break
+          case 'earthquake':
+            parishRiskLevel = parishRisk.earthquakeLevel || 0
+            break
+          case 'drought':
+            parishRiskLevel = parishRisk.droughtLevel || 0
+            break
+          case 'landslide':
+            parishRiskLevel = parishRisk.landslideLevel || 0
+            break
+          case 'power_outage':
+          case 'powerOutage':
+            parishRiskLevel = parishRisk.powerOutageLevel || 0
+            break
+        }
+        
+        // Convert parish risk level (0-10) to likelihood score (1-5)
+        // 0 = not set/no data, 1-2 = rare, 3-4 = unlikely, 5-6 = possible, 7-8 = likely, 9-10 = almost_certain
+        if (parishRiskLevel > 0) {
+          let parishLikelihoodScore = 1
+          if (parishRiskLevel >= 9) parishLikelihoodScore = 5  // almost_certain
+          else if (parishRiskLevel >= 7) parishLikelihoodScore = 4  // likely
+          else if (parishRiskLevel >= 5) parishLikelihoodScore = 3  // possible
+          else if (parishRiskLevel >= 3) parishLikelihoodScore = 2  // unlikely
+          else parishLikelihoodScore = 1  // rare
+          
+          const baseLikelihoodScore = LIKELIHOOD_SCORES[baseLikelihood] || 3
+          
+          if (parishLikelihoodScore > baseLikelihoodScore) {
+            locationModifier = `increased due to ${parishData.name} parish risk data (level ${parishRiskLevel}/10)`
             baseLikelihood = Object.keys(LIKELIHOOD_SCORES).find(
-              key => LIKELIHOOD_SCORES[key] === newScore
+              key => LIKELIHOOD_SCORES[key] === parishLikelihoodScore
             ) || baseLikelihood
-          }
-        } else if (locationRiskLevel < baseRiskScore) {
-          locationModifier = 'reduced due to location factors'
-          if (LIKELIHOOD_SCORES[baseLikelihood] > 1) {
-            const newScore = Math.max(1, LIKELIHOOD_SCORES[baseLikelihood] - 1)
+          } else if (parishLikelihoodScore < baseLikelihoodScore) {
+            locationModifier = `reduced due to ${parishData.name} parish risk data (level ${parishRiskLevel}/10)`
             baseLikelihood = Object.keys(LIKELIHOOD_SCORES).find(
-              key => LIKELIHOOD_SCORES[key] === newScore
+              key => LIKELIHOOD_SCORES[key] === parishLikelihoodScore
             ) || baseLikelihood
+          } else {
+            locationModifier = `confirmed by ${parishData.name} parish risk data (level ${parishRiskLevel}/10)`
           }
+        } else {
+          console.log(`  ${hazardId}: No parish risk data set (level = 0), using business type default`)
         }
       }
 
@@ -221,10 +338,14 @@ export async function POST(request: NextRequest) {
       if (!businessTypeHazard.frequency || !businessTypeHazard.impact) {
         confidence = 'medium'
       }
-      if (!locationHazard && (nearCoast || urbanArea)) {
-        confidence = 'medium'
+      if (!parishData?.parishRisk || parishRiskLevel === 0) {
+        confidence = 'medium' // Lower confidence when no parish risk data
       }
 
+      // Determine if this risk should be pre-selected
+      // Pre-select if parish has significant risk data (level > 0) OR if it's a high-confidence calculation
+      const shouldPreSelect = (parishRiskLevel > 0) || (confidence === 'high' && calculatedRiskLevel !== 'low')
+      
       riskCalculations.push({
         hazardId,
         hazardName: hazard.name,
@@ -234,6 +355,7 @@ export async function POST(request: NextRequest) {
         reasoning,
         confidence,
         isCalculated: true,
+        isPreSelected: shouldPreSelect,
         dataSource: 'admin_configured',
         locationModifier: locationModifier || null,
         environmentalModifiers
@@ -315,7 +437,8 @@ export async function POST(request: NextRequest) {
       strategies: groupedStrategies,
       metadata: {
         businessTypeName: businessType.name,
-        locationFound: !!location,
+        locationFound: !!parishData,
+        parishName: parishData?.name || null,
         totalStrategies: strategiesArray.length,
         highConfidenceCalculations: riskCalculations.filter(r => r.confidence === 'high').length,
         dataQuality: calculateDataQuality(riskCalculations)

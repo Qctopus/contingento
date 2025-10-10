@@ -4,6 +4,16 @@
  */
 
 import { safeJsonParse, transformDatesForApi } from './api-utils'
+import { parseMultilingualJSON } from '../../utils/localizationUtils'
+
+/**
+ * All possible risk types (13 total)
+ */
+const ALL_RISK_TYPES = [
+  'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage',
+  'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 
+  'supplyChainDisruption', 'civilUnrest'
+]
 
 /**
  * Transform Parish data from database to API format
@@ -11,20 +21,47 @@ import { safeJsonParse, transformDatesForApi } from './api-utils'
 export function transformParishForApi(parish: any): any {
   if (!parish) return null
 
+  // CRITICAL: Initialize ALL 13 risks with level 0 first
   let riskProfile: any = {}
+  ALL_RISK_TYPES.forEach(riskType => {
+    riskProfile[riskType] = { level: 0, notes: '' }
+  })
   
-  // Parse complete risk profile from JSON if available
-  if (parish.parishRisk?.riskProfileJson) {
-    try {
-      riskProfile = JSON.parse(parish.parishRisk.riskProfileJson)
-    } catch (error) {
-      console.error('Failed to parse parish risk profile JSON:', error)
-      // Fallback to basic risks
-      riskProfile = buildBasicRiskProfile(parish.parishRisk)
+  // Override with actual data from database
+  if (parish.parishRisk) {
+    // Merge basic 6 hardcoded risks
+    const basicRisks = buildBasicRiskProfile(parish.parishRisk)
+    Object.assign(riskProfile, basicRisks)
+    
+    // CRITICAL: Merge in ALL dynamic risks from riskProfileJson
+    // This includes: fire, cyberAttack, terrorism, pandemicDisease, etc.
+    if (parish.parishRisk.riskProfileJson) {
+      try {
+        const dynamicRisks = typeof parish.parishRisk.riskProfileJson === 'string' 
+          ? JSON.parse(parish.parishRisk.riskProfileJson) 
+          : parish.parishRisk.riskProfileJson
+        
+        if (dynamicRisks && typeof dynamicRisks === 'object') {
+          // Merge ALL risks from JSON (including overwriting hardcoded ones if they exist)
+          Object.keys(dynamicRisks).forEach(riskKey => {
+            // Skip metadata fields
+            if (['lastUpdated', 'updatedBy'].includes(riskKey)) return
+            
+            // Add/update risk data
+            if (dynamicRisks[riskKey] && typeof dynamicRisks[riskKey] === 'object') {
+              riskProfile[riskKey] = dynamicRisks[riskKey]
+            }
+          })
+          
+          const nonZeroRisks = Object.keys(riskProfile).filter(k => 
+            !['lastUpdated', 'updatedBy'].includes(k) && riskProfile[k]?.level > 0
+          ).length
+          console.log(`🔍 transformParishForApi: ${parish.name} has ${nonZeroRisks} risks with level > 0 (out of ${ALL_RISK_TYPES.length} total)`)
+        }
+      } catch (error) {
+        console.error('⚠️ transformParishForApi: Failed to parse riskProfileJson:', error)
+      }
     }
-  } else if (parish.parishRisk) {
-    // Build from individual risk fields
-    riskProfile = buildBasicRiskProfile(parish.parishRisk)
   }
   
   // Ensure metadata is always present
@@ -83,10 +120,10 @@ export function transformBusinessTypeForApi(businessType: any): any {
   return {
     id: businessType.id,
     businessTypeId: businessType.businessTypeId,
-    name: businessType.name,
+    name: parseMultilingualJSON(businessType.name) || businessType.name,
     category: businessType.category,
     subcategory: businessType.subcategory,
-    description: businessType.description,
+    description: parseMultilingualJSON(businessType.description) || businessType.description,
     typicalRevenue: businessType.typicalRevenue,
     typicalEmployees: businessType.typicalEmployees,
     operatingHours: businessType.operatingHours,
@@ -121,6 +158,11 @@ export function transformStrategyForApi(strategy: any): any {
 
   const transformed = {
     ...strategy,
+    name: parseMultilingualJSON(strategy.name) || strategy.name,
+    description: parseMultilingualJSON(strategy.description) || strategy.description,
+    smeDescription: parseMultilingualJSON(strategy.smeDescription) || strategy.smeDescription || strategy.description || '',
+    whyImportant: parseMultilingualJSON(strategy.whyImportant) || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
+    
     applicableRisks: safeJsonParse(strategy.applicableRisks, []),
     applicableBusinessTypes: applicableBusinessTypesFromDb,
     prerequisites: safeJsonParse(strategy.prerequisites, []),
@@ -129,10 +171,6 @@ export function transformStrategyForApi(strategy: any): any {
     costEstimateJMD: getCostEstimateJMD(strategy.implementationCost),
     timeToImplement: strategy.implementationTime,
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
-    
-    // Add missing fields for StrategyEditor compatibility
-    smeDescription: strategy.smeDescription || strategy.description || '',
-    whyImportant: strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
     
     // Default empty arrays for optional fields
     helpfulTips: safeJsonParse(strategy.helpfulTips, []),
@@ -143,9 +181,10 @@ export function transformStrategyForApi(strategy: any): any {
     actionSteps: (strategy.actionSteps || []).map((step: any) => ({
       id: step.stepId,
       phase: step.phase,
-      title: step.title,
-      action: step.description,
-      smeAction: step.smeAction,
+      title: parseMultilingualJSON(step.title) || step.title,
+      action: parseMultilingualJSON(step.description) || step.description,
+      description: parseMultilingualJSON(step.description) || step.description,
+      smeAction: parseMultilingualJSON(step.smeAction) || step.smeAction,
       timeframe: step.timeframe,
       responsibility: step.responsibility,
       cost: step.estimatedCost,

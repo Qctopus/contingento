@@ -2,6 +2,8 @@
 
 // Import types from centralized admin types
 import type { Strategy, ActionStep, Parish, BusinessType, RiskData } from '../types/admin'
+import type { Locale } from '../i18n/config'
+import { localizeBusinessType, localizeStrategy } from '../utils/localizationUtils'
 
 // Central Data Service for Admin2 System
 // Provides consistent CRUD operations with auto-save capabilities for all admin entities
@@ -114,14 +116,21 @@ export class CentralDataService {
   }
 
   // BUSINESS TYPE OPERATIONS
-  async getBusinessTypes(forceRefresh: boolean = false): Promise<BusinessType[]> {
-    const cacheKey = 'businessTypes'
+  async getBusinessTypes(forceRefresh: boolean = false, locale?: Locale): Promise<BusinessType[]> {
+    const cacheKey = `businessTypes_${locale || 'en'}`
     
     // Always fetch fresh data to ensure consistency
     console.log('🏢 CentralDataService fetching business types from database (fresh)')
-    const businessTypes = await this.fetchWithErrorHandling<BusinessType[]>('/api/admin2/business-types')
-    this.cache.set(cacheKey, businessTypes)
-    return businessTypes
+    const url = locale ? `/api/admin2/business-types?locale=${locale}` : '/api/admin2/business-types'
+    const businessTypes = await this.fetchWithErrorHandling<BusinessType[]>(url)
+    
+    // If locale is specified, localize the content
+    const localizedBusinessTypes = locale 
+      ? businessTypes.map(bt => localizeBusinessType(bt, locale))
+      : businessTypes
+    
+    this.cache.set(cacheKey, localizedBusinessTypes)
+    return localizedBusinessTypes
   }
 
   async getBusinessType(id: string): Promise<BusinessType> {
@@ -171,14 +180,21 @@ export class CentralDataService {
   }
 
   // STRATEGY OPERATIONS
-  async getStrategies(forceRefresh: boolean = false): Promise<Strategy[]> {
-    const cacheKey = 'strategies'
+  async getStrategies(forceRefresh: boolean = false, locale?: Locale): Promise<Strategy[]> {
+    const cacheKey = `strategies_${locale || 'en'}`
     
     // Always fetch fresh data to ensure consistency
     console.log('📋 CentralDataService fetching strategies from database (fresh)')
-    const strategies = await this.fetchWithErrorHandling<Strategy[]>('/api/admin2/strategies')
-    this.cache.set(cacheKey, strategies)
-    return strategies
+    const url = locale ? `/api/admin2/strategies?locale=${locale}` : '/api/admin2/strategies'
+    const strategies = await this.fetchWithErrorHandling<Strategy[]>(url)
+    
+    // If locale is specified, localize the content
+    const localizedStrategies = locale 
+      ? strategies.map(strategy => localizeStrategy(strategy, locale))
+      : strategies
+    
+    this.cache.set(cacheKey, localizedStrategies)
+    return localizedStrategies
   }
 
   async getStrategy(id: string): Promise<Strategy> {

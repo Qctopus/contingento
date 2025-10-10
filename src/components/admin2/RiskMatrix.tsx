@@ -32,7 +32,14 @@ export function RiskMatrix({ parishes }: RiskMatrixProps) {
     { key: 'earthquake', name: 'Earthquake', icon: '🏔️' },
     { key: 'drought', name: 'Drought', icon: '🌵' },
     { key: 'landslide', name: 'Landslide', icon: '⛰️' },
-    { key: 'powerOutage', name: 'Power', icon: '⚡' }
+    { key: 'powerOutage', name: 'Power', icon: '⚡' },
+    { key: 'fire', name: 'Fire', icon: '🔥' },
+    { key: 'cyberAttack', name: 'Cyber', icon: '💻' },
+    { key: 'terrorism', name: 'Security', icon: '🔒' },
+    { key: 'pandemicDisease', name: 'Health', icon: '🦠' },
+    { key: 'economicDownturn', name: 'Economic', icon: '📉' },
+    { key: 'supplyChainDisruption', name: 'Supply Chain', icon: '🚛' },
+    { key: 'civilUnrest', name: 'Civil Unrest', icon: '⚡' }
   ]
 
   const getRiskColor = (level: number) => {

@@ -46,7 +46,7 @@ export async function PUT(
           category: strategyData.category,
           description: strategyData.description,
           implementationCost: strategyData.implementationCost,
-          implementationTime: strategyData.implementationTime,
+          timeToImplement: strategyData.timeToImplement,
           effectiveness: strategyData.effectiveness,
           applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
           applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),

@@ -110,7 +110,11 @@ export function RiskCalculatorTab() {
 
     if (!parish || !businessType) return
 
-    const riskTypes = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage']
+    // Get ALL risk types from parish (includes dynamic risks like fire, cyberAttack, etc.)
+    const riskTypes = Object.keys(parish.riskProfile).filter(key => 
+      !['lastUpdated', 'updatedBy'].includes(key) && 
+      typeof (parish.riskProfile as any)[key] === 'object'
+    )
     const calculatedRisks: CombinedRisk[] = []
 
     riskTypes.forEach(riskType => {
@@ -267,7 +271,14 @@ export function RiskCalculatorTab() {
     earthquake: 'Earthquake',
     drought: 'Drought',
     landslide: 'Landslide',
-    powerOutage: 'Power Outage'
+    powerOutage: 'Power Outage',
+    fire: 'Fire',
+    cyberAttack: 'Cyber Attack',
+    terrorism: 'Security Threats',
+    pandemicDisease: 'Health Emergencies',
+    economicDownturn: 'Economic Crisis',
+    supplyChainDisruption: 'Supply Chain Issues',
+    civilUnrest: 'Civil Unrest'
   }
 
   if (isLoading) {

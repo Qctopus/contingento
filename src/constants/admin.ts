@@ -3,7 +3,8 @@
 export const BUSINESS_CATEGORIES = [
   'hospitality', 
   'retail', 
-  'services', 
+  'services',
+  'health',
   'manufacturing', 
   'agriculture', 
   'technology'
@@ -58,4 +59,9 @@ export const JAMAICA_REGIONS = [
   'May Pen',
   'Old Harbour'
 ] as const
+
+
+
+
+
 

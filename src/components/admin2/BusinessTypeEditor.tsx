@@ -17,7 +17,12 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
   const [editedBusinessType, setEditedBusinessType] = useState<BusinessType>(businessType)
   const [activeTab, setActiveTab] = useState<'basic' | 'characteristics'>('basic')
 
-  const riskTypes = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage']
+  // Include ALL risk types (basic + dynamic)
+  const riskTypes = [
+    'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage', 
+    'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 
+    'supplyChainDisruption', 'civilUnrest'
+  ]
 
   const handleSave = async () => {
     // Force immediate save and close

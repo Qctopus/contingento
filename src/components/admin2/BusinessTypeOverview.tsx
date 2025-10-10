@@ -24,6 +24,15 @@ export function BusinessTypeOverview({ businessTypes, onBusinessTypeSelect, onRe
     
     return getAverageRiskLevel(vulnerabilities)
   }
+  
+  const getDisplayName = (name: string): string => {
+    try {
+      const parsed = JSON.parse(name)
+      return parsed.en || parsed.fr || parsed.es || name
+    } catch {
+      return name
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -53,7 +62,7 @@ export function BusinessTypeOverview({ businessTypes, onBusinessTypeSelect, onRe
                     className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <div className="flex items-start justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{businessType.name}</h4>
+                      <h4 className="font-medium text-gray-900">{getDisplayName(businessType.name)}</h4>
                       <div className={`w-3 h-3 rounded-full ${getRiskColor(avgRisk)}`} title={`Risk Level: ${avgRisk}/10`}></div>
                     </div>
                     

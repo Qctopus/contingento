@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { RiskAssessmentWizard } from './RiskAssessmentWizard'
+import { AdminStrategyCards } from './AdminStrategyCards'
 import { ExcelUpload } from './ExcelUpload'
 import { useTranslations } from 'next-intl'
 import { useUserInteraction } from '@/lib/hooks'
@@ -586,6 +587,7 @@ export function StructuredInput({
 
   // Enhanced checkbox rendering with categories
   const renderEnhancedCheckbox = () => {
+    // DISABLED: Potential Hazards step is now handled by SimplifiedRiskAssessment
     // Check if this is a Potential Hazards field in any language
     const isPotentialHazards = [
       'Potential Hazards',        // English
@@ -594,7 +596,25 @@ export function StructuredInput({
       'Hazards'                   // New simplified label
     ].includes(label)
     
-    if (isPotentialHazards && options) {
+    if (isPotentialHazards) {
+      // Redirect to use SimplifiedRiskAssessment instead
+      return (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <svg className="h-12 w-12 text-blue-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-lg font-medium text-blue-900 mb-2">Risk Assessment Integrated</h3>
+          <p className="text-blue-700 mb-4">
+            Risk selection is now handled automatically in the Risk Assessment step using admin backend data.
+          </p>
+          <p className="text-sm text-blue-600">
+            This step has been replaced with smart risk pre-selection based on your business type and location.
+          </p>
+        </div>
+      )
+    }
+    
+    if (false && isPotentialHazards && options) { // Disabled the old logic
       // Comprehensive hazard categories matching the full database
       const COMPREHENSIVE_HAZARD_CATEGORIES = {
         'Natural Disasters': [
@@ -633,7 +653,7 @@ export function StructuredInput({
 
           <div className="grid lg:grid-cols-2 gap-4">
             {Object.entries(COMPREHENSIVE_HAZARD_CATEGORIES).map(([category, hazardValues]) => {
-              const categoryOptions = options.filter(option => hazardValues.includes(option.value))
+              const categoryOptions = (options || []).filter(option => hazardValues.includes(option.value))
               const selectedInCategory = categoryOptions.filter(option => (value as string[]).includes(option.value))
               
               // Category icons and colors
@@ -931,7 +951,7 @@ export function StructuredInput({
   }
 
   // Special handling for strategy cards
-  const handleStrategyCardsComplete = (strategies: string[]) => {
+  const handleStrategyComplete = (strategies: any[]) => {
     setInteracted()
     onComplete(strategies)
   }
@@ -1016,28 +1036,26 @@ export function StructuredInput({
   }
 
   if (type === 'special_strategy_cards') {
-    return renderStrategyCards()
+    const { locationData, businessData } = getContextualData()
+    
+    return (
+      <AdminStrategyCards
+        initialValue={initialValue}
+        onComplete={handleStrategyComplete}
+        setUserInteracted={() => { setInteracted() }}
+        businessData={businessData}
+        locationData={locationData}
+        preFillData={preFillData}
+      />
+    )
   }
 
   if (type === 'special_risk_matrix') {
     const selectedHazards = getSelectedHazards()
-    
-    if (selectedHazards.length === 0) {
-      return (
-        <div className="text-center py-8">
-          <div className="text-gray-500 mb-4">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noHazardsSelected')}</h3>
-          <p className="text-gray-600">{t('selectHazardsPrompt')}</p>
-        </div>
-      )
-    }
-
     const { locationData, businessData } = getContextualData()
 
+    // Always render the RiskAssessmentWizard - it will handle empty selectedHazards gracefully
+    // The SimplifiedRiskAssessment component will use preFillData if available
     return (
       <RiskAssessmentWizard
         selectedHazards={selectedHazards}

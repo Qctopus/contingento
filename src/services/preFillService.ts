@@ -1,9 +1,11 @@
 import { LocationData, PreFillData, IndustryProfile, HazardRiskLevel } from '../data/types'
-import { getIndustryProfile } from '../data/industryProfiles'
 import { calculateLocationRisk } from '../data/hazardMappings'
 import { 
   generateSmartActionPlans 
 } from './actionPlanService'
+import { centralDataService } from './centralDataService'
+import type { BusinessType } from '../types/admin'
+import { safeJsonParse } from '../lib/admin2/api-utils'
 
 // Localized location terms
 const getLocationTerms = (locale: string) => {
@@ -713,14 +715,40 @@ const generateAutoSelectedStrategies = (actionPlans: any[], businessType: string
 }
 
 // Main function to generate all pre-fill data
-export const generatePreFillData = (
+export const generatePreFillData = async (
   industryId: string,
   location: LocationData,
   locale: string = 'en',
   translations: any = null
-): PreFillData | null => {
-  const industry = getIndustryProfile(industryId)
-  if (!industry) return null
+): Promise<PreFillData | null> => {
+  // Get business type from database instead of legacy industry profiles
+  const businessTypes = await centralDataService.getBusinessTypes(true, locale)
+  const businessType = businessTypes.find(bt => bt.businessTypeId === industryId)
+  
+  if (!businessType) return null
+  
+  // Convert database business type to legacy industry profile format for compatibility
+  const industry: IndustryProfile = {
+    id: businessType.businessTypeId,
+    name: businessType.name,
+    localName: businessType.name,
+    category: businessType.category,
+    description: businessType.description || '',
+    typicalOperatingHours: businessType.operatingHours || '9:00 AM - 5:00 PM',
+    vulnerabilities: businessType.riskVulnerabilities?.map(rv => ({
+      hazardId: rv.riskType,
+      defaultRiskLevel: rv.vulnerabilityLevel === 1 ? 'low' : 
+                      rv.vulnerabilityLevel === 2 ? 'medium' : 
+                      rv.vulnerabilityLevel === 3 ? 'high' : 'very_high'
+    })) || [],
+    examples: {
+      businessPurpose: safeJsonParse(businessType.exampleBusinessPurposes) || [],
+      productsServices: safeJsonParse(businessType.exampleProducts) || [],
+      keyPersonnel: safeJsonParse(businessType.exampleKeyPersonnel) || [],
+      customerBase: safeJsonParse(businessType.exampleCustomerBase) || [],
+      minimumResourcesExamples: safeJsonParse(businessType.minimumEquipment) || []
+    }
+  }
 
   const contextualExamples = generateContextualExamples(industry, location, locale, translations)
   
@@ -830,5 +858,18 @@ export const isFieldPreFilled = (
     return Array.isArray(preFillValue) && preFillValue.length > 0
   }
   
-  return preFillValue && preFillValue.trim() !== ''
+  // Handle different types of preFillValue
+  if (typeof preFillValue === 'string') {
+    return preFillValue.trim() !== ''
+  }
+  
+  if (Array.isArray(preFillValue)) {
+    return preFillValue.length > 0
+  }
+  
+  if (typeof preFillValue === 'object' && preFillValue !== null) {
+    return Object.keys(preFillValue).length > 0
+  }
+  
+  return Boolean(preFillValue)
 } 

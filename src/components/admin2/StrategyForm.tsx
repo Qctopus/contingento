@@ -96,6 +96,7 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
     { key: 'drought', name: 'Drought', icon: '🌵' },
     { key: 'landslide', name: 'Landslide', icon: '⛰️' },
     { key: 'powerOutage', name: 'Power Outage', icon: '⚡' },
+    { key: 'fire', name: 'Fire', icon: '🔥' },
     { key: 'cyberAttack', name: 'Cyber Attack', icon: '💻' },
     { key: 'terrorism', name: 'Security Threats', icon: '🔒' },
     { key: 'pandemicDisease', name: 'Health Emergencies', icon: '🦠' },

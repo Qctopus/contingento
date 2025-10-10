@@ -606,3 +606,37 @@ model BusinessRiskProfile {
   @@index([businessTypeId])
   @@index([parishId])
 }
+
+model RiskMultiplier {
+  id                  String   @id @default(cuid())
+  name                String   // "Coastal Location", "High Tourism Dependency"
+  description         String   // What this multiplier represents
+  
+  // Which characteristic does this check?
+  characteristicType  String   // "location_coastal", "location_urban", "tourism_share", etc.
+  
+  // What's the condition for applying this multiplier?
+  conditionType       String   // "boolean", "threshold", "range"
+  thresholdValue      Float?   // e.g., 70 (for 70% tourism dependency)
+  minValue            Float?   // For range conditions
+  maxValue            Float?   // For range conditions
+  
+  // What's the multiplier effect?
+  multiplierFactor    Float    // e.g., 1.2 (means ×1.2)
+  
+  // Which risks does this apply to?
+  applicableHazards   String   // JSON array: ["hurricane", "flood"]
+  
+  // Admin metadata
+  isActive            Boolean  @default(true)
+  priority            Int      @default(0) // Order of application
+  reasoning           String?  // Why this multiplier exists
+  
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  createdBy           String   @default("system")
+  
+  @@index([characteristicType])
+  @@index([isActive])
+  @@index([priority])
+}

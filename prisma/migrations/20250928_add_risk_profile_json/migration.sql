@@ -17,3 +17,8 @@ UPDATE ParishRisk SET riskProfileJson = json_object(
 ) WHERE riskProfileJson = '{}';
 
 
+
+
+
+
+

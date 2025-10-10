@@ -1,11 +1,8 @@
-import React from 'react'
-import { 
-  HAZARD_ACTION_PLANS, 
-  BUSINESS_TYPE_MODIFIERS, 
-  getBusinessTypeFromFormData,
-  ActionPlan,
-  ActionItem
-} from '../data/actionPlansMatrix'
+import React, { useState, useEffect } from 'react'
+import { useLocale } from 'next-intl'
+import { centralDataService } from '../services/centralDataService'
+import type { Strategy, ActionStep } from '../types/admin'
+import type { Locale } from '../i18n/config'
 
 interface BusinessPlanReviewProps {
   formData: any
@@ -673,8 +670,8 @@ function TextDisplay({ text, fallback = "Not specified" }: { text: string | unde
   )
 }
 
-// Generate hazard-specific action plans using centralized matrix
-function generateHazardActionPlans(formData: any, riskAssessment: any): any[] {
+// Generate hazard-specific action plans using database strategies
+function generateHazardActionPlans(formData: any, riskAssessment: any, strategies: Strategy[]): any[] {
   if (!riskAssessment || !riskAssessment['Risk Assessment Matrix']) {
     return []
   }
@@ -690,25 +687,55 @@ function generateHazardActionPlans(formData: any, riskAssessment: any): any[] {
     return riskLevel.includes('high') || riskLevel.includes('extreme')
   })
 
-  // Get business type for customization
-  const businessType = getBusinessTypeFromFormData(formData)
-  const businessModifiers = BUSINESS_TYPE_MODIFIERS[businessType] || {}
-
   // Generate action plans for each priority hazard
   return priorityHazards.map(risk => {
     const hazardName = transformHazardName(risk.hazard || risk.Hazard || '')
     const riskLevel = risk.riskLevel || risk.RiskLevel || 'High'
     const riskScore = risk.riskScore || 'High'
     
-    // Find matching hazard key in action plans matrix
-    const hazardKey = Object.keys(HAZARD_ACTION_PLANS).find(key => {
-      const planHazardName = transformHazardName(key)
-      return planHazardName.toLowerCase().includes(hazardName.toLowerCase()) || 
-             hazardName.toLowerCase().includes(planHazardName.toLowerCase())
+    // Find relevant strategies from database
+    const relevantStrategies = strategies.filter(strategy => {
+      // Check if strategy applies to this risk type
+      return strategy.applicableRisks?.includes(risk.hazard) || 
+             strategy.applicableRisks?.includes(risk.Hazard) ||
+             strategy.name.toLowerCase().includes(hazardName.toLowerCase())
     })
 
-    // Get base action plan from matrix
-    let actionPlan = hazardKey ? { ...HAZARD_ACTION_PLANS[hazardKey] } : {
+    // Transform database strategies into action plan format
+    const immediateActions = relevantStrategies
+      .filter(s => s.actionSteps?.some(step => step.phase === 'immediate'))
+      .flatMap(s => s.actionSteps?.filter(step => step.phase === 'immediate').map(step => ({
+        task: step.smeAction || step.action,
+        responsible: step.responsibility || 'Management',
+        duration: step.timeframe || '1 hour',
+        priority: s.priority === 'critical' ? 'high' as const : 
+                 s.priority === 'high' ? 'high' as const : 'medium' as const
+      })) || [])
+
+    const shortTermActions = relevantStrategies
+      .filter(s => s.actionSteps?.some(step => step.phase === 'short_term'))
+      .flatMap(s => s.actionSteps?.filter(step => step.phase === 'short_term').map(step => ({
+        task: step.smeAction || step.action,
+        responsible: step.responsibility || 'Operations Team',
+        duration: step.timeframe || '1 day',
+        priority: s.priority === 'critical' ? 'high' as const : 'medium' as const
+      })) || [])
+
+    const mediumTermActions = relevantStrategies
+      .filter(s => s.actionSteps?.some(step => step.phase === 'medium_term'))
+      .flatMap(s => s.actionSteps?.filter(step => step.phase === 'medium_term').map(step => ({
+        task: step.smeAction || step.action,
+        responsible: step.responsibility || 'Management',
+        duration: step.timeframe || '1 week',
+        priority: 'medium' as const
+      })) || [])
+
+    const longTermReduction = relevantStrategies
+      .filter(s => s.category === 'prevention')
+      .map(s => s.description || s.name)
+
+    // Fallback actions if no strategies found
+    const fallbackActions = {
       resourcesNeeded: ['Emergency supplies', 'Communication systems', 'Backup procedures', 'Staff training materials'],
       immediateActions: [
         { task: 'Activate emergency response procedures', responsible: 'Management', duration: '1 hour', priority: 'high' as const },
@@ -733,31 +760,24 @@ function generateHazardActionPlans(formData: any, riskAssessment: any): any[] {
       ]
     }
 
-    // Apply business type modifications
-    if (businessModifiers.additionalResources) {
-      actionPlan.resourcesNeeded = [...actionPlan.resourcesNeeded, ...businessModifiers.additionalResources]
-    }
-
-    if (businessModifiers.modifiedActions?.immediate) {
-      actionPlan.immediateActions = [...actionPlan.immediateActions, ...businessModifiers.modifiedActions.immediate]
-    }
-
-    if (businessModifiers.modifiedActions?.shortTerm) {
-      actionPlan.shortTermActions = [...actionPlan.shortTermActions, ...businessModifiers.modifiedActions.shortTerm]
-    }
-
-    if (businessModifiers.modifiedActions?.mediumTerm) {
-      actionPlan.mediumTermActions = [...actionPlan.mediumTermActions, ...businessModifiers.modifiedActions.mediumTerm]
-    }
-
     return {
       hazard: hazardName,
       riskLevel: riskLevel,
       riskScore: riskScore,
-      businessType: businessType,
+      businessType: 'Database-driven',
       affectedFunctions: 'All critical business operations',
-      specificConsiderations: businessModifiers.specificConsiderations || [],
-      ...actionPlan
+      specificConsiderations: relevantStrategies.map(s => s.whyImportant || s.description).filter(Boolean),
+      resourcesNeeded: relevantStrategies.flatMap(s => 
+        s.actionSteps?.map(step => step.resources).filter(Boolean) || []
+      ).length > 0 ? 
+        Array.from(new Set(relevantStrategies.flatMap(s => 
+          s.actionSteps?.map(step => step.resources).filter(Boolean) || []
+        ))) : 
+        fallbackActions.resourcesNeeded,
+      immediateActions: immediateActions.length > 0 ? immediateActions : fallbackActions.immediateActions,
+      shortTermActions: shortTermActions.length > 0 ? shortTermActions : fallbackActions.shortTermActions,
+      mediumTermActions: mediumTermActions.length > 0 ? mediumTermActions : fallbackActions.mediumTermActions,
+      longTermReduction: longTermReduction.length > 0 ? longTermReduction : fallbackActions.longTermReduction
     }
   })
 }
@@ -768,6 +788,26 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   onBack,
   onExportPDF,
 }) => {
+  const [strategies, setStrategies] = useState<Strategy[]>([])
+  const [loading, setLoading] = useState(true)
+  const locale = useLocale() as Locale
+
+  // Load strategies from database with current locale
+  useEffect(() => {
+    const loadStrategies = async () => {
+      try {
+        setLoading(true)
+        const data = await centralDataService.getStrategies(true, locale)
+        setStrategies(data)
+      } catch (error) {
+        console.error('Failed to load strategies:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadStrategies()
+  }, [locale])
   const companyName = formData.PLAN_INFORMATION?.['Company Name'] || 'Your Company'
   const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || 'Business Address Not Specified'
   const planVersion = formData.PLAN_INFORMATION?.['Plan Version'] || '1.0'
@@ -950,7 +990,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         <SectionHeader title="SECTION 5: ACTION PLANS" icon="🚀" />
         
         {(() => {
-          const hazardActionPlans = generateHazardActionPlans(formData, formData.RISK_ASSESSMENT)
+          const hazardActionPlans = generateHazardActionPlans(formData, formData.RISK_ASSESSMENT, strategies)
           
           if (hazardActionPlans.length === 0) {
             return (

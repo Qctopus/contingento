@@ -140,13 +140,21 @@ export interface CombinedRisk {
 }
 
 // Common risk types used throughout the system
+// Includes all 13 risk types (6 core + 7 dynamic)
 export const RISK_TYPES = [
   { key: 'hurricane', name: 'Hurricane', icon: '🌀' },
   { key: 'flood', name: 'Flood', icon: '🌊' },
   { key: 'earthquake', name: 'Earthquake', icon: '🏔️' },
   { key: 'drought', name: 'Drought', icon: '🌵' },
   { key: 'landslide', name: 'Landslide', icon: '⛰️' },
-  { key: 'powerOutage', name: 'Power Outage', icon: '⚡' }
+  { key: 'powerOutage', name: 'Power Outage', icon: '⚡' },
+  { key: 'fire', name: 'Fire', icon: '🔥' },
+  { key: 'cyberAttack', name: 'Cyber Attack', icon: '💻' },
+  { key: 'terrorism', name: 'Security Threats', icon: '🔒' },
+  { key: 'pandemicDisease', name: 'Health Emergencies', icon: '🦠' },
+  { key: 'economicDownturn', name: 'Economic Crisis', icon: '📉' },
+  { key: 'supplyChainDisruption', name: 'Supply Chain Issues', icon: '🚛' },
+  { key: 'civilUnrest', name: 'Civil Unrest', icon: '⚡' }
 ] as const
 
 // Common strategy categories

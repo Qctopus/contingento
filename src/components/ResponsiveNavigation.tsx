@@ -83,7 +83,10 @@ export function ResponsiveNavigation({
             </div>
             <div className="text-xs text-blue-800">
               <div className="font-medium">{preFillData.industry.name}</div>
-              <div>{preFillData.location.parish}, {preFillData.location.country}</div>
+              <div>
+                {preFillData.location.parish ? `${preFillData.location.parish}, ` : ''}
+                {preFillData.location.country}
+              </div>
             </div>
           </div>
         )}

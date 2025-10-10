@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { LocationRisksTab } from '@/components/admin2/LocationRisksTab'
 import { BusinessTypesTab } from '@/components/admin2/BusinessTypesTab'
-import { StrategiesActionsTab } from '@/components/admin2/StrategiesActionsTab'
-import { RiskCalculatorTab } from '@/components/admin2/RiskCalculatorTab'
+import { ImprovedStrategiesActionsTab } from '@/components/admin2/ImprovedStrategiesActionsTab'
+import { ImprovedRiskCalculatorTab } from '@/components/admin2/ImprovedRiskCalculatorTab'
+import RiskMultipliersTab from '@/components/admin2/RiskMultipliersTab'
 import { UNDPHeader } from '@/components/admin2/UNDPHeader'
 import { GlobalAutoSaveProvider, GlobalAutoSaveIndicator } from '@/contexts/GlobalAutoSaveContext'
 
@@ -27,7 +28,7 @@ interface Parish {
   }
 }
 
-type MainTab = 'locations' | 'business-types' | 'strategies-actions' | 'risk-calculator'
+type MainTab = 'locations' | 'business-types' | 'strategies-actions' | 'risk-calculator' | 'risk-multipliers'
 
 export default function Admin2Page() {
   const [activeTab, setActiveTab] = useState<MainTab>('locations')
@@ -61,6 +62,7 @@ export default function Admin2Page() {
                 <TabButton tab="locations" label="Location Risks" />
                 <TabButton tab="business-types" label="Business Types" />
                 <TabButton tab="strategies-actions" label="Strategies & Actions" />
+                <TabButton tab="risk-multipliers" label="Risk Multipliers" />
                 <TabButton tab="risk-calculator" label="Risk Calculator" />
               </nav>
               <div className="px-6 py-3">
@@ -74,8 +76,9 @@ export default function Admin2Page() {
         <div className="max-w-7xl mx-auto">
           {activeTab === 'locations' && <LocationRisksTab />}
           {activeTab === 'business-types' && <BusinessTypesTab />}
-          {activeTab === 'strategies-actions' && <StrategiesActionsTab />}
-          {activeTab === 'risk-calculator' && <RiskCalculatorTab />}
+          {activeTab === 'strategies-actions' && <ImprovedStrategiesActionsTab />}
+          {activeTab === 'risk-multipliers' && <RiskMultipliersTab />}
+          {activeTab === 'risk-calculator' && <ImprovedRiskCalculatorTab />}
         </div>
       </div>
     </GlobalAutoSaveProvider>

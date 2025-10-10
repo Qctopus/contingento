@@ -5,7 +5,7 @@ import { ParishOverview } from './ParishOverview'
 import { ParishEditor } from './ParishEditor'
 import { RiskMatrix } from './RiskMatrix'
 import { BulkUploadModal } from './BulkUploadModal'
-import { Parish } from '../../types/admin'
+import { Parish, RISK_TYPES } from '../../types/admin'
 import { getMaxRiskLevel } from '../../utils/riskUtils'
 import { logger } from '../../utils/logger'
 
@@ -233,12 +233,14 @@ export function LocationRisksTab() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Population</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hurricane</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flood</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earthquake</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drought</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Landslide</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Power</th>
+                  {RISK_TYPES.map(risk => (
+                    <th key={risk.key} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <div className="flex flex-col items-center">
+                        <span className="text-sm">{risk.icon}</span>
+                        <span className="text-xs">{risk.name.split(' ')[0]}</span>
+                      </div>
+                    </th>
+                  ))}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall</th>
                 </tr>
               </thead>
@@ -281,24 +283,15 @@ export function LocationRisksTab() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {parish.population?.toLocaleString() || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.hurricane?.level || 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.flood?.level || 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.earthquake?.level || 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.drought?.level || 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.landslide?.level || 0} />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <RiskIndicator level={parish.riskProfile.powerOutage?.level || 0} />
-                      </td>
+                      {RISK_TYPES.map(risk => {
+                        const riskData = parish.riskProfile[risk.key as keyof typeof parish.riskProfile] as { level: number } | undefined
+                        const level = riskData?.level || 0
+                        return (
+                          <td key={risk.key} className="px-6 py-4 whitespace-nowrap text-center">
+                            <RiskIndicator level={level} />
+                          </td>
+                        )
+                      })}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <RiskIndicator level={maxRisk} />
                       </td>

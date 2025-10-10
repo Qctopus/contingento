@@ -130,7 +130,14 @@ export function BusinessStrategiesManager({ businessTypes, onUpdate }: BusinessS
     { key: 'earthquake', name: 'Earthquake', icon: '🏔️' },
     { key: 'drought', name: 'Drought', icon: '🌵' },
     { key: 'landslide', name: 'Landslide', icon: '⛰️' },
-    { key: 'powerOutage', name: 'Power Outage', icon: '⚡' }
+    { key: 'powerOutage', name: 'Power Outage', icon: '⚡' },
+    { key: 'fire', name: 'Fire', icon: '🔥' },
+    { key: 'cyberAttack', name: 'Cyber Attack', icon: '💻' },
+    { key: 'terrorism', name: 'Security Threats', icon: '🔒' },
+    { key: 'pandemicDisease', name: 'Health Emergencies', icon: '🦠' },
+    { key: 'economicDownturn', name: 'Economic Crisis', icon: '📉' },
+    { key: 'supplyChainDisruption', name: 'Supply Chain Issues', icon: '🚛' },
+    { key: 'civilUnrest', name: 'Civil Unrest', icon: '⚡' }
   ]
 
   const getCostColor = (cost: string) => {

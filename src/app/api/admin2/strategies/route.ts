@@ -9,9 +9,15 @@ import {
 } from '@/lib/admin2/api-utils'
 import { transformStrategyForApi } from '@/lib/admin2/transformers'
 import { validateStrategyData } from '@/lib/admin2/validation'
+import { localizeStrategy } from '@/utils/localizationUtils'
+import type { Locale } from '@/i18n/config'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get locale from query parameters
+    const { searchParams } = new URL(request.url)
+    const locale = searchParams.get('locale') as Locale || 'en'
+
     const strategies = await withDatabase(async () => {
       const prisma = getPrismaClient()
       return await prisma.riskMitigationStrategy.findMany({
@@ -30,9 +36,12 @@ export async function GET() {
     }, 'GET /api/admin2/strategies')
     
     // Transform database strategies to match frontend format
-    const transformedStrategies = strategies.map(transformStrategyForApi)
+    let transformedStrategies = strategies.map(transformStrategyForApi)
     
-    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database`)
+    // Always localize the content (works for all locales including 'en')
+    transformedStrategies = transformedStrategies.map(strategy => localizeStrategy(strategy, locale))
+    
+    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale})`)
     return createSuccessResponse(transformedStrategies)
     
   } catch (error) {
@@ -66,7 +75,7 @@ export async function POST(request: NextRequest) {
           category: strategyData.category || 'preparation',
           description: strategyData.description || '',
           implementationCost: strategyData.implementationCost || 'medium',
-          implementationTime: strategyData.implementationTime || 'medium',
+          timeToImplement: strategyData.timeToImplement || 'medium',
           effectiveness: strategyData.effectiveness || 7,
           applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
           applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),

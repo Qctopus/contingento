@@ -180,6 +180,12 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
       name: 'Civil Unrest', 
       color: 'bg-orange-600',
       description: 'Social disorder and public disturbances'
+    },
+    { 
+      key: 'fire', 
+      name: 'Fire/Structural Fire', 
+      color: 'bg-red-500',
+      description: 'Building fires and fire hazards'
     }
   ]
 
@@ -191,7 +197,14 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
       earthquake: `How seismically active is the ${parish.name} area? Consider proximity to fault lines and historical earthquake activity.`,
       drought: `How frequently does ${parish.name} experience water shortages? Consider rainfall patterns, water infrastructure, and climate trends.`,
       landslide: `What is the landslide risk in ${parish.name}? Consider terrain steepness, soil composition, and rainfall patterns.`,
-      powerOutage: `How reliable is the electrical grid in ${parish.name}? Consider infrastructure age, maintenance, and weather vulnerabilities.`
+      powerOutage: `How reliable is the electrical grid in ${parish.name}? Consider infrastructure age, maintenance, and weather vulnerabilities.`,
+      cyberAttack: `What is the cyber security risk level in ${parish.name}? Consider local infrastructure, digital connectivity, and history of cyber incidents.`,
+      terrorism: `What is the security threat level in ${parish.name}? Consider proximity to high-value targets, historical incidents, and current security conditions.`,
+      pandemicDisease: `How vulnerable is ${parish.name} to disease outbreaks? Consider population density, healthcare infrastructure, and travel connectivity.`,
+      economicDownturn: `How economically vulnerable is ${parish.name}? Consider economic diversity, employment sectors, and recovery capacity.`,
+      supplyChainDisruption: `How dependent is ${parish.name} on external supply chains? Consider import dependency, port access, and infrastructure connectivity.`,
+      civilUnrest: `What is the risk of civil unrest in ${parish.name}? Consider historical incidents, social conditions, and political stability.`,
+      fire: `What is the fire risk in ${parish.name}? Consider building density, fire safety infrastructure, and historical fire incidents.`
     }
     return guidance[riskType as keyof typeof guidance] || `Assess the ${riskType} risk level for ${parish.name}.`
   }
