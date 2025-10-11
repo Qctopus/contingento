@@ -10,8 +10,6 @@ import {
 interface CSVParishData {
   parishName: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   hurricaneLevel: number
   hurricaneNotes: string
@@ -132,8 +130,6 @@ export async function POST(request: NextRequest) {
           const parishData = {
             name: parishName,
             region: rowData['Region'] || '',
-            isCoastal: ['true', 'yes', '1', 'y'].includes(rowData['Is Coastal']?.toLowerCase() || ''),
-            isUrban: ['true', 'yes', '1', 'y'].includes(rowData['Is Urban']?.toLowerCase() || ''),
             population: parseInt(rowData['Population']) || 0,
             area: rowData['Area'] ? parseFloat(rowData['Area']) : undefined,
             elevation: rowData['Elevation'] ? parseFloat(rowData['Elevation']) : undefined,
@@ -255,7 +251,7 @@ export async function GET() {
 
     // Generate CSV headers
     const csvHeaders = [
-      'Parish Name', 'Region', 'Is Coastal', 'Is Urban', 'Population',
+      'Parish Name', 'Region', 'Population',
       'Hurricane Risk', 'Hurricane Notes', 'Flood Risk', 'Flood Notes',
       'Earthquake Risk', 'Earthquake Notes', 'Drought Risk', 'Drought Notes',
       'Landslide Risk', 'Landslide Notes', 'Power Outage Risk', 'Power Outage Notes',
@@ -268,8 +264,6 @@ export async function GET() {
       return [
         parish.name,
         parish.region,
-        parish.isCoastal ? 'Yes' : 'No',
-        parish.isUrban ? 'Yes' : 'No',
         parish.population,
         risk?.hurricaneLevel || 0,
         risk?.hurricaneNotes || '',

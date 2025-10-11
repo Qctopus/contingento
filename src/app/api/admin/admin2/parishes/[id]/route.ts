@@ -34,8 +34,6 @@ export async function GET(
       id: parish.id,
       name: parish.name,
       region: parish.region,
-      isCoastal: parish.isCoastal,
-      isUrban: parish.isUrban,
       population: parish.population,
       riskProfile: {
         hurricane: {

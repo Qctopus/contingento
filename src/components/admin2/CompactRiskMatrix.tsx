@@ -6,8 +6,6 @@ interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   riskProfile: {
     hurricane: { level: number; notes: string }
@@ -281,15 +279,8 @@ export function CompactRiskMatrix({ parishes }: RiskMatrixProps) {
                       <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                         {parish.region}
                       </td>
-                      <td className="px-2 py-2 whitespace-nowrap">
-                        <div className="flex space-x-0.5">
-                          {parish.isCoastal && (
-                            <span className="w-4 h-4 text-xs">🌊</span>
-                          )}
-                          {parish.isUrban && (
-                            <span className="w-4 h-4 text-xs">🏙️</span>
-                          )}
-                        </div>
+                      <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
+                        {parish.region}
                       </td>
                       {riskTypes.map(risk => {
                         const riskData = parish.riskProfile[risk.key as keyof typeof parish.riskProfile] as { level: number }

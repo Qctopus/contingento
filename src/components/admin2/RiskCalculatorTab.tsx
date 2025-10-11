@@ -6,8 +6,6 @@ interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   riskProfile: {
     hurricane: { level: number; notes: string }
     flood: { level: number; notes: string }
@@ -128,9 +126,7 @@ export function RiskCalculatorTab() {
       let combinedScore = (locationRisk * 0.6) + (businessVulnerability * 0.4)
       
       // Apply business characteristic multipliers
-      if (parish.isCoastal && (riskType === 'hurricane' || riskType === 'flood')) {
-        combinedScore *= 1.2
-      }
+      // Note: Coastal/urban multipliers now handled via user input in multiplier system
       if (businessType.touristDependency > 7 && riskType === 'hurricane') {
         combinedScore *= 1.1
       }
@@ -318,8 +314,6 @@ export function RiskCalculatorTab() {
               {parishes.map(parish => (
                 <option key={parish.id} value={parish.id}>
                   {parish.name} ({parish.region})
-                  {parish.isCoastal ? ' - Coastal' : ''}
-                  {parish.isUrban ? ' - Urban' : ''}
                 </option>
               ))}
             </select>

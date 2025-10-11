@@ -33,8 +33,6 @@ export function CompactParishOverview({ parishes, onParishSelect }: ParishOvervi
               <span>{parish.region}</span>
               <span>•</span>
               <span>{(parish.population / 1000).toFixed(0)}k</span>
-              {parish.isCoastal && <span className="text-blue-600">🏖️</span>}
-              {parish.isUrban && <span className="text-purple-600">🏙️</span>}
             </div>
           </div>
           <div className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getRiskColor(maxRisk)}`}>
@@ -89,10 +87,6 @@ export function CompactParishOverview({ parishes, onParishSelect }: ParishOvervi
         <td className="px-3 py-2">
           <div className="flex items-center space-x-2">
             <div className="font-medium text-sm text-gray-900">{parish.name}</div>
-            <div className="flex space-x-1">
-              {parish.isCoastal && <span className="text-xs text-blue-600">🏖️</span>}
-              {parish.isUrban && <span className="text-xs text-purple-600">🏙️</span>}
-            </div>
           </div>
           <div className="text-xs text-gray-500">{parish.region} • {(parish.population / 1000).toFixed(0)}k people</div>
         </td>

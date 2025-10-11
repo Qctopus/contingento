@@ -6,8 +6,6 @@ interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   riskProfile: {
     hurricane: { level: number; notes: string }
@@ -133,17 +131,8 @@ export function RiskMatrix({ parishes }: RiskMatrixProps) {
                       {parish.region}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex space-x-1">
-                        {parish.isCoastal && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                            🌊
-                          </span>
-                        )}
-                        {parish.isUrban && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                            🏙️
-                          </span>
-                        )}
+                      <div className="text-sm text-gray-500">
+                        {parish.region}
                       </div>
                     </td>
                     {riskTypes.map(risk => {

@@ -29,18 +29,6 @@ export function ParishOverview({ parishes, onParishSelect }: ParishOverviewProps
               <span>{parish.population.toLocaleString()} people</span>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            {parish.isCoastal && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                🏖️ Coastal
-              </span>
-            )}
-            {parish.isUrban && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                🏙️ Urban
-              </span>
-            )}
-          </div>
         </div>
 
         {/* Overall Risk Level */}

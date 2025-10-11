@@ -6,8 +6,6 @@ interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   riskProfile: {
     hurricane: { level: number; notes: string }
@@ -137,8 +135,8 @@ export function ImprovedRiskCalculatorTab() {
       sellsPerishable: businessChars.sellsPerishable,
       minimalInventory: businessChars.minimalInventory,
       expensiveEquipment: businessChars.expensiveEquipment,
-      isCoastal: parish.isCoastal,
-      isUrban: parish.isUrban,
+      isCoastal: false, // Admin calculator - not user-specific
+      isUrban: false, // Admin calculator - not user-specific
       floodRisk: parish.riskProfile.flood?.level || 0
     })
 
@@ -517,8 +515,6 @@ function CalculatorView({
               {parishes.map(parish => (
                 <option key={parish.id} value={parish.id}>
                   {parish.name} ({parish.region})
-                  {parish.isCoastal ? ' - Coastal' : ''}
-                  {parish.isUrban ? ' - Urban' : ''}
                 </option>
               ))}
             </select>
@@ -526,8 +522,6 @@ function CalculatorView({
               <div className="mt-2 text-sm text-gray-600">
                 <div className="flex items-center space-x-4">
                   <span>Population: {selectedParishData.population?.toLocaleString() || 'N/A'}</span>
-                  {selectedParishData.isCoastal && <span className="text-blue-600">🏖️ Coastal</span>}
-                  {selectedParishData.isUrban && <span className="text-purple-600">🏙️ Urban</span>}
                 </div>
               </div>
             )}

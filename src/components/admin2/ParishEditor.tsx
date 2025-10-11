@@ -13,8 +13,6 @@ interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   riskProfile: {
     [key: string]: RiskData | string // Allow dynamic risk types plus lastUpdated, updatedBy

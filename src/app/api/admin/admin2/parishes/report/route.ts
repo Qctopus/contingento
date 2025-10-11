@@ -27,8 +27,6 @@ export async function POST(request: NextRequest) {
       id: parish.id,
       name: parish.name,
       region: parish.region,
-      isCoastal: parish.isCoastal,
-      isUrban: parish.isUrban,
       population: parish.population,
       riskProfile: {
         hurricane: {
@@ -117,8 +115,6 @@ export async function POST(request: NextRequest) {
 
 function generateSummaryReport(parishes: any[], selectedRisks: string[], timestamp: string): string {
   const totalParishes = parishes.length
-  const coastalParishes = parishes.filter(p => p.isCoastal).length
-  const urbanParishes = parishes.filter(p => p.isUrban).length
   const totalPopulation = parishes.reduce((sum, p) => sum + p.population, 0)
 
   // Calculate risk statistics
@@ -149,14 +145,6 @@ function generateSummaryReport(parishes: any[], selectedRisks: string[], timesta
             <div class="stat-box">
                 <h4>${totalParishes}</h4>
                 <p>Total Parishes</p>
-            </div>
-            <div class="stat-box">
-                <h4>${coastalParishes}</h4>
-                <p>Coastal Parishes</p>
-            </div>
-            <div class="stat-box">
-                <h4>${urbanParishes}</h4>
-                <p>Urban Parishes</p>
             </div>
             <div class="stat-box">
                 <h4>${totalPopulation.toLocaleString()}</h4>
@@ -198,7 +186,6 @@ function generateSummaryReport(parishes: any[], selectedRisks: string[], timesta
               return maxRisk > currentMaxRisk ? p : max
             }).name}</li>
             <li><strong>Most Vulnerable Risk:</strong> ${riskStats.reduce((max, stat) => stat.avgLevel > max.avgLevel ? stat : max).name} (Average: ${riskStats.reduce((max, stat) => stat.avgLevel > max.avgLevel ? stat : max).avgLevel}/10)</li>
-            <li><strong>Coastal Vulnerability:</strong> ${Math.round(coastalParishes / totalParishes * 100)}% of parishes are coastal</li>
             <li><strong>Population at Risk:</strong> ${parishes.filter(p => Math.max(...selectedRisks.map(risk => p.riskProfile[risk]?.level || 0)) >= 7).reduce((sum, p) => sum + p.population, 0).toLocaleString()} people in high-risk parishes</li>
         </ul>
     </div>
@@ -223,8 +210,7 @@ function generateDetailedReport(parishes: any[], selectedRisks: string[], timest
             ${regionParishes.map(parish => `
                 <div class="parish">
                     <h4>${parish.name} Parish</h4>
-                    <p><strong>Population:</strong> ${parish.population.toLocaleString()} | 
-                       <strong>Type:</strong> ${parish.isCoastal ? '🌊 Coastal' : '🏔️ Inland'} ${parish.isUrban ? '🏙️ Urban' : '🌾 Rural'}</p>
+                    <p><strong>Population:</strong> ${parish.population.toLocaleString()}</p>
                     
                     <h5>Risk Assessment:</h5>
                     <table>
