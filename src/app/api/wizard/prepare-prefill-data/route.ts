@@ -5,6 +5,94 @@ import { getLocalizedText } from '@/utils/localizationUtils'
 import { applyMultipliers, convertSimplifiedInputs, convertLegacyCharacteristics } from '@/services/multiplierService'
 import type { Locale } from '@/i18n/config'
 
+// ============================================================================
+// SMART RISK PRE-SELECTION THRESHOLDS
+// ============================================================================
+// These thresholds determine which risks are automatically pre-selected for users
+// vs. which are only made available for manual selection
+const RISK_THRESHOLDS = {
+  // Minimum final risk score (0-10 scale) to pre-select a risk
+  // Risks below this threshold are available but not pre-selected
+  MIN_PRESELECT_SCORE: 4.0, // Only pre-select if final score >= 4.0 (medium+)
+  
+  // Force pre-select very high risks regardless of other factors
+  // These critical risks should always be highlighted to users
+  FORCE_PRESELECT_SCORE: 7.0, // Always show if >= 7.0 (high+)
+}
+
+// ============================================================================
+// HELPER FUNCTIONS FOR SMART RISK PRE-SELECTION
+// ============================================================================
+
+/**
+ * Determines the risk level category based on final calculated score
+ * @param finalScore - The final risk score (0-10 scale)
+ * @returns Risk level string (very_high, high, medium, low, very_low)
+ */
+function determineRiskLevel(finalScore: number): string {
+  if (finalScore >= 8) return 'very_high'
+  if (finalScore >= 6) return 'high'
+  if (finalScore >= 4) return 'medium'
+  if (finalScore >= 2) return 'low'
+  return 'very_low'
+}
+
+/**
+ * Calculates the final risk score including base calculation and multipliers
+ * @param locationRiskLevel - Location-specific risk level (0-10)
+ * @param vulnerability - Business type vulnerability data
+ * @param riskType - The type of risk being calculated
+ * @param userChars - User business characteristics for multiplier application
+ * @returns Promise<number> - Final calculated risk score (0-10 scale)
+ */
+async function calculateFinalRiskScore(
+  locationRiskLevel: number,
+  vulnerability: any,
+  riskType: string,
+  userChars: any
+): Promise<number> {
+  // Base Score = (Location Risk × 0.6) + (Business Vulnerability × 0.4)
+  const businessVulnerability = vulnerability.vulnerabilityLevel || 5
+  const baseScore = (locationRiskLevel * 0.6) + (businessVulnerability * 0.4)
+  
+  // Apply multipliers from database
+  const multiplierResult = await applyMultipliers(baseScore, riskType, userChars)
+  
+  // Cap at 10 to keep on standard scale
+  return Math.min(10, multiplierResult.finalScore)
+}
+
+/**
+ * Determines if a risk should be pre-selected based on final score and thresholds
+ * @param finalScore - The final calculated risk score
+ * @param hasLocationData - Whether location data exists for this risk
+ * @param locationRiskLevel - The raw location risk level
+ * @returns boolean - True if risk should be pre-selected
+ */
+function shouldPreSelectRisk(
+  finalScore: number,
+  hasLocationData: boolean,
+  locationRiskLevel: number | null
+): boolean {
+  // CASE 1: No location data - never pre-select
+  if (!hasLocationData || locationRiskLevel === null || locationRiskLevel === 0) {
+    return false
+  }
+  
+  // CASE 2: Very high risk - ALWAYS pre-select (critical risks)
+  if (finalScore >= RISK_THRESHOLDS.FORCE_PRESELECT_SCORE) {
+    return true
+  }
+  
+  // CASE 3: Meaningful risk level - pre-select if meets threshold
+  if (finalScore >= RISK_THRESHOLDS.MIN_PRESELECT_SCORE) {
+    return true
+  }
+  
+  // CASE 4: Below threshold - make available but don't pre-select
+  return false
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -349,16 +437,13 @@ export async function POST(request: NextRequest) {
           }
         }
         
-        // Determine if this risk should be PRE-SELECTED based on parish data
-        // - If parish has data (level > 0): Pre-select and calculate risk score
-        // - If parish has 0 or no data: Available but not pre-selected (user can add manually)
-        const isPreSelected = hasLocationData && locationRiskLevel !== null && locationRiskLevel > 0
+        // SMART PRE-SELECTION: Calculate final risk score FIRST, then decide if it meets threshold
+        // This ensures we only pre-select risks that are actually meaningful for the user
         
-        console.log(`  ⚙️  ${riskType}: hasLocationData=${hasLocationData}, locationRiskLevel=${locationRiskLevel}, preSelected=${isPreSelected}`)
-        
-        if (!isPreSelected) {
-          // Risk not pre-selected - add as available option with minimal data
-          console.log(`  📋 ${riskType}: AVAILABLE (not pre-selected) - parish level is ${locationRiskLevel || 'not set'}`)
+        // First check if we have any location data to work with
+        if (!hasLocationData || locationRiskLevel === null || locationRiskLevel === 0) {
+          // No location data - add as available but not pre-selected
+          console.log(`  📋 ${riskType}: AVAILABLE (no location data) - parish level is ${locationRiskLevel || 'not set'}`)
           
           riskAssessmentMatrix.push({
             hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
@@ -380,7 +465,45 @@ export async function POST(request: NextRequest) {
           continue
         }
         
-        console.log(`  ✅ ${riskType}: PRE-SELECTED - has significant location risk (level ${locationRiskLevel})`)
+        // Calculate the FINAL risk score (with multipliers) to determine if it meets threshold
+        const finalScore = await calculateFinalRiskScore(
+          locationRiskLevel,
+          vulnerability,
+          riskType,
+          userChars
+        )
+        
+        // Use smart threshold logic to determine pre-selection
+        const isPreSelected = shouldPreSelectRisk(finalScore, hasLocationData, locationRiskLevel)
+        
+        console.log(`  ⚙️  ${riskType}: locationRisk=${locationRiskLevel}/10, finalScore=${finalScore.toFixed(1)}/10, threshold=${RISK_THRESHOLDS.MIN_PRESELECT_SCORE}, preSelected=${isPreSelected}`)
+        
+        if (!isPreSelected) {
+          // Risk exists but below threshold - add as available with detailed reasoning
+          console.log(`  📋 ${riskType}: AVAILABLE (below threshold) - final score ${finalScore.toFixed(1)}/10 < ${RISK_THRESHOLDS.MIN_PRESELECT_SCORE}`)
+          
+          riskAssessmentMatrix.push({
+            hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            hazardId: riskType,
+            likelihood: Math.round(locationRiskLevel),
+            severity: Math.round(vulnerability.impactSeverity || 5),
+            riskScore: Math.round(finalScore * 10) / 10,
+            riskLevel: determineRiskLevel(finalScore),
+            isPreSelected: false,
+            isAvailable: true,
+            source: 'below_threshold',
+            reasoning: `📍 Location risk: ${locationRiskLevel}/10 in ${parishName}\n🏢 Business impact: ${vulnerability.impactSeverity || 5}/10 for ${businessType.name}\n⚖️ Final risk score: ${finalScore.toFixed(1)}/10 - below threshold (${RISK_THRESHOLDS.MIN_PRESELECT_SCORE}) for pre-selection\n💡 This risk exists in your area but has low overall impact on your business type. You can manually select it if you believe it's relevant to your specific situation.`,
+            dataSource: {
+              locationRisk: `${parishName}: ${locationRiskLevel}/10`,
+              businessImpact: `${businessType.name}: ${vulnerability.impactSeverity || 5}/10`,
+              finalScore: `${finalScore.toFixed(1)}/10`,
+              status: 'Available for manual selection'
+            }
+          })
+          continue
+        }
+        
+        console.log(`  ✅ ${riskType}: PRE-SELECTED - meets threshold (final score ${finalScore.toFixed(1)}/10 >= ${RISK_THRESHOLDS.MIN_PRESELECT_SCORE})`)
         
         // STEP 1 OUTPUT: Likelihood = Location Risk (1-10 scale, directly from location data)
         const likelihood = Math.round(locationRiskLevel) // Keep as 1-10 integer
@@ -390,25 +513,17 @@ export async function POST(request: NextRequest) {
         const severity = Math.round(vulnerability.impactSeverity || 5) // 1-10 scale
         console.log(`  ${riskType}: Business impact (Severity) = ${severity}/10`)
         
-        // STEP 3: Calculate combined risk score using admin system formula
-        // Base Score = (Location Risk × 0.6) + (Business Vulnerability × 0.4)
+        // STEP 3 & 4: Calculate base score and multipliers (for detailed reporting)
+        // Note: finalScore was already calculated above for threshold check
         const businessVulnerability = vulnerability.vulnerabilityLevel || 5
         const baseScore = (locationRiskLevel * 0.6) + (businessVulnerability * 0.4)
-        
-        // STEP 4: Apply MULTIPLIERS from database using admin-defined rules
         const multiplierResult = await applyMultipliers(baseScore, riskType, userChars)
-        const finalScore = multiplierResult.finalScore
         const appliedMultipliers = multiplierResult.appliedMultipliers.map(m => `${m.name} ×${m.factor}`)
         
         console.log(`  ${riskType}: Base = ${baseScore.toFixed(2)}, Multipliers = [${appliedMultipliers.join(', ')}], Final = ${finalScore.toFixed(2)}/10`)
         
-        // Determine risk level from final score (1-10 scale)
-        let riskLevel = 'low'
-        if (finalScore >= 8) riskLevel = 'very_high'
-        else if (finalScore >= 6) riskLevel = 'high'
-        else if (finalScore >= 4) riskLevel = 'medium'
-        else if (finalScore >= 2) riskLevel = 'low'
-        else riskLevel = 'very_low'
+        // Determine risk level from final score using helper function
+        const riskLevel = determineRiskLevel(finalScore)
         
         // Build detailed calculation explanation
         const calculationSteps = []
@@ -424,6 +539,13 @@ export async function POST(request: NextRequest) {
           calculationSteps.push(`📊 Final Score: ${baseScore.toFixed(1)} × multipliers = ${finalScore.toFixed(1)}/10`)
         } else {
           calculationSteps.push(`📊 Final Score: ${finalScore.toFixed(1)}/10 (no multipliers applied)`)
+        }
+        
+        // Add threshold explanation
+        if (finalScore >= RISK_THRESHOLDS.FORCE_PRESELECT_SCORE) {
+          calculationSteps.push(`✅ PRE-SELECTED: Critical risk (score >= ${RISK_THRESHOLDS.FORCE_PRESELECT_SCORE}) - always shown`)
+        } else {
+          calculationSteps.push(`✅ PRE-SELECTED: Meets threshold (score >= ${RISK_THRESHOLDS.MIN_PRESELECT_SCORE})`)
         }
         
         riskAssessmentMatrix.push({
