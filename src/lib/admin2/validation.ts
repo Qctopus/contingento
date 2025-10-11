@@ -21,14 +21,6 @@ export function validateParishData(data: any): ValidationResult {
     errors.push('Parish region is required and must be a non-empty string')
   }
   
-  if (typeof data.isCoastal !== 'boolean') {
-    errors.push('isCoastal must be a boolean value')
-  }
-  
-  if (typeof data.isUrban !== 'boolean') {
-    errors.push('isUrban must be a boolean value')
-  }
-  
   if (typeof data.population !== 'number' || data.population < 0) {
     errors.push('Population must be a non-negative number')
   }

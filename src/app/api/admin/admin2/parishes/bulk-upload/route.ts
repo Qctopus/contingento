@@ -72,8 +72,6 @@ export async function POST(request: NextRequest) {
         const parishData = {
           name: parishName,
           region: rowData['Region'] || '',
-          isCoastal: rowData['Coastal']?.toLowerCase() === 'true',
-          isUrban: rowData['Urban']?.toLowerCase() === 'true',
           population: parseInt(rowData['Population']) || 0
         }
 

@@ -44,8 +44,6 @@ export async function PUT(
         data: {
           name: parishData.name,
           region: parishData.region,
-          isCoastal: parishData.isCoastal,
-          isUrban: parishData.isUrban,
           population: parishData.population
         }
       })

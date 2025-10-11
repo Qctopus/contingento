@@ -65,7 +65,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
-    const { name, region, isCoastal, isUrban, population } = data
+    const { name, region, population } = data
 
     if (!name || !region) {
       return NextResponse.json(
@@ -79,8 +79,6 @@ export async function POST(request: NextRequest) {
       data: {
         name,
         region,
-        isCoastal: isCoastal || false,
-        isUrban: isUrban || false,
         population: population || 0
       }
     })
