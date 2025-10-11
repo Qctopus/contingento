@@ -5,13 +5,17 @@ import { ParishOverview } from './ParishOverview'
 import { ParishEditor } from './ParishEditor'
 import { RiskMatrix } from './RiskMatrix'
 import { BulkUploadModal } from './BulkUploadModal'
+import { CountryManagement } from './CountryManagement'
+import { AdminUnitManagement } from './AdminUnitManagement'
 import { Parish, RISK_TYPES } from '../../types/admin'
 import { getMaxRiskLevel } from '../../utils/riskUtils'
 import { logger } from '../../utils/logger'
 
 type ViewMode = 'overview' | 'matrix' | 'editor'
+type MainTab = 'countries' | 'admin-units' | 'parishes'
 
 export function LocationRisksTab() {
+  const [mainTab, setMainTab] = useState<MainTab>('admin-units')
   const [parishes, setParishes] = useState<Parish[]>([])
   const [selectedParish, setSelectedParish] = useState<Parish | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('overview')
@@ -185,39 +189,80 @@ export function LocationRisksTab() {
   }
 
   return (
-          <div>
-      {/* Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <h1 className="text-lg font-semibold text-gray-900">Administrative Units</h1>
-            <span className="text-sm text-gray-600">
-              {parishes.length} administrative units
-            </span>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <nav className="flex border border-gray-300 rounded-md">
-              <ViewModeButton mode="overview" label="List" />
-              <ViewModeButton mode="matrix" label="Matrix" />
-            </nav>
-            <div className="flex space-x-2">
-              <button
-                onClick={handleExportParishes}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
-              >
-                Export
-              </button>
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700"
-              >
-                Import
-              </button>
+    <div className="space-y-6">
+      {/* Main Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setMainTab('countries')}
+            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              mainTab === 'countries'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            🌍 Countries
+          </button>
+          <button
+            onClick={() => setMainTab('admin-units')}
+            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              mainTab === 'admin-units'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            📍 Administrative Units
+          </button>
+          <button
+            onClick={() => setMainTab('parishes')}
+            className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              mainTab === 'parishes'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            📋 Parishes (Legacy)
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {mainTab === 'countries' && <CountryManagement />}
+      {mainTab === 'admin-units' && <AdminUnitManagement />}
+      {mainTab === 'parishes' && (
+        <div>
+          {/* Toolbar */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg px-6 py-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-6">
+                <h1 className="text-lg font-semibold text-gray-900">Parishes (Legacy System)</h1>
+                <span className="text-sm text-gray-600">
+                  {parishes.length} parishes
+                </span>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <nav className="flex border border-gray-300 rounded-md">
+                  <ViewModeButton mode="overview" label="List" />
+                  <ViewModeButton mode="matrix" label="Matrix" />
+                </nav>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleExportParishes}
+                    className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
+                  >
+                    Export
+                  </button>
+                  <button
+                    onClick={() => setShowImportModal(true)}
+                    className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded hover:bg-blue-700"
+                  >
+                    Import
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Content */}
       <div>
@@ -288,10 +333,10 @@ export function LocationRisksTab() {
             }}
           />
         )}
-      </div>
+        </div>
 
-      {/* Import Modal */}
-      <BulkUploadModal
+        {/* Import Modal */}
+        <BulkUploadModal
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onUpload={handleImportParishes}
@@ -306,14 +351,15 @@ export function LocationRisksTab() {
           'Upload the modified file using this import tool'
         ]}
         sampleHeaders={[
-          'Parish Name', 'Region', 'Is Coastal', 'Is Urban', 'Population',
+          'Parish Name', 'Region', 'Population',
           'Hurricane Risk', 'Hurricane Notes', 'Flood Risk', 'Flood Notes',
           'Earthquake Risk', 'Earthquake Notes', 'Drought Risk', 'Drought Notes',
           'Landslide Risk', 'Landslide Notes', 'Power Outage Risk', 'Power Outage Notes',
           'Area', 'Elevation', 'Coordinates'
         ]}
         warningMessage="Uploading parish data will update risk assessments for all Jamaica parishes. This affects the main risk calculation system used by businesses."
-      />
+        />
+      )}
     </div>
   )
 }

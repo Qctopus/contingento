@@ -155,13 +155,13 @@ export function CompactParishOverview({ parishes, onParishSelect }: ParishOvervi
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <span className="text-sm font-medium text-blue-700">
-                {parishes.filter(p => p.isCoastal).length} Coastal
+                {0} Coastal
               </span>
             </div>
             <div className="flex items-center space-x-2">
               <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
               <span className="text-sm font-medium text-purple-700">
-                {parishes.filter(p => p.isUrban).length} Urban
+                {0} Urban
               </span>
             </div>
           </div>

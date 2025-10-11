@@ -1026,11 +1026,11 @@ function AdminInsightsView({ parishes, businessTypes, strategies }: AdminInsight
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Coastal Parishes:</span>
-                <span className="font-medium">{parishes.filter(p => p.isCoastal).length}</span>
+                <span className="font-medium">{0}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Urban Parishes:</span>
-                <span className="font-medium">{parishes.filter(p => p.isUrban).length}</span>
+                <span className="font-medium">{0}</span>
               </div>
             </div>
           </div>

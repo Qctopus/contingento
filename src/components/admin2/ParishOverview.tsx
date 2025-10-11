@@ -123,13 +123,13 @@ export function ParishOverview({ parishes, onParishSelect }: ParishOverviewProps
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {parishes.filter(p => p.isCoastal).length}
+              {0}
             </div>
             <div className="text-sm text-gray-600">Coastal Parishes</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              {parishes.filter(p => p.isUrban).length}
+              {0}
             </div>
             <div className="text-sm text-gray-600">Urban Parishes</div>
           </div>
