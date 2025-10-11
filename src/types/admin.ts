@@ -4,8 +4,6 @@ export interface Parish {
   id: string
   name: string
   region: string
-  isCoastal: boolean
-  isUrban: boolean
   population: number
   riskProfile: {
     [key: string]: RiskData | string // Allow dynamic risk types plus lastUpdated, updatedBy
@@ -18,6 +16,54 @@ export interface Parish {
     lastUpdated: string
     updatedBy: string
   }
+}
+
+// New types for multi-country support
+export interface Country {
+  id: string
+  name: string
+  code: string
+  region?: string
+  isActive: boolean
+  _count?: {
+    adminUnits: number
+  }
+}
+
+export interface AdminUnit {
+  id: string
+  name: string
+  localName?: string
+  type: string // 'parish', 'district', 'state', etc.
+  region?: string
+  countryId: string
+  country?: Country
+  population: number
+  area?: number
+  elevation?: number
+  coordinates?: string
+  isActive: boolean
+  adminUnitRisk?: AdminUnitRisk
+}
+
+export interface AdminUnitRisk {
+  id: string
+  adminUnitId: string
+  hurricaneLevel: number
+  hurricaneNotes: string
+  floodLevel: number
+  floodNotes: string
+  earthquakeLevel: number
+  earthquakeNotes: string
+  droughtLevel: number
+  droughtNotes: string
+  landslideLevel: number
+  landslideNotes: string
+  powerOutageLevel: number
+  powerOutageNotes: string
+  riskProfileJson: string
+  lastUpdated: string
+  updatedBy: string
 }
 
 export interface RiskData {

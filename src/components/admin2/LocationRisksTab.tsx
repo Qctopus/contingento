@@ -192,7 +192,7 @@ export function LocationRisksTab() {
           <div className="flex items-center space-x-6">
             <h1 className="text-lg font-semibold text-gray-900">Administrative Units</h1>
             <span className="text-sm text-gray-600">
-              {parishes.length} parishes • {Array.isArray(parishes) ? parishes.filter(p => p.isCoastal).length : 0} coastal
+              {parishes.length} administrative units
             </span>
           </div>
           
@@ -226,9 +226,8 @@ export function LocationRisksTab() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parish</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Population</th>
                   {RISK_TYPES.map(risk => (
                     <th key={risk.key} className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -251,20 +250,6 @@ export function LocationRisksTab() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {parish.region}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex space-x-1">
-                          {parish.isCoastal && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                              Coastal
-                            </span>
-                          )}
-                          {parish.isUrban && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                              Urban
-                            </span>
-                          )}
-                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {parish.population?.toLocaleString() || 'N/A'}

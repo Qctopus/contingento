@@ -193,7 +193,7 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
   const getParishRiskGuidance = (riskType: string, parish: Parish): string => {
     const guidance = {
       hurricane: `How often and severely does ${parish.name} experience hurricanes? Consider historical data, storm paths, and local topography.`,
-      flood: `What is ${parish.name}'s flood risk based on rainfall patterns, drainage, and terrain? ${parish.isCoastal ? 'Consider coastal flooding from storm surges.' : 'Focus on river/flash flooding.'}`,
+      flood: `What is ${parish.name}'s flood risk based on rainfall patterns, drainage, and terrain? Consider both coastal and inland flooding.`,
       earthquake: `How seismically active is the ${parish.name} area? Consider proximity to fault lines and historical earthquake activity.`,
       drought: `How frequently does ${parish.name} experience water shortages? Consider rainfall patterns, water infrastructure, and climate trends.`,
       landslide: `What is the landslide risk in ${parish.name}? Consider terrain steepness, soil composition, and rainfall patterns.`,
@@ -409,22 +409,6 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
                 <span>{editedParish.region} Region</span>
                 <span>•</span>
                 <span>{editedParish.population.toLocaleString()} residents</span>
-                {editedParish.isCoastal && (
-                  <>
-                    <span>•</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                      Coastal
-                    </span>
-                  </>
-                )}
-                {editedParish.isUrban && (
-                  <>
-                    <span>•</span>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                      Urban
-                    </span>
-                  </>
-                )}
               </div>
             </div>
             <AutoSaveIndicator autoSaveStatus={autoSaveStatus} className="text-sm" />
@@ -502,8 +486,6 @@ export function ParishEditor({ parish, onUpdate, onClose }: ParishEditorProps) {
                 <div className="space-y-2 text-sm text-gray-600">
                   <div>Region: {editedParish.region}</div>
                   <div>Population: {editedParish.population.toLocaleString()}</div>
-                  <div>Type: {editedParish.isUrban ? 'Urban' : 'Rural'}</div>
-                  <div>Location: {editedParish.isCoastal ? 'Coastal' : 'Inland'}</div>
                 </div>
               </div>
               
