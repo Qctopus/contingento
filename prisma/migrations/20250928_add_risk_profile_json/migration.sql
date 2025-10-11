@@ -12,7 +12,7 @@ UPDATE ParishRisk SET riskProfileJson = json_object(
   'drought', json_object('level', droughtLevel, 'notes', droughtNotes),
   'landslide', json_object('level', landslideLevel, 'notes', landslideNotes),
   'powerOutage', json_object('level', powerOutageLevel, 'notes', powerOutageNotes),
-  'lastUpdated', datetime(lastUpdated),
+  'lastUpdated', TIMESTAMP(3)(lastUpdated),
   'updatedBy', updatedBy
 ) WHERE riskProfileJson = '{}';
 

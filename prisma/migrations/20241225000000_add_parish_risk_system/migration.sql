@@ -2,9 +2,9 @@
 CREATE TABLE "ParishRisk" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "parishId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    "lastUpdated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "lastUpdated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedBy" TEXT NOT NULL DEFAULT 'system',
     
     -- Risk levels (0-10 scale)
@@ -39,8 +39,8 @@ CREATE TABLE "Parish" (
     "area" REAL,
     "elevation" REAL,
     "coordinates" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true
 );
 
@@ -55,7 +55,7 @@ CREATE TABLE "RiskChangeLog" (
     "newNotes" TEXT NOT NULL DEFAULT '',
     "changedBy" TEXT NOT NULL,
     "changeReason" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT "RiskChangeLog_parishRiskId_fkey" FOREIGN KEY ("parishRiskId") REFERENCES "ParishRisk" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

@@ -409,7 +409,6 @@ model AdminUnit {
 
   // Relations
   adminUnitRisk AdminUnitRisk?
-  businessRiskProfiles BusinessRiskProfile[]
 
   @@unique([countryId, name])
   @@index([countryId])

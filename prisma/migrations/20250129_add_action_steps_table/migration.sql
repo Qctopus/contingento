@@ -17,8 +17,8 @@ CREATE TABLE "ActionStep" (
     "checklist" TEXT, -- JSON array of checklist items
     "sortOrder" INTEGER NOT NULL DEFAULT 0, -- For ordering steps within a strategy
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     
     CONSTRAINT "ActionStep_strategyId_fkey" FOREIGN KEY ("strategyId") REFERENCES "RiskMitigationStrategy" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

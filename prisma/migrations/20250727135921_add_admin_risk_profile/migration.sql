@@ -16,8 +16,8 @@ CREATE TABLE "AnonymousSession" (
     "planData" TEXT NOT NULL,
     "shareableId" TEXT,
     "allowSharing" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "lastAccessed" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastAccessed" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
@@ -43,8 +43,8 @@ CREATE TABLE "AdminBusinessType" (
     "vulnerabilityMatrix" TEXT,
     "operationalThresholds" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -62,8 +62,8 @@ CREATE TABLE "AdminHazardType" (
     "geographicScope" TEXT,
     "cascadingRisks" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -75,8 +75,8 @@ CREATE TABLE "AdminLocation" (
     "isCoastal" BOOLEAN NOT NULL DEFAULT false,
     "isUrban" BOOLEAN NOT NULL DEFAULT false,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -89,8 +89,8 @@ CREATE TABLE "AdminBusinessTypeHazard" (
     "impact" TEXT,
     "notes" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AdminBusinessTypeHazard_businessTypeId_fkey" FOREIGN KEY ("businessTypeId") REFERENCES "AdminBusinessType" ("businessTypeId") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "AdminBusinessTypeHazard_hazardId_fkey" FOREIGN KEY ("hazardId") REFERENCES "AdminHazardType" ("hazardId") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -105,8 +105,8 @@ CREATE TABLE "AdminLocationHazard" (
     "impact" TEXT,
     "notes" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AdminLocationHazard_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "AdminLocation" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "AdminLocationHazard_hazardId_fkey" FOREIGN KEY ("hazardId") REFERENCES "AdminHazardType" ("hazardId") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -121,8 +121,8 @@ CREATE TABLE "AdminStrategy" (
     "reasoning" TEXT,
     "icon" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -135,8 +135,8 @@ CREATE TABLE "AdminHazardStrategy" (
     "isRecommended" BOOLEAN NOT NULL DEFAULT false,
     "notes" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AdminHazardStrategy_hazardId_fkey" FOREIGN KEY ("hazardId") REFERENCES "AdminHazardType" ("hazardId") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "AdminHazardStrategy_strategyId_fkey" FOREIGN KEY ("strategyId") REFERENCES "AdminStrategy" ("strategyId") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -152,8 +152,8 @@ CREATE TABLE "AdminActionPlan" (
     "longTermReduction" TEXT NOT NULL,
     "businessTypeModifiers" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AdminActionPlan_hazardId_fkey" FOREIGN KEY ("hazardId") REFERENCES "AdminHazardType" ("hazardId") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
@@ -164,8 +164,8 @@ CREATE TABLE "AdminHazardActionPlan" (
     "actionPlanId" TEXT NOT NULL,
     "businessTypes" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "AdminHazardActionPlan_hazardId_fkey" FOREIGN KEY ("hazardId") REFERENCES "AdminHazardType" ("hazardId") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "AdminHazardActionPlan_actionPlanId_fkey" FOREIGN KEY ("actionPlanId") REFERENCES "AdminActionPlan" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -173,13 +173,13 @@ CREATE TABLE "AdminHazardActionPlan" (
 -- CreateTable
 CREATE TABLE "AdminRiskProfile" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "businessTypeId" TEXT NOT NULL,
     "locationId" TEXT NOT NULL,
     "calculatedRisks" TEXT NOT NULL,
     "recommendedStrategies" TEXT NOT NULL,
-    "lastCalculated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastCalculated" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "riskScore" INTEGER NOT NULL,
     CONSTRAINT "AdminRiskProfile_businessTypeId_fkey" FOREIGN KEY ("businessTypeId") REFERENCES "AdminBusinessType" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "AdminRiskProfile_locationId_fkey" FOREIGN KEY ("locationId") REFERENCES "AdminLocation" ("id") ON DELETE RESTRICT ON UPDATE CASCADE

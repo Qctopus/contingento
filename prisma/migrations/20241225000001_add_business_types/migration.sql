@@ -18,8 +18,8 @@ CREATE TABLE "BusinessType" (
     "customerConcentration" INTEGER DEFAULT 3,
     "regulatoryBurden" INTEGER DEFAULT 2,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -36,8 +36,8 @@ CREATE TABLE "BusinessRiskVulnerability" (
     "businessImpactAreas" TEXT,
     "criticalDependencies" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     
     CONSTRAINT "BusinessRiskVulnerability_businessTypeId_fkey" FOREIGN KEY ("businessTypeId") REFERENCES "BusinessType" ("id") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -59,8 +59,8 @@ CREATE TABLE "RiskMitigationStrategy" (
     "roi" REAL DEFAULT 3.0,
     "priority" TEXT DEFAULT 'medium',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -72,8 +72,8 @@ CREATE TABLE "BusinessTypeStrategy" (
     "customNotes" TEXT,
     "isRecommended" BOOLEAN DEFAULT true,
     "priority" TEXT DEFAULT 'medium',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     
     CONSTRAINT "BusinessTypeStrategy_businessTypeId_fkey" FOREIGN KEY ("businessTypeId") REFERENCES "BusinessType" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT "BusinessTypeStrategy_strategyId_fkey" FOREIGN KEY ("strategyId") REFERENCES "RiskMitigationStrategy" ("id") ON DELETE CASCADE ON UPDATE CASCADE
@@ -88,7 +88,7 @@ CREATE TABLE "BusinessRiskProfile" (
     "recommendedStrategies" TEXT NOT NULL,
     "overallRiskScore" INTEGER NOT NULL,
     "priorityActions" TEXT,
-    "calculatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "calculatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "calculatedBy" TEXT DEFAULT 'system',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     
