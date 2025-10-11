@@ -423,8 +423,6 @@ model Parish {
   name        String   // e.g., 'Kingston', 'St. Andrew'
   region      String   // e.g., 'Kingston Metropolitan', 'North Coast'
   countryCode String   @default("JM") // ISO country code
-  isCoastal   Boolean  @default(false) // coastal modifier
-  isUrban     Boolean  @default(false) // urban modifier
   population  Int      @default(0)
   area        Float?   // Square kilometers
   elevation   Float?   // Meters above sea level
