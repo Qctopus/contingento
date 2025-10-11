@@ -1,0 +1,4 @@
+# Force Vercel to regenerate Prisma client every time
+node_modules/.prisma
+.next
+

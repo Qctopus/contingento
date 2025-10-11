@@ -1,6 +1,10 @@
 -- DropColumn: isCoastal and isUrban from Parish
 -- These are now handled via user input (location.nearCoast/urbanArea) through the multiplier system
 
+-- Drop indexes first (idempotent - ignore errors if they don't exist)
+DROP INDEX IF EXISTS "Parish_isCoastal_idx";
+DROP INDEX IF EXISTS "Parish_isUrban_idx";
+
 -- Check if columns exist before trying to drop them (idempotent)
 DO $$ 
 BEGIN
