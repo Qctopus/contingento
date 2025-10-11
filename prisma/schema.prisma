@@ -373,14 +373,57 @@ model AdminRiskProfile {
   @@index([locationId])
 }
 
-// Parish Risk Management System
+// Country Management
+model Country {
+  id          String   @id @default(cuid())
+  name        String   // e.g., 'Jamaica', 'Trinidad and Tobago'
+  code        String   @unique // ISO country code: 'JM', 'TT', etc.
+  region      String?  // e.g., 'Caribbean', 'Central America'
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  adminUnits AdminUnit[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+// Administrative Unit (Parish, District, State, etc.)
+model AdminUnit {
+  id          String   @id @default(cuid())
+  name        String   // e.g., 'Kingston', 'St. Andrew', 'Port of Spain'
+  localName   String?  // Local language name if different
+  type        String   @default("parish") // 'parish', 'district', 'state', 'province', etc.
+  region      String?  // e.g., 'Kingston Metropolitan', 'North Coast'
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  population  Int      @default(0)
+  area        Float?   // Square kilometers
+  elevation   Float?   // Meters above sea level
+  coordinates String?  // JSON: {"lat": 18.0179, "lng": -76.8099}
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+
+  // Relations
+  adminUnitRisk AdminUnitRisk?
+  businessRiskProfiles BusinessRiskProfile[]
+
+  @@unique([countryId, name])
+  @@index([countryId])
+  @@index([type])
+  @@index([region])
+  @@index([isActive])
+}
+
+// Keeping Parish for backward compatibility - will be migrated to AdminUnit
 model Parish {
   id          String   @id @default(cuid())
   name        String   // e.g., 'Kingston', 'St. Andrew'
   region      String   // e.g., 'Kingston Metropolitan', 'North Coast'
   countryCode String   @default("JM") // ISO country code
-  isCoastal   Boolean  @default(false)
-  isUrban     Boolean  @default(false)
   population  Int      @default(0)
   area        Float?   // Square kilometers
   elevation   Float?   // Meters above sea level
@@ -395,8 +438,61 @@ model Parish {
 
   @@index([region])
   @@index([countryCode])
-  @@index([isCoastal])
-  @@index([isUrban])
+}
+
+// Risk data for administrative units
+model AdminUnitRisk {
+  id            String   @id @default(cuid())
+  adminUnitId   String   @unique
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastUpdated   DateTime @default(now())
+  updatedBy     String   @default("system")
+
+  // Risk levels (0-10 scale) - keeping common ones for backward compatibility
+  hurricaneLevel    Int    @default(0)
+  hurricaneNotes    String @default("")
+  floodLevel        Int    @default(0)
+  floodNotes        String @default("")
+  earthquakeLevel   Int    @default(0)
+  earthquakeNotes   String @default("")
+  droughtLevel      Int    @default(0)
+  droughtNotes      String @default("")
+  landslideLevel    Int    @default(0)
+  landslideNotes    String @default("")
+  powerOutageLevel  Int    @default(0)
+  powerOutageNotes  String @default("")
+
+  // Complete risk profile as JSON to support dynamic risk types
+  riskProfileJson   String @default("{}")
+
+  isActive Boolean @default(true)
+
+  // Relations
+  adminUnit  AdminUnit             @relation(fields: [adminUnitId], references: [id], onDelete: Cascade)
+  changeLogs AdminUnitRiskChangeLog[]
+
+  @@index([adminUnitId])
+}
+
+model AdminUnitRiskChangeLog {
+  id              String   @id @default(cuid())
+  adminUnitRiskId String
+  riskType        String   // 'hurricane', 'flood', etc.
+  oldLevel        Int
+  newLevel        Int
+  oldNotes        String   @default("")
+  newNotes        String   @default("")
+  changedBy       String
+  changeReason    String?
+  createdAt       DateTime @default(now())
+
+  // Relations
+  adminUnitRisk AdminUnitRisk @relation(fields: [adminUnitRiskId], references: [id], onDelete: Cascade)
+
+  @@index([adminUnitRiskId])
+  @@index([riskType])
+  @@index([createdAt])
 }
 
 model ParishRisk {

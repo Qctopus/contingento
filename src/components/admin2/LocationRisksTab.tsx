@@ -200,9 +200,6 @@ export function LocationRisksTab() {
             <nav className="flex border border-gray-300 rounded-md">
               <ViewModeButton mode="overview" label="List" />
               <ViewModeButton mode="matrix" label="Matrix" />
-              {selectedParish && (
-                <ViewModeButton mode="editor" label="Edit" />
-              )}
             </nav>
             <div className="flex space-x-2">
               <button
@@ -250,18 +247,7 @@ export function LocationRisksTab() {
                   return (
                     <tr key={parish.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center space-x-3">
-                          <div className="font-medium text-gray-900">{parish.name}</div>
-                          <button
-                            onClick={() => {
-              setSelectedParish(parish)
-              setViewMode('editor')
-            }}
-                            className="text-blue-600 hover:text-blue-900 text-sm font-medium"
-                          >
-                            Edit
-                          </button>
-                        </div>
+                        <div className="font-medium text-gray-900">{parish.name}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {parish.region}
