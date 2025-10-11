@@ -15,7 +15,7 @@ type ViewMode = 'overview' | 'matrix' | 'editor'
 type MainTab = 'countries' | 'admin-units' | 'parishes'
 
 export function LocationRisksTab() {
-  const [mainTab, setMainTab] = useState<MainTab>('admin-units')
+  const [mainTab, setMainTab] = useState<MainTab>('parishes')
   const [parishes, setParishes] = useState<Parish[]>([])
   const [selectedParish, setSelectedParish] = useState<Parish | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('overview')

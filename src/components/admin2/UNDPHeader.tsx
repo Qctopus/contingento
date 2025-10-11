@@ -20,7 +20,7 @@ export function UNDPHeader() {
             />
             <div className="border-l border-blue-400 pl-4">
               <h1 className="text-lg font-medium">
-                Jamaica Business Continuity Planning Platform
+                Caribbean Business Continuity Planning Platform
               </h1>
               <p className="text-blue-100 text-sm">
                 Administrative Dashboard

@@ -14,7 +14,7 @@ export function Navigation() {
             </Link>
             <div className="hidden md:block">
               <span className="text-sm text-gray-500">
-                Business Continuity Planning System
+                Caribbean Business Continuity Planning Platform
               </span>
             </div>
           </div>
