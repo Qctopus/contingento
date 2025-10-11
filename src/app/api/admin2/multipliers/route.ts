@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+export const dynamic = 'force-dynamic'
+
 // GET all multipliers
 export async function GET(request: NextRequest) {
   try {
@@ -171,6 +173,7 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
 
 
 

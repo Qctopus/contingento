@@ -9,6 +9,8 @@ import { transformBusinessTypeForApi } from '@/lib/admin2/transformers'
 import { localizeBusinessType } from '@/utils/localizationUtils'
 import type { Locale } from '@/i18n/config'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Get locale from query parameters
