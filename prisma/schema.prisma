@@ -418,6 +418,7 @@ model AdminUnit {
 }
 
 // Keeping Parish for backward compatibility - will be migrated to AdminUnit
+// Note: isCoastal and isUrban removed - now handled via multiplier system (Jan 2025)
 model Parish {
   id          String   @id @default(cuid())
   name        String   // e.g., 'Kingston', 'St. Andrew'
