@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { LocationData } from '../data/types'
 import { centralDataService } from '../services/centralDataService'
-import type { BusinessType, Parish } from '../types/admin'
+import type { BusinessType, Parish, Country, AdminUnit } from '../types/admin'
 import type { Locale } from '../i18n/config'
 
 interface IndustrySelectorProps {
@@ -40,24 +40,23 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     title: string
     businessTypes: BusinessType[]
   }>>([])
-  const [locationsByCountry, setLocationsByCountry] = useState<Array<{
-    country: string
-    countryCode: string
-    locations: Parish[]
-  }>>([])
+  const [countries, setCountries] = useState<Country[]>([])
+  const [adminUnits, setAdminUnits] = useState<AdminUnit[]>([])
+  const [selectedCountryId, setSelectedCountryId] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [loadingAdminUnits, setLoadingAdminUnits] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [preFillPreview, setPreFillPreview] = useState<any>(null)
 
-  // Load admin data using centralDataService with current locale
+  // Load business types and countries
   useEffect(() => {
     const loadAdminData = async () => {
       try {
         setLoading(true)
-        const [businessTypes, parishes] = await Promise.all([
+        const [businessTypes, countriesResponse] = await Promise.all([
           centralDataService.getBusinessTypes(true, locale),
-          centralDataService.getParishes(true)
+          fetch('/api/admin2/countries?activeOnly=true').then(r => r.json())
         ])
         
         // Group business types by category
@@ -76,25 +75,21 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
           return acc
         }, [] as Array<{ category: string; title: string; businessTypes: BusinessType[] }>)
         
-        // Group parishes by country
-        const groupedLocations = parishes.reduce((acc, parish) => {
-          const country = 'Jamaica' // Default for now
-          const countryCode = 'JM'
-          let group = acc.find(g => g.countryCode === countryCode)
-          if (!group) {
-            group = {
-              country,
-              countryCode,
-              locations: []
-            }
-            acc.push(group)
-          }
-          group.locations.push(parish)
-          return acc
-        }, [] as Array<{ country: string; countryCode: string; locations: Parish[] }>)
-        
         setBusinessTypesByCategory(groupedBusinessTypes)
-        setLocationsByCountry(groupedLocations)
+        
+        if (countriesResponse.success && countriesResponse.data.length > 0) {
+          setCountries(countriesResponse.data)
+          // Auto-select Jamaica if it exists
+          const jamaica = countriesResponse.data.find((c: Country) => c.code === 'JM')
+          if (jamaica) {
+            setSelectedCountryId(jamaica.id)
+            setLocation(prev => ({
+              ...prev,
+              country: jamaica.name,
+              countryCode: jamaica.code
+            }))
+          }
+        }
       } catch (err) {
         setError('Failed to load business types and locations')
         console.error('Error loading admin data:', err)
@@ -106,11 +101,37 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     loadAdminData()
   }, [locale])
 
-  const parishes = location.countryCode 
-    ? locationsByCountry
-        .find(c => c.countryCode === location.countryCode)
-        ?.locations.map(loc => ({ name: loc.name || '', code: loc.id })) || []
-    : []
+  // Load admin units when country is selected
+  useEffect(() => {
+    const loadAdminUnits = async () => {
+      if (!selectedCountryId) {
+        setAdminUnits([])
+        return
+      }
+
+      try {
+        setLoadingAdminUnits(true)
+        const response = await fetch(`/api/admin2/admin-units?countryId=${selectedCountryId}&activeOnly=true`)
+        const result = await response.json()
+        
+        if (result.success) {
+          setAdminUnits(result.data)
+        }
+      } catch (err) {
+        console.error('Error loading admin units:', err)
+      } finally {
+        setLoadingAdminUnits(false)
+      }
+    }
+
+    loadAdminUnits()
+  }, [selectedCountryId])
+
+  // Map admin units to parish format for compatibility
+  const parishes = adminUnits.map(unit => ({ 
+    name: unit.name, 
+    code: unit.id 
+  }))
 
   const handleIndustrySelect = async (industryId: string) => {
     setSelectedIndustry(industryId)
@@ -191,13 +212,14 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     }
   }
 
-  const handleCountryChange = (countryCode: string) => {
-    const country = locationsByCountry.find(c => c.countryCode === countryCode)
+  const handleCountryChange = (countryId: string) => {
+    const country = countries.find(c => c.id === countryId)
     if (country) {
+      setSelectedCountryId(countryId)
       setLocation(prev => ({
         ...prev,
-        country: country.country,
-        countryCode: country.countryCode,
+        country: country.name,
+        countryCode: country.code,
         parish: '', // Reset parish when country changes
         region: ''
       }))
@@ -712,38 +734,48 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 {t('countryLabel')} *
               </label>
               <select
-                value={location.countryCode}
+                value={selectedCountryId}
                 onChange={(e) => handleCountryChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               >
                 <option value="">{t('countryPlaceholder')}</option>
-                {locationsByCountry.map((country) => (
-                  <option key={country.countryCode} value={country.countryCode}>
-                    {country.country}
+                {countries.map((country) => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Parish/Region Selection */}
-            {parishes.length > 0 && (
+            {/* Admin Unit Selection */}
+            {selectedCountryId && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   {t('parishLabel')}
                 </label>
-                <select
-                  value={location.parish}
-                  onChange={(e) => setLocation(prev => ({ ...prev, parish: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">{t('parishPlaceholder')}</option>
-                  {parishes.map((parish) => (
-                    <option key={parish.code} value={parish.code}>
-                      {parish.name}
-                    </option>
-                  ))}
-                </select>
+                {loadingAdminUnits ? (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    Loading administrative units...
+                  </div>
+                ) : parishes.length > 0 ? (
+                  <select
+                    value={location.parish}
+                    onChange={(e) => setLocation(prev => ({ ...prev, parish: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">{t('parishPlaceholder')}</option>
+                    {parishes.map((parish) => (
+                      <option key={parish.code} value={parish.code}>
+                        {parish.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
+                    No administrative units found for this country
+                  </div>
+                )}
               </div>
             )}
 
