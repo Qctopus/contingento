@@ -13,6 +13,9 @@ import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Force dynamic rendering for all locale pages
+export const dynamic = 'force-dynamic'
+
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }))
 }
