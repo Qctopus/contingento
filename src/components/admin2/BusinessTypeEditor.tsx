@@ -433,6 +433,9 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
                   }
                   const riskInfo = riskLabels[riskType as keyof typeof riskLabels]
                   
+                  // Skip if risk info not found
+                  if (!riskInfo) return null
+                  
                   return (
                     <div key={riskType} className="bg-white p-5 rounded-lg border shadow-sm">
                       <div className="flex items-center mb-4">
