@@ -66,26 +66,12 @@ function validateRiskProfile(riskProfile: any): string[] {
 export function validateBusinessTypeData(data: any): ValidationResult {
   const errors: string[] = []
   
-  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
-    errors.push('Business type name is required and must be a non-empty string')
+  if (!data.name || (typeof data.name !== 'string' && typeof data.name !== 'object')) {
+    errors.push('Business type name is required')
   }
   
   if (!data.category || typeof data.category !== 'string' || data.category.trim().length === 0) {
     errors.push('Business type category is required and must be a non-empty string')
-  }
-  
-  // Validate numeric fields
-  const numericFields = [
-    'seasonalityFactor', 'touristDependency', 'supplyChainComplexity',
-    'digitalDependency', 'physicalAssetIntensity', 'customerConcentration', 'regulatoryBurden'
-  ]
-  
-  for (const field of numericFields) {
-    if (data[field] !== undefined && data[field] !== null) {
-      if (typeof data[field] !== 'number' || data[field] < 0 || data[field] > 10) {
-        errors.push(`${field} must be a number between 0 and 10`)
-      }
-    }
   }
   
   // Validate risk vulnerabilities if provided

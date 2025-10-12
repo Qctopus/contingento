@@ -39,25 +39,27 @@ export async function PUT(
       
       // Start a transaction to update business type and its vulnerabilities
       return await prisma.$transaction(async (prisma) => {
+        // Helper to stringify if needed
+        const ensureString = (value: any): string | null => {
+          if (!value) return null
+          if (typeof value === 'string') return value
+          return JSON.stringify(value)
+        }
+
         // Update business type main data
         const updatedBusinessType = await prisma.businessType.update({
           where: { id: params.id },
           data: {
-            name: businessTypeData.name,
+            name: ensureString(businessTypeData.name),
             category: businessTypeData.category,
             subcategory: businessTypeData.subcategory,
-            description: businessTypeData.description,
-            typicalRevenue: businessTypeData.typicalRevenue,
-            typicalEmployees: businessTypeData.typicalEmployees,
-            operatingHours: businessTypeData.operatingHours,
-            seasonalityFactor: businessTypeData.seasonalityFactor,
-            touristDependency: businessTypeData.touristDependency || 0,
-            supplyChainComplexity: businessTypeData.supplyChainComplexity || 0,
-            digitalDependency: businessTypeData.digitalDependency || 0,
-            cashFlowPattern: businessTypeData.cashFlowPattern,
-            physicalAssetIntensity: businessTypeData.physicalAssetIntensity,
-            customerConcentration: businessTypeData.customerConcentration,
-            regulatoryBurden: businessTypeData.regulatoryBurden,
+            description: ensureString(businessTypeData.description),
+            // Multilingual example fields for wizard prefill - must be JSON strings
+            exampleBusinessPurposes: ensureString(businessTypeData.exampleBusinessPurposes),
+            exampleProducts: ensureString(businessTypeData.exampleProducts),
+            exampleKeyPersonnel: ensureString(businessTypeData.exampleKeyPersonnel),
+            exampleCustomerBase: ensureString(businessTypeData.exampleCustomerBase),
+            minimumEquipment: ensureString(businessTypeData.minimumEquipment),
             updatedAt: new Date()
           }
         })

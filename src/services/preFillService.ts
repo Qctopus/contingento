@@ -728,6 +728,24 @@ export const generatePreFillData = async (
   if (!businessType) return null
   
   // Convert database business type to legacy industry profile format for compatibility
+  // Extract localized examples
+  const getLocalizedExamples = (jsonString: string | undefined, locale: string): string[] => {
+    if (!jsonString) return []
+    try {
+      const parsed = JSON.parse(jsonString)
+      if (Array.isArray(parsed)) {
+        // Handle array of multilingual objects [{en, fr, es}, ...]
+        return parsed.map(item => {
+          if (typeof item === 'string') return item
+          return item[locale] || item.en || ''
+        }).filter(Boolean)
+      }
+      return []
+    } catch {
+      return []
+    }
+  }
+  
   const industry: IndustryProfile = {
     id: businessType.businessTypeId,
     name: businessType.name,
@@ -737,16 +755,16 @@ export const generatePreFillData = async (
     typicalOperatingHours: businessType.operatingHours || '9:00 AM - 5:00 PM',
     vulnerabilities: businessType.riskVulnerabilities?.map(rv => ({
       hazardId: rv.riskType,
-      defaultRiskLevel: rv.vulnerabilityLevel === 1 ? 'low' : 
-                      rv.vulnerabilityLevel === 2 ? 'medium' : 
-                      rv.vulnerabilityLevel === 3 ? 'high' : 'very_high'
+      defaultRiskLevel: rv.vulnerabilityLevel <= 3 ? 'low' : 
+                      rv.vulnerabilityLevel <= 6 ? 'medium' : 
+                      rv.vulnerabilityLevel <= 8 ? 'high' : 'very_high'
     })) || [],
     examples: {
-      businessPurpose: safeJsonParse(businessType.exampleBusinessPurposes) || [],
-      productsServices: safeJsonParse(businessType.exampleProducts) || [],
-      keyPersonnel: safeJsonParse(businessType.exampleKeyPersonnel) || [],
-      customerBase: safeJsonParse(businessType.exampleCustomerBase) || [],
-      minimumResourcesExamples: safeJsonParse(businessType.minimumEquipment) || []
+      businessPurpose: getLocalizedExamples(businessType.exampleBusinessPurposes, locale),
+      productsServices: getLocalizedExamples(businessType.exampleProducts, locale),
+      keyPersonnel: getLocalizedExamples(businessType.exampleKeyPersonnel, locale),
+      customerBase: getLocalizedExamples(businessType.exampleCustomerBase, locale),
+      minimumResourcesExamples: getLocalizedExamples(businessType.minimumEquipment, locale)
     }
   }
 

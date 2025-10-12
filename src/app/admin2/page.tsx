@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { LocationRisksTab } from '@/components/admin2/LocationRisksTab'
 import { BusinessTypesTab } from '@/components/admin2/BusinessTypesTab'
 import { ImprovedStrategiesActionsTab } from '@/components/admin2/ImprovedStrategiesActionsTab'
-import { ImprovedRiskCalculatorTab } from '@/components/admin2/ImprovedRiskCalculatorTab'
+import RiskCalculatorTab from '@/components/admin2/RiskCalculatorTab'
 import RiskMultipliersTab from '@/components/admin2/RiskMultipliersTab'
 import { UNDPHeader } from '@/components/admin2/UNDPHeader'
 import { GlobalAutoSaveProvider, GlobalAutoSaveIndicator } from '@/contexts/GlobalAutoSaveContext'
+import { Admin2DataProvider } from '@/contexts/Admin2DataContext'
 
 interface Parish {
   id: string
@@ -49,8 +50,9 @@ export default function Admin2Page() {
 
   return (
     <GlobalAutoSaveProvider>
-      <div className="min-h-screen bg-white">
-        <UNDPHeader />
+      <Admin2DataProvider>
+        <div className="min-h-screen bg-white">
+          <UNDPHeader />
         
         {/* Main Navigation */}
         <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
@@ -70,15 +72,26 @@ export default function Admin2Page() {
           </div>
         </div>
 
-        {/* Tab Content */}
+        {/* Tab Content - Keep all tabs mounted for instant switching */}
         <div className="max-w-7xl mx-auto">
-          {activeTab === 'locations' && <LocationRisksTab />}
-          {activeTab === 'business-types' && <BusinessTypesTab />}
-          {activeTab === 'strategies-actions' && <ImprovedStrategiesActionsTab />}
-          {activeTab === 'risk-multipliers' && <RiskMultipliersTab />}
-          {activeTab === 'risk-calculator' && <ImprovedRiskCalculatorTab />}
+          <div style={{ display: activeTab === 'locations' ? 'block' : 'none' }}>
+            <LocationRisksTab />
+          </div>
+          <div style={{ display: activeTab === 'business-types' ? 'block' : 'none' }}>
+            <BusinessTypesTab />
+          </div>
+          <div style={{ display: activeTab === 'strategies-actions' ? 'block' : 'none' }}>
+            <ImprovedStrategiesActionsTab />
+          </div>
+          <div style={{ display: activeTab === 'risk-multipliers' ? 'block' : 'none' }}>
+            <RiskMultipliersTab />
+          </div>
+          <div style={{ display: activeTab === 'risk-calculator' ? 'block' : 'none' }}>
+            <RiskCalculatorTab />
+          </div>
         </div>
       </div>
+      </Admin2DataProvider>
     </GlobalAutoSaveProvider>
   )
 }

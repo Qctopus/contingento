@@ -9,6 +9,7 @@ export default function RiskMultipliersTab() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
   const [formData, setFormData] = useState<MultiplierFormData>({
     name: '',
     description: '',
@@ -19,6 +20,30 @@ export default function RiskMultipliersTab() {
     priority: 0,
     isActive: true
   })
+
+  // Language labels and flags
+  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
+  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
+  
+  // Helper to parse multilingual JSON
+  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+    if (!value) return { en: '', es: '', fr: '' }
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return { en: value, es: '', fr: '' }
+      }
+    }
+    return value || { en: '', es: '', fr: '' }
+  }
+  
+  // Helper to update multilingual field
+  const updateMultilingualField = (field: keyof MultiplierFormData, lang: 'en' | 'es' | 'fr', value: string) => {
+    const current = parseMultilingual(formData[field])
+    current[lang] = value
+    setFormData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
+  }
 
   useEffect(() => {
     fetchMultipliers()
@@ -93,6 +118,9 @@ export default function RiskMultipliersTab() {
       applicableHazards: hazards,
       priority: multiplier.priority,
       reasoning: multiplier.reasoning || undefined,
+      wizardQuestion: multiplier.wizardQuestion || undefined,
+      wizardAnswerOptions: multiplier.wizardAnswerOptions || undefined,
+      wizardHelpText: multiplier.wizardHelpText || undefined,
       isActive: multiplier.isActive
     })
     setShowForm(true)
@@ -128,6 +156,10 @@ export default function RiskMultipliersTab() {
       multiplierFactor: 1.0,
       applicableHazards: [],
       priority: 0,
+      wizardQuestion: undefined,
+      wizardAnswerOptions: undefined,
+      wizardHelpText: undefined,
+      reasoning: undefined,
       isActive: true
     })
     setEditingId(null)
@@ -140,6 +172,73 @@ export default function RiskMultipliersTab() {
       applicableHazards: prev.applicableHazards.includes(hazard)
         ? prev.applicableHazards.filter(h => h !== hazard)
         : [...prev.applicableHazards, hazard]
+    }))
+  }
+
+  // Default wizard questions for each characteristic type
+  const DEFAULT_WIZARD_QUESTIONS: Record<string, { question: any, help: any }> = {
+    'location_coastal': {
+      question: { en: 'Is your business within 5km of the coast?', es: '¿Su negocio está a 5km de la costa?', fr: 'Votre entreprise est-elle à 5km de la côte?' },
+      help: { en: 'Coastal businesses may face hurricane, flood, and storm surge risks.', es: 'Los negocios costeros pueden enfrentar riesgos de huracanes, inundaciones y marejadas.', fr: 'Les entreprises côtières peuvent être exposées aux ouragans, inondations et ondes de tempête.' }
+    },
+    'location_urban': {
+      question: { en: 'Is your business in an urban/city area?', es: '¿Su negocio está en un área urbana/ciudad?', fr: 'Votre entreprise est-elle dans une zone urbaine/ville?' },
+      help: { en: 'Urban areas have concentrated infrastructure.', es: 'Las áreas urbanas tienen infraestructura concentrada.', fr: 'Les zones urbaines ont des infrastructures concentrées.' }
+    },
+    'location_flood_prone': {
+      question: { en: 'Is your business in a flood-prone area?', es: '¿Su negocio está en un área propensa a inundaciones?', fr: 'Votre entreprise est-elle dans une zone inondable?' },
+      help: { en: 'Flood-prone areas face higher risk of water damage.', es: 'Las áreas propensas a inundaciones enfrentan mayor riesgo de daños por agua.', fr: 'Les zones inondables sont exposées à un risque accru de dégâts des eaux.' }
+    },
+    'tourism_share': {
+      question: { en: 'What percentage of your customers are tourists?', es: '¿Qué porcentaje de sus clientes son turistas?', fr: 'Quel pourcentage de vos clients sont des touristes?' },
+      help: { en: 'Tourism-dependent businesses are vulnerable when travel is disrupted.', es: 'Los negocios dependientes del turismo son vulnerables cuando se interrumpe el viaje.', fr: 'Les entreprises dépendantes du tourisme sont vulnérables lorsque les voyages sont perturbés.' }
+    },
+    'power_dependency': {
+      question: { en: 'Can your business operate without electricity?', es: '¿Puede su negocio operar sin electricidad?', fr: 'Votre entreprise peut-elle fonctionner sans électricité?' },
+      help: { en: 'Power outages are common during hurricanes and storms.', es: 'Los cortes de energía son comunes durante huracanes y tormentas.', fr: 'Les pannes de courant sont fréquentes pendant les ouragans et les tempêtes.' }
+    },
+    'digital_dependency': {
+      question: { en: 'How dependent is your business on digital systems (computers, POS, internet)?', es: '¿Qué tan dependiente es su negocio de sistemas digitales (computadoras, POS, internet)?', fr: 'Dans quelle mesure votre entreprise dépend-elle des systèmes numériques (ordinateurs, TPV, internet)?' },
+      help: { en: 'Digital systems are vulnerable to cyber attacks and power outages.', es: 'Los sistemas digitales son vulnerables a ciberataques y cortes de energía.', fr: 'Les systèmes numériques sont vulnérables aux cyberattaques et aux pannes de courant.' }
+    },
+    'water_dependency': {
+      question: { en: 'Does your business require running water?', es: '¿Su negocio requiere agua corriente?', fr: 'Votre entreprise nécessite-t-elle de l\'eau courante?' },
+      help: { en: 'Some businesses cannot operate without water access.', es: 'Algunos negocios no pueden operar sin acceso a agua.', fr: 'Certaines entreprises ne peuvent pas fonctionner sans accès à l\'eau.' }
+    },
+    'perishable_goods': {
+      question: { en: 'Do you sell perishable goods (food, flowers, etc.)?', es: '¿Vende productos perecederos (alimentos, flores, etc.)?', fr: 'Vendez-vous des produits périssables (nourriture, fleurs, etc.)?' },
+      help: { en: 'Perishable goods require refrigeration and quick turnover.', es: 'Los productos perecederos requieren refrigeración y rotación rápida.', fr: 'Les produits périssables nécessitent une réfrigération et une rotation rapide.' }
+    },
+    'just_in_time_inventory': {
+      question: { en: 'Do you keep minimal inventory (order as needed)?', es: '¿Mantiene inventario mínimo (ordena según sea necesario)?', fr: 'Maintenez-vous un inventaire minimal (commandez au besoin)?' },
+      help: { en: 'Just-in-time inventory is vulnerable to supply chain disruptions.', es: 'El inventario justo a tiempo es vulnerable a interrupciones en la cadena de suministro.', fr: 'L\'inventaire juste-à-temps est vulnérable aux perturbations de la chaîne d\'approvisionnement.' }
+    },
+    'seasonal_business': {
+      question: { en: 'Is your revenue seasonal (concentrated in certain months)?', es: '¿Sus ingresos son estacionales (concentrados en ciertos meses)?', fr: 'Vos revenus sont-ils saisonniers (concentrés sur certains mois)?' },
+      help: { en: 'Seasonal businesses are vulnerable when disasters occur during peak season.', es: 'Los negocios estacionales son vulnerables cuando ocurren desastres durante la temporada alta.', fr: 'Les entreprises saisonnières sont vulnérables lorsque des catastrophes surviennent pendant la haute saison.' }
+    },
+    'physical_asset_intensive': {
+      question: { en: 'Do you have expensive equipment or machinery?', es: '¿Tiene equipo o maquinaria costosa?', fr: 'Avez-vous des équipements ou des machines coûteux?' },
+      help: { en: 'High-value equipment represents significant financial exposure to damage.', es: 'El equipo de alto valor representa una exposición financiera significativa a daños.', fr: 'Les équipements de grande valeur représentent une exposition financière importante aux dommages.' }
+    }
+  }
+
+  // Auto-populate wizard question when characteristic type changes
+  const handleCharacteristicChange = (characteristicType: string) => {
+    const defaults = DEFAULT_WIZARD_QUESTIONS[characteristicType]
+    const selectedType = CHARACTERISTIC_TYPES.find(ct => ct.value === characteristicType)
+    
+    // Always update wizard questions when characteristic type changes
+    // If admin is changing the characteristic, they want the questions for that characteristic!
+    const newQuestion = defaults ? JSON.stringify(defaults.question) : ''
+    const newHelp = defaults ? JSON.stringify(defaults.help) : ''
+    
+    setFormData(prev => ({
+      ...prev,
+      characteristicType,
+      conditionType: selectedType?.inputType === 'boolean' ? 'boolean' : 'threshold',
+      wizardQuestion: newQuestion,
+      wizardHelpText: newHelp
     }))
   }
 
@@ -178,20 +277,22 @@ export default function RiskMultipliersTab() {
             {editingId ? 'Edit Multiplier' : 'Create New Multiplier'}
           </h3>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Basic Info */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Info - Admin Only (English) */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name *
+                  Name (Admin Only) *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Coastal Hurricane Risk"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">For admin reference only - not shown to users</p>
               </div>
               
               <div>
@@ -214,15 +315,17 @@ export default function RiskMultipliersTab() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description *
+                Description (Admin Only) *
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Describe what this multiplier represents..."
                 rows={2}
                 required
               />
+              <p className="text-xs text-gray-500 mt-1">For admin reference only - not shown to users</p>
             </div>
 
             {/* Characteristic Type */}
@@ -230,18 +333,11 @@ export default function RiskMultipliersTab() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Business Characteristic * 
-                  <span className="text-xs text-gray-500 ml-2">(What wizard question determines this?)</span>
+                  <span className="text-xs text-gray-500 ml-2">(What business data does this check?)</span>
                 </label>
                 <select
                   value={formData.characteristicType}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    characteristicType: e.target.value,
-                    // Auto-set condition type based on characteristic
-                    conditionType: CHARACTERISTIC_TYPES.find(ct => ct.value === e.target.value)?.inputType === 'boolean' 
-                      ? 'boolean' 
-                      : 'threshold'
-                  }))}
+                  onChange={(e) => handleCharacteristicChange(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
@@ -253,17 +349,17 @@ export default function RiskMultipliersTab() {
                   ))}
                 </select>
                 
-                {/* Show wizard question mapping */}
+                {/* Show characteristic info */}
                 {selectedCharType && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                     <p className="text-sm font-medium text-blue-900 mb-1">
-                      📋 Wizard Question:
+                      ℹ️ Characteristic Info:
                     </p>
-                    <p className="text-sm text-blue-800 mb-2">
-                      "{selectedCharType.wizardQuestion}"
+                    <p className="text-sm text-blue-800">
+                      <span className="font-semibold">Input Type:</span> {selectedCharType.inputType}
                     </p>
-                    <p className="text-xs text-blue-700">
-                      <span className="font-semibold">User answers:</span> {selectedCharType.wizardAnswers}
+                    <p className="text-xs text-blue-700 mt-1">
+                      This determines how the wizard will collect the user's answer (boolean/percentage/etc.)
                     </p>
                   </div>
                 )}
@@ -404,9 +500,63 @@ export default function RiskMultipliersTab() {
               </div>
             </div>
 
+            {/* Wizard Question Content - Multilingual (User-Facing) */}
+            <div className="border-t pt-6 mt-6">
+              <h4 className="text-md font-semibold text-gray-900 mb-4">
+                🧙 Wizard Question (User-Facing - Multilingual)
+              </h4>
+              
+              {/* Language Selector */}
+              <div className="flex space-x-2 mb-4">
+                {(['en', 'es', 'fr'] as const).map(lang => (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => setActiveLanguage(lang)}
+                    className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                      activeLanguage === lang
+                        ? 'bg-purple-100 text-purple-700 border-2 border-purple-500'
+                        : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                    }`}
+                  >
+                    {languageFlags[lang]} {languageLabels[lang]}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Question ({languageLabels[activeLanguage]}) *
+                  </label>
+                  <input
+                    type="text"
+                    value={parseMultilingual(formData.wizardQuestion)[activeLanguage] || ''}
+                    onChange={(e) => updateMultilingualField('wizardQuestion', activeLanguage, e.target.value)}
+                    className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-purple-50"
+                    placeholder={activeLanguage === 'en' ? 'e.g., Can your business operate without electricity?' : activeLanguage === 'es' ? 'ej., ¿Puede su negocio operar sin electricidad?' : 'ex., Votre entreprise peut-elle fonctionner sans électricité?'}
+                  />
+                  <p className="text-xs text-purple-600 mt-1">This is what users will see in the wizard</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Help Text ({languageLabels[activeLanguage]})
+                  </label>
+                  <textarea
+                    value={parseMultilingual(formData.wizardHelpText)[activeLanguage] || ''}
+                    onChange={(e) => updateMultilingualField('wizardHelpText', activeLanguage, e.target.value)}
+                    className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 bg-purple-50"
+                    placeholder={activeLanguage === 'en' ? 'Optional help text to guide users...' : activeLanguage === 'es' ? 'Texto de ayuda opcional para guiar a los usuarios...' : 'Texte d\'aide facultatif pour guider les utilisateurs...'}
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Reasoning (why this multiplier exists)
+                Reasoning (Admin Only) - Why this multiplier exists
               </label>
               <textarea
                 value={formData.reasoning || ''}
@@ -415,6 +565,7 @@ export default function RiskMultipliersTab() {
                 rows={2}
                 placeholder="Explain why this characteristic amplifies risk..."
               />
+              <p className="text-xs text-gray-500 mt-1">For admin reference only - not shown to users</p>
             </div>
 
             {/* Submit Buttons */}

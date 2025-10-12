@@ -15,6 +15,7 @@ interface StrategyEditorProps {
 
 export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAutoSave }: StrategyEditorProps) {
   const [currentTab, setCurrentTab] = useState<'basic' | 'descriptions' | 'actions' | 'guidance'>('basic')
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
   const [formData, setFormData] = useState<Strategy>({
     id: strategy?.id || '',
     strategyId: strategy?.strategyId || '',
@@ -41,6 +42,29 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
 
   const [editingStep, setEditingStep] = useState<ActionStep | null>(null)
   const [showStepEditor, setShowStepEditor] = useState(false)
+  
+  // Language labels and flags
+  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
+  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
+  
+  // Helper to parse multilingual JSON
+  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return { en: value, es: '', fr: '' }
+      }
+    }
+    return value || { en: '', es: '', fr: '' }
+  }
+  
+  // Helper to update multilingual field
+  const updateMultilingualField = (field: keyof Strategy, lang: 'en' | 'es' | 'fr', value: string) => {
+    const current = parseMultilingual(formData[field])
+    current[lang] = value
+    setFormData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
+  }
 
   // Auto-save function using centralized data service
   const saveStrategy = useCallback(async (data: Strategy) => {
@@ -326,17 +350,34 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
             
+            {/* Language Selector */}
+            <div className="flex space-x-2 mb-4">
+              {(['en', 'es', 'fr'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setActiveLanguage(lang)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                    activeLanguage === lang
+                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                      : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                  }`}
+                >
+                  {languageFlags[lang]} {languageLabels[lang]}
+                </button>
+              ))}
+            </div>
+            
             {/* Strategy Name and ID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Strategy Name *
+                  Strategy Name ({languageLabels[activeLanguage]}) *
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="e.g., Backup Power Generator System"
+                  value={parseMultilingual(formData.name)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualField('name', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'e.g., Backup Power Generator System' : activeLanguage === 'es' ? 'ej., Sistema de Generador de Energía de Respaldo' : 'ex., Système de Générateur d\'Énergie de Secours'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -566,15 +607,32 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
           <div className="space-y-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Strategy Descriptions</h3>
             
+            {/* Language Selector */}
+            <div className="flex space-x-2 mb-4">
+              {(['en', 'es', 'fr'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setActiveLanguage(lang)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                    activeLanguage === lang
+                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                      : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                  }`}
+                >
+                  {languageFlags[lang]} {languageLabels[lang]}
+                </button>
+              ))}
+            </div>
+            
             {/* Technical Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Technical Description (For Admin Use) *
+                Technical Description ({languageLabels[activeLanguage]}) *
               </label>
               <textarea
-                value={formData.description}
-                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                placeholder="Detailed technical description of the strategy for admin reference..."
+                value={parseMultilingual(formData.description)[activeLanguage] || ''}
+                onChange={(e) => updateMultilingualField('description', activeLanguage, e.target.value)}
+                placeholder={activeLanguage === 'en' ? 'Detailed technical description of the strategy for admin reference...' : activeLanguage === 'es' ? 'Descripción técnica detallada de la estrategia para referencia administrativa...' : 'Description technique détaillée de la stratégie pour référence administrative...'}
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -584,12 +642,12 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             {/* SME Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                SME Description (Simple Language) *
+                SME Description ({languageLabels[activeLanguage]}) - Simple Language *
               </label>
               <textarea
-                value={formData.smeDescription}
-                onChange={(e) => setFormData(prev => ({ ...prev, smeDescription: e.target.value }))}
-                placeholder="Simple, clear explanation that a mom-and-pop store owner can understand..."
+                value={parseMultilingual(formData.smeDescription)[activeLanguage] || ''}
+                onChange={(e) => updateMultilingualField('smeDescription', activeLanguage, e.target.value)}
+                placeholder={activeLanguage === 'en' ? 'Simple, clear explanation that a mom-and-pop store owner can understand...' : activeLanguage === 'es' ? 'Explicación simple y clara que el dueño de una pequeña tienda pueda entender...' : 'Explication simple et claire qu\'un propriétaire de petite boutique peut comprendre...'}
                 rows={4}
                 className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
               />
@@ -599,12 +657,12 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             {/* Why Important */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Why This Matters for Business Owners *
+                Why This Matters ({languageLabels[activeLanguage]}) *
               </label>
               <textarea
-                value={formData.whyImportant}
-                onChange={(e) => setFormData(prev => ({ ...prev, whyImportant: e.target.value }))}
-                placeholder="Explain in simple terms why this strategy is important for protecting their business and livelihood..."
+                value={parseMultilingual(formData.whyImportant)[activeLanguage] || ''}
+                onChange={(e) => updateMultilingualField('whyImportant', activeLanguage, e.target.value)}
+                placeholder={activeLanguage === 'en' ? 'Explain in simple terms why this strategy is important for protecting their business and livelihood...' : activeLanguage === 'es' ? 'Explique en términos simples por qué esta estrategia es importante para proteger su negocio y sustento...' : 'Expliquez en termes simples pourquoi cette stratégie est importante pour protéger leur entreprise et leur subsistance...'}
                 rows={3}
                 className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-green-50"
               />
@@ -897,6 +955,30 @@ interface ActionStepEditorProps {
 
 function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
   const [stepData, setStepData] = useState<ActionStep>(step)
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
+
+  // Language labels and flags
+  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
+  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
+  
+  // Helper to parse multilingual JSON
+  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return { en: value, es: '', fr: '' }
+      }
+    }
+    return value || { en: '', es: '', fr: '' }
+  }
+  
+  // Helper to update multilingual field
+  const updateMultilingualStepField = (field: keyof ActionStep, lang: 'en' | 'es' | 'fr', value: string) => {
+    const current = parseMultilingual(stepData[field])
+    current[lang] = value
+    setStepData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
+  }
 
   const phaseOptions = [
     { key: 'immediate', name: 'Immediate', description: 'Right now (this week)' },
@@ -982,16 +1064,46 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
               </div>
             </div>
 
+            {/* Language Selector */}
+            <div className="flex space-x-2">
+              {(['en', 'es', 'fr'] as const).map(lang => (
+                <button
+                  key={lang}
+                  onClick={() => setActiveLanguage(lang)}
+                  className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                    activeLanguage === lang
+                      ? 'bg-blue-100 text-blue-700 border-2 border-blue-500'
+                      : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                  }`}
+                >
+                  {languageFlags[lang]} {languageLabels[lang]}
+                </button>
+              ))}
+            </div>
+
             {/* Action Descriptions */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Technical Action Description *
+                  Action Step Title ({languageLabels[activeLanguage]}) *
+                </label>
+                <input
+                  type="text"
+                  value={parseMultilingual(stepData.title)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualStepField('title', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'e.g., Install storm shutters' : activeLanguage === 'es' ? 'ej., Instalar persianas contra tormentas' : 'ex., Installer des volets anti-tempête'}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Technical Description ({languageLabels[activeLanguage]}) *
                 </label>
                 <textarea
-                  value={stepData.action}
-                  onChange={(e) => setStepData(prev => ({ ...prev, action: e.target.value }))}
-                  placeholder="Technical description for admin reference..."
+                  value={parseMultilingual(stepData.description)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualStepField('description', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'Technical description for admin reference...' : activeLanguage === 'es' ? 'Descripción técnica para referencia administrativa...' : 'Description technique pour référence administrative...'}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
@@ -999,12 +1111,12 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SME Action Description *
+                  SME Action Description ({languageLabels[activeLanguage]}) - Simple Language *
                 </label>
                 <textarea
-                  value={stepData.smeAction}
-                  onChange={(e) => setStepData(prev => ({ ...prev, smeAction: e.target.value }))}
-                  placeholder="Simple, clear description for SME users..."
+                  value={parseMultilingual(stepData.smeAction)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualStepField('smeAction', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'Simple, clear description for SME users...' : activeLanguage === 'es' ? 'Descripción simple y clara para usuarios PYME...' : 'Description simple et claire pour les utilisateurs PME...'}
                   rows={3}
                   className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
                 />

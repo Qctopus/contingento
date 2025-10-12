@@ -13,17 +13,54 @@ import { localizeBusinessType, localizeStrategy } from '../utils/localizationUti
 // Re-export types from centralized admin types for external use
 export type { Strategy, ActionStep, Parish, BusinessType, RiskData } from '../types/admin'
 
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+}
+
 export class CentralDataService {
   private static instance: CentralDataService
-  private cache: Map<string, any> = new Map()
+  private cache: Map<string, CacheEntry<any>> = new Map()
   private saveQueue: Map<string, any> = new Map()
   private saving: Set<string> = new Set()
+  
+  // Cache expiration times (in milliseconds)
+  private readonly CACHE_EXPIRY = {
+    businessTypes: 5 * 60 * 1000, // 5 minutes
+    strategies: 5 * 60 * 1000,    // 5 minutes
+    multipliers: 5 * 60 * 1000,   // 5 minutes
+    countries: 10 * 60 * 1000,    // 10 minutes
+    adminUnits: 5 * 60 * 1000,    // 5 minutes
+    parishes: 5 * 60 * 1000       // 5 minutes
+  }
 
   static getInstance(): CentralDataService {
     if (!CentralDataService.instance) {
       CentralDataService.instance = new CentralDataService()
     }
     return CentralDataService.instance
+  }
+  
+  // Check if cache entry is still valid
+  private isCacheValid<T>(key: string, expiryMs: number): CacheEntry<T> | null {
+    const entry = this.cache.get(key)
+    if (!entry) return null
+    
+    const age = Date.now() - entry.timestamp
+    if (age > expiryMs) {
+      this.cache.delete(key)
+      return null
+    }
+    
+    return entry
+  }
+  
+  // Set cache entry with timestamp
+  private setCache<T>(key: string, data: T): void {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    })
   }
 
   // Generic fetch with error handling
@@ -119,8 +156,16 @@ export class CentralDataService {
   async getBusinessTypes(forceRefresh: boolean = false, locale?: Locale): Promise<BusinessType[]> {
     const cacheKey = `businessTypes_${locale || 'en'}`
     
-    // Always fetch fresh data to ensure consistency
-    console.log('🏢 CentralDataService fetching business types from database (fresh)')
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.isCacheValid<BusinessType[]>(cacheKey, this.CACHE_EXPIRY.businessTypes)
+      if (cached) {
+        console.log('🏢 CentralDataService: Using cached business types (age: ' + Math.round((Date.now() - cached.timestamp) / 1000) + 's)')
+        return cached.data
+      }
+    }
+    
+    console.log('🏢 CentralDataService: Fetching business types from database')
     const url = locale ? `/api/admin2/business-types?locale=${locale}` : '/api/admin2/business-types'
     const businessTypes = await this.fetchWithErrorHandling<BusinessType[]>(url)
     
@@ -129,7 +174,7 @@ export class CentralDataService {
       ? businessTypes.map(bt => localizeBusinessType(bt, locale))
       : businessTypes
     
-    this.cache.set(cacheKey, localizedBusinessTypes)
+    this.setCache(cacheKey, localizedBusinessTypes)
     return localizedBusinessTypes
   }
 
@@ -183,8 +228,16 @@ export class CentralDataService {
   async getStrategies(forceRefresh: boolean = false, locale?: Locale): Promise<Strategy[]> {
     const cacheKey = `strategies_${locale || 'en'}`
     
-    // Always fetch fresh data to ensure consistency
-    console.log('📋 CentralDataService fetching strategies from database (fresh)')
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.isCacheValid<Strategy[]>(cacheKey, this.CACHE_EXPIRY.strategies)
+      if (cached) {
+        console.log('🛡️ CentralDataService: Using cached strategies (age: ' + Math.round((Date.now() - cached.timestamp) / 1000) + 's)')
+        return cached.data
+      }
+    }
+    
+    console.log('🛡️ CentralDataService: Fetching strategies from database')
     const url = locale ? `/api/admin2/strategies?locale=${locale}` : '/api/admin2/strategies'
     const strategies = await this.fetchWithErrorHandling<Strategy[]>(url)
     
@@ -193,7 +246,7 @@ export class CentralDataService {
       ? strategies.map(strategy => localizeStrategy(strategy, locale))
       : strategies
     
-    this.cache.set(cacheKey, localizedStrategies)
+    this.setCache(cacheKey, localizedStrategies)
     return localizedStrategies
   }
 
@@ -262,11 +315,20 @@ export class CentralDataService {
   }
 
   // CACHE MANAGEMENT
-  invalidateCache(key?: string): void {
-    if (key) {
-      this.cache.delete(key)
+  invalidateCache(prefix?: string): void {
+    if (prefix) {
+      // Delete all cache entries with this prefix
+      const keysToDelete: string[] = []
+      this.cache.forEach((_, key) => {
+        if (key.startsWith(prefix)) {
+          keysToDelete.push(key)
+        }
+      })
+      keysToDelete.forEach(key => this.cache.delete(key))
+      console.log(`🗑️ Invalidated ${keysToDelete.length} cache entries with prefix "${prefix}"`)
     } else {
       this.cache.clear()
+      console.log('🗑️ Cleared all cache')
     }
   }
 

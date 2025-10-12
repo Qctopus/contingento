@@ -550,32 +550,32 @@ model RiskChangeLog {
 }
 
 // Business Type Risk Management System
+// Stores business type templates with multilingual examples for wizard prefill
+// User-specific characteristics (tourism share, seasonality, etc.) are collected in the wizard
 model BusinessType {
-  id                    String   @id @default(cuid())
-  businessTypeId        String   @unique // e.g., 'restaurant', 'grocery_store'
-  name                  String   // e.g., 'Restaurant', 'Grocery Store'
-  category              String   // e.g., 'hospitality', 'retail', 'services'
-  subcategory           String?  // e.g., 'casual_dining', 'convenience_store'
-  description           String?
-  typicalRevenue        String?  // e.g., 'JMD 2M-10M annually'
-  typicalEmployees      String?  // e.g., '5-15 employees'
-  operatingHours        String?  // e.g., '6AM-10PM'
-  seasonalityFactor     Float?   @default(1.0) // 0.5-2.0, where 1.0 = no seasonality
-  touristDependency     Int?     @default(0)   // 0-10 scale
-  supplyChainComplexity Int?     @default(1)   // 1-10 scale
-  digitalDependency     Int?     @default(1)   // 1-10 scale
-  cashFlowPattern       String?  @default("stable") // 'stable', 'seasonal', 'volatile'
-  physicalAssetIntensity Int?    @default(3)   // 1-10 scale
-  customerConcentration Int?     @default(3)   // 1-10 scale (higher = more concentrated)
-  regulatoryBurden      Int?     @default(2)   // 1-10 scale
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  businessTypeId          String   @unique // e.g., 'restaurant', 'grocery_store'
+  name                    String   // JSON: { en, fr, es } for multilingual support
+  category                String   // e.g., 'hospitality', 'retail', 'services'
+  subcategory             String?  // e.g., 'casual_dining', 'convenience_store'
+  description             String?  // JSON: { en, fr, es } for multilingual support
+  
+  // Multilingual example content for wizard prefill (suggestions for users to customize)
+  // These are business-type-specific examples that help users understand what to enter
+  exampleBusinessPurposes String?  // JSON array: [{ en, fr, es }]
+  exampleProducts         String?  // JSON array: [{ en, fr, es }]
+  exampleKeyPersonnel     String?  // JSON array: [{ en, fr, es }]
+  exampleCustomerBase     String?  // JSON array: [{ en, fr, es }]
+  minimumEquipment        String?  // JSON array: [{ en, fr, es }]
+  
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   // Relations
-  riskVulnerabilities BusinessRiskVulnerability[]
+  riskVulnerabilities    BusinessRiskVulnerability[]
   businessTypeStrategies BusinessTypeStrategy[]
-  businessRiskProfiles BusinessRiskProfile[]
+  businessRiskProfiles   BusinessRiskProfile[]
 
   @@index([category])
   @@index([businessTypeId])
@@ -705,8 +705,8 @@ model BusinessRiskProfile {
 
 model RiskMultiplier {
   id                  String   @id @default(cuid())
-  name                String   // "Coastal Location", "High Tourism Dependency"
-  description         String   // What this multiplier represents
+  name                String   // Admin-only: "Coastal Location", "High Tourism Dependency"
+  description         String   // Admin-only: What this multiplier represents
   
   // Which characteristic does this check?
   characteristicType  String   // "location_coastal", "location_urban", "tourism_share", etc.
@@ -723,10 +723,15 @@ model RiskMultiplier {
   // Which risks does this apply to?
   applicableHazards   String   // JSON array: ["hurricane", "flood"]
   
+  // Wizard question content - USER-FACING (multilingual JSON: {en: "...", es: "...", fr: "..."})
+  wizardQuestion      String?  // The question shown to users in the wizard (multilingual)
+  wizardAnswerOptions String?  // JSON array of answer options with multilingual labels
+  wizardHelpText      String?  // Additional help text for users (multilingual)
+  
   // Admin metadata
   isActive            Boolean  @default(true)
   priority            Int      @default(0) // Order of application
-  reasoning           String?  // Why this multiplier exists
+  reasoning           String?  // Admin-only: Why this multiplier exists
   
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

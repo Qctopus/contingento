@@ -48,8 +48,9 @@ export function BusinessTypesTab() {
 
   const handleUpdate = async (updatedBusinessType: BusinessType) => {
     // The BusinessTypeEditor handles the save internally
+    // Just update the selected business type to reflect changes, but keep editor open
+    setSelectedBusinessType(updatedBusinessType)
     await loadBusinessTypes()
-    handleBackToOverview()
   }
 
   if (isLoading) {
@@ -65,24 +66,22 @@ export function BusinessTypesTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Business Types Management</h2>
-          <p className="text-gray-600 mt-1">
-            Configure business type vulnerabilities and risk assessments
-          </p>
-        </div>
-        
-        {viewMode === 'editor' && (
+      {/* Section Header with better spacing */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">🏢 Business Types Management</h2>
+        <p className="text-gray-600">Configure business type vulnerabilities and risk assessments</p>
+      </div>
+
+      {viewMode === 'editor' && (
+        <div className="flex items-center justify-end mb-4">
           <button
             onClick={handleBackToOverview}
             className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
           >
             ← Back to Overview
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Content */}
       {viewMode === 'overview' ? (

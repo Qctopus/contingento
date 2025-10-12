@@ -1,472 +1,627 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 
-interface Parish {
+interface Country {
   id: string
   name: string
-  region: string
-  riskProfile: {
-    hurricane: { level: number; notes: string }
-    flood: { level: number; notes: string }
-    earthquake: { level: number; notes: string }
-    drought: { level: number; notes: string }
-    landslide: { level: number; notes: string }
-    powerOutage: { level: number; notes: string }
-  }
+  code: string
+}
+
+interface AdminUnit {
+  id: string
+  name: string
+  countryId: string
+}
+
+interface RiskProfile {
+  hurricane: number
+  flood: number
+  earthquake: number
+  drought: number
+  landslide: number
+  power_outage: number
+  fire: number
+  cyber_attack: number
+  terrorism: number
+  pandemic_disease: number
+  economic_downturn: number
+  supply_chain_disruption: number
+  civil_unrest: number
 }
 
 interface BusinessType {
   id: string
-  businessTypeId: string
   name: string
   category: string
-  touristDependency: number
-  supplyChainComplexity: number
-  digitalDependency: number
-  physicalAssetIntensity: number
-  seasonalityFactor: number
-  
-  // Risk exposure factors
-  hurricaneVulnerability?: number
-  floodVulnerability?: number
-  earthquakeVulnerability?: number
-  droughtVulnerability?: number
-  landslideVulnerability?: number
-  powerOutageVulnerability?: number
-  
-  hurricaneRecoveryImpact?: number
-  floodRecoveryImpact?: number
-  earthquakeRecoveryImpact?: number
-  droughtRecoveryImpact?: number
-  landslideRecoveryImpact?: number
-  powerOutageRecoveryImpact?: number
-  
-  // Critical dependencies and assets
-  essentialUtilities?: string[]
-  typicalEquipment?: string[]
-  keySupplierTypes?: Array<{name: string, criticality: string}>
-  maximumDowntime?: string
+  riskVulnerabilities?: any
 }
 
-// Removed BusinessRiskVulnerability interface - using direct properties now
+interface RiskMultiplier {
+  id: string
+  name: string
+  characteristicType: string
+  conditionType: string
+  thresholdValue?: number
+  minValue?: number
+  maxValue?: number
+  multiplierFactor: number
+  applicableHazards: string[]
+  wizardQuestion?: string
+  wizardAnswerOptions?: string
+  isActive: boolean
+}
 
-interface CombinedRisk {
+interface Strategy {
+  id: string
+  name: string
+  applicableRisks: string[]
+  recommendedForBusinessTypes: string[]
+}
+
+interface RiskScore {
   riskType: string
   locationRisk: number
   businessVulnerability: number
-  combinedScore: number
-  impactSeverity: number
-  reasoning: string
-  recommendations: any[]
+  baseScore: number
+  appliedMultipliers: { name: string, factor: number }[]
+  finalScore: number
+  isPreselected: boolean
 }
 
-export function RiskCalculatorTab() {
-  const [parishes, setParishes] = useState<Parish[]>([])
+const RISK_TYPES = [
+  'hurricane', 'flood', 'earthquake', 'drought', 'landslide',
+  'power_outage', 'fire', 'cyber_attack', 'terrorism',
+  'pandemic_disease', 'economic_downturn', 'supply_chain_disruption', 'civil_unrest'
+]
+
+const THRESHOLD = 6
+
+export default function RiskCalculatorTab() {
+  const [countries, setCountries] = useState<Country[]>([])
+  const [adminUnits, setAdminUnits] = useState<AdminUnit[]>([])
   const [businessTypes, setBusinessTypes] = useState<BusinessType[]>([])
-  const [selectedParish, setSelectedParish] = useState<string>('')
-  const [selectedBusinessType, setSelectedBusinessType] = useState<string>('')
-  const [combinedRisks, setCombinedRisks] = useState<CombinedRisk[]>([])
-  const [overallRiskScore, setOverallRiskScore] = useState<number>(0)
-  const [isLoading, setIsLoading] = useState(true)
-  const [strategies, setStrategies] = useState<any[]>([])
+  const [multipliers, setMultipliers] = useState<RiskMultiplier[]>([])
+  const [strategies, setStrategies] = useState<Strategy[]>([])
+  const [error, setError] = useState<string | null>(null)
+  
+  const [selectedCountry, setSelectedCountry] = useState('')
+  const [selectedUnit, setSelectedUnit] = useState('')
+  const [selectedBusinessType, setSelectedBusinessType] = useState('')
+  const [multiplierAnswers, setMultiplierAnswers] = useState<Record<string, any>>({})
+  
+  const [riskScores, setRiskScores] = useState<RiskScore[]>([])
+  const [recommendedStrategies, setRecommendedStrategies] = useState<Strategy[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    loadData()
+    fetchData()
   }, [])
 
-  useEffect(() => {
-    if (selectedParish && selectedBusinessType) {
-      calculateCombinedRisk()
-    }
-  }, [selectedParish, selectedBusinessType, parishes, businessTypes])
-
-  const loadData = async () => {
+  const fetchData = async () => {
     try {
-      // Use centralized data service for loading all data
-      const { centralDataService } = await import('../../services/centralDataService')
+      setLoading(true)
+      setError(null)
       
-      const [parishData, businessData, strategyData] = await Promise.all([
-        centralDataService.getParishes(),
-        centralDataService.getBusinessTypes(),
-        centralDataService.getStrategies()
+      // Use fetch with cache control for better performance
+      const fetchOptions: RequestInit = {
+        next: { revalidate: 300 } // Cache for 5 minutes
+      }
+      
+      const [countriesRes, businessTypesRes, multipliersRes, strategiesRes] = await Promise.all([
+        fetch('/api/admin2/countries', fetchOptions),
+        fetch('/api/admin2/business-types', fetchOptions),
+        fetch('/api/admin2/multipliers', fetchOptions),
+        fetch('/api/admin2/strategies', fetchOptions)
       ])
 
-      setParishes(parishData)
-      setBusinessTypes(businessData)
-      setStrategies(strategyData)
+      const countriesData = await countriesRes.json()
+      const businessTypesData = await businessTypesRes.json()
+      const multipliersData = await multipliersRes.json()
+      const strategiesData = await strategiesRes.json()
+
+      console.log('🌍 Countries API response:', {
+        success: countriesData.success,
+        hasData: !!countriesData.data,
+        hasCountries: !!countriesData.countries,
+        dataLength: countriesData.data?.length || 0,
+        countriesLength: countriesData.countries?.length || 0
+      })
+      
+      if (countriesData.success) {
+        // Handle both response formats: { success, data } and { success, countries }
+        const countryList = countriesData.data || countriesData.countries || []
+        console.log('🌍 Setting countries:', countryList.length)
+        if (countryList.length > 0) {
+          console.log('🌍 First country:', countryList[0])
+        }
+        setCountries(countryList)
+      } else {
+        setCountries([])
+      }
+      
+      if (businessTypesData.success) {
+        const btList = businessTypesData.data || businessTypesData.businessTypes || []
+        setBusinessTypes(btList)
+      } else {
+        setBusinessTypes([])
+      }
+      
+      if (multipliersData.success) {
+        const multiplierList = multipliersData.data || multipliersData.multipliers || []
+        const activeMultipliers = multiplierList.filter((m: RiskMultiplier) => m.isActive)
+        setMultipliers(activeMultipliers)
+      } else {
+        setMultipliers([])
+      }
+      
+      if (strategiesData.success) {
+        const stratList = strategiesData.data || strategiesData.strategies || []
+        setStrategies(stratList)
+      } else {
+        setStrategies([])
+      }
     } catch (error) {
-      console.error('Failed to load data:', error)
+      console.error('Error fetching data:', error)
+      setError('Failed to load data. Please refresh the page.')
+      // Set empty arrays as fallback
+      setCountries([])
+      setBusinessTypes([])
+      setMultipliers([])
+      setStrategies([])
     } finally {
-      setIsLoading(false)
+      setLoading(false)
     }
   }
 
-  const calculateCombinedRisk = () => {
-    const parish = parishes.find(p => p.id === selectedParish)
-    const businessType = businessTypes.find(bt => bt.id === selectedBusinessType)
-
-    if (!parish || !businessType) return
-
-    // Get ALL risk types from parish (includes dynamic risks like fire, cyberAttack, etc.)
-    const riskTypes = Object.keys(parish.riskProfile).filter(key => 
-      !['lastUpdated', 'updatedBy'].includes(key) && 
-      typeof (parish.riskProfile as any)[key] === 'object'
-    )
-    const calculatedRisks: CombinedRisk[] = []
-
-    riskTypes.forEach(riskType => {
-      const locationRisk = parish.riskProfile[riskType as keyof typeof parish.riskProfile]?.level || 0
+  const fetchAdminUnits = async (countryId: string) => {
+    try {
+      const response = await fetch(`/api/admin2/admin-units?countryId=${countryId}`, {
+        next: { revalidate: 300 } // Cache for 5 minutes
+      })
+      const data = await response.json()
       
-      // Get vulnerability from direct properties
-      const businessVulnerability = businessType[`${riskType}Vulnerability` as keyof BusinessType] as number || 5
-      const recoveryImpact = businessType[`${riskType}RecoveryImpact` as keyof BusinessType] as number || 5
-
-      // Calculate combined score (weighted average with multipliers)
-      let combinedScore = (locationRisk * 0.6) + (businessVulnerability * 0.4)
+      console.log('📍 Admin Units API response:', {
+        success: data.success,
+        hasData: !!data.data,
+        hasAdminUnits: !!data.adminUnits,
+        dataLength: data.data?.length || 0,
+        adminUnitsLength: data.adminUnits?.length || 0
+      })
       
-      // Apply business characteristic multipliers
-      // Note: Coastal/urban multipliers now handled via user input in multiplier system
-      if (businessType.touristDependency > 7 && riskType === 'hurricane') {
-        combinedScore *= 1.1
+      if (data.success) {
+        // Handle both response formats: { success, data } and { success, adminUnits }
+        const unitList = data.data || data.adminUnits || []
+        console.log('📍 Setting admin units:', unitList.length)
+        setAdminUnits(unitList)
       }
-      if (businessType.digitalDependency > 7 && riskType === 'powerOutage') {
-        combinedScore *= 1.15
+    } catch (error) {
+      console.error('Error fetching admin units:', error)
+    }
+  }
+
+  const handleCountryChange = (countryId: string) => {
+    setSelectedCountry(countryId)
+    setSelectedUnit('')
+    setAdminUnits([])
+    if (countryId) {
+      fetchAdminUnits(countryId)
+    }
+  }
+
+  const parseMultilingual = (value: any, lang: string = 'en'): any => {
+    if (!value) return null
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return parsed[lang] || parsed.en || value
+      } catch {
+        return value
       }
-      if (businessType.physicalAssetIntensity > 7 && (riskType === 'hurricane' || riskType === 'flood' || riskType === 'earthquake')) {
-        combinedScore *= 1.1
-      }
-      if (businessType.seasonalityFactor > 7 && (riskType === 'hurricane' || riskType === 'drought')) {
-        combinedScore *= 1.05
+    }
+    return value[lang] || value.en || value
+  }
+
+  const calculateRisks = async () => {
+    if (!selectedUnit || !selectedBusinessType) {
+      alert('Please select both location and business type')
+      return
+    }
+
+    try {
+      // Fetch admin unit risk profile
+      const unitResponse = await fetch(`/api/admin2/admin-units?countryId=${selectedCountry}`)
+      const unitData = await unitResponse.json()
+      
+      // Handle both response formats
+      const unitList = unitData.data || unitData.adminUnits || []
+      const unit = unitList.find((u: any) => u.id === selectedUnit)
+      
+      if (!unit) {
+        alert('Selected location not found')
+        return
       }
 
-      combinedScore = Math.min(10, combinedScore) // Cap at 10
+      // Parse risk data from adminUnitRisk
+      let locationRisks: Record<string, number> = {}
+      
+      if (unit.adminUnitRisk) {
+        // Map database fields to risk type keys
+        locationRisks = {
+          hurricane: unit.adminUnitRisk.hurricaneLevel || 0,
+          flood: unit.adminUnitRisk.floodLevel || 0,
+          earthquake: unit.adminUnitRisk.earthquakeLevel || 0,
+          drought: unit.adminUnitRisk.droughtLevel || 0,
+          landslide: unit.adminUnitRisk.landslideLevel || 0,
+          power_outage: unit.adminUnitRisk.powerOutageLevel || 0,
+          fire: 0, // Not in DB, default to 0
+          cyber_attack: 0, // Not in DB, default to 0
+          terrorism: 0, // Not in DB, default to 0
+          pandemic_disease: 0, // Not in DB, default to 0
+          economic_downturn: 0, // Not in DB, default to 0
+          supply_chain_disruption: 0, // Not in DB, default to 0
+          civil_unrest: 0 // Not in DB, default to 0
+        }
+        
+        // Also try to parse riskProfileJson if it exists
+        try {
+          if (unit.adminUnitRisk.riskProfileJson && unit.adminUnitRisk.riskProfileJson !== '{}') {
+            const parsedProfile = JSON.parse(unit.adminUnitRisk.riskProfileJson)
+            
+            // The JSON format is: { "fire": { "level": 3, "notes": "..." }, ... }
+            // We need to extract just the level values and map camelCase to snake_case
+            const keyMapping: Record<string, string> = {
+              'fire': 'fire',
+              'cyberAttack': 'cyber_attack',
+              'terrorism': 'terrorism',
+              'pandemicDisease': 'pandemic_disease',
+              'economicDownturn': 'economic_downturn',
+              'supplyChainDisruption': 'supply_chain_disruption',
+              'civilUnrest': 'civil_unrest'
+            }
+            
+            Object.entries(parsedProfile).forEach(([key, value]: [string, any]) => {
+              if (value && typeof value === 'object' && 'level' in value) {
+                const mappedKey = keyMapping[key] || key
+                locationRisks[mappedKey] = value.level
+              }
+            })
+          }
+        } catch (error) {
+          console.error('Error parsing riskProfileJson:', error)
+        }
+      } else {
+        console.warn('No adminUnitRisk found for unit:', unit.name)
+      }
+      const businessType = businessTypes.find(bt => bt.id === selectedBusinessType)
+      
+      if (!businessType) return
 
-      const recommendations = getRecommendationsForRisk(riskType, combinedScore, businessType.category)
+      // Parse business vulnerabilities
+      let vulnerabilities: Record<string, number> = {}
+      if (businessType.riskVulnerabilities) {
+        try {
+          vulnerabilities = typeof businessType.riskVulnerabilities === 'string'
+            ? JSON.parse(businessType.riskVulnerabilities)
+            : businessType.riskVulnerabilities
+        } catch (error) {
+          console.error('Error parsing vulnerabilities:', error)
+        }
+      }
 
-      calculatedRisks.push({
+      // Calculate risk scores for each risk type
+      const scores: RiskScore[] = RISK_TYPES.map(riskType => {
+        const locationRisk = locationRisks[riskType] || 0
+        const businessVulnerability = vulnerabilities[riskType] || 5 // default medium
+
+        // Base score: weighted average
+        const baseScore = (locationRisk * 0.6) + (businessVulnerability * 0.4)
+
+        // Apply multipliers
+        const appliedMultipliers: { name: string, factor: number }[] = []
+        let finalScore = baseScore
+
+        multipliers.forEach(multiplier => {
+          // Check if this multiplier applies to this risk type
+          const hazardKey = riskType.toLowerCase().replace(/_/g, '')
+          const multiplierHazards = (multiplier.applicableHazards || []).map(h => h.toLowerCase().replace(/_/g, ''))
+          
+          if (!multiplierHazards.includes(hazardKey)) return
+
+          // Check if condition is met
+          const answer = multiplierAnswers[multiplier.id]
+          let conditionMet = false
+
+          if (multiplier.conditionType === 'boolean') {
+            conditionMet = answer === true || answer === 'true' || answer === 'yes'
+          } else if (multiplier.conditionType === 'threshold' && typeof answer === 'number') {
+            if (multiplier.thresholdValue !== undefined) {
+              conditionMet = answer >= multiplier.thresholdValue
+            }
+          } else if (multiplier.conditionType === 'range' && typeof answer === 'number') {
+            if (multiplier.minValue !== undefined && multiplier.maxValue !== undefined) {
+              conditionMet = answer >= multiplier.minValue && answer <= multiplier.maxValue
+            }
+          }
+
+          if (conditionMet) {
+            appliedMultipliers.push({
+              name: multiplier.name,
+              factor: multiplier.multiplierFactor
+            })
+            finalScore *= multiplier.multiplierFactor
+          }
+        })
+
+        // Cap final score at 10
+        finalScore = Math.min(finalScore, 10)
+
+        return {
         riskType,
         locationRisk,
         businessVulnerability,
-        combinedScore: Number(combinedScore.toFixed(1)),
-        impactSeverity: recoveryImpact,
-        reasoning: `Business vulnerability: ${businessVulnerability}/10, Recovery impact: ${recoveryImpact}/10`,
-        recommendations
+          baseScore: Math.round(baseScore * 10) / 10,
+          appliedMultipliers,
+          finalScore: Math.round(finalScore * 10) / 10,
+          isPreselected: finalScore >= THRESHOLD || locationRisk >= 5
+        }
       })
-    })
 
-    setCombinedRisks(calculatedRisks)
-    
-    // Calculate overall risk score
-    const totalScore = calculatedRisks.reduce((sum, risk) => sum + risk.combinedScore, 0)
-    setOverallRiskScore(Number((totalScore / calculatedRisks.length).toFixed(1)))
-  }
+      setRiskScores(scores)
 
-  const getRecommendationsForRisk = (riskType: string, score: number, businessCategory: string): any[] => {
-    const recommendations: any[] = []
-    
-    // Get relevant strategies for this risk type
-    const relevantStrategies = strategies.filter(strategy => 
-      strategy.applicableRisks.includes(riskType) && 
-      (strategy.businessTypes.includes(businessCategory) || strategy.businessTypes.includes('all'))
-    )
+      // Find recommended strategies
+      const preselectedRisks = scores.filter(s => s.isPreselected).map(s => s.riskType)
+      const recommended = strategies.filter(strategy => {
+        // Check if strategy applies to any preselected risk
+        const appliesToRisk = (strategy.applicableRisks || []).some(risk => 
+          preselectedRisks.includes(risk.toLowerCase().replace(/ /g, '_'))
+        )
+        
+        // Check if strategy is recommended for this business type
+        const appliesToBusinessType = (strategy.recommendedForBusinessTypes || []).length === 0 ||
+          (strategy.recommendedForBusinessTypes || []).includes(selectedBusinessType)
+        
+        return appliesToRisk && appliesToBusinessType
+      })
 
-    // Sort strategies by priority and effectiveness
-    const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 }
-    const sortedStrategies = relevantStrategies.sort((a, b) => {
-      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 1
-      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 1
-      if (aPriority !== bPriority) return bPriority - aPriority
-      return (b.effectiveness || 5) - (a.effectiveness || 5)
-    })
-
-    if (score >= 8) {
-      recommendations.push({
-        type: 'alert',
-        message: '🚨 Critical risk level - implement emergency preparedness immediately',
-        priority: 'critical'
-      })
-      // Add critical and high-priority strategies with full details
-      sortedStrategies
-        .filter(s => s.priority === 'critical' || s.priority === 'high')
-        .slice(0, 3)
-        .forEach(s => recommendations.push({
-          type: 'strategy',
-          strategy: s,
-          message: `Critical: ${s.name}`,
-          priority: s.priority
-        }))
-    } else if (score >= 6) {
-      recommendations.push({
-        type: 'alert',
-        message: '⚠️ High risk level - prioritize mitigation strategies',
-        priority: 'high'
-      })
-      sortedStrategies
-        .filter(s => s.priority === 'high' || s.priority === 'medium')
-        .slice(0, 2)
-        .forEach(s => recommendations.push({
-          type: 'strategy',
-          strategy: s,
-          message: `Priority: ${s.name}`,
-          priority: s.priority
-        }))
-    } else if (score >= 4) {
-      recommendations.push({
-        type: 'alert',
-        message: '📋 Medium risk level - implement preventive measures',
-        priority: 'medium'
-      })
-      sortedStrategies
-        .filter(s => s.category === 'prevention' || s.priority === 'medium')
-        .slice(0, 2)
-        .forEach(s => recommendations.push({
-          type: 'strategy',
-          strategy: s,
-          message: `Recommended: ${s.name}`,
-          priority: s.priority
-        }))
-    } else {
-      recommendations.push({
-        type: 'alert',
-        message: '✅ Low risk level - maintain standard precautions',
-        priority: 'low'
-      })
-      if (sortedStrategies.length > 0) {
-        recommendations.push({
-          type: 'strategy',
-          strategy: sortedStrategies[0],
-          message: `Optional: ${sortedStrategies[0].name}`,
-          priority: sortedStrategies[0].priority
-        })
-      }
+      setRecommendedStrategies(recommended)
+    } catch (error) {
+      console.error('Error calculating risks:', error)
+      alert('Error calculating risks')
     }
-
-    return recommendations
   }
 
-  const getRiskColor = (score: number): string => {
-    if (score >= 8) return 'bg-red-500'
-    if (score >= 6) return 'bg-orange-500'
-    if (score >= 4) return 'bg-yellow-500'
-    if (score >= 2) return 'bg-blue-500'
-    return 'bg-green-500'
+  const getRiskColor = (score: number) => {
+    if (score >= 8) return 'bg-red-100 text-red-800 border-red-300'
+    if (score >= 6) return 'bg-orange-100 text-orange-800 border-orange-300'
+    if (score >= 4) return 'bg-yellow-100 text-yellow-800 border-yellow-300'
+    return 'bg-green-100 text-green-800 border-green-300'
   }
 
-  const getRiskLabel = (score: number): string => {
-    if (score >= 8) return 'Critical'
-    if (score >= 6) return 'High'
+  const getRiskLabel = (score: number) => {
+    if (score >= 8) return 'High'
+    if (score >= 6) return 'Medium-High'
     if (score >= 4) return 'Medium'
-    if (score >= 2) return 'Low'
-    return 'Very Low'
+    return 'Low'
   }
 
-  const riskLabels = {
-    hurricane: 'Hurricane',
-    flood: 'Flood', 
-    earthquake: 'Earthquake',
-    drought: 'Drought',
-    landslide: 'Landslide',
-    powerOutage: 'Power Outage',
-    fire: 'Fire',
-    cyberAttack: 'Cyber Attack',
-    terrorism: 'Security Threats',
-    pandemicDisease: 'Health Emergencies',
-    economicDownturn: 'Economic Crisis',
-    supplyChainDisruption: 'Supply Chain Issues',
-    civilUnrest: 'Civil Unrest'
-  }
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading calculator...</p>
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-red-600 font-medium">{error}</p>
+          <button
+            onClick={fetchData}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     )
   }
 
+  const filteredUnits = (adminUnits || []).filter(u => u.countryId === selectedCountry)
+  const activeMultipliers = (multipliers || []).filter(m => m.isActive)
+
   return (
-    <div className="p-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-light text-gray-900 tracking-tight mb-2">
-          SME Risk Calculator
-        </h2>
-        <p className="text-lg font-light text-gray-600 mb-8">
-          Interactive risk assessment combining parish location and business type data to generate customized risk profiles and strategy recommendations
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-6 rounded-lg">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">🧮 Risk Calculator & Simulator</h2>
+        <p className="text-sm text-gray-600">
+          Test the risk calculation system by simulating different user profiles and seeing which risks are preselected and which strategies are recommended.
         </p>
-        
-        {/* Selection Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Input Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+          <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Simulation Parameters</h3>
+          
+          {/* Location Selection */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-700">📍 Location</h4>
+            
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Parish Location
-            </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
             <select
-              value={selectedParish}
-              onChange={(e) => setSelectedParish(e.target.value)}
-              className="admin-select"
-            >
-              <option value="">Choose a parish...</option>
-              {parishes.map(parish => (
-                <option key={parish.id} value={parish.id}>
-                  {parish.name} ({parish.region})
+                value={selectedCountry}
+                onChange={(e) => handleCountryChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select country...</option>
+                {(countries || []).map(country => (
+                  <option key={country.id} value={country.id}>
+                    {country.name}
                 </option>
               ))}
             </select>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Business Type
-            </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Administrative Unit *</label>
+              <select
+                value={selectedUnit}
+                onChange={(e) => setSelectedUnit(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={!selectedCountry}
+              >
+                <option value="">Select admin unit...</option>
+                {(filteredUnits || []).map(unit => (
+                  <option key={unit.id} value={unit.id}>
+                    {unit.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Business Type Selection */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-gray-700">🏢 Business Type</h4>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Business Type *</label>
             <select
               value={selectedBusinessType}
               onChange={(e) => setSelectedBusinessType(e.target.value)}
-              className="admin-select"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">Choose a business type...</option>
-              {businessTypes.map(bt => (
+                <option value="">Select business type...</option>
+                {(businessTypes || []).map(bt => (
                 <option key={bt.id} value={bt.id}>
-                  {bt.name} ({bt.category})
+                    {parseMultilingual(bt.name) || bt.name} ({bt.category})
                 </option>
               ))}
             </select>
           </div>
         </div>
-      </div>
 
-      {/* Results */}
-      {selectedParish && selectedBusinessType && combinedRisks.length > 0 && (
-        <>
-          {/* Overall Risk Score */}
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200 p-6">
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Overall Risk Assessment</h3>
-              <div className="flex items-center justify-center space-x-4">
-                <div className={`w-16 h-16 rounded-full ${getRiskColor(overallRiskScore)} flex items-center justify-center text-white text-xl font-bold`}>
-                  {overallRiskScore}
+          {/* Multiplier Questions */}
+          {(activeMultipliers || []).length > 0 && (
+            <div className="space-y-4">
+              <h4 className="font-medium text-gray-700">🎛️ Multiplier Questions</h4>
+              
+              {(activeMultipliers || []).map(multiplier => {
+                const question = parseMultilingual(multiplier.wizardQuestion) || multiplier.name
+                const currentValue = multiplierAnswers[multiplier.id]
+                
+                return (
+                  <div key={multiplier.id} className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      {question}
+                    </label>
+                    
+                    {multiplier.conditionType === 'boolean' ? (
+                      <div className="flex items-center gap-3">
+                        {/* Toggle Switch */}
+                        <button
+                          type="button"
+                          onClick={() => setMultiplierAnswers(prev => ({
+                            ...prev,
+                            [multiplier.id]: !prev[multiplier.id]
+                          }))}
+                          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                            currentValue ? 'bg-blue-600' : 'bg-gray-300'
+                          }`}
+                        >
+                          <span
+                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                              currentValue ? 'translate-x-7' : 'translate-x-1'
+                            }`}
+                          />
+                        </button>
+                        <span className={`text-sm font-medium ${currentValue ? 'text-blue-700' : 'text-gray-600'}`}>
+                          {currentValue ? 'Yes' : 'No'}
+                        </span>
                 </div>
-                <div className="text-left">
-                  <div className="text-2xl font-bold text-gray-900">{getRiskLabel(overallRiskScore)} Risk</div>
-                  <div className="text-gray-600">Combined risk score out of 10</div>
+                    ) : (
+                      <input
+                        type="number"
+                        value={multiplierAnswers[multiplier.id] || ''}
+                        onChange={(e) => setMultiplierAnswers(prev => ({
+                          ...prev,
+                          [multiplier.id]: parseFloat(e.target.value)
+                        }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                        placeholder="Enter value..."
+                      />
+                    )}
                 </div>
-              </div>
+                )
+              })}
             </div>
+          )}
+
+          {/* Calculate Button */}
+          <button
+            onClick={calculateRisks}
+            disabled={!selectedUnit || !selectedBusinessType}
+            className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            🧮 Calculate Risk Profile
+          </button>
           </div>
 
-          {/* Risk Breakdown */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-semibold text-gray-900 mb-6">Risk Breakdown by Type</h3>
-            
+        {/* Results Section */}
             <div className="space-y-6">
-              {combinedRisks
-                .sort((a, b) => b.combinedScore - a.combinedScore)
-                .map((risk, index) => (
-                  <div key={risk.riskType} className="border border-gray-200 rounded-lg p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <div>
-                          <h4 className="text-lg font-semibold text-gray-900 capitalize">
-                            {riskLabels[risk.riskType as keyof typeof riskLabels] || risk.riskType.replace(/([A-Z])/g, ' $1').toLowerCase()}
-                          </h4>
-                          <p className="text-sm text-gray-600">{risk.reasoning}</p>
-                        </div>
-                      </div>
-                      <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium text-white ${getRiskColor(risk.combinedScore)}`}>
-                        {risk.combinedScore}/10 - {getRiskLabel(risk.combinedScore)}
-                      </div>
+          {riskScores.length > 0 && (
+            <>
+              {/* Risk Scores */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Risk Assessment Results</h3>
+                
+                <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-blue-900">
+                    <strong>Threshold:</strong> Risks with final score ≥ {THRESHOLD} or location risk ≥ 5 are <strong>preselected</strong>
+                  </p>
                     </div>
 
-                    {/* Risk Components */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="bg-blue-50 rounded p-3">
-                        <div className="text-sm font-medium text-blue-800">Location Risk</div>
-                        <div className="text-xl font-bold text-blue-900">{risk.locationRisk}/10</div>
-                        <div className="text-xs text-blue-600">Environmental factors</div>
-                      </div>
-                      <div className="bg-purple-50 rounded p-3">
-                        <div className="text-sm font-medium text-purple-800">Business Vulnerability</div>
-                        <div className="text-xl font-bold text-purple-900">{risk.businessVulnerability}/10</div>
-                        <div className="text-xs text-purple-600">Business type factors</div>
-                      </div>
-                      <div className="bg-gray-50 rounded p-3">
-                        <div className="text-sm font-medium text-gray-800">Impact Severity</div>
-                        <div className="text-xl font-bold text-gray-900">{risk.impactSeverity}/10</div>
-                        <div className="text-xs text-gray-600">Expected damage level</div>
-                      </div>
-                    </div>
-
-                    {/* Recommendations */}
-                    {risk.recommendations.length > 0 && (
-                      <div className="bg-green-50 border border-green-200 rounded p-4">
-                        <h5 className="font-medium text-green-800 mb-3">📋 Recommended Actions</h5>
-                        <div className="space-y-3">
-                          {risk.recommendations.map((rec, idx) => (
-                            <div key={idx}>
-                              {rec.type === 'alert' ? (
-                                <div className="text-sm text-green-700 font-medium mb-2">
-                                  {rec.message}
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {(riskScores || [])
+                    .sort((a, b) => b.finalScore - a.finalScore)
+                    .map(score => (
+                      <div
+                        key={score.riskType}
+                        className={`p-4 rounded-lg border-2 ${
+                          score.isPreselected
+                            ? 'bg-blue-50 border-blue-500'
+                            : 'bg-gray-50 border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium text-gray-900">
+                              {score.isPreselected && '✅ '}
+                              {score.riskType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            </h4>
+                            <p className="text-xs text-gray-600 mt-1">
+                              Location: {score.locationRisk}/10 | Business: {score.businessVulnerability}/10 | Base: {score.baseScore}/10
+                            </p>
                                 </div>
-                              ) : rec.type === 'strategy' ? (
-                                <div className="border border-green-300 rounded-lg p-3 bg-white">
-                                  <div className="flex items-start justify-between mb-2">
-                                    <h6 className="font-semibold text-green-900">{rec.strategy.name}</h6>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      rec.priority === 'critical' ? 'bg-red-100 text-red-800' :
-                                      rec.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                                      rec.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-blue-100 text-blue-800'
-                                    }`}>
-                                      {rec.priority}
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRiskColor(score.finalScore)}`}>
+                            {score.finalScore}/10 - {getRiskLabel(score.finalScore)}
                                     </span>
                                   </div>
-                                  <p className="text-sm text-gray-700 mb-2">{rec.strategy.smeDescription || rec.strategy.description}</p>
-                                  <div className="flex flex-wrap gap-4 text-xs text-gray-600 mb-2">
-                                    <span>💰 Cost: {rec.strategy.implementationCost}</span>
-                                    <span>⏱️ Time: {rec.strategy.timeToImplement}</span>
-                                    <span>📊 Effectiveness: {rec.strategy.effectiveness}/10</span>
-                                    <span>💹 ROI: {rec.strategy.roi}x</span>
-                                  </div>
-                                  {rec.strategy.actionSteps && rec.strategy.actionSteps.length > 0 && (
-                                    <div className="mt-3">
-                                      <div className="text-sm font-medium text-green-800 mb-2">📝 Implementation Steps:</div>
-                                      <div className="space-y-2">
-                                        {rec.strategy.actionSteps.slice(0, 3).map((step: any, stepIdx: number) => (
-                                          <div key={stepIdx} className="bg-green-25 border-l-2 border-green-300 pl-3 py-1">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-xs font-medium text-green-700 bg-green-200 px-2 py-1 rounded">
-                                                {step.phase}
+
+                        {score.appliedMultipliers.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-gray-200">
+                            <p className="text-xs font-medium text-gray-700 mb-1">Applied Multipliers:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {score.appliedMultipliers.map((mult, idx) => (
+                                <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
+                                  {mult.name} (×{mult.factor})
                                               </span>
-                                              <span className="text-sm font-medium text-gray-900">{step.title}</span>
-                                            </div>
-                                            <p className="text-xs text-gray-600 mt-1">{step.smeAction || step.action}</p>
-                                            <div className="flex gap-3 text-xs text-gray-500 mt-1">
-                                              {step.timeframe && <span>⏰ {step.timeframe}</span>}
-                                              {step.responsibility && <span>👤 {step.responsibility}</span>}
-                                              {step.cost && <span>💰 {step.cost}</span>}
-                                            </div>
-                                          </div>
-                                        ))}
-                                        {rec.strategy.actionSteps.length > 3 && (
-                                          <div className="text-xs text-gray-500 italic">
-                                            + {rec.strategy.actionSteps.length - 3} more implementation steps
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="text-sm text-green-700">
-                                  • {rec}
-                                </div>
-                              )}
-                            </div>
                           ))}
                         </div>
                       </div>
@@ -476,125 +631,62 @@ export function RiskCalculatorTab() {
             </div>
           </div>
 
-          {/* Next Steps */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-4">🎯 Your Business Continuity Action Plan</h3>
-            
-            {(() => {
-              // Gather all recommended strategies from all risks
-              const allStrategies = combinedRisks
-                .flatMap(risk => risk.recommendations.filter(rec => rec.type === 'strategy'))
-                .sort((a, b) => {
-                  const priorityOrder = { critical: 4, high: 3, medium: 2, low: 1 }
-                  return (priorityOrder[b.priority as keyof typeof priorityOrder] || 1) - 
-                         (priorityOrder[a.priority as keyof typeof priorityOrder] || 1)
-                })
-
-              // Group by phase/timeframe
-              const immediateActions = allStrategies.filter(s => 
-                s.strategy.actionSteps?.some((step: any) => step.phase === 'immediate')
-              ).slice(0, 3)
-              
-              const shortTermActions = allStrategies.filter(s => 
-                s.strategy.actionSteps?.some((step: any) => step.phase === 'short_term')
-              ).slice(0, 3)
-
-              const priorityStrategies = allStrategies
-                .filter(s => s.priority === 'critical' || s.priority === 'high')
-                .slice(0, 4)
-
-              return (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                    <h4 className="font-medium text-blue-800 mb-3">🚀 Immediate Actions (Next 2 weeks)</h4>
+              {/* Recommended Strategies */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">🛡️ Recommended Strategies</h3>
+                
+                {(recommendedStrategies || []).length > 0 ? (
                     <div className="space-y-3">
-                      {immediateActions.length > 0 ? immediateActions.map((item, idx) => (
-                        <div key={idx} className="bg-white border border-blue-200 rounded p-3">
-                          <div className="font-medium text-blue-900 text-sm">{item.strategy.name}</div>
-                          {item.strategy.actionSteps?.filter((step: any) => step.phase === 'immediate').slice(0, 1).map((step: any, stepIdx: number) => (
-                            <div key={stepIdx} className="text-xs text-blue-700 mt-1">
-                              📋 {step.smeAction || step.action}
-                              {step.timeframe && <span className="text-blue-600"> ({step.timeframe})</span>}
+                    {(recommendedStrategies || []).map(strategy => (
+                      <div key={strategy.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <h4 className="font-medium text-gray-900">
+                          ✓ {parseMultilingual(strategy.name) || strategy.name}
+                        </h4>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Applies to: {(strategy.applicableRisks || []).slice(0, 3).join(', ')}
+                          {(strategy.applicableRisks || []).length > 3 && ` +${(strategy.applicableRisks || []).length - 3} more`}
+                        </p>
                             </div>
                           ))}
-                          <div className="text-xs text-blue-600 mt-1">
-                            Cost: {item.strategy.implementationCost} | Effectiveness: {item.strategy.effectiveness}/10
                           </div>
-                        </div>
-                      )) : (
-                        <div className="text-sm text-blue-700">
-                          • Review and update emergency contact lists<br/>
-                          • Assess current insurance coverage<br/>
-                          • Identify critical business operations
-                        </div>
-                      )}
-                    </div>
+                ) : (
+                  <p className="text-sm text-gray-600 italic">
+                    No strategies recommended for the current risk profile.
+                  </p>
+                )}
               </div>
                   
+              {/* Summary Stats */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Summary</h3>
+                <div className="grid grid-cols-2 gap-4">
               <div>
-                    <h4 className="font-medium text-blue-800 mb-3">📈 Strategic Planning (1-6 months)</h4>
-                    <div className="space-y-3">
-                      {priorityStrategies.length > 0 ? priorityStrategies.map((item, idx) => (
-                        <div key={idx} className="bg-white border border-blue-200 rounded p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium text-blue-900 text-sm">{item.strategy.name}</div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              item.priority === 'critical' ? 'bg-red-100 text-red-700' :
-                              item.priority === 'high' ? 'bg-orange-100 text-orange-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {item.priority}
-                            </span>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {(riskScores || []).filter(s => s.isPreselected).length}
+                    </p>
+                    <p className="text-sm text-gray-600">Preselected Risks</p>
                           </div>
-                          <div className="text-xs text-blue-700 mt-1">
-                            {item.strategy.whyImportant || `Addresses ${item.strategy.applicableRisks?.join(', ')} risks`}
-                          </div>
-                          <div className="text-xs text-blue-600 mt-1">
-                            ROI: {item.strategy.roi}x | Time: {item.strategy.timeToImplement}
-                          </div>
-                        </div>
-                      )) : (
-                        <div className="text-sm text-blue-700">
-                          • Implement recommended mitigation strategies<br/>
-                          • Develop comprehensive business continuity plan<br/>
-                          • Train staff on emergency procedures
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-            
-            {/* Business-specific summary */}
-            <div className="mt-6 p-4 bg-white border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-2">💡 For Your Business Type</h4>
-              <div className="text-sm text-blue-700">
-                As a <strong>{businessTypes.find(bt => bt.id === selectedBusinessType)?.name}</strong> business 
-                in <strong>{parishes.find(p => p.id === selectedParish)?.name}</strong>, your highest risks are:{' '}
-                {combinedRisks
-                  .sort((a, b) => b.combinedScore - a.combinedScore)
-                  .slice(0, 3)
-                  .map(risk => risk.riskType.replace(/([A-Z])/g, ' $1').toLowerCase())
-                  .join(', ')
-                }. 
-                Focus on the critical and high priority strategies above to build resilience efficiently.
+                  <div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {(recommendedStrategies || []).length}
+                    </p>
+                    <p className="text-sm text-gray-600">Recommended Strategies</p>
               </div>
             </div>
           </div>
         </>
       )}
 
-      {/* No Selection State */}
-      {(!selectedParish || !selectedBusinessType) && (
-        <div className="text-center py-12 text-gray-500">
-          <div className="w-16 h-16 bg-gray-200 rounded-lg mx-auto mb-4 flex items-center justify-center">
-            <div className="w-8 h-8 border-2 border-gray-400 rounded"></div>
+          {(riskScores || []).length === 0 && (
+            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+              <div className="text-6xl mb-4">🧮</div>
+              <p className="text-gray-600">
+                Select parameters and click "Calculate Risk Profile" to see results
+              </p>
           </div>
-          <h3 className="text-lg font-medium mb-2">Ready to Calculate Risk</h3>
-          <p>Select both a parish location and business type above to see the combined risk assessment</p>
+          )}
         </div>
-      )}
+      </div>
     </div>
   )
 }

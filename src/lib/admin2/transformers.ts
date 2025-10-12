@@ -122,17 +122,18 @@ export function transformBusinessTypeForApi(businessType: any): any {
     category: businessType.category,
     subcategory: businessType.subcategory,
     description: parseMultilingualJSON(businessType.description) || businessType.description,
+    
+    // Reference information
     typicalRevenue: businessType.typicalRevenue,
     typicalEmployees: businessType.typicalEmployees,
     operatingHours: businessType.operatingHours,
-    seasonalityFactor: businessType.seasonalityFactor,
-    touristDependency: businessType.touristDependency || 0,
-    supplyChainComplexity: businessType.supplyChainComplexity || 0,
-    digitalDependency: businessType.digitalDependency || 0,
-    cashFlowPattern: businessType.cashFlowPattern,
-    physicalAssetIntensity: businessType.physicalAssetIntensity,
-    customerConcentration: businessType.customerConcentration,
-    regulatoryBurden: businessType.regulatoryBurden,
+    
+    // Multilingual example content for wizard prefill
+    exampleBusinessPurposes: safeJsonParse(businessType.exampleBusinessPurposes, []),
+    exampleProducts: safeJsonParse(businessType.exampleProducts, []),
+    exampleKeyPersonnel: safeJsonParse(businessType.exampleKeyPersonnel, []),
+    exampleCustomerBase: safeJsonParse(businessType.exampleCustomerBase, []),
+    minimumEquipment: safeJsonParse(businessType.minimumEquipment, []),
     
     // Transform risk vulnerabilities
     riskVulnerabilities: businessType.riskVulnerabilities?.map((rv: any) => ({

@@ -13,16 +13,14 @@ interface BusinessTypeOverviewProps {
 
 export function BusinessTypeOverview({ businessTypes, onBusinessTypeSelect, onRefresh }: BusinessTypeOverviewProps) {
   const getBusinessTypeRiskLevel = (businessType: BusinessType): number => {
-    const vulnerabilities = [
-      businessType.hurricaneVulnerability || 0,
-      businessType.floodVulnerability || 0,
-      businessType.earthquakeVulnerability || 0,
-      businessType.droughtVulnerability || 0,
-      businessType.landslideVulnerability || 0,
-      businessType.powerOutageVulnerability || 0
-    ].filter(v => v > 0)
+    if (!businessType.riskVulnerabilities || businessType.riskVulnerabilities.length === 0) {
+      return 0
+    }
     
-    return getAverageRiskLevel(vulnerabilities)
+    const avgVulnerability = businessType.riskVulnerabilities.reduce((sum, risk) => 
+      sum + risk.vulnerabilityLevel, 0) / businessType.riskVulnerabilities.length
+    
+    return Math.round(avgVulnerability)
   }
   
   const getDisplayName = (name: string): string => {
@@ -66,13 +64,11 @@ export function BusinessTypeOverview({ businessTypes, onBusinessTypeSelect, onRe
                       <div className={`w-3 h-3 rounded-full ${getRiskColor(avgRisk)}`} title={`Risk Level: ${avgRisk}/10`}></div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-3">{businessType.description || 'No description available'}</p>
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{getDisplayName(businessType.description || '') || 'No description available'}</p>
                     
                     <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                      <div>Tourist Dep: {businessType.touristDependency}/10</div>
-                      <div>Supply Chain: {businessType.supplyChainComplexity}/10</div>
-                      <div>Digital Dep: {businessType.digitalDependency}/10</div>
-                      <div>Vulnerabilities: {businessType.riskVulnerabilities?.length || 0}</div>
+                      <div>📊 Risk Profiles: {businessType.riskVulnerabilities?.length || 0}</div>
+                      <div>📝 Example Fields: {[businessType.exampleProducts, businessType.exampleKeyPersonnel, businessType.exampleCustomerBase, businessType.minimumEquipment, businessType.exampleBusinessPurposes].filter(Boolean).length}/5</div>
                     </div>
                   </div>
                 )

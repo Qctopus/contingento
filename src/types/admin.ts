@@ -74,44 +74,18 @@ export interface RiskData {
 export interface BusinessType {
   id: string
   businessTypeId: string
-  name: string
+  name: string // Can be plain string or multilingual object
   category: string
   subcategory?: string
-  description?: string
-  typicalRevenue?: string
-  typicalEmployees?: string
-  operatingHours?: string
+  description?: string // Can be plain string or multilingual object
   
-  // Core business characteristics (1-10 scale)
-  seasonalityFactor: number
-  touristDependency: number
-  supplyChainComplexity: number
-  digitalDependency: number
-  physicalAssetIntensity: number
-  customerConcentration: number
-  regulatoryBurden: number
-  cashFlowPattern: string
-  
-  // Risk exposure factors for location-specific calculations
-  hurricaneVulnerability?: number
-  floodVulnerability?: number
-  earthquakeVulnerability?: number
-  droughtVulnerability?: number
-  landslideVulnerability?: number
-  powerOutageVulnerability?: number
-  
-  hurricaneRecoveryImpact?: number
-  floodRecoveryImpact?: number
-  earthquakeRecoveryImpact?: number
-  droughtRecoveryImpact?: number
-  landslideRecoveryImpact?: number
-  powerOutageRecoveryImpact?: number
-  
-  // Critical dependencies and assets
-  essentialUtilities?: string[]
-  typicalEquipment?: string[]
-  keySupplierTypes?: Array<{name: string, criticality: string}>
-  maximumDowntime?: string
+  // Multilingual example content for wizard prefill (JSON arrays)
+  // These are business-type-specific suggestions that help users understand what to enter
+  exampleBusinessPurposes?: string[] | string // Array of examples or JSON string
+  exampleProducts?: string[] | string
+  exampleKeyPersonnel?: string[] | string
+  exampleCustomerBase?: string[] | string
+  minimumEquipment?: string[] | string
   
   strategies: BusinessTypeStrategy[]
   riskVulnerabilities?: Array<{

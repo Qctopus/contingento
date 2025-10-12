@@ -43,6 +43,16 @@ export function ImprovedStrategiesActionsTab() {
       setIsLoading(true)
       const { centralDataService } = await import('../../services/centralDataService')
       const data = await centralDataService.getStrategies()
+      console.log('🛡️ Loaded strategies:', data.length, 'strategies')
+      if (data.length > 0) {
+        console.log('🛡️ First strategy:', {
+          id: data[0].id,
+          name: data[0].name,
+          nameType: typeof data[0].name,
+          category: data[0].category,
+          applicableRisks: data[0].applicableRisks
+        })
+      }
       setStrategies(data)
     } catch (error) {
       console.error('Failed to load strategies:', error)
@@ -146,15 +156,20 @@ export function ImprovedStrategiesActionsTab() {
   // Filter and search logic
   const filteredStrategies = strategies.filter(strategy => {
     const categoryMatch = selectedCategory === 'all' || strategy.category === selectedCategory
-    const riskMatch = selectedRisk === 'all' || strategy.applicableRisks.includes(selectedRisk)
+    const riskMatch = selectedRisk === 'all' || (strategy.applicableRisks && strategy.applicableRisks.includes(selectedRisk))
     const priorityMatch = selectedPriority === 'all' || strategy.priority === selectedPriority
+    const strategyName = typeof strategy.name === 'string' ? strategy.name : JSON.stringify(strategy.name)
+    const strategyDesc = typeof strategy.description === 'string' ? strategy.description : JSON.stringify(strategy.description)
+    const strategySme = typeof strategy.smeDescription === 'string' ? strategy.smeDescription : ''
     const searchMatch = searchQuery === '' || 
-      strategy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      strategy.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (strategy.smeDescription && strategy.smeDescription.toLowerCase().includes(searchQuery.toLowerCase()))
+      strategyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      strategyDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (strategySme && strategySme.toLowerCase().includes(searchQuery.toLowerCase()))
     
     return categoryMatch && riskMatch && priorityMatch && searchMatch
   })
+  
+  console.log('🛡️ Filtered strategies:', filteredStrategies.length, 'of', strategies.length)
 
   const categories = ['prevention', 'preparation', 'response', 'recovery']
   const riskTypes = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 'supplyChainDisruption', 'civilUnrest']
@@ -266,12 +281,17 @@ export function ImprovedStrategiesActionsTab() {
   )
 
   return (
-    <div>
+    <div className="space-y-6">
+      {/* Section Header with better spacing */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-2">🛡️ Strategies & Action Plans</h2>
+        <p className="text-gray-600">Manage mitigation strategies and action plans for business continuity</p>
+      </div>
+
       {/* Compact Toolbar */}
-      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+      <div className="bg-gray-50 border-b border-gray-200 px-6 py-3 rounded-lg">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
-            <h1 className="text-lg font-semibold text-gray-900">Risk Mitigation Strategies</h1>
             <span className="text-sm text-gray-600">
               {strategies.length} strategies • {strategies.filter(s => s.priority === 'high' || s.priority === 'critical').length} high priority
             </span>

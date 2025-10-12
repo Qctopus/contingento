@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { fieldName, businessTypeId, step, countryCode, parish } = body
+    const { fieldName, businessTypeId, step, countryCode, parish, locale = 'en' } = body
 
     if (!fieldName || !businessTypeId) {
       return NextResponse.json(
@@ -13,14 +13,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get business type with all relevant data
-    const businessType = await (prisma as any).adminBusinessType.findUnique({
+    // Get business type with all relevant data from the BusinessType table
+    const businessType = await (prisma as any).businessType.findUnique({
       where: { businessTypeId },
       include: {
-        businessTypeHazards: {
-          include: {
-            hazard: true
-          },
+        riskVulnerabilities: {
           where: { isActive: true }
         }
       }
@@ -44,11 +41,46 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Parse JSON fields safely
+    // Parse JSON fields safely - handles both plain arrays and multilingual objects
     const parseJsonField = (field: string | null): any => {
       if (!field) return []
       try {
         return JSON.parse(field)
+      } catch (e) {
+        return []
+      }
+    }
+
+    // Extract localized text from multilingual field
+    const getLocalized = (field: any, locale: string = 'en'): string => {
+      if (!field) return ''
+      if (typeof field === 'string') {
+        try {
+          const parsed = JSON.parse(field)
+          return parsed[locale] || parsed.en || field
+        } catch {
+          return field
+        }
+      }
+      if (typeof field === 'object' && field[locale]) {
+        return field[locale]
+      }
+      return field.en || field
+    }
+
+    // Extract localized array from multilingual array field
+    const getLocalizedArray = (field: string | null, locale: string = 'en'): string[] => {
+      if (!field) return []
+      try {
+        const parsed = JSON.parse(field)
+        if (Array.isArray(parsed)) {
+          // Handle array of multilingual objects: [{en: "...", es: "...", fr: "..."}, ...]
+          return parsed.map((item: any) => {
+            if (typeof item === 'string') return item
+            return item[locale] || item.en || ''
+          }).filter(Boolean)
+        }
+        return []
       } catch (e) {
         return []
       }
@@ -62,12 +94,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Handle different field types and steps
+    console.log('[DEBUG] Step:', step, 'Field:', fieldName, 'Locale:', locale)
+    console.log('[DEBUG] BusinessType:', businessType.businessTypeId, 'Has purposes:', !!businessType.exampleBusinessPurposes)
+    
     switch (step) {
       case 'BUSINESS_OVERVIEW':
-        suggestions.examples = dedupe(
-          getBusinessOverviewSuggestions(normalizeLabel(fieldName), businessType, normalizeLocation(location), parseJsonField)
-        )
-        suggestions.preFillValue = getBusinessOverviewPreFill(normalizeLabel(fieldName), businessType, parseJsonField)
+        const suggestions_raw = getBusinessOverviewSuggestions(normalizeLabel(fieldName), businessType, normalizeLocation(location), getLocalizedArray, locale)
+        console.log('[DEBUG] Raw suggestions:', suggestions_raw)
+        suggestions.examples = dedupe(suggestions_raw)
+        console.log('[DEBUG] Deduped suggestions:', suggestions.examples)
+        suggestions.preFillValue = getBusinessOverviewPreFill(normalizeLabel(fieldName), businessType, getLocalizedArray, locale)
         break
 
       case 'ESSENTIAL_FUNCTIONS':
@@ -90,14 +126,14 @@ export async function POST(request: NextRequest) {
 
       case 'RESOURCES':
         suggestions.examples = dedupe(
-          getResourcesSuggestions(normalizeLabel(fieldName), businessType, parseJsonField)
+          getResourcesSuggestions(normalizeLabel(fieldName), businessType, getLocalizedArray, locale)
         )
-        suggestions.preFillValue = getResourcesPreFill(normalizeLabel(fieldName), businessType, parseJsonField)
+        suggestions.preFillValue = getResourcesPreFill(normalizeLabel(fieldName), businessType, getLocalizedArray, locale)
         break
 
       default:
         // Fallback to general business type examples
-        suggestions.examples = dedupe(getGeneralSuggestions(normalizeLabel(fieldName), businessType, parseJsonField))
+        suggestions.examples = dedupe(getGeneralSuggestions(normalizeLabel(fieldName), businessType, getLocalized, locale))
     }
 
     // Add contextual information based on location
@@ -139,27 +175,29 @@ function normalizeLocation(location: any) {
 function dedupe(arr: string[] = []): string[] {
   return Array.from(new Set(arr.filter(Boolean)))
 }
-function getBusinessOverviewSuggestions(fieldName: string, businessType: any, location: any, parseJsonField: Function): string[] {
+function getBusinessOverviewSuggestions(fieldName: string, businessType: any, location: any, getLocalizedArray: Function, locale: string): string[] {
   const examples: string[] = []
   
   switch (fieldName) {
     case 'Business Purpose':
-      const purposes = parseJsonField(businessType.exampleBusinessPurposes)
+      const purposes = getLocalizedArray(businessType.exampleBusinessPurposes, locale)
       examples.push(...purposes.slice(0, 3))
       break
       
+    case 'Products and Services':
     case 'Products/Services':
-      const products = parseJsonField(businessType.exampleProducts)
+      const products = getLocalizedArray(businessType.exampleProducts, locale)
       examples.push(...products.slice(0, 3))
       break
       
+    case 'Key Personnel Involved':
     case 'Key Personnel':
-      const personnel = parseJsonField(businessType.exampleKeyPersonnel)
+      const personnel = getLocalizedArray(businessType.exampleKeyPersonnel, locale)
       examples.push(...personnel.slice(0, 3))
       break
       
     case 'Customer Base':
-      const customers = parseJsonField(businessType.exampleCustomerBase)
+      const customers = getLocalizedArray(businessType.exampleCustomerBase, locale)
       examples.push(...customers.slice(0, 3))
       
       // Add location-specific variations
@@ -174,8 +212,8 @@ function getBusinessOverviewSuggestions(fieldName: string, businessType: any, lo
       break
       
     case 'Operating Hours':
-      if (businessType.typicalOperatingHours) {
-        examples.push(businessType.typicalOperatingHours)
+      if (businessType.operatingHours) {
+        examples.push(businessType.operatingHours)
       }
       // Add regional variations
       if (location) {
@@ -183,23 +221,30 @@ function getBusinessOverviewSuggestions(fieldName: string, businessType: any, lo
         examples.push(`Extended hours for tourist areas: 7:00 AM - 9:00 PM`)
       }
       break
+
+    case 'Minimum Resource Requirements':
+    case 'Minimum Resources':
+      const equipment = getLocalizedArray(businessType.minimumEquipment, locale)
+      examples.push(...equipment.slice(0, 3))
+      break
   }
   
   return examples.filter(Boolean)
 }
 
-function getBusinessOverviewPreFill(fieldName: string, businessType: any, parseJsonField: Function): string | null {
+function getBusinessOverviewPreFill(fieldName: string, businessType: any, getLocalizedArray: Function, locale: string): string | null {
   switch (fieldName) {
     case 'Business Purpose':
-      const purposes = parseJsonField(businessType.exampleBusinessPurposes)
+      const purposes = getLocalizedArray(businessType.exampleBusinessPurposes, locale)
       return purposes.length > 0 ? purposes[0] : null
       
+    case 'Products and Services':
     case 'Products/Services':
-      const products = parseJsonField(businessType.exampleProducts)
+      const products = getLocalizedArray(businessType.exampleProducts, locale)
       return products.length > 0 ? products[0] : null
       
     case 'Operating Hours':
-      return businessType.typicalOperatingHours || null
+      return businessType.operatingHours || null
       
     default:
       return null
@@ -239,14 +284,12 @@ function getRiskAssessmentSuggestions(fieldName: string, businessType: any, loca
   
   if (fieldName === 'Planning Measures') {
     // Get common planning measures for this business type
-    const hazards = businessType.businessTypeHazards || []
-    hazards.forEach((bth: any) => {
-      const hazard = bth.hazard
-      if (hazard) {
-        suggestions.push(`Develop ${hazard.name.toLowerCase()} response procedures`)
-        if (hazard.warningTime === 'days') {
-          suggestions.push(`Monitor weather alerts and forecasts for ${hazard.name.toLowerCase()}`)
-        }
+    const vulnerabilities = businessType.riskVulnerabilities || []
+    vulnerabilities.forEach((rv: any) => {
+      if (rv.vulnerabilityLevel >= 7) {
+        const riskName = rv.riskType.replace(/([A-Z])/g, ' $1').trim().toLowerCase()
+        suggestions.push(`Develop ${riskName} response procedures`)
+        suggestions.push(`Monitor alerts and forecasts for ${riskName}`)
       }
     })
   }
@@ -264,55 +307,55 @@ function getStrategiesSuggestions(fieldName: string, businessType: any, location
   const suggestions: string[] = []
   
   // Get strategies based on business type vulnerabilities
-  const hazards = businessType.businessTypeHazards || []
-  hazards.forEach((bth: any) => {
-    const hazard = bth.hazard
-    if (hazard && bth.riskLevel === 'high') {
-      suggestions.push(`Implement preventive measures for ${hazard.name.toLowerCase()}`)
-      suggestions.push(`Create response plan for ${hazard.name.toLowerCase()} incidents`)
+  const vulnerabilities = businessType.riskVulnerabilities || []
+  vulnerabilities.forEach((rv: any) => {
+    if (rv.vulnerabilityLevel >= 7) {
+      const riskName = rv.riskType.replace(/([A-Z])/g, ' $1').trim().toLowerCase()
+      suggestions.push(`Implement preventive measures for ${riskName}`)
+      suggestions.push(`Create response plan for ${riskName} incidents`)
     }
   })
   
   return suggestions.slice(0, 3)
 }
 
-function getResourcesSuggestions(fieldName: string, businessType: any, parseJsonField: Function): string[] {
-  const minimumEquipment = parseJsonField(businessType.minimumEquipment)
-  const minimumUtilities = parseJsonField(businessType.minimumUtilities)
+function getResourcesSuggestions(fieldName: string, businessType: any, getLocalizedArray: Function, locale: string): string[] {
+  const minimumEquipment = getLocalizedArray(businessType.minimumEquipment, locale)
   
   switch (fieldName) {
     case 'Equipment':
+    case 'Minimum Resource Requirements':
+    case 'Minimum Resources':
       return minimumEquipment.slice(0, 3)
     case 'Utilities':
-      return minimumUtilities.slice(0, 3)
+      return []
     case 'Staff':
-      return businessType.minimumStaff ? [businessType.minimumStaff] : []
+      return businessType.typicalEmployees ? [businessType.typicalEmployees] : []
     case 'Space':
-      return businessType.minimumSpace ? [businessType.minimumSpace] : []
+      return []
     default:
       return []
   }
 }
 
-function getResourcesPreFill(fieldName: string, businessType: any, parseJsonField: Function): any {
+function getResourcesPreFill(fieldName: string, businessType: any, getLocalizedArray: Function, locale: string): any {
   switch (fieldName) {
     case 'Minimum Equipment':
-      return parseJsonField(businessType.minimumEquipment)
-    case 'Minimum Utilities':
-      return parseJsonField(businessType.minimumUtilities)
-    case 'Minimum Staff':
-      return businessType.minimumStaff || null
-    case 'Minimum Space':
-      return businessType.minimumSpace || null
+    case 'Minimum Resource Requirements':
+    case 'Minimum Resources':
+      return getLocalizedArray(businessType.minimumEquipment, locale)
+    case 'Staff':
+      return businessType.typicalEmployees || null
     default:
       return null
   }
 }
 
-function getGeneralSuggestions(fieldName: string, businessType: any, parseJsonField: Function): string[] {
+function getGeneralSuggestions(fieldName: string, businessType: any, getLocalized: Function, locale: string): string[] {
   // Fallback general suggestions based on business type
+  const name = getLocalized(businessType.name, locale)
   return [
-    `${businessType.name} specific example for ${fieldName}`,
+    `${name} specific example for ${fieldName}`,
     `Industry standard practice for ${businessType.category}`,
     `Common approach in Caribbean ${businessType.category} businesses`
   ]
@@ -336,4 +379,6 @@ function getLocationContext(fieldName: string, location: any, businessType: any)
   return context.length > 0 
     ? `Consider ${context.join(', ')} for ${businessType.name} operations`
     : null
-} 
+}   
+ 
+ 
