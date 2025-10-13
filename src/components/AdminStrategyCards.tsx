@@ -5,6 +5,8 @@ import { useTranslations, useLocale } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy } from '../types/admin'
 import type { Locale } from '../i18n/config'
+import StrategySelectionStep from './wizard/StrategySelectionStep'
+import { getLocalizedText } from '../utils/localizationUtils'
 
 interface AdminStrategyCardsProps {
   initialValue?: Strategy[]
@@ -37,8 +39,10 @@ export function AdminStrategyCards({
 }: AdminStrategyCardsProps) {
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [selectedStrategies, setSelectedStrategies] = useState<Strategy[]>(initialValue || [])
+  const [selectedStrategyIds, setSelectedStrategyIds] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [useNewUI, setUseNewUI] = useState(false)
   
   const t = useTranslations('common')
   const locale = useLocale() as Locale
@@ -56,17 +60,40 @@ export function AdminStrategyCards({
           const preFilledStrategies = preFillData.preFilledFields.STRATEGIES['Business Continuity Strategies']
           setStrategies(preFilledStrategies)
           
-          // Auto-select high-effectiveness strategies
-          const autoSelected = preFilledStrategies.filter((strategy: Strategy) => 
-            strategy.effectiveness && strategy.effectiveness >= 7
-          )
-          setSelectedStrategies(autoSelected)
-          console.log('✅ Auto-selected high-effectiveness strategies:', autoSelected.length)
+          // Check if strategies have the new priorityTier field (enhanced recommendation system)
+          const hasNewFields = preFilledStrategies.some((s: any) => s.priorityTier !== undefined)
+          setUseNewUI(hasNewFields)
+          
+          if (hasNewFields) {
+            console.log('✨ Using NEW enhanced strategy selection UI with priority tiers')
+            // Auto-select essential and recommended strategies
+            const autoSelectedIds = preFilledStrategies
+              .filter((strategy: any) => 
+                strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
+              )
+              .map((s: any) => s.id)
+            setSelectedStrategyIds(autoSelectedIds)
+            
+            // Also set selectedStrategies for backwards compatibility
+            const autoSelected = preFilledStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
+            setSelectedStrategies(autoSelected)
+            console.log('✅ Auto-selected essential/recommended strategies:', autoSelectedIds.length)
+          } else {
+            console.log('📋 Using legacy strategy selection UI')
+            // Auto-select high-effectiveness strategies (legacy)
+            const autoSelected = preFilledStrategies.filter((strategy: Strategy) => 
+              strategy.effectiveness && strategy.effectiveness >= 7
+            )
+            setSelectedStrategies(autoSelected)
+            setSelectedStrategyIds(autoSelected.map(s => s.id))
+            console.log('✅ Auto-selected high-effectiveness strategies:', autoSelected.length)
+          }
         } else {
           // Fallback: load all strategies from centralDataService
           const allStrategies = await centralDataService.getStrategies(true, locale)
           console.log('📋 Loaded strategies from centralDataService:', allStrategies.length)
           setStrategies(allStrategies)
+          setUseNewUI(false)
         }
         
       } catch (error) {
@@ -98,6 +125,51 @@ export function AdminStrategyCards({
         return [...prev, strategy]
       }
     })
+    
+    // Update selectedStrategyIds as well for new UI
+    setSelectedStrategyIds(prev => {
+      const isSelected = prev.includes(strategy.id)
+      if (isSelected) {
+        return prev.filter(id => id !== strategy.id)
+      } else {
+        return [...prev, strategy.id]
+      }
+    })
+  }
+  
+  // Handler for new UI (strategy ID-based)
+  const handleStrategyIdToggle = (strategyId: string) => {
+    if (setUserInteracted) {
+      setUserInteracted()
+    }
+    
+    setSelectedStrategyIds(prev => {
+      const isSelected = prev.includes(strategyId)
+      if (isSelected) {
+        return prev.filter(id => id !== strategyId)
+      } else {
+        return [...prev, strategyId]
+      }
+    })
+    
+    // Update selectedStrategies for backwards compatibility
+    setSelectedStrategies(prev => {
+      const strategy = strategies.find(s => s.id === strategyId)
+      if (!strategy) return prev
+      
+      const isSelected = prev.some(s => s.id === strategyId)
+      if (isSelected) {
+        return prev.filter(s => s.id !== strategyId)
+      } else {
+        return [...prev, strategy]
+      }
+    })
+  }
+  
+  const handleContinue = () => {
+    // Called when user clicks continue in new UI
+    // Selection is already tracked via selectedStrategies state
+    console.log('✅ Strategy selection completed:', selectedStrategyIds.length, 'strategies selected')
   }
 
   const getCategoryIcon = (category: string) => {
@@ -158,6 +230,19 @@ export function AdminStrategyCards({
     )
   }
 
+  // If strategies have the new priorityTier field, use the enhanced UI
+  if (useNewUI) {
+    return (
+      <StrategySelectionStep
+        strategies={strategies as any}
+        selectedStrategies={selectedStrategyIds}
+        onStrategyToggle={handleStrategyIdToggle}
+        onContinue={handleContinue}
+      />
+    )
+  }
+
+  // Otherwise, use the legacy UI below
   // Group strategies by category
   const strategiesByCategory = strategies.reduce((acc, strategy) => {
     const category = strategy.category || 'other'
@@ -247,7 +332,7 @@ export function AdminStrategyCards({
                     
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{strategy.name}</h4>
+                        <h4 className="font-medium text-gray-900">{getLocalizedText(strategy.name, locale)}</h4>
                         {strategy.effectiveness && (
                           <span className={`px-2 py-1 text-xs rounded-full font-medium border ${getEffectivenessColor(strategy.effectiveness)}`}>
                             {strategy.effectiveness}% effective
@@ -255,7 +340,7 @@ export function AdminStrategyCards({
                         )}
                       </div>
                       
-                      <p className="text-sm text-gray-600 mb-3">{strategy.description}</p>
+                      <p className="text-sm text-gray-600 mb-3">{getLocalizedText(strategy.description, locale)}</p>
                       
                       <div className="space-y-2">
                         {strategy.implementationCost && (

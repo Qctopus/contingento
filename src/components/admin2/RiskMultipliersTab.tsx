@@ -147,6 +147,33 @@ export default function RiskMultipliersTab() {
     }
   }
 
+  const toggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const multiplier = multipliers.find(m => m.id === id)
+      if (!multiplier) return
+
+      const response = await fetch('/api/admin2/multipliers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          isActive: !currentStatus
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        await fetchMultipliers()
+      } else {
+        alert('Error toggling multiplier status: ' + data.error)
+      }
+    } catch (error) {
+      console.error('Error toggling multiplier:', error)
+      alert('Error toggling multiplier')
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -588,20 +615,48 @@ export default function RiskMultipliersTab() {
         </div>
       )}
 
+      {/* Stats Summary */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="text-2xl font-bold text-blue-600">{multipliers.length}</div>
+          <div className="text-sm text-gray-600">Total Multipliers</div>
+        </div>
+        <div className="bg-white border border-green-200 rounded-lg p-4">
+          <div className="text-2xl font-bold text-green-600">{multipliers.filter(m => m.isActive).length}</div>
+          <div className="text-sm text-gray-600">Active</div>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="text-2xl font-bold text-gray-600">{multipliers.filter(m => !m.isActive).length}</div>
+          <div className="text-sm text-gray-600">Inactive</div>
+        </div>
+        <div className="bg-white border border-purple-200 rounded-lg p-4">
+          <div className="text-2xl font-bold text-purple-600">
+            {multipliers.length > 0 ? Math.round(multipliers.reduce((sum, m) => sum + m.multiplierFactor, 0) / multipliers.length * 100) / 100 : 0}
+          </div>
+          <div className="text-sm text-gray-600">Avg Factor</div>
+        </div>
+      </div>
+
       {/* Multipliers List */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">
-          Existing Multipliers ({multipliers.length})
-        </h3>
-        
         {multipliers.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
             <p className="text-gray-600">No multipliers defined yet.</p>
             <p className="text-sm text-gray-500 mt-1">Create your first multiplier to get started.</p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {multipliers.map(multiplier => {
+          <>
+            {/* Active Multipliers */}
+            {multipliers.filter(m => m.isActive).length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="w-3 h-3 bg-green-500 rounded-full"></span>
+                    Active Multipliers ({multipliers.filter(m => m.isActive).length})
+                  </h3>
+                </div>
+                <div className="grid gap-3">
+                  {multipliers.filter(m => m.isActive).map(multiplier => {
               // Parse applicableHazards safely
               let hazards: string[] = []
               try {
@@ -718,6 +773,17 @@ export default function RiskMultipliersTab() {
                     
                     <div className="flex flex-col space-y-2 ml-4">
                       <button
+                        onClick={() => toggleActive(multiplier.id, multiplier.isActive)}
+                        className={`px-3 py-1 text-sm rounded transition-colors ${
+                          multiplier.isActive 
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
+                        title={multiplier.isActive ? 'Click to deactivate' : 'Click to activate'}
+                      >
+                        {multiplier.isActive ? '❌ Deactivate' : '✅ Activate'}
+                      </button>
+                      <button
                         onClick={() => handleEdit(multiplier)}
                         className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
                       >
@@ -732,9 +798,141 @@ export default function RiskMultipliersTab() {
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Inactive Multipliers */}
+            {multipliers.filter(m => !m.isActive).length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="w-3 h-3 bg-gray-400 rounded-full"></span>
+                    Inactive Multipliers ({multipliers.filter(m => !m.isActive).length})
+                  </h3>
+                </div>
+                <div className="grid gap-3">
+                  {multipliers.filter(m => !m.isActive).map(multiplier => {
+                    // Parse applicableHazards safely
+                    let hazards: string[] = []
+                    try {
+                      hazards = typeof multiplier.applicableHazards === 'string' 
+                        ? JSON.parse(multiplier.applicableHazards)
+                        : multiplier.applicableHazards || []
+                    } catch (error) {
+                      console.error('Error parsing applicableHazards for display:', error)
+                      hazards = []
+                    }
+                    
+                    // Filter to only show valid risks (remove old/invalid risk types)
+                    const validRiskKeys = RISK_TYPES.map(rt => rt.key)
+                    const validHazards = hazards.filter(hazard => {
+                      const normalizedHazard = hazard.replace(/_/g, '').toLowerCase()
+                      return validRiskKeys.some(key => key.toLowerCase() === normalizedHazard)
+                    })
+                    
+                    const charType = CHARACTERISTIC_TYPES.find(ct => ct.value === multiplier.characteristicType)
+                    
+                    return (
+                      <div 
+                        key={multiplier.id}
+                        className="bg-white border border-gray-200 rounded-lg p-4 opacity-60"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="text-lg font-semibold text-gray-900">
+                                {multiplier.name}
+                              </h4>
+                              <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded">
+                                Inactive
+                              </span>
+                              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                                ×{multiplier.multiplierFactor}
+                              </span>
+                              <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
+                                Priority: {multiplier.priority}
+                              </span>
+                            </div>
+                            
+                            <p className="text-sm text-gray-600 mb-2">
+                              {multiplier.description}
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Characteristic:</span>{' '}
+                                <span className="text-gray-600">{charType?.label || multiplier.characteristicType}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Condition:</span>{' '}
+                                <span className="text-gray-600">
+                                  {multiplier.conditionType === 'boolean' && 'Yes/No'}
+                                  {multiplier.conditionType === 'threshold' && `≥ ${multiplier.thresholdValue}`}
+                                  {multiplier.conditionType === 'range' && `${multiplier.minValue}-${multiplier.maxValue}`}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-2">
+                              <span className="text-sm font-medium text-gray-700">Applies to Risks:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {validHazards.length > 0 ? (
+                                  validHazards.map((hazard: string) => {
+                                    const riskType = RISK_TYPES.find(rt => 
+                                      rt.key.toLowerCase() === hazard.replace(/_/g, '').toLowerCase()
+                                    )
+                                    return (
+                                      <span 
+                                        key={hazard}
+                                        className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded flex items-center gap-1"
+                                      >
+                                        {riskType?.icon} {riskType?.name || hazard}
+                                      </span>
+                                    )
+                                  })
+                                ) : (
+                                  <span className="text-xs text-gray-500 italic">No valid risks selected</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex flex-col space-y-2 ml-4">
+                            <button
+                              onClick={() => toggleActive(multiplier.id, multiplier.isActive)}
+                              className={`px-3 py-1 text-sm rounded transition-colors ${
+                                multiplier.isActive 
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                              }`}
+                              title={multiplier.isActive ? 'Click to deactivate' : 'Click to activate'}
+                            >
+                              {multiplier.isActive ? '❌ Deactivate' : '✅ Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleEdit(multiplier)}
+                              className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(multiplier.id)}
+                              className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -5,6 +5,7 @@ export interface LocationData {
   countryCode: string
   parish?: string
   region?: string
+  adminUnitId?: string
   nearCoast: boolean
   urbanArea: boolean
 }

@@ -3,6 +3,7 @@ import { useLocale } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy, ActionStep } from '../types/admin'
 import type { Locale } from '../i18n/config'
+import { getLocalizedText } from '../utils/localizationUtils'
 
 interface BusinessPlanReviewProps {
   formData: any
@@ -696,9 +697,10 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
     // Find relevant strategies from database
     const relevantStrategies = strategies.filter(strategy => {
       // Check if strategy applies to this risk type
+      const strategyName = getLocalizedText(strategy.name, 'en').toLowerCase()
       return strategy.applicableRisks?.includes(risk.hazard) || 
              strategy.applicableRisks?.includes(risk.Hazard) ||
-             strategy.name.toLowerCase().includes(hazardName.toLowerCase())
+             strategyName.includes(hazardName.toLowerCase())
     })
 
     // Transform database strategies into action plan format

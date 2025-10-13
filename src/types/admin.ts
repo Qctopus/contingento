@@ -111,42 +111,123 @@ export interface BusinessTypeStrategy {
   }
 }
 
+/**
+ * Enhanced ActionStep interface for SME-focused Business Continuity Planning
+ * Includes comprehensive guidance, validation, dependencies, and alternatives
+ */
 export interface ActionStep {
   id: string
+  stepId?: string
+  strategyId?: string
   phase: 'immediate' | 'short_term' | 'medium_term' | 'long_term'
-  action: string // Technical action description
+  title: string
+  action?: string // Technical action description (legacy)
+  description: string
   smeAction: string // Simple, clear action for SME users
-  timeframe: string
-  responsibility: string
-  resources: string[]
-  cost: string
+  sortOrder?: number
+  
+  // SME Context - Why this matters
+  whyThisStepMatters?: string // Plain language importance explanation
+  whatHappensIfSkipped?: string // Specific consequence if user skips
+  
+  // Timing & Difficulty
+  timeframe?: string // Human-readable ("1-2 hours", "Within a week")
+  estimatedMinutes?: number // Precise timing: 15, 30, 60, 120, etc.
+  difficultyLevel?: 'easy' | 'medium' | 'hard'
+  
+  // Resources & Costs
+  responsibility?: string
+  resources?: string[] // Required resources
+  cost?: string
   estimatedCostJMD?: string // JMD cost estimate
-  checklist?: string[] // Step-by-step checklist for SMEs
-  helpVideo?: string // Optional help video URL
+  checklist?: string[] // Step-by-step checklist
+  
+  // Validation & Completion
+  howToKnowItsDone?: string // Clear completion criteria
+  exampleOutput?: string // What "done" looks like
+  
+  // Dependencies
+  dependsOnSteps?: string[] // stepIds that must complete first
+  isOptional?: boolean // Can this be skipped?
+  skipConditions?: string // When to skip
+  
+  // Alternatives for resource-limited SMEs
+  freeAlternative?: string // Free way to do this
+  lowTechOption?: string // Non-digital approach
+  
+  // Help Resources
+  commonMistakesForStep?: string[] // Mistakes to avoid
+  videoTutorialUrl?: string // YouTube or tutorial link
+  externalResourceUrl?: string // External guide or template
+  helpVideo?: string // Legacy field, use videoTutorialUrl
 }
 
+/**
+ * Enhanced Strategy interface for SME-focused Business Continuity Planning
+ * Includes benefit-driven content, personalization, wizard integration, and BCP document support
+ */
 export interface Strategy {
   id: string
   strategyId: string
-  name: string
+  name: string // Admin-facing technical name
   category: 'prevention' | 'preparation' | 'response' | 'recovery'
   description: string // Technical description for admin use
-  smeDescription?: string // Simple, clear description for SME users
-  whyImportant?: string // Plain language explanation of business value
-  applicableRisks: string[]
+  
+  // SME-Focused Content (benefit-driven, plain language)
+  smeTitle?: string // Benefit-focused title (e.g., "Stay Connected During Emergencies")
+  smeSummary?: string // 2-3 sentence plain language summary
+  smeDescription?: string // DEPRECATED: Use smeSummary. Kept for backwards compatibility
+  whyImportant?: string // DEPRECATED: Use benefitsBullets. Kept for backwards compatibility
+  benefitsBullets?: string[] // Array of specific benefits
+  realWorldExample?: string // Caribbean success story with real business names
+  
+  // Implementation Details (enhanced)
   implementationCost: 'low' | 'medium' | 'high' | 'very_high'
-  costEstimateJMD?: string // JMD cost range for SMEs
-  implementationTime: 'hours' | 'days' | 'weeks' | 'months'
+  costEstimateJMD?: string // "Free" or "JMD 5,000-15,000"
+  implementationTime?: 'hours' | 'days' | 'weeks' | 'months'
   timeToImplement?: string // User-friendly time description
-  effectiveness: number // 1-10
-  businessTypes: string[] // applicable business categories
+  estimatedTotalHours?: number // Sum of all action step times
+  complexityLevel?: 'simple' | 'moderate' | 'advanced'
+  effectiveness: number // 1-10 scale
+  roi?: number // Return on investment estimate
   priority: 'low' | 'medium' | 'high' | 'critical'
-  actionSteps: ActionStep[]
+  quickWinIndicator?: boolean // Fast + high impact = quick win
+  
+  // Wizard Integration (how strategy appears in wizard)
+  defaultSelected?: boolean // Should wizard pre-check this?
+  selectionTier?: 'essential' | 'recommended' | 'optional'
+  requiredForRisks?: string[] // Risk IDs that make this mandatory
+  priorityTier?: 'essential' | 'recommended' | 'optional' // Alias for selectionTier
+  reasoning?: string // Why we recommend this (from scoring algorithm)
+  
+  // Guidance (consolidated)
   helpfulTips?: string[] // Tips for successful implementation
   commonMistakes?: string[] // What to avoid
   successMetrics?: string[] // How to measure success
-  prerequisites?: string[] // What's needed before starting
-  roi?: number // Return on investment estimate
+  
+  // Resource-Limited SME Support
+  lowBudgetAlternative?: string // Cheaper approach
+  diyApproach?: string // DIY instructions
+  estimatedDIYSavings?: string // "Save JMD 10,000 by..."
+  
+  // BCP Document Integration
+  bcpSectionMapping?: string // Which BCP section this fills
+  bcpTemplateText?: string // Pre-written paragraph for BCP
+  
+  // Personalization
+  industryVariants?: Record<string, string> // Industry-specific guidance
+  businessSizeGuidance?: Record<string, string> // Size-specific guidance
+  
+  // Keep existing fields
+  applicableRisks: string[] // Risk types this strategy addresses
+  applicableBusinessTypes?: string[] // Business categories (null = all)
+  businessTypes?: string[] // Alias for applicableBusinessTypes
+  prerequisites?: string[] // Requirements before starting
+  maintenanceRequirement?: 'low' | 'medium' | 'high'
+  actionSteps: ActionStep[]
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface CombinedRisk {

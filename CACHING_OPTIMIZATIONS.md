@@ -150,3 +150,4 @@ private readonly CACHE_EXPIRY = {
 **Result**: Admin2 panel now feels snappy and responsive, with tab switching happening instantly! 🎉
 
 
+

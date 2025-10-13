@@ -130,6 +130,8 @@ export async function POST(request: NextRequest) {
           const parishData = {
             name: parishName,
             region: rowData['Region'] || '',
+            isCoastal: rowData['Is Coastal']?.toLowerCase() === 'yes',
+            isUrban: rowData['Is Urban']?.toLowerCase() === 'yes',
             population: parseInt(rowData['Population']) || 0,
             area: rowData['Area'] ? parseFloat(rowData['Area']) : undefined,
             elevation: rowData['Elevation'] ? parseFloat(rowData['Elevation']) : undefined,
@@ -156,7 +158,14 @@ export async function POST(request: NextRequest) {
               earthquake: { level: validateRiskLevel(rowData['Earthquake Risk']), notes: rowData['Earthquake Notes'] || '' },
               drought: { level: validateRiskLevel(rowData['Drought Risk']), notes: rowData['Drought Notes'] || '' },
               landslide: { level: validateRiskLevel(rowData['Landslide Risk']), notes: rowData['Landslide Notes'] || '' },
-              powerOutage: { level: validateRiskLevel(rowData['Power Outage Risk']), notes: rowData['Power Outage Notes'] || '' }
+              powerOutage: { level: validateRiskLevel(rowData['Power Outage Risk']), notes: rowData['Power Outage Notes'] || '' },
+              fire: { level: validateRiskLevel(rowData['Fire Risk']), notes: rowData['Fire Notes'] || '' },
+              cyberAttack: { level: validateRiskLevel(rowData['Cyber Attack Risk']), notes: rowData['Cyber Attack Notes'] || '' },
+              terrorism: { level: validateRiskLevel(rowData['Terrorism Risk']), notes: rowData['Terrorism Notes'] || '' },
+              pandemicDisease: { level: validateRiskLevel(rowData['Pandemic Disease Risk']), notes: rowData['Pandemic Disease Notes'] || '' },
+              economicDownturn: { level: validateRiskLevel(rowData['Economic Downturn Risk']), notes: rowData['Economic Downturn Notes'] || '' },
+              supplyChainDisruption: { level: validateRiskLevel(rowData['Supply Chain Disruption Risk']), notes: rowData['Supply Chain Disruption Notes'] || '' },
+              civilUnrest: { level: validateRiskLevel(rowData['Civil Unrest Risk']), notes: rowData['Civil Unrest Notes'] || '' }
             }),
             lastUpdated: new Date(),
             updatedBy: 'csv-upload'
@@ -251,19 +260,44 @@ export async function GET() {
 
     // Generate CSV headers
     const csvHeaders = [
-      'Parish Name', 'Region', 'Population',
-      'Hurricane Risk', 'Hurricane Notes', 'Flood Risk', 'Flood Notes',
-      'Earthquake Risk', 'Earthquake Notes', 'Drought Risk', 'Drought Notes',
-      'Landslide Risk', 'Landslide Notes', 'Power Outage Risk', 'Power Outage Notes',
+      'Parish Name', 'Region', 'Is Coastal', 'Is Urban', 'Population',
+      'Hurricane Risk', 'Hurricane Notes', 
+      'Flood Risk', 'Flood Notes',
+      'Earthquake Risk', 'Earthquake Notes', 
+      'Drought Risk', 'Drought Notes',
+      'Landslide Risk', 'Landslide Notes', 
+      'Power Outage Risk', 'Power Outage Notes',
+      'Fire Risk', 'Fire Notes',
+      'Cyber Attack Risk', 'Cyber Attack Notes',
+      'Terrorism Risk', 'Terrorism Notes',
+      'Pandemic Disease Risk', 'Pandemic Disease Notes',
+      'Economic Downturn Risk', 'Economic Downturn Notes',
+      'Supply Chain Disruption Risk', 'Supply Chain Disruption Notes',
+      'Civil Unrest Risk', 'Civil Unrest Notes',
       'Area', 'Elevation', 'Coordinates'
     ]
 
     // Generate CSV rows
     const csvRows = parishes.map(parish => {
       const risk = parish.parishRisk
+      
+      // Parse riskProfileJson to get additional risk types
+      let additionalRisks: Record<string, any> = {}
+      if (risk?.riskProfileJson) {
+        try {
+          additionalRisks = typeof risk.riskProfileJson === 'string'
+            ? JSON.parse(risk.riskProfileJson)
+            : risk.riskProfileJson
+        } catch (error) {
+          console.error('Error parsing riskProfileJson:', error)
+        }
+      }
+      
       return [
         parish.name,
         parish.region,
+        parish.isCoastal ? 'Yes' : 'No',
+        parish.isUrban ? 'Yes' : 'No',
         parish.population,
         risk?.hurricaneLevel || 0,
         risk?.hurricaneNotes || '',
@@ -277,6 +311,20 @@ export async function GET() {
         risk?.landslideNotes || '',
         risk?.powerOutageLevel || 0,
         risk?.powerOutageNotes || '',
+        additionalRisks.fire?.level || 0,
+        additionalRisks.fire?.notes || '',
+        additionalRisks.cyberAttack?.level || 0,
+        additionalRisks.cyberAttack?.notes || '',
+        additionalRisks.terrorism?.level || 0,
+        additionalRisks.terrorism?.notes || '',
+        additionalRisks.pandemicDisease?.level || 0,
+        additionalRisks.pandemicDisease?.notes || '',
+        additionalRisks.economicDownturn?.level || 0,
+        additionalRisks.economicDownturn?.notes || '',
+        additionalRisks.supplyChainDisruption?.level || 0,
+        additionalRisks.supplyChainDisruption?.notes || '',
+        additionalRisks.civilUnrest?.level || 0,
+        additionalRisks.civilUnrest?.notes || '',
         parish.area || '',
         parish.elevation || '',
         parish.coordinates || ''

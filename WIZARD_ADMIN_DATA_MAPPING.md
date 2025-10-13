@@ -114,3 +114,4 @@ model BusinessType {
 - [ ] Update Admin2 BusinessTypeEditor to remove unused fields
 
 
+

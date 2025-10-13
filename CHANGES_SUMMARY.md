@@ -144,3 +144,4 @@ The system is now simpler, clearer, and only stores what's actually needed:
 - ✅ Users customize those suggestions for their specific business
 
 
+

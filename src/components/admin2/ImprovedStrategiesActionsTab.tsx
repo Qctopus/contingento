@@ -11,6 +11,7 @@ import {
   parseActionStepsFromCSV,
   downloadCSV 
 } from '@/utils/csvUtils'
+import { getLocalizedText } from '@/utils/localizationUtils'
 
 type ViewMode = 'overview' | 'detail' | 'create' | 'edit'
 type DisplayMode = 'cards' | 'table' | 'compact'
@@ -158,9 +159,9 @@ export function ImprovedStrategiesActionsTab() {
     const categoryMatch = selectedCategory === 'all' || strategy.category === selectedCategory
     const riskMatch = selectedRisk === 'all' || (strategy.applicableRisks && strategy.applicableRisks.includes(selectedRisk))
     const priorityMatch = selectedPriority === 'all' || strategy.priority === selectedPriority
-    const strategyName = typeof strategy.name === 'string' ? strategy.name : JSON.stringify(strategy.name)
-    const strategyDesc = typeof strategy.description === 'string' ? strategy.description : JSON.stringify(strategy.description)
-    const strategySme = typeof strategy.smeDescription === 'string' ? strategy.smeDescription : ''
+    const strategyName = getLocalizedText(strategy.name, 'en')
+    const strategyDesc = getLocalizedText(strategy.description, 'en')
+    const strategySme = getLocalizedText(strategy.smeDescription, 'en')
     const searchMatch = searchQuery === '' || 
       strategyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       strategyDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -176,38 +177,75 @@ export function ImprovedStrategiesActionsTab() {
   const priorities = ['low', 'medium', 'high', 'critical']
 
   // Statistics
+  const criticalCount = strategies.filter(s => s.priority === 'critical').length
+  const highPriorityCount = strategies.filter(s => s.priority === 'high' || s.priority === 'critical').length
+  const readyToDeployCount = strategies.filter(s => s.actionSteps && s.actionSteps.length > 0).length
+  const avgEffectiveness = strategies.length > 0 
+    ? Math.round(strategies.reduce((sum, s) => sum + s.effectiveness, 0) / strategies.length * 10) / 10 
+    : 0
+  const multilingualComplete = strategies.filter(s => {
+    // Check if strategy has complete multilingual data
+    try {
+      // Helper to check multilingual field
+      const isMultilingual = (field: any) => {
+        if (!field) return false
+        // Try to parse if it's a JSON string
+        let parsed = field
+        if (typeof field === 'string' && field.startsWith('{')) {
+          try {
+            parsed = JSON.parse(field)
+          } catch {
+            return false
+          }
+        }
+        // Check if it's an object with all three languages
+        return parsed && typeof parsed === 'object' && parsed.en && parsed.es && parsed.fr
+      }
+      
+      const hasName = isMultilingual(s.name)
+      const hasDesc = isMultilingual(s.description) || isMultilingual(s.smeDescription)
+      return hasName && hasDesc
+    } catch {
+      return false
+    }
+  }).length
+  
+  // Calculate total action steps
+  const totalActionSteps = strategies.reduce((sum, s) => sum + (s.actionSteps?.length || 0), 0)
+  const avgStepsPerStrategy = strategies.length > 0 ? Math.round(totalActionSteps / strategies.length * 10) / 10 : 0
+  
   const stats = [
     {
       label: 'Total Strategies',
       value: strategies.length,
-      change: '+2 this week',
+      change: `${readyToDeployCount} with action plans`,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       icon: '📋'
     },
     {
-      label: 'High Priority',
-      value: strategies.filter(s => s.priority === 'high' || s.priority === 'critical').length,
-      change: '3 critical',
+      label: 'Critical Priority',
+      value: criticalCount,
+      change: `${highPriorityCount} high or critical`,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       icon: '🚨'
     },
     {
-      label: 'Ready to Deploy',
-      value: strategies.filter(s => s.actionSteps && s.actionSteps.length > 0).length,
-      change: 'with action plans',
+      label: 'Multilingual',
+      value: multilingualComplete,
+      change: `${Math.round(multilingualComplete / Math.max(strategies.length, 1) * 100)}% complete`,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      icon: '✅'
+      icon: '🌍'
     },
     {
-      label: 'Avg Effectiveness',
-      value: Math.round(strategies.reduce((sum, s) => sum + s.effectiveness, 0) / strategies.length * 10) / 10 || 0,
-      change: '/10 rating',
+      label: 'Action Steps',
+      value: totalActionSteps,
+      change: `${avgStepsPerStrategy} avg per strategy`,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      icon: '⭐'
+      icon: '📝'
     }
   ]
 
@@ -546,7 +584,7 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-semibold text-gray-900 mb-1 truncate hover:text-blue-600 transition-colors">
-                  {strategy.name}
+                  {getLocalizedText(strategy.name, 'en')}
                 </h3>
                 <div className="flex items-center space-x-2">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${categoryInfo.color}`}>
@@ -574,7 +612,7 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
 
             {/* Description */}
             <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-              {strategy.smeDescription || strategy.description}
+              {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
             </p>
 
             {/* Compact Metrics */}
@@ -700,10 +738,10 @@ function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: S
                 <td className="px-4 py-3">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">
-                      {strategy.name}
+                      {getLocalizedText(strategy.name, 'en')}
                     </div>
                     <div className="text-xs text-gray-500 truncate mt-0.5">
-                      {strategy.smeDescription || strategy.description}
+                      {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
                     </div>
                   </div>
                 </td>
@@ -728,7 +766,7 @@ function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: S
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center text-xs text-gray-600">
-                  {strategy.costEstimateJMD || strategy.implementationCost}
+                  {getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost}
                 </td>
                 <td className="px-3 py-3 text-center">
                   <span className="text-sm font-medium text-gray-900">
@@ -803,14 +841,14 @@ function StrategiesCompactView({ strategies, onStrategySelect, onEditStrategy }:
               <div className="min-w-0 flex-1">
                 <div className="flex items-center space-x-2">
                   <h3 className="text-sm font-semibold text-gray-900 truncate">
-                    {strategy.name}
+                    {getLocalizedText(strategy.name, 'en')}
                   </h3>
                   <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                     {strategy.priority}
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 truncate mt-0.5">
-                  {strategy.smeDescription || strategy.description}
+                  {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
                 </p>
               </div>
             </div>
@@ -909,7 +947,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
             <div className="h-4 border-l border-gray-300"></div>
             <div className="flex items-center space-x-3">
               <span className="text-xl">{categoryInfo.icon}</span>
-              <h1 className="text-xl font-bold text-gray-900">{strategy.name}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{getLocalizedText(strategy.name, 'en')}</h1>
             </div>
           </div>
           
@@ -959,7 +997,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-2">📋 For Business Owners</h3>
                   <p className="text-gray-600 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    {strategy.smeDescription}
+                    {getLocalizedText(strategy.smeDescription, 'en')}
                   </p>
                 </div>
               )}
@@ -968,7 +1006,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-2">💡 Why This Matters</h3>
                   <p className="text-gray-600 bg-green-50 p-4 rounded-lg border border-green-200">
-                    {strategy.whyImportant}
+                    {getLocalizedText(strategy.whyImportant, 'en')}
                   </p>
                 </div>
               )}
@@ -976,7 +1014,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-2">🔧 Technical Details</h3>
                 <p className="text-gray-600 text-sm bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  {strategy.description}
+                  {getLocalizedText(strategy.description, 'en')}
                 </p>
               </div>
             </div>
@@ -1012,20 +1050,24 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                       {phaseSteps.map((step, index) => (
                         <div key={step.id} className="bg-white rounded p-3 shadow-sm">
                           <h4 className="font-medium text-gray-900 mb-2">
-                            {index + 1}. {step.smeAction || step.action}
+                            {index + 1}. {getLocalizedText(step.title || step.smeAction || step.action, 'en')}
                           </h4>
                           <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
                             <div><span className="font-medium">Timeline:</span> {step.timeframe}</div>
                             <div><span className="font-medium">Responsible:</span> {step.responsibility}</div>
-                            <div><span className="font-medium">Cost:</span> {step.estimatedCostJMD || step.cost}</div>
+                            <div><span className="font-medium">Cost:</span> {getLocalizedText(step.estimatedCostJMD || step.cost, 'en')}</div>
                           </div>
                           {step.checklist && step.checklist.length > 0 && (
                             <div>
                               <span className="text-sm font-medium text-gray-700">Checklist:</span>
                               <ul className="mt-1 text-sm text-gray-600 ml-4">
-                                {step.checklist.slice(0, 3).map((item, i) => (
-                                  <li key={i} className="list-disc">{item}</li>
-                                ))}
+                                {(() => {
+                                  const checklist = getLocalizedText(step.checklist, 'en')
+                                  const checklistArray = Array.isArray(checklist) ? checklist : (typeof checklist === 'string' && checklist ? [checklist] : [])
+                                  return checklistArray.slice(0, 3).map((item, i) => (
+                                    <li key={i} className="list-disc">{item}</li>
+                                  ))
+                                })()}
                               </ul>
                             </div>
                           )}
@@ -1056,7 +1098,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Implementation Cost:</span>
-                <span className="text-sm text-gray-900">{strategy.costEstimateJMD || strategy.implementationCost}</span>
+                <span className="text-sm text-gray-900">{getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost}</span>
               </div>
               
               <div className="flex justify-between">

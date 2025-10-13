@@ -4,6 +4,7 @@ interface LocationData {
   country?: string
   countryCode?: string
   parish?: string
+  adminUnitId?: string
   nearCoast?: boolean
   urbanArea?: boolean
 }

@@ -25,8 +25,8 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     urbanArea: false
   })
   const [currentStep, setCurrentStep] = useState<'industry' | 'location' | 'characteristics'>('industry')
-  const [businessCharacteristics, setBusinessCharacteristics] = useState({
-    // Simple yes/no questions instead of sliders
+  const [businessCharacteristics, setBusinessCharacteristics] = useState<Record<string, any>>({
+    // Legacy fields for backward compatibility
     customerBase: 'mix' as 'mainly_tourists' | 'mix' | 'mainly_locals',
     powerDependency: 'partially' as 'can_operate' | 'partially' | 'cannot_operate',
     digitalDependency: 'helpful' as 'essential' | 'helpful' | 'not_used',
@@ -35,6 +35,8 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     minimalInventory: false,
     expensiveEquipment: false
   })
+  const [multipliers, setMultipliers] = useState<any[]>([])
+  const [loadingMultipliers, setLoadingMultipliers] = useState(false)
   const [businessTypesByCategory, setBusinessTypesByCategory] = useState<Array<{
     category: string
     title: string
@@ -48,6 +50,30 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [preFillPreview, setPreFillPreview] = useState<any>(null)
+
+  // Load multipliers with wizard questions
+  useEffect(() => {
+    const loadMultipliers = async () => {
+      try {
+        setLoadingMultipliers(true)
+        const response = await fetch('/api/admin2/multipliers?activeOnly=true')
+        const result = await response.json()
+        
+        if (result.success) {
+          // Filter to only multipliers with wizard questions
+          const multipliersWithQuestions = result.multipliers.filter((m: any) => m.wizardQuestion)
+          setMultipliers(multipliersWithQuestions)
+          console.log(`📋 Loaded ${multipliersWithQuestions.length} multiplier questions`)
+        }
+      } catch (err) {
+        console.error('Error loading multipliers:', err)
+      } finally {
+        setLoadingMultipliers(false)
+      }
+    }
+    
+    loadMultipliers()
+  }, [])
 
   // Load business types and countries
   useEffect(() => {
@@ -176,6 +202,10 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
       setSubmitting(true)
       setError(null)
       
+      // CRITICAL: Clear old cached data to force fresh calculation with multipliers
+      localStorage.removeItem('bcp-prefill-data')
+      console.log('🗑️ Cleared old prefill data - generating fresh with multipliers...')
+      
       // Call the prepare-prefill-data API with business characteristics
       const response = await fetch('/api/wizard/prepare-prefill-data', {
         method: 'POST',
@@ -287,10 +317,10 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
               {t('backToLocation') || 'Back to Location'}
             </button>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Tell Us About Your Business
+              {t('characteristicsTitle')}
             </h1>
             <p className="text-lg text-gray-600 mb-2">
-              Quick questions to help us calculate your specific risks (takes 30 seconds)
+              {t('characteristicsDescription')}
             </p>
             {selectedBusiness && (
               <p className="text-sm text-gray-500">
@@ -300,278 +330,252 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+            {loadingMultipliers ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">{t('loadingQuestions')}</p>
+              </div>
+            ) : (
             <div className="space-y-6">
               {/* Location Characteristics - User Input */}
               <div className="pb-6 border-b border-gray-200 bg-gray-50 p-4 rounded-lg">
                 <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  About Your Business Location
+                  {t('aboutLocationTitle')}
                 </label>
-                <p className="text-sm text-gray-600 mb-4">
-                  These details help us calculate risks specific to your location
-                </p>
-                <div className="space-y-3">
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
-                    <input
-                      type="checkbox"
-                      checked={location.nearCoast}
-                      onChange={(e) => setLocation(prev => ({ ...prev, nearCoast: e.target.checked }))}
-                      className="mt-1 h-4 w-4 text-blue-600 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">My business is near the coast</div>
-                      <div className="text-sm text-gray-600">Within 5km of the ocean or sea</div>
-                    </div>
-                  </label>
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-white transition-colors bg-white">
-                    <input
-                      type="checkbox"
-                      checked={location.urbanArea}
-                      onChange={(e) => setLocation(prev => ({ ...prev, urbanArea: e.target.checked }))}
-                      className="mt-1 h-4 w-4 text-blue-600 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">My business is in an urban/city area</div>
-                      <div className="text-sm text-gray-600">In a city, town center, or densely populated area</div>
-                    </div>
-                  </label>
-                </div>
+                {/* Removed hardcoded location questions - now handled by Dynamic Multiplier Questions below */}
               </div>
 
-              {/* Question 1: Customer Base */}
-              <div className="pb-6 border-b border-gray-200">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  1. Where do most of your customers come from?
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.customerBase === 'mainly_tourists' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="customerBase"
-                      value="mainly_tourists"
-                      checked={businessCharacteristics.customerBase === 'mainly_tourists'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, customerBase: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Mainly tourists and visitors</div>
-                      <div className="text-sm text-gray-600">Hotels, tours, souvenir shops, vacation rentals</div>
+                {/* Dynamic Multiplier Questions (from Admin Panel) */}
+                {multipliers
+                  .filter(m => m.isActive) // Only show active multipliers
+                  .map((multiplier, index) => {
+                  const question = (() => {
+                    try {
+                      const parsed = JSON.parse(multiplier.wizardQuestion)
+                      return parsed[locale] || parsed['en'] || multiplier.name
+                    } catch {
+                      return multiplier.name
+                    }
+                  })()
+                  
+                  const helpText = (() => {
+                    try {
+                      if (multiplier.wizardHelpText) {
+                        const parsed = JSON.parse(multiplier.wizardHelpText)
+                        return parsed[locale] || parsed['en']
+                      }
+                    } catch {}
+                    return null
+                  })()
+                  
+                  const answerOptions = (() => {
+                    try {
+                      if (multiplier.wizardAnswerOptions) {
+                        return JSON.parse(multiplier.wizardAnswerOptions)
+                      }
+                    } catch {}
+                    return null
+                  })()
+
+                  const charType = multiplier.characteristicType
+                  const currentValue = businessCharacteristics[charType]
+                  
+                  return (
+                    <div key={multiplier.id} className={`${index < multipliers.length - 1 ? 'pb-6 border-b border-gray-200' : ''}`}>
+                      <div className="mb-4">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-700 font-bold text-sm">{index + 1}</span>
                     </div>
+                          <label className="flex-1 text-lg font-semibold text-gray-900 pt-1">
+                            {question}
                   </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.customerBase === 'mix' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="customerBase"
-                      value="mix"
-                      checked={businessCharacteristics.customerBase === 'mix'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, customerBase: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Mix of tourists and locals</div>
-                      <div className="text-sm text-gray-600">Restaurants, shops, services in tourist areas</div>
                     </div>
-                  </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.customerBase === 'mainly_locals' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="customerBase"
-                      value="mainly_locals"
-                      checked={businessCharacteristics.customerBase === 'mainly_locals'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, customerBase: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Mainly local customers</div>
-                      <div className="text-sm text-gray-600">Neighborhood stores, pharmacies, local services</div>
+                        {helpText && (
+                          <div className="ml-11 flex items-start gap-2 bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r">
+                            <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            <p className="text-sm text-blue-900">{helpText}</p>
                     </div>
-                  </label>
-                </div>
+                        )}
               </div>
 
-              {/* Question 2: Power Dependency */}
-              <div className="pb-6 border-b border-gray-200">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  2. If electricity goes out, can you still serve customers?
+                      {/* Render different input types based on conditionType */}
+                      {multiplier.conditionType === 'boolean' ? (
+                        <div className="ml-11 space-y-2">
+                          {answerOptions && answerOptions.length > 0 ? (
+                            // Use provided answer options
+                            answerOptions.map((option: any) => {
+                              const label = typeof option.label === 'object' 
+                                ? (option.label[locale] || option.label['en']) 
+                                : option.label
+                              const isSelected = currentValue === option.value
+                              
+                              return (
+                                <label 
+                                  key={String(option.value)} 
+                                  className={`
+                                    group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                    ${isSelected 
+                                      ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                      : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                    }
+                                  `}
+                                >
+                                  <div className="flex items-center h-5">
+                    <input
+                      type="radio"
+                                      name={charType}
+                                      checked={isSelected}
+                                      onChange={() => setBusinessCharacteristics(prev => ({ 
+                                        ...prev, 
+                                        [charType]: option.value 
+                                      }))}
+                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                    />
+                    </div>
+                                  <div className="ml-4 flex-1">
+                                    <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                      {label}
+                    </div>
+                                    {option.description && (
+                                      <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                                        {option.description}
+                    </div>
+                                    )}
+                </div>
+                                  {isSelected && (
+                                    <div className="ml-2">
+                                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                      </svg>
+              </div>
+                                  )}
                 </label>
-                <div className="space-y-3">
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.powerDependency === 'can_operate' ? '#2563eb' : '#e5e7eb' }}>
+                              )
+                            })
+                          ) : (
+                            // Default Yes/No for boolean
+                            <>
+                              <label className={`
+                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                ${currentValue === true 
+                                  ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                  : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                }
+                              `}>
+                                <div className="flex items-center h-5">
                     <input
                       type="radio"
-                      name="powerDependency"
-                      value="can_operate"
-                      checked={businessCharacteristics.powerDependency === 'can_operate'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, powerDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Yes, we can operate normally</div>
-                      <div className="text-sm text-gray-600">Manual systems, no refrigeration needed</div>
+                                    name={charType}
+                                    checked={currentValue === true}
+                                    onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: true }))}
+                                    className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                  />
                     </div>
+                                <div className="ml-4 flex-1">
+                                  <div className={`font-semibold ${currentValue === true ? 'text-blue-900' : 'text-gray-900'}`}>
+                                    Yes
+                    </div>
+                    </div>
+                                {currentValue === true && (
+                                  <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                )}
                   </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.powerDependency === 'partially' ? '#2563eb' : '#e5e7eb' }}>
+                              <label className={`
+                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                ${currentValue === false 
+                                  ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                  : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                }
+                              `}>
+                                <div className="flex items-center h-5">
                     <input
                       type="radio"
-                      name="powerDependency"
-                      value="partially"
-                      checked={businessCharacteristics.powerDependency === 'partially'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, powerDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Partially (some services affected)</div>
-                      <div className="text-sm text-gray-600">Can serve but limited - lights, AC, some equipment</div>
+                                    name={charType}
+                                    checked={currentValue === false}
+                                    onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: false }))}
+                                    className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                  />
                     </div>
-                  </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.powerDependency === 'cannot_operate' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="powerDependency"
-                      value="cannot_operate"
-                      checked={businessCharacteristics.powerDependency === 'cannot_operate'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, powerDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">No, we must close</div>
-                      <div className="text-sm text-gray-600">Refrigeration, cash registers, cooking equipment, etc.</div>
-                    </div>
-                  </label>
+                                <div className="ml-4 flex-1">
+                                  <div className={`font-semibold ${currentValue === false ? 'text-blue-900' : 'text-gray-900'}`}>
+                                    No
                 </div>
               </div>
-
-              {/* Question 3: Digital/Internet Dependency */}
-              <div className="pb-6 border-b border-gray-200">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  3. Does your business need internet or computer systems to operate?
+                                {currentValue === false && (
+                                  <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                )}
                 </label>
-                <div className="space-y-3">
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.digitalDependency === 'essential' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="digitalDependency"
-                      value="essential"
-                      checked={businessCharacteristics.digitalDependency === 'essential'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, digitalDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Yes, essential - cannot operate without them</div>
-                      <div className="text-sm text-gray-600">Online bookings, credit cards, cloud systems, POS</div>
+                            </>
+                          )}
                     </div>
-                  </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.digitalDependency === 'helpful' ? '#2563eb' : '#e5e7eb' }}>
+                      ) : multiplier.conditionType === 'threshold' || multiplier.conditionType === 'range' ? (
+                        // Threshold/Range questions - show as cards with radio selection (like boolean)
+                        <div className="ml-11 space-y-2">
+                          {answerOptions && answerOptions.length > 0 ? (
+                            answerOptions.map((option: any) => {
+                              const label = typeof option.label === 'object' 
+                                ? (option.label[locale] || option.label['en']) 
+                                : option.label
+                              const isSelected = currentValue === option.value
+                              
+                              return (
+                                <label 
+                                  key={String(option.value)} 
+                                  className={`
+                                    group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                    ${isSelected 
+                                      ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                      : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                    }
+                                  `}
+                                >
+                                  <div className="flex items-center h-5">
                     <input
-                      type="radio"
-                      name="digitalDependency"
-                      value="helpful"
-                      checked={businessCharacteristics.digitalDependency === 'helpful'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, digitalDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Helpful but not essential</div>
-                      <div className="text-sm text-gray-600">We use them but can work with manual backup</div>
+                                      type="radio"
+                                      name={charType}
+                                      checked={isSelected}
+                                      onChange={() => setBusinessCharacteristics(prev => ({ 
+                                        ...prev, 
+                                        [charType]: option.value 
+                                      }))}
+                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                    />
                     </div>
-                  </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.digitalDependency === 'not_used' ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="digitalDependency"
-                      value="not_used"
-                      checked={businessCharacteristics.digitalDependency === 'not_used'}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, digitalDependency: e.target.value as any }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">No, we don't use them</div>
-                      <div className="text-sm text-gray-600">All paper-based, cash only</div>
+                                  <div className="ml-4 flex-1">
+                                    <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                      {label}
                     </div>
-                  </label>
+                                    {option.description && (
+                                      <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                                        {option.description}
                 </div>
+                                    )}
               </div>
-
-              {/* Question 4: Supply Chain */}
-              <div className="pb-6 border-b border-gray-200">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  4. Check any that apply to your business:
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={businessCharacteristics.importsFromOverseas}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, importsFromOverseas: e.target.checked }))}
-                      className="mt-1 h-4 w-4 text-blue-600 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">We import supplies from overseas</div>
-                      <div className="text-sm text-gray-600">International shipping, customs delays</div>
+                                  {isSelected && (
+                                    <div className="ml-2">
+                                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                      </svg>
                     </div>
+                                  )}
                   </label>
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={businessCharacteristics.sellsPerishable}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, sellsPerishable: e.target.checked }))}
-                      className="mt-1 h-4 w-4 text-blue-600 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">We sell fresh or perishable products</div>
-                      <div className="text-sm text-gray-600">Food, flowers, medicines that expire</div>
+                              )
+                            })
+                          ) : null}
                     </div>
-                  </label>
-                  <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
-                    <input
-                      type="checkbox"
-                      checked={businessCharacteristics.minimalInventory}
-                      onChange={(e) => setBusinessCharacteristics(prev => ({ ...prev, minimalInventory: e.target.checked }))}
-                      className="mt-1 h-4 w-4 text-blue-600 rounded"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">We keep minimal stock (order as needed)</div>
-                      <div className="text-sm text-gray-600">Just-in-time delivery, small inventory</div>
-                    </div>
-                  </label>
+                      ) : null}
                 </div>
+                  )
+                })}
               </div>
-
-              {/* Question 5: Physical Assets */}
-              <div>
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  5. Do you have expensive equipment or machinery to replace if damaged?
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: businessCharacteristics.expensiveEquipment ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="expensiveEquipment"
-                      value="yes"
-                      checked={businessCharacteristics.expensiveEquipment}
-                      onChange={() => setBusinessCharacteristics(prev => ({ ...prev, expensiveEquipment: true }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">Yes, significant machinery or equipment</div>
-                      <div className="text-sm text-gray-600">Vehicles, heavy equipment, specialized machinery (over $10,000 to replace)</div>
-                    </div>
-                  </label>
-                  <label className="flex items-start p-4 border-2 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors" style={{ borderColor: !businessCharacteristics.expensiveEquipment ? '#2563eb' : '#e5e7eb' }}>
-                    <input
-                      type="radio"
-                      name="expensiveEquipment"
-                      value="no"
-                      checked={!businessCharacteristics.expensiveEquipment}
-                      onChange={() => setBusinessCharacteristics(prev => ({ ...prev, expensiveEquipment: false }))}
-                      className="mt-1 h-4 w-4 text-blue-600"
-                    />
-                    <div className="ml-3 flex-1">
-                      <div className="font-medium text-gray-900">No, mainly services or basic tools</div>
-                      <div className="text-sm text-gray-600">Furniture, computers, basic equipment</div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Action Buttons */}
             <div className="space-y-3 mt-8 pt-6 border-t">
@@ -581,7 +585,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                   className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                   disabled={submitting}
                 >
-                  ← Back
+                  ← {t('backButton')}
                 </button>
                 <button
                   onClick={handleCharacteristicsSubmit}
@@ -594,11 +598,11 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      <span>Preparing your plan...</span>
+                      <span>{t('preparingPlan')}</span>
                     </>
                   ) : (
                     <>
-                      <span>Generate Smart Plan</span>
+                      <span>{t('generateSmartPlan')}</span>
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
@@ -611,7 +615,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 disabled={submitting}
                 className="w-full px-6 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
               >
-                Skip and create plan manually
+                {t('skipManual')}
               </button>
             </div>
           </div>
@@ -661,11 +665,8 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                       <div className="font-medium text-gray-900 mb-1">
                         {businessType.name}
                       </div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        {businessType.localName}
-                      </div>
                       {businessType.description && (
-                        <div className="text-xs text-gray-500 mb-2 line-clamp-2">
+                        <div className="text-sm text-gray-600 mb-2 line-clamp-1">
                           {businessType.description}
                         </div>
                       )}
@@ -756,24 +757,32 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 </label>
                 {loadingAdminUnits ? (
                   <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                    Loading administrative units...
+                    {t('loadingAdminUnits')}
                   </div>
                 ) : parishes.length > 0 ? (
                   <select
                     value={location.parish}
-                    onChange={(e) => setLocation(prev => ({ ...prev, parish: e.target.value }))}
+                    onChange={(e) => {
+                      const selectedParish = parishes.find(p => p.name === e.target.value)
+                      setLocation(prev => ({ 
+                        ...prev, 
+                        parish: e.target.value,
+                        // Store admin unit ID for API calls
+                        adminUnitId: selectedParish?.code || ''
+                      }))
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">{t('parishPlaceholder')}</option>
                     {parishes.map((parish) => (
-                      <option key={parish.code} value={parish.code}>
+                      <option key={parish.code} value={parish.name}>
                         {parish.name}
                       </option>
                     ))}
                   </select>
                 ) : (
                   <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500">
-                    No administrative units found for this country
+                    {t('noAdminUnits')}
                   </div>
                 )}
               </div>
@@ -789,7 +798,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
               onClick={() => setCurrentStep('industry')}
               className="px-6 py-3 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
             >
-              ← Back
+              ← {t('backButton')}
             </button>
             <button
               onClick={handleLocationSubmit}
@@ -800,7 +809,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >
-              <span>Continue</span>
+              <span>{t('continueButton')}</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>

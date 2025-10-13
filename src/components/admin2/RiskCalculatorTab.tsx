@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getLocalizedText } from '@/utils/localizationUtils'
 
 interface Country {
   id: string
@@ -49,6 +50,7 @@ interface RiskMultiplier {
   applicableHazards: string[]
   wizardQuestion?: string
   wizardAnswerOptions?: string
+  wizardHelpText?: string
   isActive: boolean
 }
 
@@ -211,15 +213,36 @@ export default function RiskCalculatorTab() {
 
   const parseMultilingual = (value: any, lang: string = 'en'): any => {
     if (!value) return null
-    if (typeof value === 'string') {
+    
+    // If it's already a plain string, return it
+    if (typeof value === 'string' && !value.startsWith('{')) {
+      return value
+    }
+    
+    // If it's a JSON string, parse it
+    if (typeof value === 'string' && value.startsWith('{')) {
       try {
         const parsed = JSON.parse(value)
-        return parsed[lang] || parsed.en || value
+        if (parsed && typeof parsed === 'object') {
+          return parsed[lang] || parsed.en || Object.values(parsed)[0] || value
+        }
+        return value
       } catch {
         return value
       }
     }
-    return value[lang] || value.en || value
+    
+    // If it's already an object with language keys
+    if (typeof value === 'object' && !Array.isArray(value)) {
+      return value[lang] || value.en || Object.values(value)[0] || null
+    }
+    
+    // If it's an array, return as-is
+    if (Array.isArray(value)) {
+      return value
+    }
+    
+    return value
   }
 
   const calculateRisks = async () => {
@@ -514,13 +537,29 @@ export default function RiskCalculatorTab() {
               
               {(activeMultipliers || []).map(multiplier => {
                 const question = parseMultilingual(multiplier.wizardQuestion) || multiplier.name
+                const helpText = parseMultilingual(multiplier.wizardHelpText)
                 const currentValue = multiplierAnswers[multiplier.id]
+                
+                // Parse answer options if available
+                let answerOptions: any[] = []
+                if (multiplier.wizardAnswerOptions) {
+                  try {
+                    answerOptions = typeof multiplier.wizardAnswerOptions === 'string'
+                      ? JSON.parse(multiplier.wizardAnswerOptions)
+                      : multiplier.wizardAnswerOptions
+                  } catch (error) {
+                    console.error('Error parsing answer options:', error)
+                  }
+                }
                 
                 return (
                   <div key={multiplier.id} className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
                       {question}
                     </label>
+                    {helpText && (
+                      <p className="text-xs text-gray-500">{helpText}</p>
+                    )}
                     
                     {multiplier.conditionType === 'boolean' ? (
                       <div className="flex items-center gap-3">
@@ -545,17 +584,58 @@ export default function RiskCalculatorTab() {
                           {currentValue ? 'Yes' : 'No'}
                         </span>
                 </div>
-                    ) : (
-                      <input
-                        type="number"
+                    ) : answerOptions && answerOptions.length > 0 ? (
+                      // Dropdown for predefined options
+                      <select
                         value={multiplierAnswers[multiplier.id] || ''}
                         onChange={(e) => setMultiplierAnswers(prev => ({
                           ...prev,
-                          [multiplier.id]: parseFloat(e.target.value)
+                          [multiplier.id]: parseFloat(e.target.value) || e.target.value
                         }))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                        placeholder="Enter value..."
-                      />
+                      >
+                        <option value="">Select an option...</option>
+                        {answerOptions.map((option: any, idx: number) => {
+                          const optionValue = option.value !== undefined ? option.value : option
+                          const optionLabel = option.label !== undefined ? option.label : option
+                          return (
+                            <option key={idx} value={optionValue}>
+                              {parseMultilingual(optionLabel) || optionLabel}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    ) : (
+                      // Number input for threshold/range
+                      <div className="space-y-1">
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={multiplierAnswers[multiplier.id] || ''}
+                          onChange={(e) => setMultiplierAnswers(prev => ({
+                            ...prev,
+                            [multiplier.id]: parseFloat(e.target.value)
+                          }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          placeholder={
+                            multiplier.conditionType === 'threshold' 
+                              ? `Enter value (threshold: ${multiplier.thresholdValue})`
+                              : multiplier.conditionType === 'range'
+                              ? `Enter value (${multiplier.minValue} - ${multiplier.maxValue})`
+                              : 'Enter value...'
+                          }
+                        />
+                        {multiplier.conditionType === 'threshold' && multiplier.thresholdValue !== undefined && (
+                          <p className="text-xs text-gray-500">
+                            Multiplier applies when value ≥ {multiplier.thresholdValue}
+                          </p>
+                        )}
+                        {multiplier.conditionType === 'range' && multiplier.minValue !== undefined && multiplier.maxValue !== undefined && (
+                          <p className="text-xs text-gray-500">
+                            Multiplier applies when value is between {multiplier.minValue} and {multiplier.maxValue}
+                          </p>
+                        )}
+                      </div>
                     )}
                 </div>
                 )
@@ -633,21 +713,233 @@ export default function RiskCalculatorTab() {
 
               {/* Recommended Strategies */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">🛡️ Recommended Strategies</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">🛡️ Recommended Strategies ({(recommendedStrategies || []).length})</h3>
                 
                 {(recommendedStrategies || []).length > 0 ? (
-                    <div className="space-y-3">
-                    {(recommendedStrategies || []).map(strategy => (
-                      <div key={strategy.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
-                        <h4 className="font-medium text-gray-900">
-                          ✓ {parseMultilingual(strategy.name) || strategy.name}
+                    <div className="space-y-4">
+                    {(recommendedStrategies || []).map((strategy: any) => {
+                      const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, 'en')
+                      const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, 'en')
+                      
+                      // Parse multilingual arrays
+                      const getBenefits = () => {
+                        const benefits = getLocalizedText(strategy.benefitsBullets, 'en')
+                        return Array.isArray(benefits) ? benefits : (typeof benefits === 'string' && benefits ? [benefits] : [])
+                      }
+                      
+                      const getTips = () => {
+                        const tips = getLocalizedText(strategy.helpfulTips, 'en')
+                        return Array.isArray(tips) ? tips : (typeof tips === 'string' && tips ? [tips] : [])
+                      }
+                      
+                      const getMistakes = () => {
+                        const mistakes = getLocalizedText(strategy.commonMistakes, 'en')
+                        return Array.isArray(mistakes) ? mistakes : (typeof mistakes === 'string' && mistakes ? [mistakes] : [])
+                      }
+                      
+                      return (
+                        <div key={strategy.id} className="bg-white border-2 border-green-200 rounded-lg overflow-hidden">
+                          {/* Header */}
+                          <div className="p-4 bg-gradient-to-r from-green-50 to-blue-50">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-bold text-gray-900 text-xl flex items-center gap-2 flex-1">
+                                {displayTitle}
+                                {strategy.quickWinIndicator && (
+                                  <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full font-medium">⚡ Quick Win</span>
+                                )}
                         </h4>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Applies to: {(strategy.applicableRisks || []).slice(0, 3).join(', ')}
-                          {(strategy.applicableRisks || []).length > 3 && ` +${(strategy.applicableRisks || []).length - 3} more`}
-                        </p>
+                            </div>
+                            
+                            <p className="text-sm text-gray-700 mb-3">{displaySummary}</p>
+                            
+                            {/* Key Metrics */}
+                            <div className="flex flex-wrap gap-2 text-sm">
+                              <div className="bg-white px-3 py-1 rounded-full">
+                                <span className="text-gray-500">⏱️</span>{' '}
+                                <span className="font-medium">
+                                  {strategy.estimatedTotalHours ? `~${strategy.estimatedTotalHours}h` : (strategy.timeToImplement || strategy.implementationTime)}
+                                </span>
+                              </div>
+                              <div className="bg-white px-3 py-1 rounded-full">
+                                <span className="text-gray-500">💰</span>{' '}
+                                <span className="font-medium">{getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, 'en')}</span>
+                              </div>
+                              <div className="bg-white px-3 py-1 rounded-full">
+                                <span className="text-gray-500">⭐</span>{' '}
+                                <span className="font-medium">{strategy.effectiveness}/10</span>
+                              </div>
+                              {strategy.complexityLevel && (
+                                <div className="bg-white px-3 py-1 rounded-full">
+                                  <span className="text-gray-500">📊</span>{' '}
+                                  <span className="font-medium">{strategy.complexityLevel}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Content Section */}
+                          <div className="p-4 space-y-4">
+                            {/* Benefits */}
+                            {getBenefits().length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-gray-700 mb-1">✅ What You'll Get</p>
+                                <ul className="text-sm text-gray-600 space-y-1">
+                                  {getBenefits().map((benefit: string, idx: number) => (
+                                    <li key={idx} className="flex items-start">
+                                      <span className="text-green-600 mr-2">•</span>
+                                      <span>{benefit}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Risk Coverage */}
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">📊 Protects Against</p>
+                              <div className="flex flex-wrap gap-1">
+                                {(strategy.applicableRisks || []).map((risk: string) => (
+                                  <span key={risk} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
+                                    {risk.replace(/_/g, ' ')}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Real World Example */}
+                            {strategy.realWorldExample && (
+                              <div className="bg-green-50 border-l-4 border-green-500 rounded p-3">
+                                <h5 className="font-bold text-green-900 mb-2 flex items-center">
+                                  <span className="mr-2">💚</span> Real Success Story
+                                </h5>
+                                <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, 'en')}</p>
+                              </div>
+                            )}
+                            
+                            {/* Low Budget Alternative */}
+                            {strategy.lowBudgetAlternative && (
+                              <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
+                                <h5 className="font-bold text-yellow-900 mb-2">💰 Low Budget Alternative</h5>
+                                <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, 'en')}</p>
+                                {strategy.estimatedDIYSavings && (
+                                  <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, 'en')}</p>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* DIY Approach */}
+                            {strategy.diyApproach && (
+                              <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
+                                <h5 className="font-bold text-blue-900 mb-2">🔧 DIY Approach</h5>
+                                <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, 'en')}</p>
+                              </div>
+                            )}
+
+                            {/* Helpful Tips */}
+                            {getTips().length > 0 && (
+                              <div className="bg-blue-50 rounded p-3">
+                                <h5 className="font-bold text-blue-900 mb-2">💡 Helpful Tips</h5>
+                                <ul className="text-sm text-blue-800 space-y-1">
+                                  {getTips().map((tip: string, idx: number) => (
+                                    <li key={idx} className="flex items-start">
+                                      <span className="text-blue-600 mr-2">•</span>
+                                      <span>{tip}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            
+                            {/* Common Mistakes */}
+                            {getMistakes().length > 0 && (
+                              <div className="bg-red-50 rounded p-3">
+                                <h5 className="font-bold text-red-900 mb-2">⚠️ Common Mistakes to Avoid</h5>
+                                <ul className="text-sm text-red-800 space-y-1">
+                                  {getMistakes().map((mistake: string, idx: number) => (
+                                    <li key={idx} className="flex items-start">
+                                      <span className="text-red-600 mr-2">✗</span>
+                                      <span>{mistake}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Action Steps */}
+                            {strategy.actionSteps && strategy.actionSteps.length > 0 && (
+                              <div>
+                                <h5 className="font-bold text-gray-900 mb-2">📋 What You Need to Do ({strategy.actionSteps.length} steps)</h5>
+                                <div className="space-y-3">
+                                  {strategy.actionSteps.map((step: any, index: number) => (
+                                    <div key={step.id} className="bg-white rounded p-3 border border-gray-200">
+                                      <div className="flex items-start justify-between mb-2">
+                                        <p className="font-medium text-gray-900">
+                                          Step {index + 1}: {getLocalizedText(step.title || step.smeAction, 'en')}
+                                        </p>
+                                        {step.difficultyLevel && (
+                                          <span className={`text-xs px-2 py-0.5 rounded ${
+                                            step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
+                                            step.difficultyLevel === 'hard' ? 'bg-red-100 text-red-700' :
+                                            'bg-gray-100 text-gray-700'
+                                          }`}>
+                                            {step.difficultyLevel}
+                                          </span>
+                                        )}
+                                      </div>
+                                      
+                                      {step.whyThisStepMatters && (
+                                        <div className="mb-2 pl-3 border-l-2 border-blue-300">
+                                          <p className="text-xs text-blue-700 font-medium">Why this matters:</p>
+                                          <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, 'en')}</p>
+                                        </div>
+                                      )}
+                                      
+                                      <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, 'en')}</p>
+                                      
+                                      <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                                        {step.estimatedMinutes && (
+                                          <span>⏱️ ~{step.estimatedMinutes} min</span>
+                                        )}
+                                        {!step.estimatedMinutes && step.timeframe && (
+                                          <span>⏱️ {step.timeframe}</span>
+                                        )}
+                                        {step.estimatedCostJMD && (
+                                          <span>💰 {getLocalizedText(step.estimatedCostJMD, 'en')}</span>
+                                        )}
+                                      </div>
+                                      
+                                      {step.howToKnowItsDone && (
+                                        <div className="mt-2 pt-2 border-t border-gray-100">
+                                          <p className="text-xs text-gray-600">
+                                            <span className="font-medium">✓ Done when:</span> {getLocalizedText(step.howToKnowItsDone, 'en')}
+                                          </p>
+                                        </div>
+                                      )}
+                                      
+                                      {step.freeAlternative && (
+                                        <div className="mt-2 bg-green-50 rounded p-2">
+                                          <p className="text-xs text-green-700">
+                                            <span className="font-medium">💸 Free option:</span> {getLocalizedText(step.freeAlternative, 'en')}
+                                          </p>
+                                        </div>
+                                      )}
                             </div>
                           ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Legacy: Why Important */}
+                            {!strategy.benefitsBullets && strategy.whyImportant && (
+                              <div className="bg-blue-50 rounded p-3">
+                                <h5 className="font-bold text-blue-900 mb-1">✨ What You'll Get</h5>
+                                <p className="text-sm text-blue-800">{getLocalizedText(strategy.whyImportant, 'en')}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                           </div>
                 ) : (
                   <p className="text-sm text-gray-600 italic">

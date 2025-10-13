@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { AutoSaveIndicator } from './AutoSaveIndicator'
 import { Strategy, ActionStep } from '../../types/admin'
+import { MultilingualArrayEditor } from './MultilingualArrayEditor'
+import { MultiCurrencyInput } from './MultiCurrencyInput'
+import { getLocalizedText } from '@/utils/localizationUtils'
 
 interface StrategyEditorProps {
   strategy?: Strategy | null // If editing existing strategy
@@ -685,15 +688,13 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  JMD Cost Estimate
-                </label>
-                <input
-                  type="text"
-                  value={formData.costEstimateJMD}
-                  onChange={(e) => setFormData(prev => ({ ...prev, costEstimateJMD: e.target.value }))}
-                  placeholder="e.g., JMD $10,000 - $50,000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                <MultiCurrencyInput
+                  label="Cost Estimate (Multi-Currency) 💰"
+                  value={formData.costEstimateJMD || ''}
+                  onChange={(value) => setFormData(prev => ({ ...prev, costEstimateJMD: value }))}
+                  required={false}
+                  helpText="Add cost estimates in different currencies to support users across multiple countries. Click currency tabs to add more."
+                  placeholder="e.g., 10,000-50,000 or Free"
                 />
               </div>
             </div>
@@ -751,11 +752,15 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                       </div>
 
                       <div className="space-y-3">
-                        {phaseSteps.map((step, index) => (
+                        {phaseSteps.map((step, index) => {
+                          const stepTitle = getLocalizedText(step.title || step.smeAction || step.action, 'en')
+                          const stepDesc = getLocalizedText(step.description || step.smeAction || step.action, 'en')
+                          
+                          return (
                           <div key={step.id} className="bg-gray-50 rounded-lg p-4">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="font-medium text-gray-900">
-                                Step {index + 1}: {step.smeAction || step.action}
+                                {stepTitle}
                               </h5>
                               <div className="flex space-x-2">
                                 <button
@@ -774,17 +779,21 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                               <div>
-                                <span className="font-medium">Timeframe:</span> {step.timeframe}
+                                <span className="font-medium">Timeframe:</span> {step.timeframe || 'Not set'}
                               </div>
                               <div>
-                                <span className="font-medium">Responsibility:</span> {step.responsibility}
+                                <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
                               </div>
                               <div>
-                                <span className="font-medium">Cost:</span> {step.estimatedCostJMD || step.cost}
+                                <span className="font-medium">Cost:</span> {getLocalizedText(step.estimatedCostJMD || step.cost, 'en') || 'Not set'}
                               </div>
                             </div>
+                            {stepDesc && stepDesc !== stepTitle && (
+                              <p className="text-sm text-gray-600 mt-2">{stepDesc}</p>
+                            )}
                           </div>
-                        ))}
+                        )
+                        })}
                       </div>
                     </div>
                   )
@@ -796,137 +805,51 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
 
         {currentTab === 'guidance' && (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">SME Guidance Content</h3>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Helpful Tips */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Helpful Tips
-                </label>
-                <div className="space-y-2">
-                  {formData.helpfulTips?.map((tip, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
-                      <span className="text-green-600 mt-1">•</span>
-                      <span className="text-sm text-green-800 flex-1">{tip}</span>
-                      <button
-                        onClick={() => removeListItem('helpfulTips', index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <input
-                    type="text"
-                    placeholder="Add helpful tip..."
-                    className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addListItem('helpfulTips', e.currentTarget.value)
-                        e.currentTarget.value = ''
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Common Mistakes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Common Mistakes
-                </label>
-                <div className="space-y-2">
-                  {formData.commonMistakes?.map((mistake, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-2 bg-red-50 rounded">
-                      <span className="text-red-600 mt-1">•</span>
-                      <span className="text-sm text-red-800 flex-1">{mistake}</span>
-                      <button
-                        onClick={() => removeListItem('commonMistakes', index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <input
-                    type="text"
-                    placeholder="Add common mistake..."
-                    className="w-full px-3 py-2 border border-red-300 rounded-lg text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addListItem('commonMistakes', e.currentTarget.value)
-                        e.currentTarget.value = ''
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Success Metrics */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Success Metrics
-                </label>
-                <div className="space-y-2">
-                  {formData.successMetrics?.map((metric, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-2 bg-purple-50 rounded">
-                      <span className="text-purple-600 mt-1">•</span>
-                      <span className="text-sm text-purple-800 flex-1">{metric}</span>
-                      <button
-                        onClick={() => removeListItem('successMetrics', index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  <input
-                    type="text"
-                    placeholder="Add success metric..."
-                    className="w-full px-3 py-2 border border-purple-300 rounded-lg text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        addListItem('successMetrics', e.currentTarget.value)
-                        e.currentTarget.value = ''
-                      }
-                    }}
-                  />
-                </div>
-              </div>
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-l-4 border-purple-500 p-4 rounded-lg mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <span>💡</span>
+                <span>SME Guidance Content - Multilingual</span>
+              </h3>
+              <p className="text-sm text-gray-600">
+                Provide helpful guidance to SMEs in all three languages. Click the language tabs to switch between EN/ES/FR.
+              </p>
             </div>
+            
+            {/* Helpful Tips */}
+            <MultilingualArrayEditor
+              label="Helpful Tips 💡"
+              value={formData.helpfulTips || []}
+              onChange={(value) => setFormData(prev => ({ ...prev, helpfulTips: value }))}
+              helpText="Practical tips for successful implementation. Add guidance in all three languages."
+              placeholder="Add a helpful tip..."
+            />
+
+            {/* Common Mistakes */}
+            <MultilingualArrayEditor
+              label="Common Mistakes ⚠️"
+              value={formData.commonMistakes || []}
+              onChange={(value) => setFormData(prev => ({ ...prev, commonMistakes: value }))}
+              helpText="Mistakes SMEs often make with this strategy. Users will see these as warnings."
+              placeholder="Add a common mistake..."
+            />
+
+            {/* Success Metrics */}
+            <MultilingualArrayEditor
+              label="Success Metrics ✓"
+              value={formData.successMetrics || []}
+              onChange={(value) => setFormData(prev => ({ ...prev, successMetrics: value }))}
+              helpText="How users can measure if this strategy is working. Provide clear success indicators."
+              placeholder="Add a success metric..."
+            />
 
             {/* Prerequisites */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Prerequisites (What's needed before starting)
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {formData.prerequisites?.map((prereq, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 bg-blue-50 rounded">
-                    <span className="text-blue-600">✓</span>
-                    <span className="text-sm text-blue-800 flex-1">{prereq}</span>
-                    <button
-                      onClick={() => removeListItem('prerequisites', index)}
-                      className="text-red-500 hover:text-red-700 text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Add prerequisite..."
-                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm mt-2"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    addListItem('prerequisites', e.currentTarget.value)
-                    e.currentTarget.value = ''
-                  }
-                }}
-              />
-            </div>
+            <MultilingualArrayEditor
+              label="Prerequisites 📋"
+              value={formData.prerequisites || []}
+              onChange={(value) => setFormData(prev => ({ ...prev, prerequisites: value }))}
+              helpText="What SMEs need to have in place before starting this strategy."
+              placeholder="Add a prerequisite..."
+            />
           </div>
         )}
       </div>
@@ -1154,15 +1077,13 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estimated Cost (JMD)
-                </label>
-                <input
-                  type="text"
-                  value={stepData.estimatedCostJMD}
-                  onChange={(e) => setStepData(prev => ({ ...prev, estimatedCostJMD: e.target.value }))}
-                  placeholder="e.g., JMD $5,000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                <MultiCurrencyInput
+                  label="Estimated Cost (Multi-Currency) 💰"
+                  value={stepData.estimatedCostJMD || ''}
+                  onChange={(value) => setStepData(prev => ({ ...prev, estimatedCostJMD: value }))}
+                  required={false}
+                  helpText="Add cost estimates in different currencies for this action step"
+                  placeholder="e.g., 5,000 or Free"
                 />
               </div>
             </div>
@@ -1204,18 +1125,22 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                 SME Checklist (Step-by-step guidance)
               </label>
               <div className="space-y-2 mb-2">
-                {stepData.checklist?.map((item, index) => (
-                  <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
-                    <span className="text-green-600 mt-1">•</span>
-                    <span className="text-sm text-green-800 flex-1">{item}</span>
-                    <button
-                      onClick={() => removeChecklistItem(index)}
-                      className="text-red-500 hover:text-red-700 text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                {(() => {
+                  const checklist = getLocalizedText(stepData.checklist, 'en')
+                  const checklistArray = Array.isArray(checklist) ? checklist : (typeof checklist === 'string' && checklist ? [checklist] : [])
+                  return checklistArray.map((item, index) => (
+                    <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
+                      <span className="text-green-600 mt-1">•</span>
+                      <span className="text-sm text-green-800 flex-1">{item}</span>
+                      <button
+                        onClick={() => removeChecklistItem(index)}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                })}
               </div>
               <input
                 type="text"

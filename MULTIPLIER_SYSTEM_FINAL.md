@@ -193,3 +193,4 @@ model RiskMultiplier {
 **Bottom Line**: The system is now **correctly implemented**! Admin content stays in English, user-facing content is multilingual, and everything is database-driven! 🚀
 
 
+

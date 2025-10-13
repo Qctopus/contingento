@@ -157,40 +157,105 @@ export function transformStrategyForApi(strategy: any): any {
 
   const transformed = {
     ...strategy,
+    // Basic Info
     name: parseMultilingualJSON(strategy.name) || strategy.name,
     description: parseMultilingualJSON(strategy.description) || strategy.description,
+    
+    // SME-Focused Content (NEW)
+    smeTitle: parseMultilingualJSON(strategy.smeTitle) || strategy.smeTitle,
+    smeSummary: parseMultilingualJSON(strategy.smeSummary) || strategy.smeSummary,
+    benefitsBullets: safeJsonParse(strategy.benefitsBullets, []),
+    realWorldExample: parseMultilingualJSON(strategy.realWorldExample) || strategy.realWorldExample,
+    
+    // Backward compatibility (deprecated fields)
     smeDescription: parseMultilingualJSON(strategy.smeDescription) || strategy.smeDescription || strategy.description || '',
     whyImportant: parseMultilingualJSON(strategy.whyImportant) || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
     
+    // Implementation Details (enhanced)
+    costEstimateJMD: strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost), // Use DB value if available, otherwise compute
+    estimatedTotalHours: strategy.estimatedTotalHours,
+    complexityLevel: strategy.complexityLevel || 'moderate',
+    
+    // Wizard Integration (NEW)
+    quickWinIndicator: strategy.quickWinIndicator || false,
+    defaultSelected: strategy.defaultSelected || false,
+    selectionTier: strategy.selectionTier,
+    requiredForRisks: safeJsonParse(strategy.requiredForRisks, []),
+    
+    // Resource-Limited SME Support (NEW)
+    lowBudgetAlternative: parseMultilingualJSON(strategy.lowBudgetAlternative) || strategy.lowBudgetAlternative,
+    diyApproach: parseMultilingualJSON(strategy.diyApproach) || strategy.diyApproach,
+    estimatedDIYSavings: strategy.estimatedDIYSavings,
+    
+    // BCP Document Integration (NEW)
+    bcpSectionMapping: strategy.bcpSectionMapping,
+    bcpTemplateText: parseMultilingualJSON(strategy.bcpTemplateText) || strategy.bcpTemplateText,
+    
+    // Personalization (NEW)
+    industryVariants: safeJsonParse(strategy.industryVariants, {}),
+    businessSizeGuidance: safeJsonParse(strategy.businessSizeGuidance, {}),
+    
+    // Existing risk/business type fields
     applicableRisks: safeJsonParse(strategy.applicableRisks, []),
     applicableBusinessTypes: applicableBusinessTypesFromDb,
     prerequisites: safeJsonParse(strategy.prerequisites, []),
     
-    // Add computed fields for backward compatibility
-    costEstimateJMD: getCostEstimateJMD(strategy.implementationCost),
+    // Backward compatibility fields
     timeToImplement: strategy.implementationTime,
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
     
-    // Default empty arrays for optional fields
+    // Guidance arrays
     helpfulTips: safeJsonParse(strategy.helpfulTips, []),
     commonMistakes: safeJsonParse(strategy.commonMistakes, []),
     successMetrics: safeJsonParse(strategy.successMetrics, []),
     
-    // Transform action steps from database
+    // Transform action steps from database (with NEW SME context fields)
     actionSteps: (strategy.actionSteps || []).map((step: any) => ({
       id: step.stepId,
+      stepId: step.stepId,
+      strategyId: step.strategyId,
+      
+      // Basic Info
       phase: step.phase,
       title: parseMultilingualJSON(step.title) || step.title,
       action: parseMultilingualJSON(step.description) || step.description,
       description: parseMultilingualJSON(step.description) || step.description,
       smeAction: parseMultilingualJSON(step.smeAction) || step.smeAction,
+      sortOrder: step.sortOrder,
+      
+      // SME Context (NEW)
+      whyThisStepMatters: parseMultilingualJSON(step.whyThisStepMatters) || step.whyThisStepMatters,
+      whatHappensIfSkipped: parseMultilingualJSON(step.whatHappensIfSkipped) || step.whatHappensIfSkipped,
+      
+      // Timing & Difficulty (NEW)
       timeframe: step.timeframe,
+      estimatedMinutes: step.estimatedMinutes,
+      difficultyLevel: step.difficultyLevel || 'medium',
+      
+      // Resources & Costs
       responsibility: step.responsibility,
       cost: step.estimatedCost,
       estimatedCostJMD: step.estimatedCostJMD,
       resources: safeJsonParse(step.resources, []),
       checklist: safeJsonParse(step.checklist, []),
-      sortOrder: step.sortOrder
+      
+      // Validation & Completion (NEW)
+      howToKnowItsDone: parseMultilingualJSON(step.howToKnowItsDone) || step.howToKnowItsDone,
+      exampleOutput: parseMultilingualJSON(step.exampleOutput) || step.exampleOutput,
+      
+      // Dependencies (NEW)
+      dependsOnSteps: safeJsonParse(step.dependsOnSteps, []),
+      isOptional: step.isOptional || false,
+      skipConditions: parseMultilingualJSON(step.skipConditions) || step.skipConditions,
+      
+      // Alternatives for resource-limited SMEs (NEW)
+      freeAlternative: parseMultilingualJSON(step.freeAlternative) || step.freeAlternative,
+      lowTechOption: parseMultilingualJSON(step.lowTechOption) || step.lowTechOption,
+      
+      // Help Resources (NEW)
+      commonMistakesForStep: safeJsonParse(step.commonMistakesForStep, []),
+      videoTutorialUrl: step.videoTutorialUrl,
+      externalResourceUrl: step.externalResourceUrl
     }))
   }
 

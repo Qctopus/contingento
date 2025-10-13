@@ -24,3 +24,4 @@ ALTER TABLE "BusinessType" DROP COLUMN IF EXISTS "regulatoryBurden";
 -- typicalRevenue, typicalEmployees, operatingHours are kept as they are industry reference data, not user-specific
 
 
+
