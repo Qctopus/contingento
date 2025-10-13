@@ -732,7 +732,11 @@
         "waste_management_failure": "Waste Management Failure",
         "air_pollution": "Air Pollution Event",
         "water_contamination": "Water Contamination",
-        "crowd_management": "Crowd Management Issues"
+        "crowd_management": "Crowd Management Issues",
+        "communication_failure": "Communication/Phone Failure",
+        "equipment_failure": "Equipment Failure/Breakdown",
+        "business_disruption": "General Business Disruption",
+        "pandemic_disease": "Pandemic Disease"
       },
       "inputs": {
         "potentialHazards": {

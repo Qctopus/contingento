@@ -64,6 +64,26 @@ export function SimplifiedRiskAssessment({
   const t = useTranslations('common')
   const tSteps = useTranslations('steps.riskAssessment')
   const locale = useLocale() as Locale
+  
+  // Helper to translate risk names from camelCase/snake_case to proper translation
+  const translateRiskName = (riskName: string) => {
+    if (!riskName) return riskName
+    
+    // Convert camelCase to snake_case
+    const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+    
+    // Try to get translation
+    const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
+    const translation = tSteps(`hazardLabels.${snakeCase}` as any)
+    
+    // Check if translation was found (it returns the key if not found)
+    if (translation && !translation.includes('hazardLabels')) {
+      return translation
+    }
+    
+    // Fallback: return formatted risk name (capitalize first letter of each word)
+    return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim().replace(/\b\w/g, l => l.toUpperCase())
+  }
 
   // Get localized hazard label
   const getHazardLabel = (hazardKey: string): string => {
@@ -626,7 +646,7 @@ export function SimplifiedRiskAssessment({
                   <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 pr-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{risk.hazard}</h3>
+                        <h3 className="font-bold text-gray-900 text-lg">{translateRiskName(risk.hazard)}</h3>
                         {tierBadge}
                       </div>
                       {!isAvailable && risk.riskScore > 0 && (
@@ -638,7 +658,7 @@ export function SimplifiedRiskAssessment({
                           }`}>{risk.riskScore?.toFixed(1)}/10</span>
                           {risk.reasoning && (
                             <span className="ml-2 text-gray-500">
-                              (Likelihood: {risk.likelihood}/10, Impact: {risk.severity}/10)
+                              ({t('likelihood')}: {risk.likelihood}/10, {t('impact')}: {risk.severity}/10)
                             </span>
                           )}
                         </div>

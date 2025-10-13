@@ -752,7 +752,10 @@
         "environmental_contamination": "Contamination environnementale",
         "waste_management_failure": "Défaillance de gestion des déchets",
         "water_contamination": "Contamination de l'eau",
-        "crowd_management": "Problèmes de gestion des foules"
+        "communication_failure": "Panne de communication/téléphone",
+        "equipment_failure": "Panne/défaillance d'équipement",
+        "business_disruption": "Perturbation générale des affaires",
+        "pandemic_disease": "Maladie pandémique"
         },
         "inputs": {
           "potentialHazards": {
