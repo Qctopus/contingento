@@ -813,6 +813,7 @@
       "optionalStrategies": "Optional strategies:",
       "totalStrategies": "Total strategies:",
       "totalTime": "Total time:",
+      "totalCost": "Total cost",
       "unselectWarningTitle": "Are you sure?",
       "unselectWarningMessage": "You unchecked an ESSENTIAL strategy. This is important for your business safety. Are you sure you want to remove it?",
       "unselectConfirm": "Yes, remove it",

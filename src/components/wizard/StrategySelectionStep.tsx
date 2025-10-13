@@ -213,6 +213,17 @@ export default function StrategySelectionStep({
       result = result.replace(pattern, translatedUnit)
     })
     
+    // Fix singular/plural for Spanish and French (e.g., "2 día" -> "2 días")
+    if (locale === 'es') {
+      result = result.replace(/([2-9]|\d{2,})\s+día\b/g, '$1 días')
+      result = result.replace(/([2-9]|\d{2,})\s+semana\b/g, '$1 semanas')
+      result = result.replace(/([2-9]|\d{2,})\s+mes\b/g, '$1 meses')
+    }
+    if (locale === 'fr') {
+      result = result.replace(/([2-9]|\d{2,})\s+jour\b/g, '$1 jours')
+      result = result.replace(/([2-9]|\d{2,})\s+semaine\b/g, '$1 semaines')
+    }
+    
     return result
   }
 
@@ -393,7 +404,7 @@ export default function StrategySelectionStep({
             <span className="font-medium">{totalTime}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">💰 Total cost:</span>
+            <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')}:</span>
             <span className="font-medium">{totalCost}</span>
           </div>
         </div>

@@ -718,6 +718,7 @@
       "optionalStrategies": "Estrategias opcionales:",
       "totalStrategies": "Total de estrategias:",
       "totalTime": "Tiempo total:",
+      "totalCost": "Costo total",
       "unselectWarningTitle": "¿Está seguro?",
       "unselectWarningMessage": "Desmarcó una estrategia ESENCIAL. Esto es importante para la seguridad de su negocio. ¿Está seguro de que desea eliminarla?",
       "unselectConfirm": "Sí, eliminarla",

@@ -271,7 +271,7 @@ export function useLocalizedSteps(): StepsCollection {
           type: 'special_strategy_cards',
           label: t('strategies.title'),
           required: true,
-          prompt: t('steps.strategySelection.selectStrategiesDescription'),
+          prompt: t('strategySelection.selectStrategiesDescription'),
           examples: [
             t('strategies.examples.autoRecommended'),
             t('strategies.examples.prevention'),
