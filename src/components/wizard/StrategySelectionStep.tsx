@@ -85,7 +85,7 @@ export default function StrategySelectionStep({
   onContinue
 }: StrategySelectionStepProps) {
   const locale = useLocale() as 'en' | 'es' | 'fr'
-  const t = useTranslations('strategySelection')
+  const t = useTranslations()
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null)
   const [showUnselectWarning, setShowUnselectWarning] = useState<string | null>(null)
 
@@ -121,14 +121,14 @@ export default function StrategySelectionStep({
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          📋 {t('headerTitle')}
+          📋 {t('strategySelection.headerTitle')}
         </h2>
         <p className="text-gray-600">
-          {t('headerDescription', { count: strategies.length })}
+          {t('strategySelection.headerDescription', { count: strategies.length })}
         </p>
         <div className="mt-4 p-3 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-900">
-            {t('selectionInstructions')}
+            {t('strategySelection.selectionInstructions')}
           </p>
         </div>
       </div>
@@ -138,10 +138,10 @@ export default function StrategySelectionStep({
         <div className="space-y-4">
           <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-red-900 mb-1">
-              🔴 {t('essentialTitle')}
+              🔴 {t('strategySelection.essentialTitle')}
             </h3>
             <p className="text-sm text-red-800">
-              {t('essentialDescription')}
+              {t('strategySelection.essentialDescription')}
             </p>
           </div>
 
@@ -168,10 +168,10 @@ export default function StrategySelectionStep({
         <div className="space-y-4">
           <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-yellow-900 mb-1">
-              🟡 {t('recommendedTitle')}
+              🟡 {t('strategySelection.recommendedTitle')}
             </h3>
             <p className="text-sm text-yellow-800">
-              {t('recommendedDescription')}
+              {t('strategySelection.recommendedDescription')}
             </p>
           </div>
 
@@ -198,10 +198,10 @@ export default function StrategySelectionStep({
         <div className="space-y-4">
           <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-green-900 mb-1">
-              🟢 {t('optionalTitle')}
+              🟢 {t('strategySelection.optionalTitle')}
             </h3>
             <p className="text-sm text-green-800">
-              {t('optionalDescription')}
+              {t('strategySelection.optionalDescription')}
             </p>
           </div>
 
@@ -225,23 +225,23 @@ export default function StrategySelectionStep({
 
       {/* Summary Panel */}
       <div className="sticky bottom-0 bg-white rounded-lg border-2 border-blue-500 shadow-lg p-6">
-        <h3 className="font-bold text-gray-900 mb-4">📊 {t('planSummaryTitle')}</h3>
+        <h3 className="font-bold text-gray-900 mb-4">📊 {t('strategySelection.planSummaryTitle')}</h3>
         
         <div className="space-y-2 text-sm mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">✅ {t('essentialStrategies')}</span>
+            <span className="text-gray-600">✅ {t('strategySelection.essentialStrategies')}</span>
             <span className="font-medium">
               {essential.filter(s => selectedStrategies.includes(s.id)).length} / {essential.length}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">✅ {t('recommendedStrategies')}</span>
+            <span className="text-gray-600">✅ {t('strategySelection.recommendedStrategies')}</span>
             <span className="font-medium">
               {recommended.filter(s => selectedStrategies.includes(s.id)).length} / {recommended.length}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">⬜ {t('optionalStrategies')}</span>
+            <span className="text-gray-600">⬜ {t('strategySelection.optionalStrategies')}</span>
             <span className="font-medium">
               {optional.filter(s => selectedStrategies.includes(s.id)).length} / {optional.length}
             </span>
@@ -250,11 +250,11 @@ export default function StrategySelectionStep({
 
         <div className="border-t pt-4 mb-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">{t('totalStrategies')}</span>
+            <span className="text-gray-600">{t('strategySelection.totalStrategies')}</span>
             <span className="font-bold text-lg">{selectedCount}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">⏱️ {t('totalTime')}</span>
+            <span className="text-gray-600">⏱️ {t('strategySelection.totalTime')}</span>
             <span className="font-medium">{totalTime}</span>
           </div>
           <div className="flex justify-between text-sm">
@@ -271,23 +271,23 @@ export default function StrategySelectionStep({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md">
             <h3 className="text-lg font-bold text-red-900 mb-2">
-              ⚠️ {t('unselectWarningTitle')}
+              ⚠️ {t('strategySelection.unselectWarningTitle')}
             </h3>
             <p className="text-gray-700 mb-4">
-              {t('unselectWarningMessage')}
+              {t('strategySelection.unselectWarningMessage')}
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => confirmUnselect(showUnselectWarning)}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded"
               >
-                {t('unselectConfirm')}
+                {t('strategySelection.unselectConfirm')}
               </button>
               <button
                 onClick={() => setShowUnselectWarning(null)}
                 className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded"
               >
-                {t('unselectCancel')}
+                {t('strategySelection.unselectCancel')}
               </button>
             </div>
           </div>
@@ -344,7 +344,7 @@ function StrategyCard({
               {/* Quick Win Indicator */}
               {strategy.quickWinIndicator && (
                 <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium">
-                  ⚡ {t('quickWin')}
+                  ⚡ {t('strategySelection.quickWin')}
                 </span>
               )}
             </div>
@@ -357,7 +357,7 @@ function StrategyCard({
             {/* Why Section - Generated Reasoning */}
             {strategy.reasoning && (
               <div className="mb-3">
-                <p className="text-sm font-medium text-gray-700 mb-1">💬 {t('whyLabel')}</p>
+                <p className="text-sm font-medium text-gray-700 mb-1">💬 {t('strategySelection.whyLabel')}</p>
                 <p className="text-sm text-gray-600">{strategy.reasoning}</p>
               </div>
             )}
@@ -368,7 +368,7 @@ function StrategyCard({
               const benefitsArray = Array.isArray(benefits) ? benefits : (typeof benefits === 'string' && benefits ? [benefits] : [])
               return benefitsArray.length > 0 && (
                 <div className="mb-3">
-                  <p className="text-sm font-medium text-gray-700 mb-1">✅ {t('whatYouGetLabel')}</p>
+                  <p className="text-sm font-medium text-gray-700 mb-1">✅ {t('strategySelection.whatYouGetLabel')}</p>
                   <ul className="text-sm text-gray-600 space-y-1">
                     {benefitsArray.slice(0, 3).map((benefit: string, idx: number) => (
                       <li key={idx} className="flex items-start">
@@ -383,7 +383,7 @@ function StrategyCard({
 
             {/* Risk Coverage */}
             <div className="mb-3">
-              <p className="text-xs font-medium text-gray-500 mb-1">📊 {t('protectsAgainstLabel')}</p>
+              <p className="text-xs font-medium text-gray-500 mb-1">📊 {t('strategySelection.protectsAgainstLabel')}</p>
               <div className="flex flex-wrap gap-1">
                 {strategy.applicableRisks.slice(0, 4).map((risk: string) => (
                   <span key={risk} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
@@ -424,7 +424,7 @@ function StrategyCard({
           onClick={onExpand}
           className="w-full mt-3 text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center py-2 border-t border-gray-100"
         >
-          {isExpanded ? `▲ ${t('hideDetails')}` : `▼ ${t('seeFullDetails')}`}
+          {isExpanded ? `▲ ${t('strategySelection.hideDetails')}` : `▼ ${t('strategySelection.seeFullDetails')}`}
         </button>
       </div>
 
@@ -435,7 +435,7 @@ function StrategyCard({
           {strategy.realWorldExample && (
             <div className="bg-green-50 border-l-4 border-green-500 rounded p-3">
               <h5 className="font-bold text-green-900 mb-2 flex items-center">
-                <span className="mr-2">💚</span> {t('realSuccessStory')}
+                <span className="mr-2">💚</span> {t('strategySelection.realSuccessStory')}
               </h5>
               <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, locale)}</p>
             </div>
@@ -444,7 +444,7 @@ function StrategyCard({
           {/* NEW: Low Budget Alternative */}
           {strategy.lowBudgetAlternative && (
             <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
-              <h5 className="font-bold text-yellow-900 mb-2">💰 {t('lowBudgetAlternative')}</h5>
+              <h5 className="font-bold text-yellow-900 mb-2">💰 {t('strategySelection.lowBudgetAlternative')}</h5>
               <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, locale)}</p>
               {strategy.estimatedDIYSavings && (
                 <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, locale)}</p>
@@ -455,7 +455,7 @@ function StrategyCard({
           {/* NEW: DIY Approach */}
           {strategy.diyApproach && (
             <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
-              <h5 className="font-bold text-blue-900 mb-2">🔧 {t('diyApproach')}</h5>
+              <h5 className="font-bold text-blue-900 mb-2">🔧 {t('strategySelection.diyApproach')}</h5>
               <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, locale)}</p>
             </div>
           )}
