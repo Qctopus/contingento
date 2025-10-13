@@ -88,6 +88,20 @@ export default function StrategySelectionStep({
   const t = useTranslations('strategySelection')
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null)
   const [showUnselectWarning, setShowUnselectWarning] = useState<string | null>(null)
+  
+  // Helper to safely get translations with fallback
+  const getText = (key: string, fallback?: string) => {
+    try {
+      const text = t(key as any)
+      // If translation returns the key itself, use fallback
+      if (text === `strategySelection.${key}` || text === key) {
+        return fallback || key
+      }
+      return text
+    } catch {
+      return fallback || key
+    }
+  }
 
   // Group strategies by tier
   const essential = strategies.filter(s => s.priorityTier === 'essential')
@@ -157,6 +171,7 @@ export default function StrategySelectionStep({
               )}
               tierColor="red"
               t={t}
+              locale={locale}
             />
           ))}
         </div>
@@ -186,6 +201,7 @@ export default function StrategySelectionStep({
               )}
               tierColor="yellow"
               t={t}
+              locale={locale}
             />
           ))}
         </div>
@@ -215,6 +231,7 @@ export default function StrategySelectionStep({
               )}
               tierColor="green"
               t={t}
+              locale={locale}
             />
           ))}
         </div>
@@ -260,12 +277,7 @@ export default function StrategySelectionStep({
           </div>
         </div>
 
-        <button
-          onClick={onContinue}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors"
-        >
-          Continue to Next Step →
-        </button>
+        {/* Note: Navigation handled by wizard's universal Next button */}
       </div>
 
       {/* Warning Modal */}
@@ -307,7 +319,8 @@ function StrategyCard({
   onToggle, 
   onExpand,
   tierColor,
-  t
+  t,
+  locale
 }: any) {
   const borderColor = {
     red: 'border-red-200',
@@ -322,8 +335,8 @@ function StrategyCard({
   }[tierColor]
   
   // Use SME-focused title if available, otherwise fall back to regular name
-  const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, t.locale || 'en')
-  const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, t.locale || 'en')
+  const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
+  const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, locale)
 
   return (
     <div className={`bg-white border-2 ${borderColor} rounded-lg overflow-hidden`}>
@@ -365,7 +378,7 @@ function StrategyCard({
             
             {/* NEW: Benefits Bullets - Key Benefits */}
             {(() => {
-              const benefits = getLocalizedText(strategy.benefitsBullets, t.locale || 'en')
+              const benefits = getLocalizedText(strategy.benefitsBullets, locale)
               const benefitsArray = Array.isArray(benefits) ? benefits : (typeof benefits === 'string' && benefits ? [benefits] : [])
               return benefitsArray.length > 0 && (
                 <div className="mb-3">
@@ -404,7 +417,7 @@ function StrategyCard({
               </div>
               <div>
                 <span className="text-gray-500">💰</span>{' '}
-                <span className="font-medium">{getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, t.locale || 'en')}</span>
+                <span className="font-medium">{getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale)}</span>
               </div>
               <div>
                 <span className="text-gray-500">⭐</span>{' '}
@@ -438,7 +451,7 @@ function StrategyCard({
               <h5 className="font-bold text-green-900 mb-2 flex items-center">
                 <span className="mr-2">💚</span> {t('realSuccessStory')}
               </h5>
-              <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, t.locale || 'en')}</p>
+              <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, locale)}</p>
             </div>
           )}
           
@@ -446,9 +459,9 @@ function StrategyCard({
           {strategy.lowBudgetAlternative && (
             <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
               <h5 className="font-bold text-yellow-900 mb-2">💰 {t('lowBudgetAlternative')}</h5>
-              <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, t.locale || 'en')}</p>
+              <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, locale)}</p>
               {strategy.estimatedDIYSavings && (
-                <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, t.locale || 'en')}</p>
+                <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, locale)}</p>
               )}
             </div>
           )}
@@ -457,7 +470,7 @@ function StrategyCard({
           {strategy.diyApproach && (
             <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
               <h5 className="font-bold text-blue-900 mb-2">🔧 {t('diyApproach')}</h5>
-              <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, t.locale || 'en')}</p>
+              <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, locale)}</p>
             </div>
           )}
 
@@ -470,7 +483,7 @@ function StrategyCard({
                   <div key={step.id} className="bg-white rounded p-3 border border-gray-200">
                     <div className="flex items-start justify-between mb-2">
                       <p className="font-medium text-gray-900">
-                        Step {index + 1}: {getLocalizedText(step.title || step.smeAction, t.locale || 'en')}
+                        Step {index + 1}: {getLocalizedText(step.title || step.smeAction, locale)}
                       </p>
                       {step.difficultyLevel && (
                         <span className={`text-xs px-2 py-0.5 rounded ${
@@ -487,11 +500,11 @@ function StrategyCard({
                     {step.whyThisStepMatters && (
                       <div className="mb-2 pl-3 border-l-2 border-blue-300">
                         <p className="text-xs text-blue-700 font-medium">Why this matters:</p>
-                        <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, t.locale || 'en')}</p>
+                        <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, locale)}</p>
                       </div>
                     )}
                     
-                    <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, t.locale || 'en')}</p>
+                    <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, locale)}</p>
                     
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                       {step.estimatedMinutes && (
@@ -501,7 +514,7 @@ function StrategyCard({
                         <span>⏱️ {step.timeframe}</span>
                       )}
                       {step.estimatedCostJMD && (
-                        <span>💰 {getLocalizedText(step.estimatedCostJMD, t.locale || 'en')}</span>
+                        <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
                       )}
                     </div>
                     
@@ -509,7 +522,7 @@ function StrategyCard({
                     {step.howToKnowItsDone && (
                       <div className="mt-2 pt-2 border-t border-gray-100">
                         <p className="text-xs text-gray-600">
-                          <span className="font-medium">✓ Done when:</span> {getLocalizedText(step.howToKnowItsDone, t.locale || 'en')}
+                          <span className="font-medium">✓ Done when:</span> {getLocalizedText(step.howToKnowItsDone, locale)}
                         </p>
                       </div>
                     )}
@@ -518,7 +531,7 @@ function StrategyCard({
                     {step.freeAlternative && (
                       <div className="mt-2 bg-green-50 rounded p-2">
                         <p className="text-xs text-green-700">
-                          <span className="font-medium">💸 Free option:</span> {getLocalizedText(step.freeAlternative, t.locale || 'en')}
+                          <span className="font-medium">💸 Free option:</span> {getLocalizedText(step.freeAlternative, locale)}
                         </p>
                       </div>
                     )}
@@ -530,7 +543,7 @@ function StrategyCard({
           
           {/* NEW: Helpful Tips */}
           {(() => {
-            const tips = getLocalizedText(strategy.helpfulTips, t.locale || 'en')
+            const tips = getLocalizedText(strategy.helpfulTips, locale)
             const tipsArray = Array.isArray(tips) ? tips : (typeof tips === 'string' && tips ? [tips] : [])
             return tipsArray.length > 0 && (
               <div className="bg-blue-50 rounded p-3">
@@ -549,7 +562,7 @@ function StrategyCard({
           
           {/* NEW: Common Mistakes */}
           {(() => {
-            const mistakes = getLocalizedText(strategy.commonMistakes, t.locale || 'en')
+            const mistakes = getLocalizedText(strategy.commonMistakes, locale)
             const mistakesArray = Array.isArray(mistakes) ? mistakes : (typeof mistakes === 'string' && mistakes ? [mistakes] : [])
             return mistakesArray.length > 0 && (
               <div className="bg-red-50 rounded p-3">
@@ -570,7 +583,7 @@ function StrategyCard({
           {!strategy.benefitsBullets && strategy.whyImportant && (
             <div className="bg-blue-50 rounded p-3">
               <h5 className="font-bold text-blue-900 mb-1">✨ What You'll Get</h5>
-              <p className="text-sm text-blue-800">{getLocalizedText(strategy.whyImportant, t.locale || 'en')}</p>
+              <p className="text-sm text-blue-800">{getLocalizedText(strategy.whyImportant, locale)}</p>
             </div>
           )}
         </div>
