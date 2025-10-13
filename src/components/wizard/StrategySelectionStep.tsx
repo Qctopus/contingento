@@ -91,22 +91,94 @@ export default function StrategySelectionStep({
   
   // Helper to translate risk names (camelCase to snake_case)
   const translateRisk = (riskName: string) => {
-    const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase()
-    const translation = t(`steps.riskAssessment.hazardLabels.${snakeCase}` as any)
-    return translation || riskName.replace(/_/g, ' ')
+    // Convert camelCase to snake_case
+    const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+    
+    // Try to get translation
+    const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
+    const translation = t(translationKey as any)
+    
+    // Check if translation was found (it returns the key if not found)
+    if (translation && !translation.includes('steps.riskAssessment')) {
+      return translation
+    }
+    
+    // Fallback: return formatted risk name
+    return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
   }
   
   // Helper to translate complexity/difficulty levels
   const translateLevel = (level: string) => {
-    const levelMap: Record<string, string> = {
-      'simple': t('common.simple' as any) || 'Simple',
-      'moderate': t('common.severityRanges.moderate' as any) || 'Moderate', 
-      'complex': t('common.complex' as any) || 'Complex',
-      'easy': t('common.easy' as any) || 'Easy',
-      'medium': t('common.medium' as any) || 'Medium',
-      'hard': t('common.hard' as any) || 'Hard'
+    const lowerLevel = level.toLowerCase()
+    
+    // Try different translation paths
+    const paths = [
+      `common.${lowerLevel}`,
+      `common.severityRanges.${lowerLevel}`,
+      `priorityLevels.${lowerLevel}`
+    ]
+    
+    for (const path of paths) {
+      const translation = t(path as any)
+      // Check if we got a real translation (not the key itself)
+      if (translation && !translation.includes('.')) {
+        return translation
+      }
     }
-    return levelMap[level.toLowerCase()] || level
+    
+    // Fallback to capitalized level
+    return lowerLevel.charAt(0).toUpperCase() + lowerLevel.slice(1)
+  }
+  
+  // Helper to translate strategy reasoning
+  const translateReasoning = (reasoning: string) => {
+    if (!reasoning) return ''
+    
+    // Templates in different languages
+    const templates = {
+      en: {
+        essential: 'This is essential because you have critical {risk} risk. This strategy directly reduces that danger.',
+        extra: 'This adds extra protection for your {risk} risk.',
+        recommended: 'We recommend this because it addresses your {risk} risk with proven effectiveness.'
+      },
+      es: {
+        essential: 'Esto es esencial porque tiene riesgo crítico de {risk}. Esta estrategia reduce directamente ese peligro.',
+        extra: 'Esto agrega protección adicional para su riesgo de {risk}.',
+        recommended: 'Recomendamos esto porque aborda su riesgo de {risk} con efectividad comprobada.'
+      },
+      fr: {
+        essential: 'Ceci est essentiel car vous avez un risque critique de {risk}. Cette stratégie réduit directement ce danger.',
+        extra: 'Cela ajoute une protection supplémentaire pour votre risque de {risk}.',
+        recommended: 'Nous recommandons ceci car cela traite votre risque de {risk} avec une efficacité prouvée.'
+      }
+    }
+    
+    // Detect which template and extract risk
+    let templateType: 'essential' | 'extra' | 'recommended' | null = null
+    let riskName = ''
+    
+    if (reasoning.includes('This is essential because')) {
+      templateType = 'essential'
+      const match = reasoning.match(/critical (\w+) risk/)
+      if (match) riskName = match[1]
+    } else if (reasoning.includes('This adds extra protection')) {
+      templateType = 'extra'
+      const match = reasoning.match(/for your (\w+) risk/)
+      if (match) riskName = match[1]
+    } else if (reasoning.includes('We recommend this')) {
+      templateType = 'recommended'
+      const match = reasoning.match(/addresses your (\w+) risk/)
+      if (match) riskName = match[1]
+    }
+    
+    // If we found a template and risk, translate it
+    if (templateType && riskName && templates[locale]) {
+      const translatedRisk = translateRisk(riskName)
+      return templates[locale][templateType].replace('{risk}', translatedRisk)
+    }
+    
+    // Fallback: return original
+    return reasoning
   }
 
   // Group strategies by tier
@@ -386,7 +458,7 @@ function StrategyCard({
             {strategy.reasoning && (
               <div className="mb-3">
                 <p className="text-sm font-medium text-gray-700 mb-1">💬 {t('steps.strategySelection.whyLabel')}</p>
-                <p className="text-sm text-gray-600">{strategy.reasoning}</p>
+                <p className="text-sm text-gray-600">{translateReasoning(strategy.reasoning)}</p>
               </div>
             )}
             
