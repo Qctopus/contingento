@@ -88,6 +88,26 @@ export default function StrategySelectionStep({
   const t = useTranslations()
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null)
   const [showUnselectWarning, setShowUnselectWarning] = useState<string | null>(null)
+  
+  // Helper to translate risk names (camelCase to snake_case)
+  const translateRisk = (riskName: string) => {
+    const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase()
+    const translation = t(`steps.riskAssessment.hazardLabels.${snakeCase}` as any)
+    return translation || riskName.replace(/_/g, ' ')
+  }
+  
+  // Helper to translate complexity/difficulty levels
+  const translateLevel = (level: string) => {
+    const levelMap: Record<string, string> = {
+      'simple': t('common.simple' as any) || 'Simple',
+      'moderate': t('common.severityRanges.moderate' as any) || 'Moderate', 
+      'complex': t('common.complex' as any) || 'Complex',
+      'easy': t('common.easy' as any) || 'Easy',
+      'medium': t('common.medium' as any) || 'Medium',
+      'hard': t('common.hard' as any) || 'Hard'
+    }
+    return levelMap[level.toLowerCase()] || level
+  }
 
   // Group strategies by tier
   const essential = strategies.filter(s => s.priorityTier === 'essential')
@@ -158,6 +178,8 @@ export default function StrategySelectionStep({
               tierColor="red"
               t={t}
               locale={locale}
+              translateRisk={translateRisk}
+              translateLevel={translateLevel}
             />
           ))}
         </div>
@@ -188,6 +210,8 @@ export default function StrategySelectionStep({
               tierColor="yellow"
               t={t}
               locale={locale}
+              translateRisk={translateRisk}
+              translateLevel={translateLevel}
             />
           ))}
         </div>
@@ -218,6 +242,8 @@ export default function StrategySelectionStep({
               tierColor="green"
               t={t}
               locale={locale}
+              translateRisk={translateRisk}
+              translateLevel={translateLevel}
             />
           ))}
         </div>
@@ -306,7 +332,9 @@ function StrategyCard({
   onExpand,
   tierColor,
   t,
-  locale
+  locale,
+  translateRisk,
+  translateLevel
 }: any) {
   const borderColor = {
     red: 'border-red-200',
@@ -387,7 +415,7 @@ function StrategyCard({
               <div className="flex flex-wrap gap-1">
                 {strategy.applicableRisks.slice(0, 4).map((risk: string) => (
                   <span key={risk} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    {risk.replace(/_/g, ' ')}
+                    {translateRisk(risk)}
                   </span>
                 ))}
               </div>
@@ -412,7 +440,7 @@ function StrategyCard({
               {strategy.complexityLevel && (
                 <div>
                   <span className="text-gray-500">🎯</span>{' '}
-                  <span className="font-medium capitalize">{strategy.complexityLevel}</span>
+                  <span className="font-medium capitalize">{translateLevel(strategy.complexityLevel)}</span>
                 </div>
               )}
             </div>
@@ -477,7 +505,7 @@ function StrategyCard({
                           step.difficultyLevel === 'hard' ? 'bg-red-100 text-red-700' :
                           'bg-gray-100 text-gray-700'
                         }`}>
-                          {step.difficultyLevel}
+                          {translateLevel(step.difficultyLevel)}
                         </span>
                       )}
                     </div>
