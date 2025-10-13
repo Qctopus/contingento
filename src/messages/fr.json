@@ -9,6 +9,7 @@
       "required": "Obligatoire",
       "optional": "Optionnel",
       "step": "Étape {current} sur {total}",
+      "actionStep": "Étape",
       "completePlan": "Plan Complet",
       "congratulations": "Félicitations !",
       "planCompleted": "Votre Plan de Continuité d'Activité a été complété avec succès.",
@@ -835,7 +836,13 @@
         "unselectWarningTitle": "Êtes-vous sûr?",
         "unselectWarningMessage": "Vous avez décoché une stratégie ESSENTIELLE. Ceci est important pour la sécurité de votre entreprise. Êtes-vous sûr de vouloir la supprimer?",
         "unselectConfirm": "Oui, la supprimer",
-        "unselectCancel": "La garder (Recommandé)"
+        "unselectCancel": "La garder (Recommandé)",
+        "whatYouNeedToDo": "Ce Que Vous Devez Faire",
+        "whyThisMatters": "Pourquoi c'est important",
+        "doneWhen": "Terminé quand",
+        "freeOption": "Option gratuite",
+        "helpfulTips": "Conseils Utiles",
+        "commonMistakes": "Erreurs Courantes à Éviter"
       },
       "strategies": {
         "title": "Stratégies de Continuité d'Activité",

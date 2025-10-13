@@ -20,6 +20,7 @@
     "none": "None",
     "other": "Other",
     "actions": "Actions",
+    "actionStep": "Step",
     "details": "Details",
     "summary": "Summary",
     "status": "Status",
@@ -815,7 +816,13 @@
       "unselectWarningTitle": "Are you sure?",
       "unselectWarningMessage": "You unchecked an ESSENTIAL strategy. This is important for your business safety. Are you sure you want to remove it?",
       "unselectConfirm": "Yes, remove it",
-      "unselectCancel": "Keep it (Recommended)"
+      "unselectCancel": "Keep it (Recommended)",
+      "whatYouNeedToDo": "What You Need to Do",
+      "whyThisMatters": "Why this matters",
+      "doneWhen": "Done when",
+      "freeOption": "Free option",
+      "helpfulTips": "Helpful Tips",
+      "commonMistakes": "Common Mistakes to Avoid"
     },
     "strategies": {
       "title": "Business Continuity Strategies",

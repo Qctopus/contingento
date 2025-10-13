@@ -186,9 +186,40 @@ export default function StrategySelectionStep({
   const recommended = strategies.filter(s => s.priorityTier === 'recommended')
   const optional = strategies.filter(s => s.priorityTier === 'optional')
 
+  // Helper to translate time strings
+  const translateTime = (timeStr: string) => {
+    if (!timeStr) return timeStr
+    
+    const translations: Record<string, Record<string, string>> = {
+      en: { 
+        day: 'day', days: 'days', week: 'week', weeks: 'weeks', 
+        month: 'month', months: 'months', h: 'h' 
+      },
+      es: { 
+        day: 'día', days: 'días', week: 'semana', weeks: 'semanas',
+        month: 'mes', months: 'meses', h: 'h'
+      },
+      fr: { 
+        day: 'jour', days: 'jours', week: 'semaine', weeks: 'semaines',
+        month: 'mois', months: 'mois', h: 'h'
+      }
+    }
+    
+    // Handle patterns like "~2 days", "1-2 weeks", "1 day", "1 month"
+    let result = timeStr
+    Object.entries(translations.en).forEach(([enUnit, enText]) => {
+      const pattern = new RegExp(`\\b${enUnit}s?\\b`, 'gi')
+      const translatedUnit = translations[locale]?.[enUnit] || enUnit
+      result = result.replace(pattern, translatedUnit)
+    })
+    
+    return result
+  }
+
   // Calculate summary stats
   const selectedCount = selectedStrategies.length
-  const totalTime = calculateTotalTime(strategies.filter(s => selectedStrategies.includes(s.id)))
+  const totalTimeRaw = calculateTotalTime(strategies.filter(s => selectedStrategies.includes(s.id)))
+  const totalTime = translateTime(totalTimeRaw)
   const totalCost = calculateTotalCost(strategies.filter(s => selectedStrategies.includes(s.id)))
 
   // Handle strategy toggle with warning for essential
@@ -567,13 +598,13 @@ function StrategyCard({
           {/* Action Steps - Enhanced with SME Context */}
           {strategy.actionSteps && strategy.actionSteps.length > 0 && (
             <div>
-              <h5 className="font-bold text-gray-900 mb-2">📋 What You Need to Do</h5>
+              <h5 className="font-bold text-gray-900 mb-2">📋 {t('steps.strategySelection.whatYouNeedToDo')}</h5>
               <div className="space-y-3">
                 {strategy.actionSteps.map((step: any, index: number) => (
                   <div key={step.id} className="bg-white rounded p-3 border border-gray-200">
                     <div className="flex items-start justify-between mb-2">
                       <p className="font-medium text-gray-900">
-                        Step {index + 1}: {getLocalizedText(step.title || step.smeAction, locale)}
+                        {t('common.actionStep')} {index + 1}: {getLocalizedText(step.title || step.smeAction, locale)}
                       </p>
                       {step.difficultyLevel && (
                         <span className={`text-xs px-2 py-0.5 rounded ${
@@ -589,7 +620,7 @@ function StrategyCard({
                     {/* NEW: Why This Step Matters */}
                     {step.whyThisStepMatters && (
                       <div className="mb-2 pl-3 border-l-2 border-blue-300">
-                        <p className="text-xs text-blue-700 font-medium">Why this matters:</p>
+                        <p className="text-xs text-blue-700 font-medium">{t('steps.strategySelection.whyThisMatters')}:</p>
                         <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, locale)}</p>
                       </div>
                     )}
@@ -601,7 +632,7 @@ function StrategyCard({
                         <span>⏱️ ~{step.estimatedMinutes} min</span>
                       )}
                       {!step.estimatedMinutes && step.timeframe && (
-                        <span>⏱️ {step.timeframe}</span>
+                        <span>⏱️ {translateTime(step.timeframe)}</span>
                       )}
                       {step.estimatedCostJMD && (
                         <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
@@ -612,7 +643,7 @@ function StrategyCard({
                     {step.howToKnowItsDone && (
                       <div className="mt-2 pt-2 border-t border-gray-100">
                         <p className="text-xs text-gray-600">
-                          <span className="font-medium">✓ Done when:</span> {getLocalizedText(step.howToKnowItsDone, locale)}
+                          <span className="font-medium">✓ {t('steps.strategySelection.doneWhen')}:</span> {getLocalizedText(step.howToKnowItsDone, locale)}
                         </p>
                       </div>
                     )}
@@ -621,7 +652,7 @@ function StrategyCard({
                     {step.freeAlternative && (
                       <div className="mt-2 bg-green-50 rounded p-2">
                         <p className="text-xs text-green-700">
-                          <span className="font-medium">💸 Free option:</span> {getLocalizedText(step.freeAlternative, locale)}
+                          <span className="font-medium">💸 {t('steps.strategySelection.freeOption')}:</span> {getLocalizedText(step.freeAlternative, locale)}
                         </p>
                       </div>
                     )}
@@ -637,7 +668,7 @@ function StrategyCard({
             const tipsArray = Array.isArray(tips) ? tips : (typeof tips === 'string' && tips ? [tips] : [])
             return tipsArray.length > 0 && (
               <div className="bg-blue-50 rounded p-3">
-                <h5 className="font-bold text-blue-900 mb-2">💡 Helpful Tips</h5>
+                <h5 className="font-bold text-blue-900 mb-2">💡 {t('steps.strategySelection.helpfulTips')}</h5>
                 <ul className="text-sm text-blue-800 space-y-1">
                   {tipsArray.map((tip: string, idx: number) => (
                     <li key={idx} className="flex items-start">
@@ -656,7 +687,7 @@ function StrategyCard({
             const mistakesArray = Array.isArray(mistakes) ? mistakes : (typeof mistakes === 'string' && mistakes ? [mistakes] : [])
             return mistakesArray.length > 0 && (
               <div className="bg-red-50 rounded p-3">
-                <h5 className="font-bold text-red-900 mb-2">⚠️ Common Mistakes to Avoid</h5>
+                <h5 className="font-bold text-red-900 mb-2">⚠️ {t('steps.strategySelection.commonMistakes')}</h5>
                 <ul className="text-sm text-red-800 space-y-1">
                   {mistakesArray.map((mistake: string, idx: number) => (
                     <li key={idx} className="flex items-start">
@@ -693,9 +724,9 @@ function calculateTotalTime(strategies: Strategy[]): string {
     return total + 1
   }, 0)
   
-  if (hours < 8) return `~${hours} hours`
-  if (hours < 40) return `~${Math.round(hours / 8)} days`
-  return `~${Math.round(hours / 40)} weeks`
+  if (hours < 8) return `~${hours}h`
+  if (hours < 40) return `~${Math.round(hours / 8)} ${Math.round(hours / 8) === 1 ? 'day' : 'days'}`
+  return `~${Math.round(hours / 40)} ${Math.round(hours / 40) === 1 ? 'week' : 'weeks'}`
 }
 
 function calculateTotalCost(strategies: Strategy[]): string {
