@@ -875,6 +875,12 @@
             "Ejercicio de Plan Completo - Anual - Todo el personal clave - Ejercicio completo de escenario completado exitosamente - Coordinador del Plan"
           ]
         }
+      },
+      "examples": {
+        "autoRecommended": "Las estrategias se recomiendan automáticamente según su evaluación de riesgos",
+        "prevention": "Las estrategias de prevención ayudan a reducir la probabilidad de emergencias",
+        "response": "Las estrategias de respuesta guían sus acciones durante emergencias",
+        "recovery": "Las estrategias de recuperación ayudan a restaurar las operaciones normales después"
       }
     },
     "contactsAndInformation": {

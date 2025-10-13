@@ -284,6 +284,7 @@ export default function StrategySelectionStep({
               translateRisk={translateRisk}
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
+              translateTime={translateTime}
             />
           ))}
         </div>
@@ -317,6 +318,7 @@ export default function StrategySelectionStep({
               translateRisk={translateRisk}
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
+              translateTime={translateTime}
             />
           ))}
         </div>
@@ -350,6 +352,7 @@ export default function StrategySelectionStep({
               translateRisk={translateRisk}
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
+              translateTime={translateTime}
             />
           ))}
         </div>
@@ -441,7 +444,8 @@ function StrategyCard({
   locale,
   translateRisk,
   translateLevel,
-  translateReasoning
+  translateReasoning,
+  translateTime
 }: any) {
   const borderColor = {
     red: 'border-red-200',

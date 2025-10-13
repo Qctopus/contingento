@@ -269,14 +269,14 @@ export function useLocalizedSteps(): StepsCollection {
       inputs: [
         {
           type: 'special_strategy_cards',
-          label: 'Business Continuity Strategies',
+          label: t('strategies.title'),
           required: true,
-          prompt: 'Select the strategies your business will implement to prevent, respond to, and recover from emergencies. Strategies marked with ✨ are specifically recommended based on your business type and identified risks.',
+          prompt: t('steps.strategySelection.selectStrategiesDescription'),
           examples: [
-            'Strategies are automatically recommended based on your risk assessment',
-            'Prevention strategies help reduce the likelihood of emergencies',
-            'Response strategies guide your actions during emergencies',
-            'Recovery strategies help restore normal operations afterward'
+            t('strategies.examples.autoRecommended'),
+            t('strategies.examples.prevention'),
+            t('strategies.examples.response'),
+            t('strategies.examples.recovery')
           ],
         },
       ],

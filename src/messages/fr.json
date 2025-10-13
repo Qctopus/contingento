@@ -990,6 +990,12 @@
               "Exercice Plan Complet - Annuel - Tout personnel clé - Exercice scénario complet terminé avec succès - Coordinateur Plan"
             ]
           }
+        },
+        "examples": {
+          "autoRecommended": "Les stratégies sont automatiquement recommandées en fonction de votre évaluation des risques",
+          "prevention": "Les stratégies de prévention aident à réduire la probabilité d'urgences",
+          "response": "Les stratégies de réponse guident vos actions pendant les urgences",
+          "recovery": "Les stratégies de récupération aident à restaurer les opérations normales après"
         }
       },
       "contactsAndInformation": {

@@ -970,6 +970,12 @@
             "Full Plan Exercise - Annually - All key staff - Complete scenario exercise completed successfully - Plan Coordinator"
           ]
         }
+      },
+      "examples": {
+        "autoRecommended": "Strategies are automatically recommended based on your risk assessment",
+        "prevention": "Prevention strategies help reduce the likelihood of emergencies",
+        "response": "Response strategies guide your actions during emergencies",
+        "recovery": "Recovery strategies help restore normal operations afterward"
       }
     },
     "contactsAndInformation": {
