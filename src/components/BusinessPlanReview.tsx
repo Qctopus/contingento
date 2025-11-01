@@ -1125,7 +1125,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                         })()}
                       </div>
                       <span className={`${badgeColor} px-4 py-2 rounded-full text-sm font-bold ml-4 whitespace-nowrap shadow-sm`}>
-                        {risk['Risk Level']}
+                        {typeof risk['Risk Level'] === 'string' ? risk['Risk Level'] : getLocalizedText(risk['Risk Level'], locale as Locale) || 'High'}
                       </span>
                     </div>
                     
@@ -1133,18 +1133,29 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     <div className="grid md:grid-cols-3 gap-4 mb-4">
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Likelihood</div>
-                        <div className="text-lg font-bold text-gray-900">{risk['Likelihood'] || '-'}</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {typeof risk['Likelihood'] === 'string' ? risk['Likelihood'] : getLocalizedText(risk['Likelihood'], locale as Locale) || '-'}
+                        </div>
                         {risk.likelihoodScore && <div className="text-xs text-gray-500 mt-1">Score: {risk.likelihoodScore}</div>}
                       </div>
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Impact / Severity</div>
-                        <div className="text-lg font-bold text-gray-900">{risk['Severity'] || risk['Impact'] || '-'}</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          {(() => {
+                            const severity = risk['Severity'] || risk['Impact']
+                            return typeof severity === 'string' ? severity : getLocalizedText(severity, locale as Locale) || '-'
+                          })()}
+                        </div>
                         {risk.impactScore && <div className="text-xs text-gray-500 mt-1">Score: {risk.impactScore}</div>}
                       </div>
                       <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Overall Risk</div>
                         <div className="text-lg font-bold text-gray-900">{risk.riskScore || risk['Risk Score'] || '-'}</div>
-                        {risk.riskLevel && <div className="text-xs text-gray-500 mt-1">{risk.riskLevel}</div>}
+                        {risk.riskLevel && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {typeof risk.riskLevel === 'string' ? risk.riskLevel : getLocalizedText(risk.riskLevel, locale as Locale)}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
