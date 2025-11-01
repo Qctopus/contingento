@@ -274,17 +274,21 @@ export function AdminStrategyCards({
   
   // Auto-save whenever selection changes
   useEffect(() => {
-    if (selectedStrategyIds.length > 0 || strategies.length > 0) {
+    if (strategies.length > 0) {
       const fullSelectedStrategies = strategies.filter(s => selectedStrategyIds.includes(s.id))
-      console.log('💾 Auto-saving strategies to formData:', fullSelectedStrategies.length)
+      console.log('💾 Auto-saving strategies to formData:', {
+        totalStrategies: strategies.length,
+        selectedCount: fullSelectedStrategies.length,
+        selectedIds: selectedStrategyIds
+      })
       
       if (onComplete) {
-        onComplete({
-          'Business Continuity Strategies': fullSelectedStrategies
-        })
+        // Call onComplete with strategies array (not wrapped in object)
+        onComplete(fullSelectedStrategies)
       }
       
       if (setUserInteracted && fullSelectedStrategies.length > 0) {
+        console.log('✅ Marking user as interacted')
         setUserInteracted(true)
       }
     }

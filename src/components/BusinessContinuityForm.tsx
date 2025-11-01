@@ -566,6 +566,13 @@ export function BusinessContinuityForm() {
   }, [formData])
 
   const handleInputComplete = (step: string, label: string, value: any) => {
+    console.log('📝 handleInputComplete called:', {
+      step,
+      label,
+      valueType: Array.isArray(value) ? `Array(${value.length})` : typeof value,
+      value: Array.isArray(value) ? `[${value.length} items]` : value
+    })
+    
     setFormData(prev => {
       const updatedData = {
         ...prev,
@@ -574,6 +581,13 @@ export function BusinessContinuityForm() {
           [label]: value
         }
       }
+      
+      console.log('✅ FormData updated:', {
+        step,
+        label,
+        hasData: !!updatedData[step][label],
+        dataType: Array.isArray(updatedData[step][label]) ? `Array(${updatedData[step][label].length})` : typeof updatedData[step][label]
+      })
       
       return updatedData
     })
@@ -782,7 +796,23 @@ export function BusinessContinuityForm() {
     // Handle custom steps not in STEPS definition (like STRATEGIES, ACTION_PLAN)
     if (!stepData) {
       const stepAnswers = formData[step]
-      if (!stepAnswers || typeof stepAnswers !== 'object') return 0
+      
+      // Debug logging for STRATEGIES step
+      if (step === 'STRATEGIES') {
+        console.log('📊 Progress Calculation for STRATEGIES:', {
+          hasStepData: !!stepAnswers,
+          stepAnswers: stepAnswers,
+          keys: stepAnswers ? Object.keys(stepAnswers) : [],
+          values: stepAnswers ? Object.values(stepAnswers).map(v => 
+            Array.isArray(v) ? `Array(${v.length})` : typeof v
+          ) : []
+        })
+      }
+      
+      if (!stepAnswers || typeof stepAnswers !== 'object') {
+        console.log(`⚠️ ${step}: No data or not an object, returning 0%`)
+        return 0
+      }
       
       // Check if any data exists in this step
       const hasData = Object.keys(stepAnswers).some(key => {
@@ -793,7 +823,9 @@ export function BusinessContinuityForm() {
         return value !== undefined && value !== null && value !== ''
       })
       
-      return hasData ? 100 : 0
+      const percentage = hasData ? 100 : 0
+      console.log(`✅ ${step}: ${percentage}% (hasData: ${hasData})`)
+      return percentage
     }
     
     const answeredQuestions = stepData.inputs.filter(input => 
