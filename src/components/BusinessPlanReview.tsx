@@ -1052,12 +1052,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             <div className="bg-gradient-to-r from-blue-50 to-gray-50 rounded-lg p-6 border border-blue-200">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Portfolio Overview</h3>
               <div className="grid md:grid-cols-4 gap-4">
-                {(() => {
-                  const risks = formData.RISK_ASSESSMENT['Risk Assessment Matrix']
-                  const extremeRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('extreme')).length
+              {(() => {
+                const risks = formData.RISK_ASSESSMENT['Risk Assessment Matrix']
+                const extremeRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('extreme')).length
                   const highRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('high') && !r['Risk Level']?.toLowerCase().includes('extreme')).length
-                  const mediumRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('medium')).length
-                  const lowRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('low')).length
+                const mediumRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('medium')).length
+                const lowRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('low')).length
                   const totalRisks = risks.length
                   const priorityRisks = extremeRisks + highRisks
 
@@ -1066,7 +1066,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                       <div className="bg-white rounded-lg p-4 text-center shadow-sm">
                         <div className="text-3xl font-bold text-gray-900">{totalRisks}</div>
                         <div className="text-sm text-gray-600 mt-1">Total Risks Identified</div>
-                      </div>
+            </div>
                       <div className="bg-black rounded-lg p-4 text-center shadow-sm">
                         <div className="text-3xl font-bold text-white">{extremeRisks}</div>
                         <div className="text-sm text-gray-200 mt-1">EXTREME Priority</div>
@@ -1081,9 +1081,9 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                       </div>
                     </>
                   )
-                })()}
+              })()}
               </div>
-            </div>
+                </div>
 
             {/* Risk Cards - Professional Display WITH All Available Data */}
             <div className="space-y-4">
@@ -1104,19 +1104,25 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                         <h4 className="font-bold text-gray-900 text-xl mb-2">
                           {transformHazardName(risk['Hazard'] || risk.hazard)}
                         </h4>
-                        {risk.reasoning && (
-                          <div className="bg-blue-50 border-l-2 border-blue-400 rounded-r p-3 mb-3">
-                            <div className="text-xs font-semibold text-blue-900 mb-1">Why This Risk Matters to Your Business:</div>
-                            <div className="text-sm text-blue-800 leading-relaxed">
-                              {risk.reasoning}
+                        {risk.reasoning && (() => {
+                          const reasoning = getLocalizedText(risk.reasoning, locale as Locale)
+                          return reasoning ? (
+                            <div className="bg-blue-50 border-l-2 border-blue-400 rounded-r p-3 mb-3">
+                              <div className="text-xs font-semibold text-blue-900 mb-1">Why This Risk Matters to Your Business:</div>
+                              <div className="text-sm text-blue-800 leading-relaxed">
+                                {reasoning}
+                      </div>
                             </div>
-                          </div>
-                        )}
-                        {risk.description && (
-                          <div className="text-sm text-gray-600 leading-relaxed mb-3">
-                            {risk.description}
-                          </div>
-                        )}
+                          ) : null
+                        })()}
+                        {risk.description && (() => {
+                          const description = getLocalizedText(risk.description, locale as Locale)
+                          return description ? (
+                            <div className="text-sm text-gray-600 leading-relaxed mb-3">
+                              {description}
+                            </div>
+                          ) : null
+                        })()}
                       </div>
                       <span className={`${badgeColor} px-4 py-2 rounded-full text-sm font-bold ml-4 whitespace-nowrap shadow-sm`}>
                         {risk['Risk Level']}
@@ -1141,7 +1147,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                         {risk.riskLevel && <div className="text-xs text-gray-500 mt-1">{risk.riskLevel}</div>}
                       </div>
                     </div>
-
+                    
                     {/* Additional Risk Information */}
                     {(risk.vulnerabilities || risk.affectedFunctions || risk.potentialImpact || risk.riskCategory || risk.riskTier) && (
                       <div className="border-t pt-4 space-y-2">
@@ -1163,24 +1169,33 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                             </span>
                           </div>
                         )}
-                        {risk.vulnerabilities && (
-                          <div className="mt-2">
-                            <div className="text-xs font-semibold text-gray-700 mb-1">Vulnerabilities:</div>
-                            <div className="text-sm text-gray-600">{risk.vulnerabilities}</div>
-                          </div>
-                        )}
-                        {risk.affectedFunctions && (
-                          <div>
-                            <div className="text-xs font-semibold text-gray-700 mb-1">Affected Business Functions:</div>
-                            <div className="text-sm text-gray-600">{risk.affectedFunctions}</div>
-                          </div>
-                        )}
-                        {risk.potentialImpact && (
-                          <div>
-                            <div className="text-xs font-semibold text-gray-700 mb-1">Potential Impact:</div>
-                            <div className="text-sm text-gray-600">{risk.potentialImpact}</div>
-                          </div>
-                        )}
+                        {risk.vulnerabilities && (() => {
+                          const vulnerabilities = getLocalizedText(risk.vulnerabilities, locale as Locale)
+                          return vulnerabilities ? (
+                            <div className="mt-2">
+                              <div className="text-xs font-semibold text-gray-700 mb-1">Vulnerabilities:</div>
+                              <div className="text-sm text-gray-600">{vulnerabilities}</div>
+                            </div>
+                          ) : null
+                        })()}
+                        {risk.affectedFunctions && (() => {
+                          const affectedFunctions = getLocalizedText(risk.affectedFunctions, locale as Locale)
+                          return affectedFunctions ? (
+                            <div>
+                              <div className="text-xs font-semibold text-gray-700 mb-1">Affected Business Functions:</div>
+                              <div className="text-sm text-gray-600">{affectedFunctions}</div>
+                            </div>
+                          ) : null
+                        })()}
+                        {risk.potentialImpact && (() => {
+                          const potentialImpact = getLocalizedText(risk.potentialImpact, locale as Locale)
+                          return potentialImpact ? (
+                            <div>
+                              <div className="text-xs font-semibold text-gray-700 mb-1">Potential Impact:</div>
+                              <div className="text-sm text-gray-600">{potentialImpact}</div>
+                            </div>
+                          ) : null
+                        })()}
                       </div>
                     )}
                   </div>
@@ -1198,8 +1213,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         ) : (
           <div className="text-center py-8 text-gray-500">
             Risk assessment not completed
-          </div>
-        )}
+                </div>
+              )}
       </CompactCard>
 
       {/* Section 3: Business Continuity Strategies - Enhanced Display */}
@@ -1268,13 +1283,13 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               </div>
               
               {/* Strategies by Category - Enhanced Cards */}
-              {categoryConfig.map(cat => {
-                const strategies = strategyCategories[cat.key] || []
-                if (strategies.length === 0) return null
+                {categoryConfig.map(cat => {
+                  const strategies = strategyCategories[cat.key] || []
+                  if (strategies.length === 0) return null
                 
                 const IconComponent = cat.icon
-                
-                return (
+                  
+                  return (
                   <div key={cat.key} className="print:break-inside-avoid">
                     <div className="flex items-center space-x-3 mb-4">
                       <IconComponent className="w-6 h-6 text-gray-700" />
@@ -1285,15 +1300,15 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     </div>
                     
                     <div className="space-y-6">
-                      {strategies.map((strategy: any, index: number) => {
+                        {strategies.map((strategy: any, index: number) => {
                         const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)
                         const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale as Locale)
                         const benefits = getLocalizedText(strategy.benefitsBullets, locale as Locale) || []
                         const realWorldExample = getLocalizedText(strategy.realWorldExample, locale as Locale)
                         const lowBudgetAlt = getLocalizedText(strategy.lowBudgetAlternative, locale as Locale)
                         const diyApproach = getLocalizedText(strategy.diyApproach, locale as Locale)
-                        
-                        return (
+                          
+                          return (
                           <div key={index} className={`border-l-4 ${cat.borderColor} bg-white rounded-lg p-6 shadow-sm print:break-inside-avoid`}>
                             {/* Header */}
                             <div className="flex justify-between items-start mb-4">
@@ -1324,8 +1339,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     </li>
                                   ))}
                                 </ul>
-                              </div>
-                            )}
+                                </div>
+                              )}
 
                             {/* Implementation Overview */}
                             <div className="grid grid-cols-3 gap-4 mb-4">
@@ -1333,11 +1348,11 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                 <div className="flex items-center justify-center mb-1">
                                   <CurrencyDollarIcon className="w-4 h-4 text-gray-600 mr-1" />
                                   <div className="text-xs text-gray-600">Investment</div>
-                                </div>
+                            </div>
                                 <div className="font-semibold text-gray-900 text-sm">
                                   {getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale as Locale) || 'To be determined'}
-                                </div>
-                              </div>
+                      </div>
+                    </div>
                               <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
                                 <div className="flex items-center justify-center mb-1">
                                   <ClockIcon className="w-4 h-4 mr-1 text-gray-600" />
@@ -1360,14 +1375,14 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                    strategy.complexityLevel === 'advanced' ? 'Advanced' : 'Moderate'}
                                 </div>
                               </div>
-                            </div>
-
+              </div>
+              
                             {/* Real-world example */}
                             {realWorldExample && (
                               <div className="bg-green-50 border-l-4 border-green-500 rounded-r-lg p-4 mb-4">
                                 <h5 className="text-sm font-semibold text-green-900 mb-2">Real Success Story:</h5>
                                 <p className="text-sm text-green-800 leading-relaxed">{realWorldExample}</p>
-                              </div>
+                      </div>
                             )}
 
                             {/* Budget-friendly options */}
@@ -1377,7 +1392,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                   <div>
                                     <h5 className="text-sm font-semibold text-gray-900 mb-1">Low-Budget Option:</h5>
                                     <p className="text-sm text-gray-700 leading-relaxed">{lowBudgetAlt}</p>
-                                  </div>
+                  </div>
                                 )}
                                 {diyApproach && (
                                   <div>
@@ -1390,8 +1405,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     )}
                                   </div>
                                 )}
-                              </div>
-                            )}
+                </div>
+              )}
                           </div>
                         )
                       })}
@@ -1515,16 +1530,16 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-5">
                           <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
                             <span className="text-yellow-600 mr-2">Resources & Equipment Needed:</span>
-                          </h4>
+                  </h4>
                           <div className="grid md:grid-cols-2 gap-2">
                             {resources.map((resource, idx) => (
                               <div key={idx} className="text-sm text-gray-800 flex items-center">
                                 <span className="text-yellow-600 mr-2">□</span>
                                 {resource}
-                              </div>
+                    </div>
                             ))}
-                          </div>
-                        </div>
+                    </div>
+                    </div>
                       )}
 
                       {/* PHASE 1: IMMEDIATE ACTIONS */}
@@ -1533,7 +1548,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                           <div className="bg-red-50 border-l-4 border-red-600 rounded-r-lg p-4 mb-4">
                             <h4 className="font-bold text-red-900 text-lg">PHASE 1: IMMEDIATE ACTIONS (0-24 hours)</h4>
                             <p className="text-sm text-red-700 mt-1">Critical actions during and immediately after impact</p>
-                          </div>
+                  </div>
 
                           <div className="space-y-6 ml-4">
                             {phaseGroups.immediate.map((step: ActionStep, stepIdx: number) => (
