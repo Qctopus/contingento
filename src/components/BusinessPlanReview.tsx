@@ -265,16 +265,27 @@ const ContactCard = ({ contacts, title, icon }: { contacts: any[], title: string
       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
         {validContacts.length > 0 ? validContacts
           .map((contact: any, index: number) => {
-            // Handle different field name variations
-            const name = contact.Name || contact['Name'] || 
+            // Handle different field name variations with multilingual support
+            const getFieldString = (field: any) => {
+              if (!field) return ''
+              return typeof field === 'string' ? field : (field.en || field.es || field.fr || '')
+            }
+            
+            const nameRaw = contact.Name || contact['Name'] || 
                         contact['Supplier Name'] || contact['Customer Name'] || 
                         contact['Organization Name'] || 'Unknown'
-            const position = contact.Position || contact['Type/Notes'] || 
+            const positionRaw = contact.Position || contact['Type/Notes'] || 
                            contact['Service Type'] || contact['Goods/Services Supplied'] || ''
-            const phone = contact['Phone Number'] || contact.Phone || ''
-            const email = contact['Email Address'] || contact.Email || ''
-            const extra = contact['Emergency Contact'] || contact['Backup Supplier'] || 
+            const phoneRaw = contact['Phone Number'] || contact.Phone || ''
+            const emailRaw = contact['Email Address'] || contact.Email || ''
+            const extraRaw = contact['Emergency Contact'] || contact['Backup Supplier'] || 
                          contact['Account Number'] || contact['Special Requirements'] || ''
+            
+            const name = getFieldString(nameRaw) || 'Unknown'
+            const position = getFieldString(positionRaw)
+            const phone = getFieldString(phoneRaw)
+            const email = getFieldString(emailRaw)
+            const extra = getFieldString(extraRaw)
             
             return (
               <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
@@ -919,10 +930,22 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
     
     loadStrategies()
   }, [locale])
-  const companyName = formData.PLAN_INFORMATION?.['Company Name'] || 'Your Company'
-  const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || 'Business Address Not Specified'
-  const planVersion = formData.PLAN_INFORMATION?.['Plan Version'] || '1.0'
-  const nextReviewDate = formData.PLAN_INFORMATION?.['Next Review Date'] || 'Not specified'
+  const companyName = (() => {
+    const name = formData.PLAN_INFORMATION?.['Company Name'] || 'Your Company'
+    return typeof name === 'string' ? name : getLocalizedText(name, locale as Locale) || 'Your Company'
+  })()
+  const businessAddress = (() => {
+    const address = formData.PLAN_INFORMATION?.['Business Address'] || 'Business Address Not Specified'
+    return typeof address === 'string' ? address : getLocalizedText(address, locale as Locale) || 'Business Address Not Specified'
+  })()
+  const planVersion = (() => {
+    const version = formData.PLAN_INFORMATION?.['Plan Version'] || '1.0'
+    return typeof version === 'string' ? version : getLocalizedText(version, locale as Locale) || '1.0'
+  })()
+  const nextReviewDate = (() => {
+    const date = formData.PLAN_INFORMATION?.['Next Review Date'] || 'Not specified'
+    return typeof date === 'string' ? date : getLocalizedText(date, locale as Locale) || 'Not specified'
+  })()
   const currentDate = new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
