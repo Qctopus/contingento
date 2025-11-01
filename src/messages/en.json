@@ -357,6 +357,9 @@
     "reviewYourRisks": "Review Your Risk Assessment",
     "reviewRisksDescription": "Based on your location and business profile, we've identified and categorized potential risks. Review each risk and adjust the impact severity as needed for your specific situation.",
     "criticalPriorityLabel": "Critical",
+    "simple": "Simple",
+    "moderate": "Moderate",
+    "complex": "Complex",
     "criticalPriorityDescription": "Immediate attention required",
     "importantLabel": "Important",
     "importantDescription": "Should be addressed",
@@ -723,6 +726,7 @@
         "fire": "Fire",
         "crime": "Crime/Theft/Break-in",
         "civil_disorder": "Civil Disorder/Unrest",
+        "civil_unrest": "Civil Unrest",
         "terrorism": "Terrorism",
         "supply_disruption": "Supply Chain Disruption",
         "staff_unavailable": "Key Staff Unavailability",
@@ -847,6 +851,12 @@
     "strategies": {
       "title": "Business Continuity Strategies",
       "description": "Now let's develop comprehensive strategies to prevent, respond to, and recover from the risks you've identified.",
+      "examples": {
+        "autoRecommended": "Strategies are automatically recommended based on your risks and industry",
+        "prevention": "Prevention strategies help you avoid emergencies before they happen",
+        "response": "Response strategies help you act quickly during emergencies",
+        "recovery": "Recovery strategies help you get back to normal operations after emergencies"
+      },
       "inputs": {
         "preventionStrategies": {
           "label": "Prevention Strategies (Before Emergencies)",

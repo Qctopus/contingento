@@ -573,6 +573,13 @@ export function BusinessContinuityForm() {
       value: Array.isArray(value) ? `[${value.length} items]` : value
     })
     
+    // CRITICAL FIX: Don't overwrite array data with empty strings
+    // This happens when components re-render with empty initialValue
+    if (step === 'STRATEGIES' && typeof value === 'string' && value === '') {
+      console.log('⚠️ BLOCKED: Preventing empty string from overwriting STRATEGIES data')
+      return
+    }
+    
     setFormData(prev => {
       const updatedData = {
         ...prev,
