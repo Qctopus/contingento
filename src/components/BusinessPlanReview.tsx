@@ -1286,10 +1286,18 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             hasSTRATEGIES: !!formData.STRATEGIES,
             STRATEGIESKeys: formData.STRATEGIES ? Object.keys(formData.STRATEGIES) : [],
             STRATEGIESValue: formData.STRATEGIES,
-            selectedStrategiesRaw: formData.STRATEGIES?.['Business Continuity Strategies']
+            selectedStrategiesRaw: formData.STRATEGIES?.['Business Continuity Strategies'],
+            isArray: Array.isArray(formData.STRATEGIES?.['Business Continuity Strategies']),
+            length: formData.STRATEGIES?.['Business Continuity Strategies']?.length || 0,
+            firstItem: formData.STRATEGIES?.['Business Continuity Strategies']?.[0]
           })
           
           const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
+          console.log('📋 Selected strategies after extraction:', {
+            count: selectedStrategies.length,
+            isArray: Array.isArray(selectedStrategies),
+            firstStrategy: selectedStrategies[0]
+          })
           
           if (!Array.isArray(selectedStrategies) || selectedStrategies.length === 0) {
             return (
