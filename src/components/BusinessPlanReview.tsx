@@ -220,27 +220,57 @@ const ActionPlanCard = ({ plan }: { plan: any }) => (
 )
 
 const ContactCard = ({ contacts, title, icon }: { contacts: any[], title: string, icon: string }) => {
-  const validContacts = Array.isArray(contacts) ? contacts.filter((c: any) => c && (c.Name || c.name)) : []
+  const validContacts = Array.isArray(contacts) ? contacts.filter((c: any) => c && Object.keys(c).length > 0) : []
   
   return (
     <CompactCard>
       <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
         <span>{icon}</span>
         <span>{title}</span>
-        <span className="text-xs text-gray-500">({validContacts.length})</span>
+        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{validContacts.length}</span>
       </h4>
-      <div className="space-y-2 max-h-60 overflow-y-auto">
+      <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
         {validContacts.length > 0 ? validContacts
-          .map((contact: any, index: number) => (
-            <div key={index} className="text-sm bg-gray-50 rounded p-2">
-              <div className="font-medium text-gray-900">{contact.Name || contact.name || 'Unknown'}</div>
-              <div className="text-gray-600 text-xs">{contact.Position || contact.role || ''}</div>
-              <div className="text-gray-500 text-xs">{contact.Phone || contact.phone || ''}</div>
-              {contact.Email && (
-                <div className="text-gray-500 text-xs">{contact.Email}</div>
-              )}
-            </div>
-          )) : <div className="text-gray-500 text-sm italic">No contacts specified</div>}
+          .map((contact: any, index: number) => {
+            // Handle different field name variations
+            const name = contact.Name || contact['Name'] || 
+                        contact['Supplier Name'] || contact['Customer Name'] || 
+                        contact['Organization Name'] || 'Unknown'
+            const position = contact.Position || contact['Type/Notes'] || 
+                           contact['Service Type'] || contact['Goods/Services Supplied'] || ''
+            const phone = contact['Phone Number'] || contact.Phone || ''
+            const email = contact['Email Address'] || contact.Email || ''
+            const extra = contact['Emergency Contact'] || contact['Backup Supplier'] || 
+                         contact['Account Number'] || contact['Special Requirements'] || ''
+            
+            return (
+              <div key={index} className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="font-semibold text-gray-900 mb-1">{name}</div>
+                {position && (
+                  <div className="text-gray-700 text-xs mb-2 pb-2 border-b border-gray-200">{position}</div>
+                )}
+                <div className="space-y-1">
+                  {phone && (
+                    <div className="flex items-center text-xs text-gray-600">
+                      <span className="mr-1">📞</span>
+                      <span className="font-medium">{phone}</span>
+                    </div>
+                  )}
+                  {email && email !== 'N/A' && (
+                    <div className="flex items-center text-xs text-gray-600">
+                      <span className="mr-1">✉️</span>
+                      <span className="break-all">{email}</span>
+                    </div>
+                  )}
+                  {extra && extra !== 'N/A' && (
+                    <div className="text-xs text-blue-700 mt-2 pt-2 border-t border-gray-200">
+                      {extra}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          }) : <div className="text-gray-500 text-sm italic text-center py-8">No contacts specified</div>}
       </div>
     </CompactCard>
   )
@@ -684,21 +714,23 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
 
   // Filter for high and extreme risk hazards
   const priorityHazards = riskMatrix.filter(risk => {
-    const riskLevel = (risk.riskLevel || risk.RiskLevel || '').toLowerCase()
+    const riskLevel = (risk['Risk Level'] || risk.riskLevel || risk.RiskLevel || '').toLowerCase()
     return riskLevel.includes('high') || riskLevel.includes('extreme')
   })
 
   // Generate action plans for each priority hazard
   return priorityHazards.map(risk => {
-    const hazardName = transformHazardName(risk.hazard || risk.Hazard || '')
-    const riskLevel = risk.riskLevel || risk.RiskLevel || 'High'
-    const riskScore = risk.riskScore || 'High'
+    const hazardName = transformHazardName(risk['Hazard'] || risk.hazard || risk.Hazard || '')
+    const riskLevel = risk['Risk Level'] || risk.riskLevel || risk.RiskLevel || 'High'
+    const riskScore = risk.riskScore || risk['Risk Score'] || 'High'
+    const hazardId = risk.hazardId || ''
     
     // Find relevant strategies from database
     const relevantStrategies = strategies.filter(strategy => {
       // Check if strategy applies to this risk type
       const strategyName = getLocalizedText(strategy.name, 'en').toLowerCase()
-      return strategy.applicableRisks?.includes(risk.hazard) || 
+      return strategy.applicableRisks?.includes(hazardId) || 
+             strategy.applicableRisks?.includes(risk.hazard) || 
              strategy.applicableRisks?.includes(risk.Hazard) ||
              strategyName.includes(hazardName.toLowerCase())
     })
@@ -769,13 +801,13 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
       businessType: 'Database-driven',
       affectedFunctions: 'All critical business operations',
       specificConsiderations: relevantStrategies.map(s => s.whyImportant || s.description).filter(Boolean),
-      resourcesNeeded: relevantStrategies.flatMap(s => 
-        s.actionSteps?.map(step => step.resources).filter(Boolean) || []
-      ).length > 0 ? 
-        Array.from(new Set(relevantStrategies.flatMap(s => 
-          s.actionSteps?.map(step => step.resources).filter(Boolean) || []
-        ))) : 
-        fallbackActions.resourcesNeeded,
+      resourcesNeeded: (() => {
+        // Extract resources from strategy action steps - safely handle different types
+        const extracted = relevantStrategies.flatMap(s => 
+          s.actionSteps?.map(step => step.resources).filter(r => r && typeof r === 'string' && r.trim()) || []
+        ).filter(r => typeof r === 'string')
+        return extracted.length > 0 ? Array.from(new Set(extracted)) : fallbackActions.resourcesNeeded
+      })(),
       immediateActions: immediateActions.length > 0 ? immediateActions : fallbackActions.immediateActions,
       shortTermActions: shortTermActions.length > 0 ? shortTermActions : fallbackActions.shortTermActions,
       mediumTermActions: mediumTermActions.length > 0 ? mediumTermActions : fallbackActions.mediumTermActions,
@@ -821,20 +853,25 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   })
 
   return (
-    <div className="max-w-7xl mx-auto py-6 print:py-2 space-y-6">
-      {/* Compact Header */}
-      <div className="text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-2">BUSINESS CONTINUITY PLAN</h1>
-        <h2 className="text-lg opacity-90">{companyName}</h2>
-        <div className="mt-4 text-sm opacity-80">
-          Version {planVersion} • {currentDate}
-          </div>
+    <div className="max-w-7xl mx-auto py-6 print:py-2 space-y-6 print:space-y-4">
+      {/* Enhanced Header with Better Print Styles */}
+      <div className="text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg p-8 mb-8 print:bg-primary-600 print:p-4 print:mb-4 shadow-lg print:shadow-none">
+        <h1 className="text-3xl font-bold mb-3 print:text-2xl">BUSINESS CONTINUITY PLAN</h1>
+        <h2 className="text-xl opacity-95 font-semibold print:text-lg">{companyName}</h2>
+        <div className="mt-4 text-sm opacity-90 flex items-center justify-center space-x-4">
+          <span>📋 Version {planVersion}</span>
+          <span>•</span>
+          <span>📅 {currentDate}</span>
         </div>
+      </div>
 
-      {/* Compact Document Control & Business Info */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        <CompactCard>
-          <h3 className="font-semibold text-gray-900 mb-3">📋 Document Control</h3>
+      {/* Document Control & Business Info with Better Visual Hierarchy */}
+      <div className="grid lg:grid-cols-3 gap-6 print:gap-4 print:break-inside-avoid">
+        <CompactCard className="print:break-inside-avoid">
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
+            <span>📋</span>
+            <span>Document Control</span>
+          </h3>
           <InfoGrid items={[
             { label: 'Version', value: planVersion },
             { label: 'Created', value: currentDate },
@@ -844,8 +881,11 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
           ]} />
         </CompactCard>
 
-        <CompactCard className="lg:col-span-2">
-          <h3 className="font-semibold text-gray-900 mb-3">🏢 Business Information</h3>
+        <CompactCard className="lg:col-span-2 print:break-inside-avoid">
+          <h3 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
+            <span>🏢</span>
+            <span>Business Information</span>
+          </h3>
           <InfoGrid items={[
             { label: 'Company Name', value: companyName },
             { label: 'Business Address', value: businessAddress },
@@ -855,8 +895,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         </CompactCard>
         </div>
 
-      {/* Section 1: Business Analysis */}
-      <CompactCard>
+      {/* Section 1: Business Analysis with Page Break Control */}
+      <CompactCard className="print:break-inside-avoid">
         <SectionHeader title="SECTION 1: BUSINESS ANALYSIS" icon="📊" />
         
         <div className="grid lg:grid-cols-2 gap-6">
@@ -870,39 +910,63 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Products & Services</h4>
             <div className="bg-green-50 rounded-lg p-4 text-sm text-gray-800">
-              {formData.BUSINESS_OVERVIEW?.['Products & Services'] || 'Not specified'}
+              {formData.BUSINESS_OVERVIEW?.['Products and Services'] || 
+               formData.BUSINESS_OVERVIEW?.['Products & Services'] || 
+               'Not specified'}
             </div>
             </div>
           </div>
 
-        {/* Essential Functions - Complete Display */}
-        {formData.ESSENTIAL_FUNCTIONS && (
+        {/* Essential Functions - Render as Table */}
+        {formData.ESSENTIAL_FUNCTIONS?.['Business Functions'] && (
           <div className="mt-6">
             <h4 className="font-medium text-gray-900 mb-4">Essential Business Functions</h4>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {Object.entries(formData.ESSENTIAL_FUNCTIONS).map(([category, functions]) => (
-                <div key={category} className="bg-gray-50 rounded-lg p-3">
-                  <h5 className="font-medium text-gray-800 text-sm mb-2">
-                    {category.replace(/([A-Z])/g, ' $1').trim()}
-                  </h5>
-                  <div className="space-y-1 max-h-48 overflow-y-auto">
-                    {Array.isArray(functions) ? functions
-                      .filter((func: any) => func != null && func !== '') // Filter out null, undefined, and empty values
-                      .map((func: any, idx: number) => (
-                        <div key={idx} className="text-xs text-gray-600">
-                          • {transformFunctionName(func)}
+            <div className="overflow-x-auto">
+              <table className="min-w-full border border-gray-300 bg-white rounded-lg">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">Business Function</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">Description</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">Priority Level</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">Max Downtime</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left text-xs font-medium text-gray-700">Critical Resources</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {formData.ESSENTIAL_FUNCTIONS['Business Functions'].map((func: any, idx: number) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900 font-medium">
+                        {func['Business Function'] || '-'}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                        {func['Description'] || '-'}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2 text-sm">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          func['Priority Level'] === 'critical' ? 'bg-red-100 text-red-800' :
+                          func['Priority Level'] === 'important' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {func['Priority Level'] || '-'}
+                        </span>
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                        {func['Maximum Acceptable Downtime'] || '-'}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-600">
+                        {func['Critical Resources Needed'] || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-                      )) : null}
           </div>
-            </div>
-              ))}
-          </div>
-            </div>
         )}
       </CompactCard>
 
-      {/* Section 3: Risk Assessment - Enhanced Dashboard */}
-      <CompactCard>
+      {/* Section 3: Risk Assessment - Enhanced Dashboard with Better Print Layout */}
+      <CompactCard className="print:break-before-page">
         <SectionHeader title="SECTION 3: RISK ASSESSMENT" icon="⚠️" />
         
         {formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] && 
@@ -932,12 +996,53 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               })()}
                 </div>
 
-            {/* Compact Risk Matrix */}
-            <CompactTable 
-              data={formData.RISK_ASSESSMENT['Risk Assessment Matrix']} 
-              maxHeight="400px"
-                  />
-                </div>
+            {/* Risk Cards - Professional Display */}
+            <div className="space-y-4">
+              {formData.RISK_ASSESSMENT['Risk Assessment Matrix'].map((risk: any, index: number) => {
+                const level = (risk['Risk Level'] || '').toLowerCase()
+                const borderColor = level.includes('extreme') ? 'border-black' :
+                                  level.includes('high') ? 'border-red-500' :
+                                  level.includes('medium') ? 'border-yellow-500' : 'border-green-500'
+                const bgColor = level.includes('extreme') ? 'bg-black' :
+                              level.includes('high') ? 'bg-red-500' :
+                              level.includes('medium') ? 'bg-yellow-500' : 'bg-green-500'
+                
+                return (
+                  <div key={index} className={`border-l-4 ${borderColor} bg-white rounded-lg p-4 shadow-sm`}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-900 text-lg mb-1">{risk['Hazard'] || risk.hazard}</h4>
+                        {risk.reasoning && (
+                          <p className="text-sm text-gray-600 italic">{risk.reasoning}</p>
+                        )}
+                      </div>
+                      <span className={`${bgColor} text-white px-3 py-1 rounded-full text-xs font-bold ml-4 whitespace-nowrap`}>
+                        {risk['Risk Level']}
+                      </span>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-4 mb-3">
+                      <div className="bg-gray-50 rounded p-3">
+                        <div className="text-xs text-gray-600 mb-1">Likelihood</div>
+                        <div className="font-semibold text-gray-900">{risk['Likelihood'] || '-'}</div>
+                      </div>
+                      <div className="bg-gray-50 rounded p-3">
+                        <div className="text-xs text-gray-600 mb-1">Severity</div>
+                        <div className="font-semibold text-gray-900">{risk['Severity'] || '-'}</div>
+                      </div>
+                    </div>
+                    
+                    {risk['Recommended Actions'] && (
+                      <div className="bg-blue-50 border border-blue-200 rounded p-3">
+                        <div className="text-xs font-semibold text-blue-900 mb-2">📋 Recommended Actions</div>
+                        <div className="text-sm text-blue-800 leading-relaxed">{risk['Recommended Actions']}</div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
             Risk assessment not completed
@@ -945,50 +1050,126 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               )}
       </CompactCard>
 
-      {/* Section 4: Business Continuity Strategies - Compact Layout */}
-      <CompactCard>
+      {/* Section 4: Business Continuity Strategies - Compact Layout with Print Break */}
+      <CompactCard className="print:break-before-page">
         <SectionHeader title="SECTION 4: BUSINESS CONTINUITY STRATEGIES" icon="🛡️" />
         
-        <div className="grid lg:grid-cols-3 gap-6">
-          {[
-            { key: 'Prevention Strategies (Before Emergencies)', title: 'Prevention', icon: '🔒', color: 'blue' },
-            { key: 'Response Strategies (During Emergencies)', title: 'Response', icon: '🚨', color: 'red' },
-            { key: 'Recovery Strategies (After Emergencies)', title: 'Recovery', icon: '🔄', color: 'green' }
-          ].map(strategy => (
-            <div key={strategy.key} className={`bg-${strategy.color}-50 border border-${strategy.color}-200 rounded-lg p-4`}>
-              <h4 className={`font-medium text-${strategy.color}-900 mb-3 flex items-center space-x-2`}>
-                <span>{strategy.icon}</span>
-                <span>{strategy.title}</span>
-              </h4>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {formData.STRATEGIES?.[strategy.key]
-                  ?.filter((item: any) => item != null && item !== '') // Filter out null, undefined, and empty values
-                  ?.map((item: any, index: number) => (
-                    <div key={index} className={`text-sm text-${strategy.color}-800 bg-white bg-opacity-50 rounded p-2`}>
-                      • {transformStrategyName(item)}
-            </div>
-                  )) || <div className="text-gray-500 text-sm italic">No strategies specified</div>}
-            </div>
-        </div>
-          ))}
-            </div>
-
-        {/* Long-term Risk Reduction */}
-          {formData.STRATEGIES?.['Long-term Risk Reduction Measures'] && (
-          <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-            <h4 className="font-medium text-purple-900 mb-2 flex items-center space-x-2">
-              <span>🎯</span>
-              <span>Long-term Risk Reduction</span>
-            </h4>
-            <div className="text-sm text-purple-800">
-              {formData.STRATEGIES['Long-term Risk Reduction Measures']}
+        {(() => {
+          // Get selected strategies - they're stored as full strategy objects
+          const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
+          
+          if (!Array.isArray(selectedStrategies) || selectedStrategies.length === 0) {
+            return (
+              <div className="text-center py-8 text-gray-500 italic">
+                No business continuity strategies have been selected yet.
               </div>
+            )
+          }
+          
+          // Group strategies by category
+          const strategyCategories: Record<string, any[]> = {
+            'prevention': [],
+            'preparation': [],
+            'response': [],
+            'recovery': [],
+            'mitigation': [],
+            'other': []
+          }
+          
+          selectedStrategies.forEach((strategy: any) => {
+            const category = (strategy.category || 'other').toLowerCase()
+            if (strategyCategories[category]) {
+              strategyCategories[category].push(strategy)
+            } else {
+              strategyCategories['other'].push(strategy)
+            }
+          })
+          
+          const categoryConfig = [
+            { key: 'prevention', title: 'Prevention', icon: '🔒', color: 'blue', description: 'Preventing hazards before they occur' },
+            { key: 'preparation', title: 'Preparation', icon: '📋', color: 'purple', description: 'Preparing for potential incidents' },
+            { key: 'response', title: 'Response', icon: '🚨', color: 'red', description: 'Responding during emergencies' },
+            { key: 'recovery', title: 'Recovery', icon: '🔄', color: 'green', description: 'Recovering after incidents' },
+            { key: 'mitigation', title: 'Mitigation', icon: '⚡', color: 'yellow', description: 'Reducing impact of hazards' }
+          ]
+          
+          return (
+            <div className="space-y-6">
+              {/* Summary Stats */}
+              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium text-gray-900">Selected Strategies</h4>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedStrategies.length} strategies selected to address identified risks
+                    </p>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-600">{selectedStrategies.length}</div>
+                </div>
+              </div>
+              
+              {/* Strategies by Category */}
+              <div className="grid lg:grid-cols-2 gap-6">
+                {categoryConfig.map(cat => {
+                  const strategies = strategyCategories[cat.key] || []
+                  if (strategies.length === 0) return null
+                  
+                  return (
+                    <div key={cat.key} className={`bg-${cat.color}-50 border border-${cat.color}-200 rounded-lg p-4`}>
+                      <h4 className={`font-medium text-${cat.color}-900 mb-2 flex items-center space-x-2`}>
+                        <span>{cat.icon}</span>
+                        <span>{cat.title}</span>
+                        <span className="text-xs bg-white px-2 py-1 rounded">{strategies.length}</span>
+                      </h4>
+                      <p className="text-xs text-gray-600 mb-3">{cat.description}</p>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {strategies.map((strategy: any, index: number) => {
+                          // Get localized strategy name
+                          const strategyName = getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)
+                          
+                          return (
+                            <div key={index} className={`text-sm text-${cat.color}-900 bg-white rounded p-3 border border-${cat.color}-100`}>
+                              <div className="font-medium mb-1">{strategyName}</div>
+                              {strategy.smeSummary && (
+                                <div className="text-xs text-gray-600 mt-1">
+                                  {getLocalizedText(strategy.smeSummary, locale as Locale)}
+                                </div>
+                              )}
+                              {strategy.effectiveness && (
+                                <div className="mt-2 flex items-center space-x-2 text-xs">
+                                  <span className="text-gray-600">Effectiveness:</span>
+                                  <span className="font-medium text-green-700">{strategy.effectiveness}/10</span>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              
+              {/* Other/Uncategorized Strategies */}
+              {strategyCategories['other'].length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-3">Other Strategies</h4>
+                  <div className="space-y-2">
+                    {strategyCategories['other'].map((strategy: any, index: number) => (
+                      <div key={index} className="text-sm text-gray-800 bg-white rounded p-2">
+                        • {getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          )
+        })()}
       </CompactCard>
 
-      {/* Section 5: Action Plans */}
-      <CompactCard>
+      {/* Section 5: Action Plans with Better Print Layout */}
+      <CompactCard className="print:break-before-page">
         <SectionHeader title="SECTION 5: ACTION PLANS" icon="🚀" />
         
         {(() => {
@@ -1040,8 +1221,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         })()}
       </CompactCard>
 
-      {/* Section 6: Testing and Maintenance - Compact Layout */}
-      <CompactCard>
+      {/* Section 6: Testing and Maintenance - Compact Layout with Print Break */}
+      <CompactCard className="print:break-before-page">
         <SectionHeader title="SECTION 6: TESTING AND MAINTENANCE" icon="⚙️" />
         
         {formData.TESTING_AND_MAINTENANCE ? (
@@ -1131,8 +1312,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         )}
       </CompactCard>
 
-      {/* Appendix A: Key Contacts - Card Grid Layout */}
-      <CompactCard>
+      {/* Appendix A: Key Contacts - Card Grid Layout with Better Spacing */}
+      <CompactCard className="print:break-before-page">
         <SectionHeader title="APPENDIX A: KEY CONTACTS" icon="📞" />
         
         {formData.CONTACTS_AND_INFORMATION ? (
@@ -1225,32 +1406,47 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         </div>
       </CompactCard>
 
-      {/* Enhanced Navigation */}
-      <div className="flex justify-between items-center mt-8 print:hidden">
-        <button
-          onClick={onBack}
-          className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span>Back to Form</span>
-        </button>
-        
-        <div className="text-center">
-          <div className="text-sm text-gray-600 mb-1">Business Continuity Plan</div>
-          <div className="text-xs text-gray-500">{companyName} • {currentDate}</div>
+      {/* Enhanced Navigation with Better Visual Design */}
+      <div className="sticky bottom-0 bg-white border-t border-gray-200 shadow-lg print:hidden mt-8">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <button
+              onClick={onBack}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Wizard</span>
+            </button>
+            
+            <div className="text-center">
+              <div className="text-sm font-medium text-gray-900 mb-1">📄 Business Continuity Plan</div>
+              <div className="text-xs text-gray-500">{companyName} • {currentDate}</div>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => window.print()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                <span>Print</span>
+              </button>
+              <button
+                onClick={onExportPDF}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Download PDF</span>
+              </button>
+            </div>
+          </div>
         </div>
-        
-        <button
-          onClick={onExportPDF}
-          className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium shadow-sm hover:shadow-md flex items-center space-x-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span>Export PDF</span>
-        </button>
       </div>
     </div>
   )

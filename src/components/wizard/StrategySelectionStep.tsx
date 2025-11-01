@@ -733,6 +733,15 @@ function calculateTotalTime(strategies: Strategy[]): string {
   // Simplified - you can make this more sophisticated
   const hours = strategies.reduce((total, s) => {
     const time = s.timeToImplement || s.implementationTime
+    
+    // Safety check: ensure time is a string before calling .includes()
+    if (!time || typeof time !== 'string') {
+      // If we have estimatedTotalHours, use that
+      if (s.estimatedTotalHours) return total + s.estimatedTotalHours
+      // Otherwise default to 1 hour
+      return total + 1
+    }
+    
     if (time.includes('hour')) return total + 2
     if (time.includes('day')) return total + 8
     if (time.includes('week')) return total + 40

@@ -58,6 +58,10 @@
     "riskAssessment": "Evaluación de Riesgos",
     "showAdvanced": "Mostrar Herramientas Avanzadas",
     "hideAdvanced": "Ocultar Herramientas Avanzadas",
+    "loadingSmartSuggestions": "Cargando sugerencias inteligentes...",
+    "smartExamples": "💡 Ejemplos Inteligentes:",
+    "aiGenerated": "Generado por IA",
+    "clearAndStartFresh": "Limpiar y Empezar de Nuevo",
     "advancedRiskMatrix": "Matriz de Riesgo Avanzada",
     "advancedMatrixDescription": "Vista tradicional de matriz de riesgo para análisis detallado",
     "of": "de",
@@ -471,6 +475,16 @@
             "Almacenamiento en la nube con respaldo en disco externo",
             "Copias por correo electrónico enviadas al personal clave"
           ]
+        },
+        "planVersion": {
+          "label": "Versión del Plan",
+          "prompt": "¿Qué número de versión debería tener este plan? Comience con 1.0 para su primer plan.",
+          "examples": ["1.0", "1.1", "2.0"]
+        },
+        "nextReviewDate": {
+          "label": "Próxima Fecha de Revisión",
+          "prompt": "¿Cuándo debería revisarse este plan? Considere sus ciclos de negocio y el entorno de riesgos.",
+          "examples": ["Enero 2026", "Junio 2025", "Diciembre 2025"]
         }
       }
     },
@@ -959,20 +973,67 @@
         }
       }
     },
+    "vitalRecords": {
+      "title": "Inventario de Registros Vitales",
+      "description": "Identifiquemos y documentemos la ubicación de registros comerciales críticos necesarios para la recuperación.",
+      "inputs": {
+        "vitalRecordsInventory": {
+          "label": "Inventario de Registros Vitales",
+          "prompt": "Liste sus registros comerciales más importantes, dónde están almacenados y dónde se guardan las copias de seguridad.",
+          "tableColumns": ["Tipo de Registro", "Ubicación Principal", "Ubicación de Respaldo", "Prioridad de Recuperación"],
+          "tableRowsPrompt": "Piense en los documentos que necesitaría para reiniciar su negocio después de un desastre.",
+          "examples": [
+            "Contratos de Clientes - SharePoint - AWS Cloud - ALTA",
+            "Registros Financieros - QuickBooks Cloud - Respaldo local - ALTA",
+            "Pólizas de Seguro - Caja fuerte ignífuga - Copias digitales - ALTA",
+            "Registros de Empleados - Sistema de RR.HH. - Seguro fuera del sitio - MEDIA",
+            "Licencias de Software - Administrador de contraseñas - Copias impresas - ALTA"
+          ]
+        }
+      }
+    },
     "testingAndMaintenance": {
       "title": "Pruebas y Mantenimiento",
       "description": "Establezca procedimientos para mantener su plan de continuidad del negocio actualizado y efectivo.",
       "inputs": {
         "testingSchedule": {
           "label": "Cronograma de Pruebas del Plan",
-          "prompt": "Cree un cronograma para probar regularmente diferentes aspectos de su plan de continuidad del negocio.",
-          "tableColumns": ["Tipo de Prueba", "Qué se Prueba", "Frecuencia", "Próxima Fecha de Prueba", "Persona Responsable"],
+          "prompt": "Cree un cronograma integral para probar regularmente diferentes aspectos de su plan de continuidad del negocio.",
+          "tableColumns": ["Tipo de Prueba", "Qué se Prueba", "Frecuencia", "Próxima Fecha de Prueba", "Criterios de Éxito", "Persona Responsable"],
           "tableRowsPrompt": "Planee diferentes tipos de pruebas para asegurar que su plan funcione cuando sea necesario.",
           "examples": [
-            "Prueba de Comunicación - Procedimientos de contacto de emergencia - Mensual - 2024-02-15 - Gerente de Oficina",
-            "Sistemas de Respaldo - Generador y energía de respaldo - Trimestral - 2024-03-15 - Personal de Mantenimiento",
-            "Simulacro de Evacuación - Procedimientos de evacuación de emergencia - Semestral - 2024-06-15 - Oficial de Seguridad",
-            "Ejercicio de Plan Completo - Escenario completo de emergencia - Anual - 2024-12-15 - Gerente General"
+            "Prueba de Comunicación - Procedimientos de contacto de emergencia - Mensual - 2025-02-15 - Todo el personal responde en 2 horas - Gerente de Oficina",
+            "Sistemas de Respaldo - Generador y energía de respaldo - Trimestral - 2025-03-15 - Sistemas funcionan 8+ horas sin problemas - Personal de Mantenimiento",
+            "Simulacro de Evacuación - Procedimientos de evacuación de emergencia - Semestral - 2025-06-15 - Edificio evacuado en menos de 5 minutos - Oficial de Seguridad",
+            "Prueba de Respaldo de Datos - Recuperación de datos críticos - Mensual - 2025-02-28 - Todos los datos restaurados exitosamente - Gerente de TI",
+            "Prueba de Contacto de Proveedores - Activación de proveedor alternativo - Trimestral - 2025-04-15 - Proveedores de respaldo responden en 4 horas - Gerente de Compras",
+            "Ejercicio de Plan Completo - Escenario completo de emergencia - Anual - 2025-12-15 - Todos los procedimientos ejecutados exitosamente - Gerente General"
+          ]
+        },
+        "trainingSchedule": {
+          "label": "Cronograma de Capacitación",
+          "prompt": "Planifique sesiones de capacitación regulares para asegurar que todo el personal comprenda sus roles en el plan de continuidad del negocio.",
+          "tableColumns": ["Tipo de Capacitación", "Audiencia Objetivo", "Frecuencia", "Próxima Fecha de Capacitación", "Proveedor de Capacitación", "Criterios de Finalización"],
+          "tableRowsPrompt": "Incluya tanto capacitación de concienciación general como capacitación específica de rol.",
+          "examples": [
+            "Descripción General del BCP - Todo el personal - Anual - 2025-03-01 - Gerente General - Todo el personal completa el módulo de capacitación",
+            "Respuesta de Emergencia - Equipo de gestión - Semestral - 2025-02-15 - Consultor externo - Ejercicios de juego de roles completados",
+            "Seguridad contra Incendios - Todo el personal - Anual - 2025-04-01 - Departamento de bomberos - Participación en simulacro de incendio",
+            "Recuperación de Datos - Personal de TI - Trimestral - 2025-02-01 - Gerente de TI - Demostración exitosa de recuperación de datos",
+            "Comunicación con Clientes - Personal de servicio al cliente - Semestral - 2025-05-01 - Gerente de Comunicaciones - Escenarios de comunicación de crisis"
+          ]
+        },
+        "performanceMetrics": {
+          "label": "Métricas de Desempeño",
+          "prompt": "Defina indicadores clave de desempeño para medir la efectividad de su plan de continuidad del negocio.",
+          "tableColumns": ["Nombre de la Métrica", "Valor Objetivo", "Método de Medición", "Frecuencia de Revisión", "Estado Actual", "Persona Responsable"],
+          "tableRowsPrompt": "Incluya medidas tanto cuantitativas como cualitativas de la efectividad del plan.",
+          "examples": [
+            "Tiempo de Respuesta de Emergencia - Menos de 30 minutos - Registros de tiempo de simulacros - Mensual - No medido aún - Coordinador de Emergencias",
+            "Tasa de Éxito de Contacto de Personal - 95% en 2 horas - Resultados de pruebas de comunicación - Mensual - No medido aún - Gerente de RR.HH.",
+            "Tiempo de Recuperación de Datos - Menos de 4 horas - Registros de pruebas de respaldo - Trimestral - No medido aún - Gerente de TI",
+            "Tiempo de Notificación de Clientes - Menos de 1 hora - Registros de comunicación - Por incidente - No medido aún - Gerente de Servicio al Cliente",
+            "Tiempo de Reanudación de Negocio - Menos de 48 horas - Registros de incidentes - Por incidente - No medido aún - Gerente de Operaciones"
           ]
         },
         "revisionHistory": {

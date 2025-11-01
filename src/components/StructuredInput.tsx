@@ -163,16 +163,19 @@ export function StructuredInput({
     fetchSmartSuggestions()
   }, [preFillData?.industry?.id, label, type, hasUserInteracted, initialValue])
 
-  // Auto-add initial row for tables when component first loads
+  // Auto-add initial row for tables when component first loads (only if no smart examples available)
   useEffect(() => {
     if (type === 'table' && tableColumns.length > 0 && tableRows.length === 0 && !hasUserInteracted && (!initialValue || (Array.isArray(initialValue) && initialValue.length === 0))) {
-      const newRow: TableRow = {}
-      tableColumns.forEach(column => {
-        newRow[column] = ''
-      })
-      setTableRows([newRow])
+      // Only add initial empty row if there are no smart examples available
+      if (smartExamples.length === 0 && (!examples || examples.length === 0)) {
+        const newRow: TableRow = {}
+        tableColumns.forEach(column => {
+          newRow[column] = ''
+        })
+        setTableRows([newRow])
+      }
     }
-  }, [type, tableColumns, tableRows.length, hasUserInteracted, initialValue])
+  }, [type, tableColumns, tableRows.length, hasUserInteracted, initialValue, smartExamples.length, examples])
 
   // Auto-save functionality: only call onComplete after user interaction
   useEffect(() => {
@@ -267,14 +270,35 @@ export function StructuredInput({
     setInteracted()
     setUserInteracted?.()
     const updatedRows = tableRows.filter((_, index) => index !== rowIndex)
-    setTableRows(updatedRows)
+    // Ensure at least one row remains (add empty row if all deleted)
+    if (updatedRows.length === 0 && !smartExamples.length && (!examples || examples.length === 0)) {
+      const newRow: TableRow = {}
+      tableColumns.forEach(column => {
+        newRow[column] = ''
+      })
+      setTableRows([newRow])
+    } else {
+      setTableRows(updatedRows)
+    }
   }
 
-  // Excel import handling
+  // Excel import handling with validation
   const handleExcelImport = (importedData: TableRow[]) => {
     setInteracted()
     setUserInteracted?.()
-    setTableRows(importedData)
+    
+    // Filter out completely empty rows
+    const nonEmptyRows = importedData.filter(row => 
+      Object.values(row).some(value => value && value.trim() !== '')
+    )
+    
+    // Warn if data was filtered
+    if (nonEmptyRows.length < importedData.length) {
+      console.log(`Filtered out ${importedData.length - nonEmptyRows.length} empty rows from imported data`)
+    }
+    
+    // Set the cleaned data
+    setTableRows(nonEmptyRows.length > 0 ? nonEmptyRows : importedData)
   }
 
   // Special render for priority assessment table
@@ -437,8 +461,21 @@ export function StructuredInput({
                   tableColumns.forEach((column, colIndex) => {
                     newRow[column] = colIndex === 0 ? example : ''
                   })
-                  setTableRows(prev => [...prev, newRow])
+                  // If table is empty or only has one completely empty row, replace it
+                  // Otherwise add as new row
+                  setTableRows(prev => {
+                    if (prev.length === 0) {
+                      return [newRow]
+                    }
+                    // Check if we only have one row and it's completely empty
+                    if (prev.length === 1 && Object.values(prev[0]).every(val => !val || val.trim() === '')) {
+                      return [newRow]
+                    }
+                    // Otherwise add as new row
+                    return [...prev, newRow]
+                  })
                   setInteracted()
+                  setUserInteracted?.()
                   setHasSmartPreFill(false)
                 }}
                 className="block w-full text-left p-2 text-sm text-gray-600 bg-white hover:bg-gray-100 rounded border border-gray-200 transition-colors"
@@ -515,7 +552,7 @@ export function StructuredInput({
                           const date = new Date(row[column]);
                           return isNaN(date.getTime()) ? null : date;
                         })() : null}
-                        onChange={(date) => updateTableRow(rowIndex, column, date ? date.toISOString().split('T')[0] : '')}
+                        onChange={(date: Date | null) => updateTableRow(rowIndex, column, date ? date.toISOString().split('T')[0] : '')}
                         className="w-full p-3 border rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400"
                         placeholderText={`Select ${column.toLowerCase()}`}
                         dateFormat="yyyy-MM-dd"
@@ -1108,7 +1145,7 @@ export function StructuredInput({
             className="text-blue-600 hover:text-blue-800 text-xs underline"
             type="button"
           >
-            Clear & Start Fresh
+            {t('clearAndStartFresh')}
           </button>
         </div>
       )}
@@ -1117,7 +1154,7 @@ export function StructuredInput({
       {isLoadingSmartSuggestions && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-2 flex items-center space-x-2">
           <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
-          <span className="text-gray-600 text-sm">Loading smart suggestions...</span>
+          <span className="text-gray-600 text-sm">{t('loadingSmartSuggestions')}</span>
         </div>
       )}
 
@@ -1138,11 +1175,11 @@ export function StructuredInput({
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">
-                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                  {smartExamples.length > 0 ? t('smartExamples') : t('examples')}
                 </span>
                 {smartExamples.length > 0 && (
                   <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                    AI-Generated
+                    {t('aiGenerated')}
                   </span>
                 )}
               </div>
@@ -1173,11 +1210,11 @@ export function StructuredInput({
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">
-                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                  {smartExamples.length > 0 ? t('smartExamples') : t('examples')}
                 </span>
                 {smartExamples.length > 0 && (
                   <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                    AI-Generated
+                    {t('aiGenerated')}
                   </span>
                 )}
               </div>
@@ -1221,11 +1258,11 @@ export function StructuredInput({
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <span className="text-sm font-medium text-gray-700">
-                  {smartExamples.length > 0 ? '💡 Smart Examples:' : 'Examples:'}
+                  {smartExamples.length > 0 ? t('smartExamples') : t('examples')}
                 </span>
                 {smartExamples.length > 0 && (
                   <span className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
-                    AI-Generated
+                    {t('aiGenerated')}
                   </span>
                 )}
               </div>

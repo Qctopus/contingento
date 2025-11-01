@@ -82,3 +82,10 @@ CREATE INDEX IF NOT EXISTS "ActionStep_isOptional_idx" ON "ActionStep"("isOption
 -- Backward compatibility maintained (old fields like smeDescription still exist)
 
 
+
+
+
+
+
+
+

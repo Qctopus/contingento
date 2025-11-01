@@ -120,36 +120,17 @@ export function SimplifiedRiskAssessment({
             return matchingInitial && matchingInitial.isSelected === currentRisk.isSelected
           })
           
-          console.log('🔍 Re-init guard check:', {
-            currentRisksCount: riskItems.length,
-            currentSelected: riskItems.filter(r => r.isSelected).map(r => r.hazardId),
-            initialValueCount: initialValue.length,
-            initialSelected: initialValue.filter((iv: any) => iv.isSelected).map((iv: any) => iv.hazardId),
-            dataMatch
-          })
-          
           if (dataMatch) {
-            console.log('⏭️  Skipping re-initialization - all risks loaded and data matches')
             return
-          } else {
-            console.log('🔄 Re-initializing - risk data changed')
           }
         } else {
           // No user data but have all risks - skip
-          console.log('⏭️  Skipping - no user data but all risks already loaded')
           return
         }
-      } else {
-        console.log('🔄 Re-initializing - missing risks', {
-          current: riskItems.length,
-          expected: expectedRiskCount
-        })
       }
     }
     
     if (preFillData?.hazards && preFillData.hazards.length > 0) {
-      console.log('🎯 Initializing risks from prefill data:', preFillData.hazards)
-      
       const initialRisks: RiskItem[] = preFillData.hazards.map((hazard: any) => {
         // Check if this risk already has assessment data
         const existingData = initialValue?.find(item => 
@@ -194,7 +175,10 @@ export function SimplifiedRiskAssessment({
 
         // Get pre-calculated values from risk assessment matrix if available
         const riskMatrixEntry = preFillData?.preFilledFields?.RISK_ASSESSMENT?.['Risk Assessment Matrix']?.find(
-          (entry: any) => entry.hazard === hazard.hazardName || entry.hazard.toLowerCase().includes(hazard.hazardId)
+          (entry: any) => {
+            const entryHazard = entry.hazard || entry.Hazard || entry.hazardName || ''
+            return entryHazard === hazard.hazardName || entryHazard.toLowerCase().includes(hazard.hazardId)
+          }
         )
 
         let prefilledLikelihood = existingData?.likelihood || ''
@@ -208,13 +192,6 @@ export function SimplifiedRiskAssessment({
           prefilledSeverity = mapBackendToUIValue(riskMatrixEntry.severity, 'severity')
           prefilledRiskLevel = riskMatrixEntry.riskLevel || hazard.riskLevel || ''
           prefilledRiskScore = riskMatrixEntry.riskScore || 0
-          
-          console.log(`🎯 Pre-filling ${hazard.hazardName} with backend calculations:`, {
-            likelihood: `${riskMatrixEntry.likelihood} → ${prefilledLikelihood}`,
-            severity: `${riskMatrixEntry.severity} → ${prefilledSeverity}`,
-            riskLevel: prefilledRiskLevel,
-            riskScore: prefilledRiskScore
-          })
         }
 
         // Determine if this risk should be selected
@@ -229,25 +206,16 @@ export function SimplifiedRiskAssessment({
         if (existingData && existingData.isSelected !== undefined) {
           // User has EXPLICITLY set isSelected - preserve their choice
           shouldBeSelected = existingData.isSelected
-          console.log(`👤 User choice preserved for ${hazard.hazardName}: isSelected=${shouldBeSelected}`)
         } else {
           // No explicit user choice - use backend pre-selection logic
-          console.log(`🔧 No explicit user choice for ${hazard.hazardName}, using backend logic`)
-          console.log(`  - prefilledRiskLevel: ${prefilledRiskLevel}`)
-          console.log(`  - isNotApplicable: ${isNotApplicable}`)
-          console.log(`  - riskMatrixEntry?.isPreSelected: ${riskMatrixEntry?.isPreSelected}`)
-          
           if (isNotApplicable) {
             shouldBeSelected = false
-            console.log(`  ➡️ Not pre-selecting (not_applicable)`)
           } else if (riskMatrixEntry?.isPreSelected !== undefined) {
             // Use backend's pre-selection logic (respects parish data)
             shouldBeSelected = riskMatrixEntry.isPreSelected
-            console.log(`  ➡️ Using backend isPreSelected: ${shouldBeSelected}`)
           } else {
             // Fallback: auto-select high/very_high risks
             shouldBeSelected = hazard.riskLevel === 'high' || hazard.riskLevel === 'very_high'
-            console.log(`  ➡️ Fallback based on riskLevel: ${hazard.riskLevel} → ${shouldBeSelected}`)
           }
         }
 
@@ -276,22 +244,9 @@ export function SimplifiedRiskAssessment({
         }
       })
       
-      // DEBUG: Log multiplier data for first few risks
-      console.log('🔍 MULTIPLIER DATA CHECK:')
-      initialRisks.slice(0, 3).forEach(risk => {
-        console.log(`  ${risk.hazard}:`, {
-          isCalculated: risk.isCalculated,
-          baseScore: risk.baseScore,
-          appliedMultipliers: risk.appliedMultipliers,
-          riskScore: risk.riskScore
-        })
-      })
-      
       setRiskItems(initialRisks)
       setHasAdminData(true)
       setLoading(false)
-      
-      console.log('✅ Initialized risk items:', initialRisks)
       return
     }
 
@@ -331,7 +286,6 @@ export function SimplifiedRiskAssessment({
 
         if (response.ok) {
           const data = await response.json()
-          console.log('📊 Admin risk calculations received:', data)
           
           const calculatedRisks: RiskItem[] = selectedHazards.map(hazardId => {
             const hazardLabel = getHazardLabel(hazardId)
@@ -456,8 +410,11 @@ export function SimplifiedRiskAssessment({
           currentItem.riskLevel = ''
           currentItem.riskScore = 0
         }
+      } else if (field === 'planningMeasures') {
+        currentItem.planningMeasures = value as string
       } else {
-        currentItem[field] = value as any
+        // For other fields, handle them explicitly
+        (currentItem as Record<string, unknown>)[field] = value
       }
       
       updatedItems[index] = currentItem
@@ -476,12 +433,6 @@ export function SimplifiedRiskAssessment({
     const timeoutId = setTimeout(() => {
       // Send ALL risks to parent (selected and unselected)
       // This prevents re-initialization loop when unselected risks are "lost"
-      console.log('📤 onComplete sending:', {
-        totalRisks: riskItems.length,
-        selectedCount: riskItems.filter(r => r.isSelected).length,
-        selectedIds: riskItems.filter(r => r.isSelected).map(r => r.hazardId),
-        allRisks: riskItems.map(r => `${r.hazardId}(${r.isSelected ? '✓' : '☐'})`)
-      })
       onComplete(riskItems)  // Send ALL risks, not just selected
     }, 100) // 100ms debounce
     
@@ -773,18 +724,6 @@ export function SimplifiedRiskAssessment({
                       <div className="flex-1">
                         <div className="text-sm font-medium text-gray-900 mb-1">{t('calculatedRiskScore')}</div>
                         <div className="text-xs text-gray-600 space-y-0.5">
-                      {/* DEBUG: Log condition result */}
-                      {(() => {
-                        const showDetailed = risk.isCalculated && risk.baseScore !== undefined
-                        if (!showDetailed) {
-                          console.log(`❌ ${risk.hazard} - NOT showing detailed calc:`, {
-                            isCalculated: risk.isCalculated,
-                            baseScore: risk.baseScore,
-                            conditionResult: showDetailed
-                          })
-                        }
-                        return null
-                      })()}
                       {risk.isCalculated && risk.baseScore !== undefined ? (
                         // Show full calculation with multipliers if available from backend
                         <>

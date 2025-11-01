@@ -92,8 +92,114 @@ export function AdminStrategyCards({
           // Fallback: load all strategies from centralDataService
           const allStrategies = await centralDataService.getStrategies(true, locale)
           console.log('📋 Loaded strategies from centralDataService:', allStrategies.length)
-          setStrategies(allStrategies)
-          setUseNewUI(false)
+          
+          // Check if strategies have the new priorityTier field
+          const hasNewFields = allStrategies.some((s: any) => s.priorityTier !== undefined)
+          
+          if (hasNewFields) {
+            console.log('✨ Database strategies already have priorityTier - using directly')
+            setStrategies(allStrategies)
+            setUseNewUI(true)
+            
+            // Auto-select essential and recommended strategies
+            const autoSelectedIds = allStrategies
+              .filter((strategy: any) => 
+                strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
+              )
+              .map((s: any) => s.id)
+            setSelectedStrategyIds(autoSelectedIds)
+            
+            // Also set selectedStrategies for backwards compatibility
+            const autoSelected = allStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
+            setSelectedStrategies(autoSelected)
+            console.log('✅ Auto-selected essential/recommended strategies from database:', autoSelectedIds.length)
+          } else if (preFillData?.hazards && preFillData.hazards.length > 0) {
+            // We have risks but strategies don't have priorityTier - match them dynamically
+            console.log('🎯 Matching strategies to user risks dynamically...')
+            
+            // Get high-tier risks to determine essential vs recommended strategies
+            const highTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 1 || h.riskScore >= 7)
+            const mediumTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 2 || (h.riskScore >= 5 && h.riskScore < 7))
+            
+            console.log('🎯 High-tier risks:', highTierRisks.map((h: any) => h.hazardId))
+            console.log('🎯 Medium-tier risks:', mediumTierRisks.map((h: any) => h.hazardId))
+            
+            // Enrich strategies with priority tiers based on risks
+            const enrichedStrategies = allStrategies.map((strategy: any) => {
+              // Match strategy to risks by checking applicableRisks
+              const matchesHighRisk = strategy.applicableRisks?.some((riskId: string) => 
+                highTierRisks.some((h: any) => h.hazardId === riskId)
+              )
+              const matchesMediumRisk = strategy.applicableRisks?.some((riskId: string) => 
+                mediumTierRisks.some((h: any) => h.hazardId === riskId)
+              )
+              
+              let priorityTier: 'essential' | 'recommended' | 'optional' = 'optional'
+              let reasoning = strategy.reasoning || ''
+              
+              if (matchesHighRisk) {
+                priorityTier = 'essential'
+                if (!reasoning) {
+                  const matchedRisk = highTierRisks.find((h: any) => 
+                    strategy.applicableRisks?.includes(h.hazardId)
+                  )
+                  reasoning = `This is essential because you have critical ${matchedRisk?.hazardName || 'risk'}. This strategy directly reduces that danger.`
+                }
+              } else if (matchesMediumRisk) {
+                priorityTier = 'recommended'
+                if (!reasoning) {
+                  const matchedRisk = mediumTierRisks.find((h: any) => 
+                    strategy.applicableRisks?.includes(h.hazardId)
+                  )
+                  reasoning = `We recommend this because it addresses your ${matchedRisk?.hazardName || 'risk'} risk with proven effectiveness.`
+                }
+              } else if (strategy.effectiveness >= 7) {
+                priorityTier = 'recommended'
+                if (!reasoning) reasoning = 'Highly effective general strategy recommended for all businesses.'
+              }
+              
+              return {
+                ...strategy,
+                priorityTier,
+                reasoning
+              }
+            })
+            
+            console.log('✅ Enriched', enrichedStrategies.length, 'strategies with priority tiers')
+            console.log('📊 Breakdown:', {
+              essential: enrichedStrategies.filter((s: any) => s.priorityTier === 'essential').length,
+              recommended: enrichedStrategies.filter((s: any) => s.priorityTier === 'recommended').length,
+              optional: enrichedStrategies.filter((s: any) => s.priorityTier === 'optional').length
+            })
+            
+            setStrategies(enrichedStrategies)
+            setUseNewUI(true)
+            
+            // Auto-select essential and recommended strategies
+            const autoSelectedIds = enrichedStrategies
+              .filter((strategy: any) => 
+                strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
+              )
+              .map((s: any) => s.id)
+            setSelectedStrategyIds(autoSelectedIds)
+            
+            const autoSelected = enrichedStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
+            setSelectedStrategies(autoSelected)
+            console.log('✅ Auto-selected essential/recommended strategies:', autoSelectedIds.length)
+          } else {
+            // No priorityTier and no risks - fall back to legacy UI
+            console.log('📋 Using legacy strategy selection UI (no priorityTier, no risks)')
+            setStrategies(allStrategies)
+            setUseNewUI(false)
+            
+            // Auto-select high-effectiveness strategies (legacy)
+            const autoSelected = allStrategies.filter((strategy: Strategy) => 
+              strategy.effectiveness && strategy.effectiveness >= 7
+            )
+            setSelectedStrategies(autoSelected)
+            setSelectedStrategyIds(autoSelected.map(s => s.id))
+            console.log('✅ Auto-selected high-effectiveness strategies:', autoSelected.length)
+          }
         }
         
       } catch (error) {

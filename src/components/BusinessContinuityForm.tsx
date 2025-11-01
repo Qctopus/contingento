@@ -518,7 +518,6 @@ export function BusinessContinuityForm() {
         ...prev,
         [stepId]: stepDefaults  // Direct replacement, no spreading prev[stepId]
       }))
-      console.log(`🔄 Reset ${stepId} to industry defaults:`, stepDefaults)
     }
   }
 
@@ -567,8 +566,6 @@ export function BusinessContinuityForm() {
   }, [formData])
 
   const handleInputComplete = (step: string, label: string, value: any) => {
-    console.log('🔄 Handling input complete:', { step, label, value })
-    
     setFormData(prev => {
       const updatedData = {
         ...prev,
@@ -576,18 +573,6 @@ export function BusinessContinuityForm() {
           ...prev[step],
           [label]: value
         }
-      }
-      
-      // When moving to ACTION_PLAN step, ensure all data is available
-      if (step === 'ACTION_PLAN') {
-        console.log('📋 Navigating to ACTION_PLAN with data:', {
-          allSteps: Object.keys(updatedData),
-          hasRiskAssessment: !!updatedData.RISK_ASSESSMENT,
-          riskMatrixLength: updatedData.RISK_ASSESSMENT?.['Risk Assessment Matrix']?.length,
-          businessOverview: !!updatedData.BUSINESS_OVERVIEW,
-          essentialFunctions: !!updatedData.ESSENTIAL_FUNCTIONS,
-          strategies: !!updatedData.STRATEGIES
-        })
       }
       
       return updatedData
@@ -606,18 +591,6 @@ export function BusinessContinuityForm() {
         const nextStep = stepKeys[currentStepIndex + 1]
         setCurrentStep(nextStep)
         setCurrentQuestionIndex(0)
-        
-        // When moving to ACTION_PLAN, ensure all data is available
-        if (nextStep === 'ACTION_PLAN') {
-          console.log('📋 Navigating to ACTION_PLAN with complete stepData:', {
-            allSteps: Object.keys(formData),
-            hasRiskAssessment: !!formData.RISK_ASSESSMENT,
-            riskMatrixLength: formData.RISK_ASSESSMENT?.['Risk Assessment Matrix']?.length,
-            businessOverview: !!formData.BUSINESS_OVERVIEW,
-            essentialFunctions: !!formData.ESSENTIAL_FUNCTIONS,
-            strategies: !!formData.STRATEGIES
-          })
-        }
       } else {
         // All steps complete, show review page
         setShowReview(true)
@@ -1083,13 +1056,6 @@ export function BusinessContinuityForm() {
               initialValue={getCurrentValue()}
               key={`${currentStep}-${currentQuestion.label}`}
             />
-
-            {/* Current Value Display for debugging */}
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mt-4 p-3 bg-gray-100 rounded text-xs">
-                <strong>{t('common.currentValue')}:</strong> {JSON.stringify(getCurrentValue(), null, 2)}
-              </div>
-            )}
           </div>
 
           {/* Navigation */}

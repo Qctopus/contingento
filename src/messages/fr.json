@@ -56,6 +56,10 @@
     "riskAssessment": "Évaluation des Risques",
     "showAdvanced": "Afficher Outils Avancés",
     "hideAdvanced": "Masquer Outils Avancés",
+    "loadingSmartSuggestions": "Chargement des suggestions intelligentes...",
+    "smartExamples": "💡 Exemples Intelligents :",
+    "aiGenerated": "Généré par IA",
+    "clearAndStartFresh": "Effacer et Recommencer",
     "advancedRiskMatrix": "Matrice de Risque Avancée",
     "advancedMatrixDescription": "Vue traditionnelle de matrice de risque pour analyse détaillée",
     "of": "de",
@@ -532,6 +536,16 @@
               "Stockage cloud avec sauvegarde sur disque externe",
               "Copies par email envoyées au personnel clé"
             ]
+          },
+          "planVersion": {
+            "label": "Version du Plan",
+            "prompt": "Quel numéro de version ce plan devrait-il avoir ? Commencez par 1.0 pour votre premier plan.",
+            "examples": ["1.0", "1.1", "2.0"]
+          },
+          "nextReviewDate": {
+            "label": "Prochaine Date de Révision",
+            "prompt": "Quand ce plan devrait-il être révisé ? Considérez vos cycles d'affaires et votre environnement de risques.",
+            "examples": ["Janvier 2026", "Juin 2025", "Décembre 2025"]
           }
         }
       },
@@ -1074,20 +1088,67 @@
           }
         }
       },
+      "vitalRecords": {
+        "title": "Inventaire des Documents Vitaux",
+        "description": "Identifions et documentons l'emplacement des documents commerciaux critiques nécessaires à la reprise.",
+        "inputs": {
+          "vitalRecordsInventory": {
+            "label": "Inventaire des Documents Vitaux",
+            "prompt": "Listez vos documents commerciaux les plus importants, où ils sont stockés et où les sauvegardes sont conservées.",
+            "tableColumns": ["Type de Document", "Emplacement Principal", "Emplacement de Sauvegarde", "Priorité de Récupération"],
+            "tableRowsPrompt": "Pensez aux documents dont vous auriez besoin pour redémarrer votre entreprise après un sinistre.",
+            "examples": [
+              "Contrats Clients - SharePoint - AWS Cloud - HAUTE",
+              "Documents Financiers - QuickBooks Cloud - Sauvegarde locale - HAUTE",
+              "Polices d'Assurance - Coffre-fort ignifuge - Copies numériques - HAUTE",
+              "Dossiers d'Employés - Système RH - Sécurisé hors site - MOYENNE",
+              "Licences Logicielles - Gestionnaire de mots de passe - Copies imprimées - HAUTE"
+            ]
+          }
+        }
+      },
       "testingAndMaintenance": {
         "title": "Tests et Maintenance",
         "description": "Établissez des procédures pour maintenir votre plan de continuité d'activité actuel et efficace.",
         "inputs": {
           "testingSchedule": {
             "label": "Calendrier de Test du Plan",
-            "prompt": "Créez un calendrier pour tester régulièrement différents aspects de votre plan de continuité d'activité.",
-            "tableColumns": ["Type de Test", "Ce qui est Testé", "Fréquence", "Prochaine Date de Test", "Personne Responsable"],
+            "prompt": "Créez un calendrier complet pour tester régulièrement différents aspects de votre plan de continuité d'activité.",
+            "tableColumns": ["Type de Test", "Ce qui est Testé", "Fréquence", "Prochaine Date de Test", "Critères de Succès", "Personne Responsable"],
             "tableRowsPrompt": "Planifiez différents types de tests pour vous assurer que votre plan fonctionne quand nécessaire.",
             "examples": [
-              "Test Communication - Procédures contact d'urgence - Mensuel - 2024-02-15 - Gestionnaire Bureau",
-              "Systèmes Secours - Générateur et alimentation secours - Trimestriel - 2024-03-15 - Personnel Maintenance",
-              "Exercice Évacuation - Procédures évacuation d'urgence - Semi-annuel - 2024-06-15 - Agent Sécurité",
-              "Exercice Plan Complet - Scénario urgence complet - Annuel - 2024-12-15 - Directeur Général"
+              "Test Communication - Procédures contact d'urgence - Mensuel - 2025-02-15 - Tout le personnel répond en 2 heures - Gestionnaire Bureau",
+              "Systèmes Secours - Générateur et alimentation secours - Trimestriel - 2025-03-15 - Systèmes fonctionnent 8+ heures sans problème - Personnel Maintenance",
+              "Exercice Évacuation - Procédures évacuation d'urgence - Semi-annuel - 2025-06-15 - Bâtiment évacué en moins de 5 minutes - Agent Sécurité",
+              "Test Sauvegarde Données - Récupération données critiques - Mensuel - 2025-02-28 - Toutes les données restaurées avec succès - Gestionnaire TI",
+              "Test Contact Fournisseurs - Activation fournisseur alternatif - Trimestriel - 2025-04-15 - Fournisseurs de secours répondent en 4 heures - Gestionnaire Achats",
+              "Exercice Plan Complet - Scénario urgence complet - Annuel - 2025-12-15 - Toutes les procédures exécutées avec succès - Directeur Général"
+            ]
+          },
+          "trainingSchedule": {
+            "label": "Calendrier de Formation",
+            "prompt": "Planifiez des sessions de formation régulières pour vous assurer que tout le personnel comprend ses rôles dans le plan de continuité d'activité.",
+            "tableColumns": ["Type de Formation", "Public Cible", "Fréquence", "Prochaine Date de Formation", "Fournisseur de Formation", "Critères d'Achèvement"],
+            "tableRowsPrompt": "Incluez à la fois la formation de sensibilisation générale et la formation spécifique au rôle.",
+            "examples": [
+              "Aperçu BCP - Tout le personnel - Annuel - 2025-03-01 - Directeur Général - Tout le personnel termine le module de formation",
+              "Réponse d'Urgence - Équipe de gestion - Semi-annuel - 2025-02-15 - Consultant externe - Exercices de jeu de rôle complétés",
+              "Sécurité Incendie - Tout le personnel - Annuel - 2025-04-01 - Service d'incendie - Participation à l'exercice d'incendie",
+              "Récupération Données - Personnel TI - Trimestriel - 2025-02-01 - Gestionnaire TI - Démonstration réussie de récupération de données",
+              "Communication Client - Personnel service client - Semi-annuel - 2025-05-01 - Gestionnaire Communications - Scénarios de communication de crise"
+            ]
+          },
+          "performanceMetrics": {
+            "label": "Métriques de Performance",
+            "prompt": "Définissez des indicateurs clés de performance pour mesurer l'efficacité de votre plan de continuité d'activité.",
+            "tableColumns": ["Nom de la Métrique", "Valeur Cible", "Méthode de Mesure", "Fréquence de Révision", "Statut Actuel", "Personne Responsable"],
+            "tableRowsPrompt": "Incluez des mesures quantitatives et qualitatives de l'efficacité du plan.",
+            "examples": [
+              "Temps de Réponse d'Urgence - Moins de 30 minutes - Registres de chronométrage d'exercices - Mensuel - Pas encore mesuré - Coordinateur d'Urgence",
+              "Taux de Succès de Contact du Personnel - 95% en 2 heures - Résultats de test de communication - Mensuel - Pas encore mesuré - Gestionnaire RH",
+              "Temps de Récupération de Données - Moins de 4 heures - Registres de test de sauvegarde - Trimestriel - Pas encore mesuré - Gestionnaire TI",
+              "Temps de Notification Client - Moins d'1 heure - Journaux de communication - Par incident - Pas encore mesuré - Gestionnaire Service Client",
+              "Temps de Reprise d'Activité - Moins de 48 heures - Registres d'incidents - Par incident - Pas encore mesuré - Gestionnaire des Opérations"
             ]
           },
           "revisionHistory": {

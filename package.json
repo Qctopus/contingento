@@ -11,7 +11,9 @@
     "lint": "next lint",
     "postinstall": "prisma generate || echo 'Prisma generate will run during build'",
     "test:integration": "node scripts/run-integration-tests.js",
-    "test:wizard": "npx tsx scripts/test-wizard-integration.ts"
+    "test:wizard": "npx tsx scripts/test-wizard-integration.ts",
+    "setup:check": "node scripts/fix-env-setup.js",
+    "db:verify": "node scripts/verify-db-connection.js"
   },
   "dependencies": {
     "@formatjs/intl-displaynames": "^6.8.11",

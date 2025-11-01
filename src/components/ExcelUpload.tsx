@@ -20,6 +20,7 @@ export function ExcelUpload({ tableColumns, onDataImported, className = '' }: Ex
   const [success, setSuccess] = useState<string | null>(null)
   const [previewData, setPreviewData] = useState<TableRow[]>([])
   const [showPreview, setShowPreview] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const t = useTranslations('common')
 
@@ -197,22 +198,55 @@ export function ExcelUpload({ tableColumns, onDataImported, className = '' }: Ex
   }
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Upload Section */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-        <div className="space-y-3">
-          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">{t('uploadExcelFile')}</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              {t('uploadExcelDescription')}
-              <br />
-              {t('expectedColumns')}: <span className="font-medium">{tableColumns.join(', ')}</span>
-            </p>
+    <div className={`${className}`}>
+      {/* Collapsible Toggle Button */}
+      {!isExpanded && (
+        <button
+          onClick={() => setIsExpanded(true)}
+          className="w-full flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 border border-gray-300 rounded-lg transition-all group"
+        >
+          <div className="flex items-center space-x-2">
+            <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            <span className="text-sm font-medium text-gray-700">{t('uploadFromExcel')}</span>
+            <span className="text-xs text-gray-500 italic">({t('optional')})</span>
           </div>
+          <svg className="h-4 w-4 text-gray-500 group-hover:text-gray-700 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      )}
+      
+      {/* Expanded Upload Section */}
+      {isExpanded && (
+        <div className="space-y-3 border border-gray-300 rounded-lg p-4 bg-gray-50">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-sm font-medium text-gray-900">{t('uploadExcelFile')}</h3>
+            </div>
+            <button
+              onClick={() => {
+                setIsExpanded(false)
+                setError(null)
+                setSuccess(null)
+                setShowPreview(false)
+              }}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <p className="text-xs text-gray-600">
+            {t('uploadExcelDescription')} 
+            <span className="block mt-1 text-gray-500">{t('expectedColumns')}: <span className="font-medium">{tableColumns.join(', ')}</span></span>
+          </p>
 
           <input
             ref={fileInputRef}
@@ -224,37 +258,37 @@ export function ExcelUpload({ tableColumns, onDataImported, className = '' }: Ex
             id="excel-upload"
           />
           
-          <label
-            htmlFor="excel-upload"
-            className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white 
-              ${isProcessing 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-primary-600 hover:bg-primary-700 cursor-pointer'
-              } transition-colors`}
-          >
-                         {isProcessing ? (
-               <>
-                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                 </svg>
-                 {t('processing')}
-               </>
-             ) : (
-               <>
-                 <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                 </svg>
-                 {t('chooseExcelFile')}
-               </>
-             )}
-          </label>
+          <div className="flex items-center justify-center">
+            <label
+              htmlFor="excel-upload"
+              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white 
+                ${isProcessing 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary-600 hover:bg-primary-700 cursor-pointer'
+                } transition-colors`}
+            >
+              {isProcessing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {t('processing')}
+                </>
+              ) : (
+                <>
+                  <svg className="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  {t('chooseExcelFile')}
+                </>
+              )}
+            </label>
+          </div>
           
-                     <p className="text-xs text-gray-500">
-             {t('maximumFileSize')}
-           </p>
-        </div>
-      </div>
+          <p className="text-xs text-gray-500 text-center">
+            {t('maximumFileSize')}
+          </p>
 
       {/* Error Message */}
       {error && (
@@ -286,20 +320,20 @@ export function ExcelUpload({ tableColumns, onDataImported, className = '' }: Ex
         </div>
       )}
 
-      {/* Preview Section */}
+      {/* Compact Preview Section */}
       {showPreview && previewData.length > 0 && (
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                     <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-             <div className="flex items-center justify-between">
-               <h3 className="text-lg font-medium text-gray-900">{t('previewImportedData')}</h3>
-               <span className="text-sm text-gray-600">{previewData.length} rows</span>
-             </div>
-             <p className="text-sm text-gray-600 mt-1">
-               {t('reviewDataBeforeImporting')}
-             </p>
-           </div>
+        <div className="border border-green-200 rounded-lg overflow-hidden bg-green-50">
+          <div className="bg-green-100 px-3 py-2 border-b border-green-200">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-green-900">{t('previewImportedData')}</h3>
+              <span className="text-xs text-green-700 font-medium">{previewData.length} {t('rows')}</span>
+            </div>
+            <p className="text-xs text-green-700 mt-1">
+              {t('reviewDataBeforeImporting')}
+            </p>
+          </div>
           
-          <div className="overflow-x-auto max-h-80">
+          <div className="overflow-x-auto max-h-60 bg-white">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -324,26 +358,28 @@ export function ExcelUpload({ tableColumns, onDataImported, className = '' }: Ex
             </table>
           </div>
           
-                     {previewData.length > 5 && (
-             <div className="bg-gray-50 px-4 py-2 text-sm text-gray-600 text-center">
-               {t('andMoreRows', { count: previewData.length - 5 })}
-             </div>
-           )}
+          {previewData.length > 5 && (
+            <div className="bg-gray-50 px-3 py-2 text-xs text-gray-600 text-center border-t">
+              {t('andMoreRows', { count: previewData.length - 5 })}
+            </div>
+          )}
           
-          <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end space-x-3">
+          <div className="bg-green-50 px-3 py-2 border-t border-green-200 flex justify-end space-x-2">
             <button
               onClick={handleCancelImport}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              {t('cancel')}
             </button>
-                         <button
-               onClick={handleImportData}
-               className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 transition-colors"
-             >
-               {t('importRows', { count: previewData.length })}
-             </button>
+            <button
+              onClick={handleImportData}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 border border-transparent rounded hover:bg-green-700 transition-colors"
+            >
+              {t('importRows', { count: previewData.length })}
+            </button>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>
