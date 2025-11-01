@@ -243,12 +243,17 @@ const ActionPlanCard = ({ plan }: { plan: any }) => (
       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
         <h5 className="font-medium text-green-800 text-sm mb-2">Long-term Prevention & Risk Reduction:</h5>
         <div className="text-xs text-green-700 space-y-1 max-h-32 overflow-y-auto">
-          {plan.longTermReduction.map((measure: string, idx: number) => (
-            <div key={idx} className="flex items-start space-x-2">
-              <span className="text-green-600 mt-1">•</span>
-              <span>{measure}</span>
-            </div>
-          ))}
+          {plan.longTermReduction.map((measure: any, idx: number) => {
+            const displayMeasure = typeof measure === 'string' ? measure : 
+              (typeof measure === 'object' && (measure.en || measure.es || measure.fr)) ? (measure.en || measure.es || measure.fr) :
+              String(measure)
+            return (
+              <div key={idx} className="flex items-start space-x-2">
+                <span className="text-green-600 mt-1">•</span>
+                <span>{displayMeasure}</span>
+              </div>
+            )
+          })}
         </div>
       </div>
     )}
@@ -572,12 +577,17 @@ function BulletList({
     <div>
       {title && <h4 className="font-medium text-gray-800 mb-2">{title}</h4>}
       <ul className="space-y-2">
-        {listItems.map((item, index) => (
-          <li key={index} className="flex items-start">
-            <span className="text-primary-600 mr-3 mt-1 font-bold">•</span>
-            <span className="text-gray-800 leading-relaxed">{item}</span>
-          </li>
-        ))}
+        {listItems.map((item, index) => {
+          const displayItem = typeof item === 'string' ? item : 
+            (typeof item === 'object' && (item.en || item.es || item.fr)) ? (item.en || item.es || item.fr) :
+            String(item)
+          return (
+            <li key={index} className="flex items-start">
+              <span className="text-primary-600 mr-3 mt-1 font-bold">•</span>
+              <span className="text-gray-800 leading-relaxed">{displayItem}</span>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
