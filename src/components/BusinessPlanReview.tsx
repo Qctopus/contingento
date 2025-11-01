@@ -176,10 +176,10 @@ const ActionPlanCard = ({ plan }: { plan: any }) => (
                   action.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                 }`}></span>
                 <div className="flex-1">
-                  <div className="font-medium">{String(action.task || '')}</div>
+                  <div className="font-medium">{typeof action.task === 'string' ? action.task : (action.task?.en || action.task?.es || action.task?.fr || '')}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                    <span className="font-medium">Responsible:</span> {action.responsible}
-                    {action.duration && <span> • <span className="font-medium">Duration:</span> {action.duration}</span>}
+                    <span className="font-medium">Responsible:</span> {typeof action.responsible === 'string' ? action.responsible : (action.responsible?.en || action.responsible?.es || action.responsible?.fr || '')}
+                    {action.duration && <span> • <span className="font-medium">Duration:</span> {typeof action.duration === 'string' ? action.duration : (action.duration?.en || action.duration?.es || action.duration?.fr || '')}</span>}
                   </div>
                 </div>
               </li>
@@ -200,10 +200,10 @@ const ActionPlanCard = ({ plan }: { plan: any }) => (
                   action.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
                 }`}></span>
                 <div className="flex-1">
-                  <div className="font-medium">{String(action.task || '')}</div>
+                  <div className="font-medium">{typeof action.task === 'string' ? action.task : (action.task?.en || action.task?.es || action.task?.fr || '')}</div>
                   <div className="text-gray-500 text-xs mt-1">
-                    <span className="font-medium">Responsible:</span> {action.responsible}
-                    {action.duration && <span> • <span className="font-medium">Duration:</span> {action.duration}</span>}
+                    <span className="font-medium">Responsible:</span> {typeof action.responsible === 'string' ? action.responsible : (action.responsible?.en || action.responsible?.es || action.responsible?.fr || '')}
+                    {action.duration && <span> • <span className="font-medium">Duration:</span> {typeof action.duration === 'string' ? action.duration : (action.duration?.en || action.duration?.es || action.duration?.fr || '')}</span>}
                   </div>
                 </div>
               </li>
@@ -579,7 +579,7 @@ function BulletList({
       <ul className="space-y-2">
         {listItems.map((item, index) => {
           const displayItem = typeof item === 'string' ? item : 
-            (typeof item === 'object' && (item.en || item.es || item.fr)) ? (item.en || item.es || item.fr) :
+            (typeof item === 'object' && ((item as any).en || (item as any).es || (item as any).fr)) ? ((item as any).en || (item as any).es || (item as any).fr) :
             String(item)
           return (
             <li key={index} className="flex items-start">
@@ -766,6 +766,24 @@ function TextDisplay({ text, fallback = "Not specified" }: { text: string | unde
       {cleanText || fallback}
     </span>
   )
+}
+
+// NUCLEAR OPTION: GLOBAL SAFE RENDER FUNCTION - HANDLES ALL MULTILINGUAL OBJECTS
+function safeRender(value: any, locale: Locale = 'en'): string {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (typeof value === 'object') {
+    // Check for multilingual object
+    if (value.en || value.es || value.fr) {
+      return value[locale] || value.en || value.es || value.fr || ''
+    }
+    // If it's an array, return empty (shouldn't render arrays directly)
+    if (Array.isArray(value)) return ''
+    // Otherwise stringify (shouldn't happen but safe fallback)
+    return JSON.stringify(value)
+  }
+  return String(value)
 }
 
 // Helper function: Get all action steps for a specific risk/hazard
