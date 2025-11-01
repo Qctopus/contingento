@@ -810,9 +810,9 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
     const immediateActions = relevantStrategies
       .filter(s => s.actionSteps?.some(step => step.phase === 'immediate'))
       .flatMap(s => s.actionSteps?.filter(step => step.phase === 'immediate').map(step => ({
-        task: step.smeAction || step.action,
-        responsible: step.responsibility || 'Management',
-        duration: step.timeframe || '1 hour',
+        task: getLocalizedText(step.smeAction || step.action, 'en') || 'Action required',
+        responsible: getLocalizedText(step.responsibility, 'en') || 'Management',
+        duration: getLocalizedText(step.timeframe, 'en') || '1 hour',
         priority: s.priority === 'critical' ? 'high' as const : 
                  s.priority === 'high' ? 'high' as const : 'medium' as const
       })) || [])
@@ -820,18 +820,18 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
     const shortTermActions = relevantStrategies
       .filter(s => s.actionSteps?.some(step => step.phase === 'short_term'))
       .flatMap(s => s.actionSteps?.filter(step => step.phase === 'short_term').map(step => ({
-        task: step.smeAction || step.action,
-        responsible: step.responsibility || 'Operations Team',
-        duration: step.timeframe || '1 day',
+        task: getLocalizedText(step.smeAction || step.action, 'en') || 'Action required',
+        responsible: getLocalizedText(step.responsibility, 'en') || 'Operations Team',
+        duration: getLocalizedText(step.timeframe, 'en') || '1 day',
         priority: s.priority === 'critical' ? 'high' as const : 'medium' as const
       })) || [])
 
     const mediumTermActions = relevantStrategies
       .filter(s => s.actionSteps?.some(step => step.phase === 'medium_term'))
       .flatMap(s => s.actionSteps?.filter(step => step.phase === 'medium_term').map(step => ({
-        task: step.smeAction || step.action,
-        responsible: step.responsibility || 'Management',
-        duration: step.timeframe || '1 week',
+        task: getLocalizedText(step.smeAction || step.action, 'en') || 'Action required',
+        responsible: getLocalizedText(step.responsibility, 'en') || 'Management',
+        duration: getLocalizedText(step.timeframe, 'en') || '1 week',
         priority: 'medium' as const
       })) || [])
 
@@ -1263,7 +1263,10 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                       {strategies.map((strategy: any, index: number) => {
                         const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)
                         const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale as Locale)
-                        const benefits = strategy.benefitsBullets || []
+                        const benefits = getLocalizedText(strategy.benefitsBullets, locale as Locale) || []
+                        const realWorldExample = getLocalizedText(strategy.realWorldExample, locale as Locale)
+                        const lowBudgetAlt = getLocalizedText(strategy.lowBudgetAlternative, locale as Locale)
+                        const diyApproach = getLocalizedText(strategy.diyApproach, locale as Locale)
                         
                         return (
                           <div key={index} className={`border-l-4 ${cat.borderColor} bg-white rounded-lg p-6 shadow-sm print:break-inside-avoid`}>
@@ -1285,7 +1288,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                             </p>
 
                             {/* Benefits */}
-                            {benefits.length > 0 && (
+                            {Array.isArray(benefits) && benefits.length > 0 && (
                               <div className="bg-blue-50 rounded-lg p-4 mb-4">
                                 <h5 className="text-sm font-semibold text-blue-900 mb-2">Key Benefits:</h5>
                                 <ul className="space-y-1">
@@ -1335,26 +1338,26 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                             </div>
 
                             {/* Real-world example */}
-                            {strategy.realWorldExample && (
+                            {realWorldExample && (
                               <div className="bg-green-50 border-l-4 border-green-500 rounded-r-lg p-4 mb-4">
                                 <h5 className="text-sm font-semibold text-green-900 mb-2">Real Success Story:</h5>
-                                <p className="text-sm text-green-800 leading-relaxed">{strategy.realWorldExample}</p>
+                                <p className="text-sm text-green-800 leading-relaxed">{realWorldExample}</p>
                               </div>
                             )}
 
                             {/* Budget-friendly options */}
-                            {(strategy.lowBudgetAlternative || strategy.diyApproach) && (
+                            {(lowBudgetAlt || diyApproach) && (
                               <div className="border-t pt-4 space-y-3">
-                                {strategy.lowBudgetAlternative && (
+                                {lowBudgetAlt && (
                                   <div>
                                     <h5 className="text-sm font-semibold text-gray-900 mb-1">Low-Budget Option:</h5>
-                                    <p className="text-sm text-gray-700 leading-relaxed">{strategy.lowBudgetAlternative}</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{lowBudgetAlt}</p>
                                   </div>
                                 )}
-                                {strategy.diyApproach && (
+                                {diyApproach && (
                                   <div>
                                     <h5 className="text-sm font-semibold text-gray-900 mb-1">Do It Yourself:</h5>
-                                    <p className="text-sm text-gray-700 leading-relaxed">{strategy.diyApproach}</p>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{diyApproach}</p>
                                     {strategy.estimatedDIYSavings && (
                                       <p className="text-xs text-green-600 mt-1 font-medium">
                                         Potential savings: {strategy.estimatedDIYSavings}
@@ -1534,43 +1537,58 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     </div>
 
                                     {/* Why this matters */}
-                                    {step.whyThisStepMatters && (
-                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
-                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
-                                      </div>
-                                    )}
+                                    {step.whyThisStepMatters && (() => {
+                                      const whyMatters = getLocalizedText(step.whyThisStepMatters, locale as Locale)
+                                      return whyMatters ? (
+                                        <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                          <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                          <p className="text-sm text-blue-800">{whyMatters}</p>
+                                        </div>
+                                      ) : null
+                                    })()}
 
                                     {/* What happens if skipped */}
-                                    {step.whatHappensIfSkipped && (
-                                      <div className="bg-yellow-50 rounded-lg p-3 mb-3">
-                                        <div className="text-xs font-semibold text-yellow-900 mb-1">If You Skip This:</div>
-                                        <p className="text-sm text-yellow-800">{step.whatHappensIfSkipped}</p>
-                                      </div>
-                                    )}
+                                    {step.whatHappensIfSkipped && (() => {
+                                      const whatHappens = getLocalizedText(step.whatHappensIfSkipped, locale as Locale)
+                                      return whatHappens ? (
+                                        <div className="bg-yellow-50 rounded-lg p-3 mb-3">
+                                          <div className="text-xs font-semibold text-yellow-900 mb-1">If You Skip This:</div>
+                                          <p className="text-sm text-yellow-800">{whatHappens}</p>
+                                        </div>
+                                      ) : null
+                                    })()}
 
                                     {/* Checklist */}
-                                    {step.checklist && step.checklist.length > 0 && (
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
-                                        <ul className="space-y-1">
-                                          {step.checklist.map((item, i) => (
-                                            <li key={i} className="text-sm text-gray-700 flex items-start">
-                                              <span className="text-gray-400 mr-2">□</span>
-                                              <span>{item}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
+                                    {step.checklist && (() => {
+                                      const checklistRaw = step.checklist
+                                      const checklist = Array.isArray(checklistRaw) 
+                                        ? checklistRaw 
+                                        : (typeof checklistRaw === 'object' ? (checklistRaw as any)[locale] || [] : [])
+                                      return Array.isArray(checklist) && checklist.length > 0 ? (
+                                        <div className="mb-3">
+                                          <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                          <ul className="space-y-1">
+                                            {checklist.map((item: string, i: number) => (
+                                              <li key={i} className="text-sm text-gray-700 flex items-start">
+                                                <span className="text-gray-400 mr-2">□</span>
+                                                <span>{item}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      ) : null
+                                    })()}
 
                                     {/* Completion criteria */}
-                                    {step.howToKnowItsDone && (
-                                      <div className="bg-green-50 rounded-lg p-3 mb-3">
-                                        <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
-                                        <p className="text-sm text-green-800">{step.howToKnowItsDone}</p>
-                                      </div>
-                                    )}
+                                    {step.howToKnowItsDone && (() => {
+                                      const howToDone = getLocalizedText(step.howToKnowItsDone, locale as Locale)
+                                      return howToDone ? (
+                                        <div className="bg-green-50 rounded-lg p-3 mb-3">
+                                          <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
+                                          <p className="text-sm text-green-800">{howToDone}</p>
+                                        </div>
+                                      ) : null
+                                    })()}
 
                                     {/* Cost and alternatives */}
                                     <div className="flex flex-wrap gap-4 text-sm">
@@ -1579,24 +1597,33 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                           <span className="font-medium">Cost:</span> {step.estimatedCostJMD}
                                         </div>
                                       )}
-                                      {step.freeAlternative && (
-                                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded">
-                                          <span className="font-medium">Free option:</span> {step.freeAlternative}
-                                        </div>
-                                      )}
+                                      {step.freeAlternative && (() => {
+                                        const freeAlt = getLocalizedText(step.freeAlternative, locale as Locale)
+                                        return freeAlt ? (
+                                          <div className="bg-green-100 text-green-800 px-3 py-1 rounded">
+                                            <span className="font-medium">Free option:</span> {freeAlt}
+                                          </div>
+                                        ) : null
+                                      })()}
                                     </div>
 
                                     {/* Common mistakes */}
-                                    {step.commonMistakesForStep && step.commonMistakesForStep.length > 0 && (
-                                      <div className="mt-3 text-sm">
-                                        <div className="font-semibold text-red-600 mb-1">Common Mistakes to Avoid:</div>
-                                        <ul className="list-disc list-inside text-red-700 space-y-1">
-                                          {step.commonMistakesForStep.map((mistake, i) => (
-                                            <li key={i}>{mistake}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
+                                    {step.commonMistakesForStep && (() => {
+                                      const mistakesRaw = step.commonMistakesForStep
+                                      const mistakes = Array.isArray(mistakesRaw) 
+                                        ? mistakesRaw 
+                                        : (typeof mistakesRaw === 'object' ? (mistakesRaw as any)[locale] || [] : [])
+                                      return Array.isArray(mistakes) && mistakes.length > 0 ? (
+                                        <div className="mt-3 text-sm">
+                                          <div className="font-semibold text-red-600 mb-1">Common Mistakes to Avoid:</div>
+                                          <ul className="list-disc list-inside text-red-700 space-y-1">
+                                            {mistakes.map((mistake: string, i: number) => (
+                                              <li key={i}>{mistake}</li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      ) : null
+                                    })()}
                                   </div>
                                 </div>
                               </div>
