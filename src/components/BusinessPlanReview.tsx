@@ -1310,16 +1310,16 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                   <div className="text-xs text-gray-600">Investment</div>
                                 </div>
                                 <div className="font-semibold text-gray-900 text-sm">
-                                  {strategy.costEstimateJMD || strategy.implementationCost}
+                                  {getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale as Locale) || 'To be determined'}
                                 </div>
                               </div>
                               <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
                                 <div className="flex items-center justify-center mb-1">
-                                  <ClockIcon className="w-4 h-4 text-gray-600 mr-1" />
+                                  <ClockIcon className="w-4 h-4 mr-1 text-gray-600" />
                                   <div className="text-xs text-gray-600">Time Required</div>
                                 </div>
                                 <div className="font-semibold text-gray-900 text-sm">
-                                  {strategy.timeToImplement || strategy.implementationTime}
+                                  {getLocalizedText(strategy.timeToImplement || strategy.implementationTime, locale as Locale) || 'To be determined'}
                                   {strategy.estimatedTotalHours && ` (${strategy.estimatedTotalHours}h)`}
                                 </div>
                               </div>
@@ -1516,19 +1516,25 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     
                                     {/* Metadata row */}
                                     <div className="flex flex-wrap gap-4 mb-3 text-sm">
-                                      {step.timeframe && (
-                                        <div className="flex items-center text-gray-600">
-                                          <ClockIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.timeframe}</span>
-                                          {step.estimatedMinutes && <span className="ml-1">({step.estimatedMinutes} min)</span>}
-                                        </div>
-                                      )}
-                                      {step.responsibility && (
-                                        <div className="flex items-center text-gray-600">
-                                          <UserIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.responsibility}</span>
-                                        </div>
-                                      )}
+                                      {step.timeframe && (() => {
+                                        const timeframe = getLocalizedText(step.timeframe, locale as Locale)
+                                        return timeframe ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <ClockIcon className="w-4 h-4 mr-1" />
+                                            <span>{timeframe}</span>
+                                            {step.estimatedMinutes && <span className="ml-1">({step.estimatedMinutes} min)</span>}
+                                          </div>
+                                        ) : null
+                                      })()}
+                                      {step.responsibility && (() => {
+                                        const responsibility = getLocalizedText(step.responsibility, locale as Locale)
+                                        return responsibility ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <UserIcon className="w-4 h-4 mr-1" />
+                                            <span>{responsibility}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
                                       {step.difficultyLevel && (
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
                                           {step.difficultyLevel.charAt(0).toUpperCase() + step.difficultyLevel.slice(1)}
@@ -1652,18 +1658,24 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     
                                     {/* Same detailed structure as Phase 1 */}
                                     <div className="flex flex-wrap gap-4 mb-3 text-sm">
-                                      {step.timeframe && (
-                                        <div className="flex items-center text-gray-600">
-                                          <ClockIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.timeframe}</span>
-                                        </div>
-                                      )}
-                                      {step.responsibility && (
-                                        <div className="flex items-center text-gray-600">
-                                          <UserIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.responsibility}</span>
-                                        </div>
-                                      )}
+                                      {step.timeframe && (() => {
+                                        const timeframe = getLocalizedText(step.timeframe, locale as Locale)
+                                        return timeframe ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <ClockIcon className="w-4 h-4 mr-1" />
+                                            <span>{timeframe}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
+                                      {step.responsibility && (() => {
+                                        const responsibility = getLocalizedText(step.responsibility, locale as Locale)
+                                        return responsibility ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <UserIcon className="w-4 h-4 mr-1" />
+                                            <span>{responsibility}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
                                       {step.difficultyLevel && (
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
                                           {step.difficultyLevel.charAt(0).toUpperCase() + step.difficultyLevel.slice(1)}
@@ -1725,18 +1737,24 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     </h5>
                                     
                                     <div className="flex flex-wrap gap-4 mb-3 text-sm">
-                                      {step.timeframe && (
-                                        <div className="flex items-center text-gray-600">
-                                          <ClockIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.timeframe}</span>
-                                        </div>
-                                      )}
-                                      {step.responsibility && (
-                                        <div className="flex items-center text-gray-600">
-                                          <UserIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.responsibility}</span>
-                                        </div>
-                                      )}
+                                      {step.timeframe && (() => {
+                                        const timeframe = getLocalizedText(step.timeframe, locale as Locale)
+                                        return timeframe ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <ClockIcon className="w-4 h-4 mr-1" />
+                                            <span>{timeframe}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
+                                      {step.responsibility && (() => {
+                                        const responsibility = getLocalizedText(step.responsibility, locale as Locale)
+                                        return responsibility ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <UserIcon className="w-4 h-4 mr-1" />
+                                            <span>{responsibility}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
                                     </div>
 
                                     {step.whyThisStepMatters && (
@@ -1786,18 +1804,24 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     </h5>
                                     
                                     <div className="flex flex-wrap gap-4 mb-3 text-sm">
-                                      {step.timeframe && (
-                                        <div className="flex items-center text-gray-600">
-                                          <ClockIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.timeframe}</span>
-                                        </div>
-                                      )}
-                                      {step.responsibility && (
-                                        <div className="flex items-center text-gray-600">
-                                          <UserIcon className="w-4 h-4 mr-1" />
-                                          <span>{step.responsibility}</span>
-                                        </div>
-                                      )}
+                                      {step.timeframe && (() => {
+                                        const timeframe = getLocalizedText(step.timeframe, locale as Locale)
+                                        return timeframe ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <ClockIcon className="w-4 h-4 mr-1" />
+                                            <span>{timeframe}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
+                                      {step.responsibility && (() => {
+                                        const responsibility = getLocalizedText(step.responsibility, locale as Locale)
+                                        return responsibility ? (
+                                          <div className="flex items-center text-gray-600">
+                                            <UserIcon className="w-4 h-4 mr-1" />
+                                            <span>{responsibility}</span>
+                                          </div>
+                                        ) : null
+                                      })()}
                                     </div>
 
                                     {step.whyThisStepMatters && (
@@ -1846,16 +1870,22 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                     {getLocalizedText(strategy.smeSummary || strategy.description, locale as Locale)}
                                   </div>
                                   <div className="flex flex-wrap gap-3 text-xs">
-                                    {strategy.costEstimateJMD && (
-                                      <div className="bg-blue-50 px-3 py-1 rounded">
-                                        <span className="font-medium">Cost:</span> {strategy.costEstimateJMD}
-                                      </div>
-                                    )}
-                                    {strategy.timeToImplement && (
-                                      <div className="bg-purple-50 px-3 py-1 rounded">
-                                        <span className="font-medium">Time:</span> {strategy.timeToImplement}
-                                      </div>
-                                    )}
+                                    {strategy.costEstimateJMD && (() => {
+                                      const cost = getLocalizedText(strategy.costEstimateJMD, locale as Locale)
+                                      return cost ? (
+                                        <div className="bg-blue-50 px-3 py-1 rounded">
+                                          <span className="font-medium">Cost:</span> {cost}
+                                        </div>
+                                      ) : null
+                                    })()}
+                                    {strategy.timeToImplement && (() => {
+                                      const time = getLocalizedText(strategy.timeToImplement, locale as Locale)
+                                      return time ? (
+                                        <div className="bg-purple-50 px-3 py-1 rounded">
+                                          <span className="font-medium">Time:</span> {time}
+                                        </div>
+                                      ) : null
+                                    })()}
                                     {strategy.complexityLevel && (
                                       <div className="bg-gray-50 px-3 py-1 rounded">
                                         <span className="font-medium">Difficulty:</span> {strategy.complexityLevel}
