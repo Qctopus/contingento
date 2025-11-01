@@ -96,11 +96,18 @@ const CompactTable = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {data.map((row, index) => (
               <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {headers.map(header => (
-                  <td key={header} className="px-3 py-2 text-sm text-gray-900">
-                    {row[header] || '-'}
-                  </td>
-                ))}
+                {headers.map(header => {
+                  const value = row[header]
+                  const displayValue = !value ? '-' : 
+                    typeof value === 'string' ? value : 
+                    typeof value === 'object' && (value.en || value.es || value.fr) ? (value.en || value.es || value.fr) :
+                    String(value)
+                  return (
+                    <td key={header} className="px-3 py-2 text-sm text-gray-900">
+                      {displayValue}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
