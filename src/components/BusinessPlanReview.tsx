@@ -1683,33 +1683,45 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                       )}
                                     </div>
 
-                                    {step.whyThisStepMatters && (
-                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
-                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
-                                      </div>
-                                    )}
+                                    {step.whyThisStepMatters && (() => {
+                                      const whyMatters = getLocalizedText(step.whyThisStepMatters, locale as Locale)
+                                      return whyMatters ? (
+                                        <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                          <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                          <p className="text-sm text-blue-800">{whyMatters}</p>
+                                        </div>
+                                      ) : null
+                                    })()}
 
-                                    {step.checklist && step.checklist.length > 0 && (
-                                      <div className="mb-3">
-                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
-                                        <ul className="space-y-1">
-                                          {step.checklist.map((item, i) => (
-                                            <li key={i} className="text-sm text-gray-700 flex items-start">
-                                              <span className="text-gray-400 mr-2">□</span>
-                                              <span>{item}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
+                                    {step.checklist && (() => {
+                                      const checklistRaw = step.checklist
+                                      const checklist = Array.isArray(checklistRaw) 
+                                        ? checklistRaw 
+                                        : (typeof checklistRaw === 'object' ? (checklistRaw as any)[locale] || [] : [])
+                                      return Array.isArray(checklist) && checklist.length > 0 ? (
+                                        <div className="mb-3">
+                                          <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                          <ul className="space-y-1">
+                                            {checklist.map((item: string, i: number) => (
+                                              <li key={i} className="text-sm text-gray-700 flex items-start">
+                                                <span className="text-gray-400 mr-2">□</span>
+                                                <span>{item}</span>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      ) : null
+                                    })()}
 
-                                    {step.howToKnowItsDone && (
-                                      <div className="bg-green-50 rounded-lg p-3 mb-3">
-                                        <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
-                                        <p className="text-sm text-green-800">{step.howToKnowItsDone}</p>
-                                      </div>
-                                    )}
+                                    {step.howToKnowItsDone && (() => {
+                                      const howToDone = getLocalizedText(step.howToKnowItsDone, locale as Locale)
+                                      return howToDone ? (
+                                        <div className="bg-green-50 rounded-lg p-3 mb-3">
+                                          <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
+                                          <p className="text-sm text-green-800">{howToDone}</p>
+                                        </div>
+                                      ) : null
+                                    })()}
                                   </div>
                                 </div>
                               </div>
