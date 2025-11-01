@@ -5,6 +5,35 @@ import type { Strategy, ActionStep } from '../types/admin'
 import type { Locale } from '../i18n/config'
 import { getLocalizedText } from '../utils/localizationUtils'
 
+// Simple SVG icon components for professional display
+const ClockIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+)
+
+const UserIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+)
+
+const CurrencyDollarIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+)
+
+const ShieldCheckIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+)
+
+const BellAlertIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+)
+
+const ArrowPathIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+)
+
+const CheckCircleIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+)
+
 interface BusinessPlanReviewProps {
   formData: any
   riskSummary?: any
@@ -222,12 +251,16 @@ const ActionPlanCard = ({ plan }: { plan: any }) => (
 const ContactCard = ({ contacts, title, icon }: { contacts: any[], title: string, icon: string }) => {
   const validContacts = Array.isArray(contacts) ? contacts.filter((c: any) => c && Object.keys(c).length > 0) : []
   
+  const iconBadgeColor = icon === 'EMERGENCY' ? 'bg-red-100 text-red-800' : 
+                        icon === 'STAFF' ? 'bg-blue-100 text-blue-800' :
+                        icon === 'VENDOR' ? 'bg-purple-100 text-purple-800' :
+                        'bg-green-100 text-green-800'
+  
   return (
     <CompactCard>
-      <h4 className="font-medium text-gray-900 mb-3 flex items-center space-x-2">
-        <span>{icon}</span>
+      <h4 className="font-semibold text-gray-900 mb-3 border-b pb-2 flex items-center justify-between">
         <span>{title}</span>
-        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">{validContacts.length}</span>
+        <span className={`text-xs px-2 py-1 rounded-full font-medium ${iconBadgeColor}`}>{validContacts.length}</span>
       </h4>
       <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
         {validContacts.length > 0 ? validContacts
@@ -252,13 +285,13 @@ const ContactCard = ({ contacts, title, icon }: { contacts: any[], title: string
                 <div className="space-y-1">
                   {phone && (
                     <div className="flex items-center text-xs text-gray-600">
-                      <span className="mr-1">📞</span>
+                      <span className="font-medium text-gray-500 mr-2">Phone:</span>
                       <span className="font-medium">{phone}</span>
                     </div>
                   )}
                   {email && email !== 'N/A' && (
                     <div className="flex items-center text-xs text-gray-600">
-                      <span className="mr-1">✉️</span>
+                      <span className="font-medium text-gray-500 mr-2">Email:</span>
                       <span className="break-all">{email}</span>
                     </div>
                   )}
@@ -701,6 +734,44 @@ function TextDisplay({ text, fallback = "Not specified" }: { text: string | unde
   )
 }
 
+// Helper function: Get all action steps for a specific risk/hazard
+function getActionStepsForRisk(hazardId: string, strategies: Strategy[], locale: Locale): ActionStep[] {
+  return strategies
+    .filter(s => s.applicableRisks?.includes(hazardId))
+    .flatMap(s => s.actionSteps || [])
+}
+
+// Helper function: Group action steps by phase
+function groupStepsByPhase(steps: ActionStep[]) {
+  return {
+    immediate: steps.filter(s => s.phase === 'immediate'),
+    short_term: steps.filter(s => s.phase === 'short_term'),
+    medium_term: steps.filter(s => s.phase === 'medium_term'),
+    long_term: steps.filter(s => s.phase === 'long_term')
+  }
+}
+
+// Helper function: Get all resources needed from action steps
+function aggregateResources(steps: ActionStep[]): string[] {
+  const resources = new Set<string>()
+  steps.forEach(step => {
+    if (step.resources && Array.isArray(step.resources)) {
+      step.resources.forEach(r => resources.add(r))
+    }
+  })
+  return Array.from(resources)
+}
+
+// Helper function: Get difficulty level badge color
+function getDifficultyColor(level?: string): string {
+  switch (level) {
+    case 'easy': return 'bg-green-100 text-green-800'
+    case 'medium': return 'bg-yellow-100 text-yellow-800'
+    case 'hard': return 'bg-red-100 text-red-800'
+    default: return 'bg-gray-100 text-gray-800'
+  }
+}
+
 // Generate hazard-specific action plans using database strategies
 function generateHazardActionPlans(formData: any, riskAssessment: any, strategies: Strategy[]): any[] {
   if (!riskAssessment || !riskAssessment['Risk Assessment Matrix']) {
@@ -804,8 +875,8 @@ function generateHazardActionPlans(formData: any, riskAssessment: any, strategie
       resourcesNeeded: (() => {
         // Extract resources from strategy action steps - safely handle different types
         const extracted = relevantStrategies.flatMap(s => 
-          s.actionSteps?.map(step => step.resources).filter(r => r && typeof r === 'string' && r.trim()) || []
-        ).filter(r => typeof r === 'string')
+          s.actionSteps?.flatMap(step => step.resources || []) || []
+        ).filter(r => r && typeof r === 'string' && r.trim())
         return extracted.length > 0 ? Array.from(new Set(extracted)) : fallbackActions.resourcesNeeded
       })(),
       immediateActions: immediateActions.length > 0 ? immediateActions : fallbackActions.immediateActions,
@@ -854,23 +925,22 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto py-6 print:py-2 space-y-6 print:space-y-4">
-      {/* Enhanced Header with Better Print Styles */}
-      <div className="text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg p-8 mb-8 print:bg-primary-600 print:p-4 print:mb-4 shadow-lg print:shadow-none">
-        <h1 className="text-3xl font-bold mb-3 print:text-2xl">BUSINESS CONTINUITY PLAN</h1>
+      {/* Enhanced Header - Professional UNDP Style */}
+      <div className="text-center bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg p-8 mb-8 print:bg-blue-600 print:p-4 print:mb-4 shadow-lg print:shadow-none">
+        <h1 className="text-3xl font-bold mb-3 print:text-2xl tracking-wide">BUSINESS CONTINUITY PLAN</h1>
         <h2 className="text-xl opacity-95 font-semibold print:text-lg">{companyName}</h2>
-        <div className="mt-4 text-sm opacity-90 flex items-center justify-center space-x-4">
-          <span>📋 Version {planVersion}</span>
+        <div className="mt-4 text-sm opacity-90 flex items-center justify-center space-x-6">
+          <span className="bg-white/20 px-3 py-1 rounded">Version {planVersion}</span>
           <span>•</span>
-          <span>📅 {currentDate}</span>
+          <span className="bg-white/20 px-3 py-1 rounded">{currentDate}</span>
         </div>
       </div>
 
-      {/* Document Control & Business Info with Better Visual Hierarchy */}
+      {/* Document Control & Business Info - Professional Design */}
       <div className="grid lg:grid-cols-3 gap-6 print:gap-4 print:break-inside-avoid">
         <CompactCard className="print:break-inside-avoid">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-            <span>📋</span>
-            <span>Document Control</span>
+          <h3 className="font-semibold text-gray-900 mb-3 text-lg border-b pb-2">
+            Document Control
           </h3>
           <InfoGrid items={[
             { label: 'Version', value: planVersion },
@@ -882,9 +952,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         </CompactCard>
 
         <CompactCard className="lg:col-span-2 print:break-inside-avoid">
-          <h3 className="font-semibold text-gray-900 mb-3 flex items-center space-x-2">
-            <span>🏢</span>
-            <span>Business Information</span>
+          <h3 className="font-semibold text-gray-900 mb-3 text-lg border-b pb-2">
+            Business Information
           </h3>
           <InfoGrid items={[
             { label: 'Company Name', value: companyName },
@@ -895,9 +964,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         </CompactCard>
         </div>
 
-      {/* Section 1: Business Analysis with Page Break Control */}
+      {/* Section 1: Business Analysis */}
       <CompactCard className="print:break-inside-avoid">
-        <SectionHeader title="SECTION 1: BUSINESS ANALYSIS" icon="📊" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">SECTION 1: BUSINESS ANALYSIS</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         <div className="grid lg:grid-cols-2 gap-6">
           <div>
@@ -965,94 +1037,159 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         )}
       </CompactCard>
 
-      {/* Section 3: Risk Assessment - Enhanced Dashboard with Better Print Layout */}
+      {/* Section 2: Risk Assessment - Professional Display */}
       <CompactCard className="print:break-before-page">
-        <SectionHeader title="SECTION 3: RISK ASSESSMENT" icon="⚠️" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">SECTION 2: RISK ASSESSMENT</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] && 
          Array.isArray(formData.RISK_ASSESSMENT['Risk Assessment Matrix']) &&
          formData.RISK_ASSESSMENT['Risk Assessment Matrix'].length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Risk Summary Dashboard */}
-            <div className="grid md:grid-cols-4 gap-4 mb-6">
-              {(() => {
-                const risks = formData.RISK_ASSESSMENT['Risk Assessment Matrix']
-                const extremeRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('extreme')).length
-                const highRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('high')).length
-                const mediumRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('medium')).length
-                const lowRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('low')).length
+            <div className="bg-gradient-to-r from-blue-50 to-gray-50 rounded-lg p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Portfolio Overview</h3>
+              <div className="grid md:grid-cols-4 gap-4">
+                {(() => {
+                  const risks = formData.RISK_ASSESSMENT['Risk Assessment Matrix']
+                  const extremeRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('extreme')).length
+                  const highRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('high') && !r['Risk Level']?.toLowerCase().includes('extreme')).length
+                  const mediumRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('medium')).length
+                  const lowRisks = risks.filter((r: any) => r['Risk Level']?.toLowerCase().includes('low')).length
+                  const totalRisks = risks.length
+                  const priorityRisks = extremeRisks + highRisks
 
-                return [
-                  { label: 'Extreme', count: extremeRisks, color: 'bg-black text-white' },
-                  { label: 'High', count: highRisks, color: 'bg-red-500 text-white' },
-                  { label: 'Medium', count: mediumRisks, color: 'bg-yellow-500 text-white' },
-                  { label: 'Low', count: lowRisks, color: 'bg-green-500 text-white' }
-                ].map(risk => (
-                  <div key={risk.label} className={`${risk.color} rounded-lg p-4 text-center`}>
-                    <div className="text-2xl font-bold">{risk.count}</div>
-                    <div className="text-sm opacity-90">{risk.label} Risk</div>
+                  return (
+                    <>
+                      <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                        <div className="text-3xl font-bold text-gray-900">{totalRisks}</div>
+                        <div className="text-sm text-gray-600 mt-1">Total Risks Identified</div>
+                      </div>
+                      <div className="bg-black rounded-lg p-4 text-center shadow-sm">
+                        <div className="text-3xl font-bold text-white">{extremeRisks}</div>
+                        <div className="text-sm text-gray-200 mt-1">EXTREME Priority</div>
+                      </div>
+                      <div className="bg-red-500 rounded-lg p-4 text-center shadow-sm">
+                        <div className="text-3xl font-bold text-white">{highRisks}</div>
+                        <div className="text-sm text-white mt-1">HIGH Priority</div>
+                      </div>
+                      <div className="bg-blue-100 border-2 border-blue-600 rounded-lg p-4 text-center shadow-sm">
+                        <div className="text-3xl font-bold text-blue-900">{priorityRisks}</div>
+                        <div className="text-sm text-blue-800 mt-1 font-medium">Immediate Attention</div>
+                      </div>
+                    </>
+                  )
+                })()}
+              </div>
             </div>
-                ))
-              })()}
-                </div>
 
-            {/* Risk Cards - Professional Display */}
+            {/* Risk Cards - Professional Display WITH All Available Data */}
             <div className="space-y-4">
               {formData.RISK_ASSESSMENT['Risk Assessment Matrix'].map((risk: any, index: number) => {
                 const level = (risk['Risk Level'] || '').toLowerCase()
                 const borderColor = level.includes('extreme') ? 'border-black' :
                                   level.includes('high') ? 'border-red-500' :
                                   level.includes('medium') ? 'border-yellow-500' : 'border-green-500'
-                const bgColor = level.includes('extreme') ? 'bg-black' :
-                              level.includes('high') ? 'bg-red-500' :
-                              level.includes('medium') ? 'bg-yellow-500' : 'bg-green-500'
+                const badgeColor = level.includes('extreme') ? 'bg-black text-white' :
+                              level.includes('high') ? 'bg-red-500 text-white' :
+                              level.includes('medium') ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'
                 
                 return (
-                  <div key={index} className={`border-l-4 ${borderColor} bg-white rounded-lg p-4 shadow-sm`}>
-                    <div className="flex items-start justify-between mb-3">
+                  <div key={index} className={`border-l-4 ${borderColor} bg-white rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow print:break-inside-avoid`}>
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex-1">
-                        <h4 className="font-bold text-gray-900 text-lg mb-1">{risk['Hazard'] || risk.hazard}</h4>
+                        <h4 className="font-bold text-gray-900 text-xl mb-2">
+                          {transformHazardName(risk['Hazard'] || risk.hazard)}
+                        </h4>
                         {risk.reasoning && (
-                          <p className="text-sm text-gray-600 italic">{risk.reasoning}</p>
+                          <div className="bg-blue-50 border-l-2 border-blue-400 rounded-r p-3 mb-3">
+                            <div className="text-xs font-semibold text-blue-900 mb-1">Why This Risk Matters to Your Business:</div>
+                            <div className="text-sm text-blue-800 leading-relaxed">
+                              {risk.reasoning}
+                            </div>
+                          </div>
+                        )}
+                        {risk.description && (
+                          <div className="text-sm text-gray-600 leading-relaxed mb-3">
+                            {risk.description}
+                          </div>
                         )}
                       </div>
-                      <span className={`${bgColor} text-white px-3 py-1 rounded-full text-xs font-bold ml-4 whitespace-nowrap`}>
+                      <span className={`${badgeColor} px-4 py-2 rounded-full text-sm font-bold ml-4 whitespace-nowrap shadow-sm`}>
                         {risk['Risk Level']}
                       </span>
                     </div>
                     
-                    <div className="grid md:grid-cols-2 gap-4 mb-3">
-                      <div className="bg-gray-50 rounded p-3">
-                        <div className="text-xs text-gray-600 mb-1">Likelihood</div>
-                        <div className="font-semibold text-gray-900">{risk['Likelihood'] || '-'}</div>
+                    {/* Risk Metrics Grid */}
+                    <div className="grid md:grid-cols-3 gap-4 mb-4">
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Likelihood</div>
+                        <div className="text-lg font-bold text-gray-900">{risk['Likelihood'] || '-'}</div>
+                        {risk.likelihoodScore && <div className="text-xs text-gray-500 mt-1">Score: {risk.likelihoodScore}</div>}
                       </div>
-                      <div className="bg-gray-50 rounded p-3">
-                        <div className="text-xs text-gray-600 mb-1">Severity</div>
-                        <div className="font-semibold text-gray-900">{risk['Severity'] || '-'}</div>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Impact / Severity</div>
+                        <div className="text-lg font-bold text-gray-900">{risk['Severity'] || risk['Impact'] || '-'}</div>
+                        {risk.impactScore && <div className="text-xs text-gray-500 mt-1">Score: {risk.impactScore}</div>}
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div className="text-xs font-medium text-gray-600 mb-1 uppercase tracking-wide">Overall Risk</div>
+                        <div className="text-lg font-bold text-gray-900">{risk.riskScore || risk['Risk Score'] || '-'}</div>
+                        {risk.riskLevel && <div className="text-xs text-gray-500 mt-1">{risk.riskLevel}</div>}
                       </div>
                     </div>
-                    
-                    {risk['Recommended Actions'] && (
-                      <div className="bg-blue-50 border border-blue-200 rounded p-3">
-                        <div className="text-xs font-semibold text-blue-900 mb-2">📋 Recommended Actions</div>
-                        <div className="text-sm text-blue-800 leading-relaxed">{risk['Recommended Actions']}</div>
+
+                    {/* Additional Risk Information */}
+                    {(risk.vulnerabilities || risk.affectedFunctions || risk.potentialImpact) && (
+                      <div className="border-t pt-4 space-y-2">
+                        {risk.vulnerabilities && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-700 mb-1">Vulnerabilities:</div>
+                            <div className="text-sm text-gray-600">{risk.vulnerabilities}</div>
+                          </div>
+                        )}
+                        {risk.affectedFunctions && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-700 mb-1">Affected Business Functions:</div>
+                            <div className="text-sm text-gray-600">{risk.affectedFunctions}</div>
+                          </div>
+                        )}
+                        {risk.potentialImpact && (
+                          <div>
+                            <div className="text-xs font-semibold text-gray-700 mb-1">Potential Impact:</div>
+                            <div className="text-sm text-gray-600">{risk.potentialImpact}</div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
                 )
               })}
             </div>
+
+            {/* Note about action plans */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4">
+              <p className="text-sm text-blue-900">
+                <span className="font-semibold">Note:</span> Detailed response strategies and action plans for each high-priority risk are provided in Section 4: Action Plans.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="text-center py-8 text-gray-500">
             Risk assessment not completed
-                </div>
-              )}
+          </div>
+        )}
       </CompactCard>
 
-      {/* Section 4: Business Continuity Strategies - Compact Layout with Print Break */}
+      {/* Section 3: Business Continuity Strategies - Enhanced Display */}
       <CompactCard className="print:break-before-page">
-        <SectionHeader title="SECTION 4: BUSINESS CONTINUITY STRATEGIES" icon="🛡️" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">SECTION 3: BUSINESS CONTINUITY STRATEGIES</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {(() => {
           // Get selected strategies - they're stored as full strategy objects
@@ -1071,159 +1208,682 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             'prevention': [],
             'preparation': [],
             'response': [],
-            'recovery': [],
-            'mitigation': [],
-            'other': []
+            'recovery': []
           }
           
           selectedStrategies.forEach((strategy: any) => {
-            const category = (strategy.category || 'other').toLowerCase()
+            const category = (strategy.category || 'response').toLowerCase()
             if (strategyCategories[category]) {
               strategyCategories[category].push(strategy)
             } else {
-              strategyCategories['other'].push(strategy)
+              strategyCategories['response'].push(strategy)
             }
           })
           
           const categoryConfig = [
-            { key: 'prevention', title: 'Prevention', icon: '🔒', color: 'blue', description: 'Preventing hazards before they occur' },
-            { key: 'preparation', title: 'Preparation', icon: '📋', color: 'purple', description: 'Preparing for potential incidents' },
-            { key: 'response', title: 'Response', icon: '🚨', color: 'red', description: 'Responding during emergencies' },
-            { key: 'recovery', title: 'Recovery', icon: '🔄', color: 'green', description: 'Recovering after incidents' },
-            { key: 'mitigation', title: 'Mitigation', icon: '⚡', color: 'yellow', description: 'Reducing impact of hazards' }
+            { key: 'prevention', title: 'Prevention (Before Emergencies)', icon: ShieldCheckIcon, borderColor: 'border-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-900' },
+            { key: 'preparation', title: 'Preparation (Getting Ready)', icon: CheckCircleIcon, borderColor: 'border-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-900' },
+            { key: 'response', title: 'Response (During Emergencies)', icon: BellAlertIcon, borderColor: 'border-red-500', bgColor: 'bg-red-50', textColor: 'text-red-900' },
+            { key: 'recovery', title: 'Recovery (After Emergencies)', icon: ArrowPathIcon, borderColor: 'border-green-500', bgColor: 'bg-green-50', textColor: 'text-green-900' }
           ]
           
           return (
-            <div className="space-y-6">
-              {/* Summary Stats */}
-              <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-lg p-4 border border-blue-200">
+            <div className="space-y-8">
+              {/* Summary */}
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border-2 border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium text-gray-900">Selected Strategies</h4>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {selectedStrategies.length} strategies selected to address identified risks
+                    <h3 className="text-lg font-semibold text-gray-900">Strategy Overview</h3>
+                    <p className="text-sm text-gray-700 mt-2">
+                      {selectedStrategies.length} comprehensive {selectedStrategies.length === 1 ? 'strategy' : 'strategies'} selected to protect your business
                     </p>
                   </div>
-                  <div className="text-3xl font-bold text-blue-600">{selectedStrategies.length}</div>
+                  <div className="text-4xl font-bold text-blue-600">{selectedStrategies.length}</div>
                 </div>
               </div>
               
-              {/* Strategies by Category */}
-              <div className="grid lg:grid-cols-2 gap-6">
-                {categoryConfig.map(cat => {
-                  const strategies = strategyCategories[cat.key] || []
-                  if (strategies.length === 0) return null
-                  
-                  return (
-                    <div key={cat.key} className={`bg-${cat.color}-50 border border-${cat.color}-200 rounded-lg p-4`}>
-                      <h4 className={`font-medium text-${cat.color}-900 mb-2 flex items-center space-x-2`}>
-                        <span>{cat.icon}</span>
-                        <span>{cat.title}</span>
-                        <span className="text-xs bg-white px-2 py-1 rounded">{strategies.length}</span>
-                      </h4>
-                      <p className="text-xs text-gray-600 mb-3">{cat.description}</p>
-                      <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {strategies.map((strategy: any, index: number) => {
-                          // Get localized strategy name
-                          const strategyName = getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)
-                          
-                          return (
-                            <div key={index} className={`text-sm text-${cat.color}-900 bg-white rounded p-3 border border-${cat.color}-100`}>
-                              <div className="font-medium mb-1">{strategyName}</div>
-                              {strategy.smeSummary && (
-                                <div className="text-xs text-gray-600 mt-1">
-                                  {getLocalizedText(strategy.smeSummary, locale as Locale)}
-                                </div>
-                              )}
-                              {strategy.effectiveness && (
-                                <div className="mt-2 flex items-center space-x-2 text-xs">
-                                  <span className="text-gray-600">Effectiveness:</span>
-                                  <span className="font-medium text-green-700">{strategy.effectiveness}/10</span>
-                                </div>
+              {/* Strategies by Category - Enhanced Cards */}
+              {categoryConfig.map(cat => {
+                const strategies = strategyCategories[cat.key] || []
+                if (strategies.length === 0) return null
+                
+                const IconComponent = cat.icon
+                
+                return (
+                  <div key={cat.key} className="print:break-inside-avoid">
+                    <div className="flex items-center space-x-3 mb-4">
+                      <IconComponent className="w-6 h-6 text-gray-700" />
+                      <h3 className="text-xl font-bold text-gray-900">{cat.title}</h3>
+                      <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium">
+                        {strategies.length}
+                      </span>
+                    </div>
+                    
+                    <div className="space-y-6">
+                      {strategies.map((strategy: any, index: number) => {
+                        const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)
+                        const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale as Locale)
+                        const benefits = strategy.benefitsBullets || []
+                        
+                        return (
+                          <div key={index} className={`border-l-4 ${cat.borderColor} bg-white rounded-lg p-6 shadow-sm print:break-inside-avoid`}>
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-4">
+                              <h4 className="text-lg font-semibold text-gray-900 flex-1">
+                                {strategyTitle}
+                              </h4>
+                              {strategy.quickWinIndicator && (
+                                <span className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">
+                                  Quick Win
+                                </span>
                               )}
                             </div>
-                          )
-                        })}
-                      </div>
+
+                            {/* Summary */}
+                            <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                              {strategySummary}
+                            </p>
+
+                            {/* Benefits */}
+                            {benefits.length > 0 && (
+                              <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                                <h5 className="text-sm font-semibold text-blue-900 mb-2">Key Benefits:</h5>
+                                <ul className="space-y-1">
+                                  {benefits.map((benefit: string, idx: number) => (
+                                    <li key={idx} className="text-sm text-blue-800 flex items-start">
+                                      <span className="text-blue-600 mr-2 mt-0.5">✓</span>
+                                      <span>{benefit}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {/* Implementation Overview */}
+                            <div className="grid grid-cols-3 gap-4 mb-4">
+                              <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
+                                <div className="flex items-center justify-center mb-1">
+                                  <CurrencyDollarIcon className="w-4 h-4 text-gray-600 mr-1" />
+                                  <div className="text-xs text-gray-600">Investment</div>
+                                </div>
+                                <div className="font-semibold text-gray-900 text-sm">
+                                  {strategy.costEstimateJMD || strategy.implementationCost}
+                                </div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
+                                <div className="flex items-center justify-center mb-1">
+                                  <ClockIcon className="w-4 h-4 text-gray-600 mr-1" />
+                                  <div className="text-xs text-gray-600">Time Required</div>
+                                </div>
+                                <div className="font-semibold text-gray-900 text-sm">
+                                  {strategy.timeToImplement || strategy.implementationTime}
+                                  {strategy.estimatedTotalHours && ` (${strategy.estimatedTotalHours}h)`}
+                                </div>
+                              </div>
+                              <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">
+                                <div className="text-xs text-gray-600 mb-1">Difficulty</div>
+                                <div className={`font-semibold text-sm ${
+                                  strategy.complexityLevel === 'simple' ? 'text-green-600' :
+                                  strategy.complexityLevel === 'moderate' ? 'text-yellow-600' :
+                                  'text-red-600'
+                                }`}>
+                                  {strategy.complexityLevel === 'simple' ? 'Easy' :
+                                   strategy.complexityLevel === 'moderate' ? 'Moderate' :
+                                   strategy.complexityLevel === 'advanced' ? 'Advanced' : 'Moderate'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Real-world example */}
+                            {strategy.realWorldExample && (
+                              <div className="bg-green-50 border-l-4 border-green-500 rounded-r-lg p-4 mb-4">
+                                <h5 className="text-sm font-semibold text-green-900 mb-2">Real Success Story:</h5>
+                                <p className="text-sm text-green-800 leading-relaxed">{strategy.realWorldExample}</p>
+                              </div>
+                            )}
+
+                            {/* Budget-friendly options */}
+                            {(strategy.lowBudgetAlternative || strategy.diyApproach) && (
+                              <div className="border-t pt-4 space-y-3">
+                                {strategy.lowBudgetAlternative && (
+                                  <div>
+                                    <h5 className="text-sm font-semibold text-gray-900 mb-1">Low-Budget Option:</h5>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{strategy.lowBudgetAlternative}</p>
+                                  </div>
+                                )}
+                                {strategy.diyApproach && (
+                                  <div>
+                                    <h5 className="text-sm font-semibold text-gray-900 mb-1">Do It Yourself:</h5>
+                                    <p className="text-sm text-gray-700 leading-relaxed">{strategy.diyApproach}</p>
+                                    {strategy.estimatedDIYSavings && (
+                                      <p className="text-xs text-green-600 mt-1 font-medium">
+                                        Potential savings: {strategy.estimatedDIYSavings}
+                                      </p>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
-              </div>
-              
-              {/* Other/Uncategorized Strategies */}
-              {strategyCategories['other'].length > 0 && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Other Strategies</h4>
-                  <div className="space-y-2">
-                    {strategyCategories['other'].map((strategy: any, index: number) => (
-                      <div key={index} className="text-sm text-gray-800 bg-white rounded p-2">
-                        • {getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)}
-                      </div>
-                    ))}
                   </div>
-                </div>
-              )}
+                )
+              })}
             </div>
           )
         })()}
       </CompactCard>
 
-      {/* Section 5: Action Plans with Better Print Layout */}
+      {/* Section 4: Detailed Action Plans - Complete Overhaul */}
       <CompactCard className="print:break-before-page">
-        <SectionHeader title="SECTION 5: ACTION PLANS" icon="🚀" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">SECTION 4: DETAILED ACTION PLANS</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {(() => {
-          const hazardActionPlans = generateHazardActionPlans(formData, formData.RISK_ASSESSMENT, strategies)
+          // Get high/extreme priority risks
+          const riskMatrix = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
+          const priorityRisks = riskMatrix.filter((r: any) => {
+            const level = (r['Risk Level'] || '').toLowerCase()
+            return level.includes('high') || level.includes('extreme')
+          })
           
-          if (hazardActionPlans.length === 0) {
+          if (priorityRisks.length === 0) {
             return (
-              <div className="text-center py-8">
-                <div className="text-gray-500 mb-4">
-                  <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="text-center py-12">
+                <div className="text-gray-400 mb-4">
+                  <svg className="mx-auto h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012-2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No High-Priority Hazards Identified</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No High-Priority Hazards Identified</h3>
+                <p className="text-gray-600 max-w-lg mx-auto">
                   Complete your risk assessment with HIGH or EXTREME risk hazards to generate detailed action plans.
                 </p>
               </div>
             )
           }
 
-          return (
-            <div className="grid gap-6">
-              {hazardActionPlans.map((plan, index) => (
-                <ActionPlanCard key={index} plan={plan} />
-              ))}
+          // Get selected strategies
+          const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
 
-              {/* Communication Templates & Recovery Metrics Summary */}
-              {hazardActionPlans.length > 0 && (
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-900 mb-2 flex items-center space-x-2">
-                    <span>📢</span>
-                    <span>Communication & Recovery Overview</span>
-                  </h4>
-                  <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                      <h5 className="font-medium text-blue-800 mb-1">Emergency Contacts</h5>
-                      <p className="text-blue-700">Emergency services, management team, and key stakeholders will be notified according to established protocols.</p>
+          return (
+            <div className="space-y-8">
+              {/* Action Plans Introduction */}
+              <div className="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-6">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">How to Use These Action Plans</h3>
+                <p className="text-sm text-blue-800 leading-relaxed mb-3">
+                  This section provides step-by-step action plans for each identified high-priority risk. 
+                  Each plan is organized into phases (Immediate, Short-term, Medium-term, and Long-term) with specific actions, 
+                  responsibilities, timelines, and resources needed.
+                </p>
+                <div className="grid md:grid-cols-4 gap-3 text-xs text-blue-900">
+                  <div className="bg-white rounded p-2">
+                    <div className="font-semibold mb-1">PHASE 1: Immediate</div>
+                    <div className="text-blue-700">0-24 hours</div>
+                  </div>
+                  <div className="bg-white rounded p-2">
+                    <div className="font-semibold mb-1">PHASE 2: Short-term</div>
+                    <div className="text-blue-700">1-7 days</div>
+                  </div>
+                  <div className="bg-white rounded p-2">
+                    <div className="font-semibold mb-1">PHASE 3: Medium-term</div>
+                    <div className="text-blue-700">1-4 weeks</div>
+                  </div>
+                  <div className="bg-white rounded p-2">
+                    <div className="font-semibold mb-1">PHASE 4: Long-term</div>
+                    <div className="text-blue-700">1-6 months</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Risk-Specific Action Plans */}
+              {priorityRisks.map((risk: any, riskIndex: number) => {
+                const hazardName = transformHazardName(risk['Hazard'] || risk.hazard)
+                const riskLevel = risk['Risk Level'] || 'High'
+                const hazardId = risk.hazardId || risk.hazard || risk['Hazard']
+                
+                // Get relevant strategies and their action steps
+                const relevantStrategies = selectedStrategies.filter((s: any) => 
+                  s.applicableRisks?.includes(hazardId) || 
+                  s.applicableRisks?.includes(risk.hazard) ||
+                  s.applicableRisks?.includes(risk['Hazard'])
+                )
+                
+                // Collect all action steps from relevant strategies
+                const allSteps = relevantStrategies.flatMap((s: any) => s.actionSteps || [])
+                const phaseGroups = groupStepsByPhase(allSteps)
+                const resources = aggregateResources(allSteps)
+                
+                return (
+                  <div key={riskIndex} className="border rounded-lg bg-white shadow-sm print:break-inside-avoid">
+                    {/* Risk Header */}
+                    <div className="border-b bg-gradient-to-r from-gray-50 to-white p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-2xl font-bold text-gray-900">{hazardName} Response Plan</h3>
+                        <span className={`px-4 py-2 rounded-full text-xs font-bold shadow ${
+                          riskLevel.toLowerCase().includes('extreme') ? 'bg-black text-white' : 'bg-red-500 text-white'
+                        }`}>
+                          {riskLevel}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        Comprehensive action plan with {allSteps.length} specific steps across all phases
+                      </p>
                     </div>
-                  <div>
-                      <h5 className="font-medium text-blue-800 mb-1">Recovery Targets</h5>
-                      <p className="text-blue-700">Recovery time objectives range from 24-72 hours depending on hazard severity and business impact.</p>
-                    </div>
+
+                    <div className="p-6 space-y-6">
+                      {/* Resources Needed */}
+                      {resources.length > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-5">
+                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                            <span className="text-yellow-600 mr-2">Resources & Equipment Needed:</span>
+                          </h4>
+                          <div className="grid md:grid-cols-2 gap-2">
+                            {resources.map((resource, idx) => (
+                              <div key={idx} className="text-sm text-gray-800 flex items-center">
+                                <span className="text-yellow-600 mr-2">□</span>
+                                {resource}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHASE 1: IMMEDIATE ACTIONS */}
+                      {phaseGroups.immediate.length > 0 && (
+                        <div className="print:break-inside-avoid">
+                          <div className="bg-red-50 border-l-4 border-red-600 rounded-r-lg p-4 mb-4">
+                            <h4 className="font-bold text-red-900 text-lg">PHASE 1: IMMEDIATE ACTIONS (0-24 hours)</h4>
+                            <p className="text-sm text-red-700 mt-1">Critical actions during and immediately after impact</p>
+                          </div>
+
+                          <div className="space-y-6 ml-4">
+                            {phaseGroups.immediate.map((step: ActionStep, stepIdx: number) => (
+                              <div key={stepIdx} className="border-l-2 border-red-300 pl-6 pb-4">
+                                <div className="flex items-start mb-3">
+                                  <span className="text-2xl font-bold text-red-600 mr-4 -ml-10 bg-white px-2">{stepIdx + 1}</span>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-gray-900 text-base mb-2">
+                                      {getLocalizedText(step.smeAction || step.action || step.title, locale as Locale)}
+                                    </h5>
+                                    
+                                    {/* Metadata row */}
+                                    <div className="flex flex-wrap gap-4 mb-3 text-sm">
+                                      {step.timeframe && (
+                                        <div className="flex items-center text-gray-600">
+                                          <ClockIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.timeframe}</span>
+                                          {step.estimatedMinutes && <span className="ml-1">({step.estimatedMinutes} min)</span>}
+                                        </div>
+                                      )}
+                                      {step.responsibility && (
+                                        <div className="flex items-center text-gray-600">
+                                          <UserIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.responsibility}</span>
+                                        </div>
+                                      )}
+                                      {step.difficultyLevel && (
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
+                                          {step.difficultyLevel.charAt(0).toUpperCase() + step.difficultyLevel.slice(1)}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Why this matters */}
+                                    {step.whyThisStepMatters && (
+                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
+                                      </div>
+                                    )}
+
+                                    {/* What happens if skipped */}
+                                    {step.whatHappensIfSkipped && (
+                                      <div className="bg-yellow-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-yellow-900 mb-1">If You Skip This:</div>
+                                        <p className="text-sm text-yellow-800">{step.whatHappensIfSkipped}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Checklist */}
+                                    {step.checklist && step.checklist.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                        <ul className="space-y-1">
+                                          {step.checklist.map((item, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex items-start">
+                                              <span className="text-gray-400 mr-2">□</span>
+                                              <span>{item}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                    {/* Completion criteria */}
+                                    {step.howToKnowItsDone && (
+                                      <div className="bg-green-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
+                                        <p className="text-sm text-green-800">{step.howToKnowItsDone}</p>
+                                      </div>
+                                    )}
+
+                                    {/* Cost and alternatives */}
+                                    <div className="flex flex-wrap gap-4 text-sm">
+                                      {step.estimatedCostJMD && (
+                                        <div className="text-gray-700">
+                                          <span className="font-medium">Cost:</span> {step.estimatedCostJMD}
+                                        </div>
+                                      )}
+                                      {step.freeAlternative && (
+                                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded">
+                                          <span className="font-medium">Free option:</span> {step.freeAlternative}
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Common mistakes */}
+                                    {step.commonMistakesForStep && step.commonMistakesForStep.length > 0 && (
+                                      <div className="mt-3 text-sm">
+                                        <div className="font-semibold text-red-600 mb-1">Common Mistakes to Avoid:</div>
+                                        <ul className="list-disc list-inside text-red-700 space-y-1">
+                                          {step.commonMistakesForStep.map((mistake, i) => (
+                                            <li key={i}>{mistake}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHASE 2: SHORT-TERM ACTIONS */}
+                      {phaseGroups.short_term.length > 0 && (
+                        <div className="print:break-inside-avoid">
+                          <div className="bg-orange-50 border-l-4 border-orange-600 rounded-r-lg p-4 mb-4">
+                            <h4 className="font-bold text-orange-900 text-lg">PHASE 2: SHORT-TERM ACTIONS (1-7 days)</h4>
+                            <p className="text-sm text-orange-700 mt-1">Initial response and stabilization actions</p>
+                          </div>
+
+                          <div className="space-y-6 ml-4">
+                            {phaseGroups.short_term.map((step: ActionStep, stepIdx: number) => (
+                              <div key={stepIdx} className="border-l-2 border-orange-300 pl-6 pb-4">
+                                <div className="flex items-start mb-3">
+                                  <span className="text-2xl font-bold text-orange-600 mr-4 -ml-10 bg-white px-2">{stepIdx + 1}</span>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-gray-900 text-base mb-2">
+                                      {getLocalizedText(step.smeAction || step.action || step.title, locale as Locale)}
+                                    </h5>
+                                    
+                                    {/* Same detailed structure as Phase 1 */}
+                                    <div className="flex flex-wrap gap-4 mb-3 text-sm">
+                                      {step.timeframe && (
+                                        <div className="flex items-center text-gray-600">
+                                          <ClockIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.timeframe}</span>
+                                        </div>
+                                      )}
+                                      {step.responsibility && (
+                                        <div className="flex items-center text-gray-600">
+                                          <UserIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.responsibility}</span>
+                                        </div>
+                                      )}
+                                      {step.difficultyLevel && (
+                                        <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
+                                          {step.difficultyLevel.charAt(0).toUpperCase() + step.difficultyLevel.slice(1)}
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {step.whyThisStepMatters && (
+                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
+                                      </div>
+                                    )}
+
+                                    {step.checklist && step.checklist.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                        <ul className="space-y-1">
+                                          {step.checklist.map((item, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex items-start">
+                                              <span className="text-gray-400 mr-2">□</span>
+                                              <span>{item}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
+                                    {step.howToKnowItsDone && (
+                                      <div className="bg-green-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
+                                        <p className="text-sm text-green-800">{step.howToKnowItsDone}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHASE 3: MEDIUM-TERM RECOVERY */}
+                      {phaseGroups.medium_term.length > 0 && (
+                        <div className="print:break-inside-avoid">
+                          <div className="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-4 mb-4">
+                            <h4 className="font-bold text-blue-900 text-lg">PHASE 3: MEDIUM-TERM RECOVERY (1-4 weeks)</h4>
+                            <p className="text-sm text-blue-700 mt-1">Recovery and restoration activities</p>
+                          </div>
+
+                          <div className="space-y-6 ml-4">
+                            {phaseGroups.medium_term.map((step: ActionStep, stepIdx: number) => (
+                              <div key={stepIdx} className="border-l-2 border-blue-300 pl-6 pb-4">
+                                <div className="flex items-start mb-3">
+                                  <span className="text-2xl font-bold text-blue-600 mr-4 -ml-10 bg-white px-2">{stepIdx + 1}</span>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-gray-900 text-base mb-2">
+                                      {getLocalizedText(step.smeAction || step.action || step.title, locale as Locale)}
+                                    </h5>
+                                    
+                                    <div className="flex flex-wrap gap-4 mb-3 text-sm">
+                                      {step.timeframe && (
+                                        <div className="flex items-center text-gray-600">
+                                          <ClockIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.timeframe}</span>
+                                        </div>
+                                      )}
+                                      {step.responsibility && (
+                                        <div className="flex items-center text-gray-600">
+                                          <UserIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.responsibility}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {step.whyThisStepMatters && (
+                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
+                                      </div>
+                                    )}
+
+                                    {step.checklist && step.checklist.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                        <ul className="space-y-1">
+                                          {step.checklist.map((item, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex items-start">
+                                              <span className="text-gray-400 mr-2">□</span>
+                                              <span>{item}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHASE 4: LONG-TERM PREVENTION */}
+                      {phaseGroups.long_term.length > 0 && (
+                        <div className="print:break-inside-avoid">
+                          <div className="bg-green-50 border-l-4 border-green-600 rounded-r-lg p-4 mb-4">
+                            <h4 className="font-bold text-green-900 text-lg">PHASE 4: LONG-TERM PREVENTION (1-6 months)</h4>
+                            <p className="text-sm text-green-700 mt-1">Prevention and resilience building for the future</p>
+                          </div>
+
+                          <div className="space-y-6 ml-4">
+                            {phaseGroups.long_term.map((step: ActionStep, stepIdx: number) => (
+                              <div key={stepIdx} className="border-l-2 border-green-300 pl-6 pb-4">
+                                <div className="flex items-start mb-3">
+                                  <span className="text-2xl font-bold text-green-600 mr-4 -ml-10 bg-white px-2">{stepIdx + 1}</span>
+                                  <div className="flex-1">
+                                    <h5 className="font-semibold text-gray-900 text-base mb-2">
+                                      {getLocalizedText(step.smeAction || step.action || step.title, locale as Locale)}
+                                    </h5>
+                                    
+                                    <div className="flex flex-wrap gap-4 mb-3 text-sm">
+                                      {step.timeframe && (
+                                        <div className="flex items-center text-gray-600">
+                                          <ClockIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.timeframe}</span>
+                                        </div>
+                                      )}
+                                      {step.responsibility && (
+                                        <div className="flex items-center text-gray-600">
+                                          <UserIcon className="w-4 h-4 mr-1" />
+                                          <span>{step.responsibility}</span>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {step.whyThisStepMatters && (
+                                      <div className="bg-blue-50 rounded-lg p-3 mb-3">
+                                        <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
+                                        <p className="text-sm text-blue-800">{step.whyThisStepMatters}</p>
+                                      </div>
+                                    )}
+
+                                    {step.checklist && step.checklist.length > 0 && (
+                                      <div className="mb-3">
+                                        <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
+                                        <ul className="space-y-1">
+                                          {step.checklist.map((item, i) => (
+                                            <li key={i} className="text-sm text-gray-700 flex items-start">
+                                              <span className="text-gray-400 mr-2">□</span>
+                                              <span>{item}</span>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fallback: Show strategies even if no detailed action steps */}
+                      {allSteps.length === 0 && relevantStrategies.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-5">
+                            <h4 className="font-semibold text-amber-900 mb-3">📋 Recommended Strategies for This Risk</h4>
+                            <p className="text-sm text-amber-800 mb-4">
+                              While detailed step-by-step action plans are being developed, here are the key strategies selected to address this risk:
+                            </p>
+                            <div className="space-y-3">
+                              {relevantStrategies.map((strategy: any, idx: number) => (
+                                <div key={idx} className="bg-white rounded-lg p-4 border border-amber-200">
+                                  <div className="font-semibold text-gray-900 mb-2">
+                                    {getLocalizedText(strategy.smeTitle || strategy.name, locale as Locale)}
+                                  </div>
+                                  <div className="text-sm text-gray-700 mb-3">
+                                    {getLocalizedText(strategy.smeSummary || strategy.description, locale as Locale)}
+                                  </div>
+                                  <div className="flex flex-wrap gap-3 text-xs">
+                                    {strategy.costEstimateJMD && (
+                                      <div className="bg-blue-50 px-3 py-1 rounded">
+                                        <span className="font-medium">Cost:</span> {strategy.costEstimateJMD}
+                                      </div>
+                                    )}
+                                    {strategy.timeToImplement && (
+                                      <div className="bg-purple-50 px-3 py-1 rounded">
+                                        <span className="font-medium">Time:</span> {strategy.timeToImplement}
+                                      </div>
+                                    )}
+                                    {strategy.complexityLevel && (
+                                      <div className="bg-gray-50 px-3 py-1 rounded">
+                                        <span className="font-medium">Difficulty:</span> {strategy.complexityLevel}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4">
+                            <div className="text-sm text-blue-900">
+                              <div className="font-semibold mb-2">Next Steps:</div>
+                              <ul className="list-disc list-inside space-y-1 text-blue-800">
+                                <li>Review each recommended strategy in detail in Section 3</li>
+                                <li>Consult with your team on implementation priorities</li>
+                                <li>Consider starting with "Quick Win" strategies for immediate results</li>
+                                <li>Contact UNDP/CARICHAM for guidance on detailed action planning</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* If no strategies either */}
+                      {allSteps.length === 0 && relevantStrategies.length === 0 && (
+                        <div className="bg-gray-50 rounded-lg p-8 text-center">
+                          <div className="text-gray-400 mb-3">
+                            <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </div>
+                          <h5 className="text-lg font-semibold text-gray-900 mb-2">No Action Plan Data Available</h5>
+                          <p className="text-gray-600 max-w-md mx-auto">
+                            No specific action steps or strategies are associated with this hazard yet. 
+                            Consider consulting with a business continuity expert to develop a detailed response plan.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+                )
+              })}
             </div>
           )
         })()}
       </CompactCard>
 
-      {/* Section 6: Testing and Maintenance - Compact Layout with Print Break */}
+      {/* Section 5: Testing and Maintenance */}
       <CompactCard className="print:break-before-page">
-        <SectionHeader title="SECTION 6: TESTING AND MAINTENANCE" icon="⚙️" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">SECTION 5: TESTING AND MAINTENANCE</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {formData.TESTING_AND_MAINTENANCE ? (
           <div className="space-y-6">
@@ -1312,31 +1972,34 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         )}
       </CompactCard>
 
-      {/* Appendix A: Key Contacts - Card Grid Layout with Better Spacing */}
+      {/* Appendix A: Key Contacts */}
       <CompactCard className="print:break-before-page">
-        <SectionHeader title="APPENDIX A: KEY CONTACTS" icon="📞" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">APPENDIX A: KEY CONTACTS</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {formData.CONTACTS_AND_INFORMATION ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
             <ContactCard 
               contacts={formData.CONTACTS_AND_INFORMATION['Staff Contact Information']}
               title="Staff Contacts"
-              icon="👥"
+              icon="STAFF"
             />
             <ContactCard 
               contacts={formData.CONTACTS_AND_INFORMATION['Supplier Information']}
               title="Critical Vendors"
-              icon="🏭"
+              icon="VENDOR"
             />
             <ContactCard 
               contacts={formData.CONTACTS_AND_INFORMATION['Key Customer Contacts']}
               title="Key Clients"
-              icon="🤝"
+              icon="CLIENT"
             />
             <ContactCard 
               contacts={formData.CONTACTS_AND_INFORMATION['Emergency Services and Utilities']}
               title="Emergency Services"
-              icon="🚨"
+              icon="EMERGENCY"
             />
           </div>
         ) : (
@@ -1344,9 +2007,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         )}
       </CompactCard>
 
-      {/* Appendix B: Vital Records - Compact Table */}
+      {/* Appendix B: Vital Records */}
       <CompactCard>
-        <SectionHeader title="APPENDIX B: VITAL RECORDS INVENTORY" icon="📄" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">APPENDIX B: VITAL RECORDS INVENTORY</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {formData.VITAL_RECORDS?.['Vital Records Inventory'] ? (
           <CompactTable data={formData.VITAL_RECORDS['Vital Records Inventory']} />
@@ -1360,9 +2026,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         )}
       </CompactCard>
 
-      {/* Distribution List - Simplified */}
+      {/* Distribution List */}
       <CompactCard>
-        <SectionHeader title="DISTRIBUTION LIST" icon="📬" />
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">DISTRIBUTION LIST</h2>
+          <div className="w-full h-px bg-gradient-to-r from-blue-600 to-transparent"></div>
+        </div>
         
         {formData.CONTACTS_AND_INFORMATION?.['Plan Distribution List'] ? (
           <CompactTable data={formData.CONTACTS_AND_INFORMATION['Plan Distribution List']} />
@@ -1421,7 +2090,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             </button>
             
             <div className="text-center">
-              <div className="text-sm font-medium text-gray-900 mb-1">📄 Business Continuity Plan</div>
+              <div className="text-sm font-medium text-gray-900 mb-1">Business Continuity Plan</div>
               <div className="text-xs text-gray-500">{companyName} • {currentDate}</div>
             </div>
             

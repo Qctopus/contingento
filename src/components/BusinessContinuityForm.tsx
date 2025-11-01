@@ -767,11 +767,35 @@ export function BusinessContinuityForm() {
   const isQuestionAnswered = (step: string, label: string) => {
     const stepAnswers = formData[step] || {}
     const value = stepAnswers[label]
+    
+    // Handle arrays (like strategies)
+    if (Array.isArray(value)) {
+      return value.length > 0
+    }
+    
     return value !== undefined && value !== null && value !== ''
   }
 
   const getStepCompletion = (step: string) => {
     const stepData = STEPS[step as keyof typeof STEPS]
+    
+    // Handle custom steps not in STEPS definition (like STRATEGIES, ACTION_PLAN)
+    if (!stepData) {
+      const stepAnswers = formData[step]
+      if (!stepAnswers || typeof stepAnswers !== 'object') return 0
+      
+      // Check if any data exists in this step
+      const hasData = Object.keys(stepAnswers).some(key => {
+        const value = stepAnswers[key]
+        if (Array.isArray(value)) {
+          return value.length > 0
+        }
+        return value !== undefined && value !== null && value !== ''
+      })
+      
+      return hasData ? 100 : 0
+    }
+    
     const answeredQuestions = stepData.inputs.filter(input => 
       isQuestionAnswered(step, input.label)
     )

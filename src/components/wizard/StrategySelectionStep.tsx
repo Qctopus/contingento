@@ -413,6 +413,36 @@ export default function StrategySelectionStep({
       </div>
 
       {/* Warning Modal */}
+      {/* Strategy Selection Summary - No duplicate button, wizard handles navigation */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6 sticky bottom-0 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
+              {selectedStrategies.length}
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-lg">
+                {selectedStrategies.length} {selectedStrategies.length === 1 ? 'Strategy' : 'Strategies'} Selected
+              </div>
+              <div className="text-sm text-gray-700">
+                {selectedStrategies.length === 0 
+                  ? 'Select at least one strategy to continue' 
+                  : 'Ready to continue - click Next below'}
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg px-4 py-2 border border-blue-300">
+            <div className="text-xs text-gray-600">Action Steps</div>
+            <div className="text-2xl font-bold text-blue-600">
+              {selectedStrategies.reduce((sum, id) => {
+                const strategy = [...essential, ...recommended, ...optional].find(s => s.id === id)
+                return sum + (strategy?.actionSteps?.length || 0)
+              }, 0)}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {showUnselectWarning && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-6 max-w-md">

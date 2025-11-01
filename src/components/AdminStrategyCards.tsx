@@ -272,10 +272,28 @@ export function AdminStrategyCards({
     })
   }
   
+  // Auto-save whenever selection changes
+  useEffect(() => {
+    if (selectedStrategyIds.length > 0 || strategies.length > 0) {
+      const fullSelectedStrategies = strategies.filter(s => selectedStrategyIds.includes(s.id))
+      console.log('💾 Auto-saving strategies to formData:', fullSelectedStrategies.length)
+      
+      if (onComplete) {
+        onComplete({
+          'Business Continuity Strategies': fullSelectedStrategies
+        })
+      }
+      
+      if (setUserInteracted && fullSelectedStrategies.length > 0) {
+        setUserInteracted(true)
+      }
+    }
+  }, [selectedStrategyIds, strategies, onComplete, setUserInteracted])
+  
   const handleContinue = () => {
-    // Called when user clicks continue in new UI
-    // Selection is already tracked via selectedStrategies state
-    console.log('✅ Strategy selection completed:', selectedStrategyIds.length, 'strategies selected')
+    // Called by StrategySelectionStep's onContinue prop
+    // Data is already auto-saved via useEffect above, this is just for the button
+    console.log('✅ Strategy selection completed via Continue button')
   }
 
   const getCategoryIcon = (category: string) => {
