@@ -621,7 +621,7 @@ function DataTable({
                 return (
                   <td key={col} className="border border-gray-300 px-4 py-3 text-sm text-gray-800 align-top">
                     {typeof cellValue === 'object' && cellValue !== null 
-                      ? JSON.stringify(cellValue, null, 2) 
+                      ? (cellValue.en || cellValue.es || cellValue.fr || JSON.stringify(cellValue, null, 2))
                       : String(cellValue ?? '-')}
                   </td>
                 )
@@ -671,11 +671,17 @@ function RiskRecommendationsTable({ riskMatrix }: { riskMatrix: any[] }) {
                     ? 'bg-yellow-100 text-yellow-800'
                     : 'bg-green-100 text-green-800'
                 }`}>
-                  {risk.riskLevel || risk.RiskLevel || '-'}
+                  {(() => {
+                    const level = risk.riskLevel || risk.RiskLevel || '-'
+                    return typeof level === 'string' ? level : (level.en || level.es || level.fr || '-')
+                  })()}
                 </span>
               </td>
               <td className="border border-gray-300 px-4 py-3 text-sm text-gray-800 align-top">
-                {risk.planningMeasures || risk['Recommended Actions'] || risk['planningMeasures'] || 'No specific recommendations provided'}
+                {(() => {
+                  const measures = risk.planningMeasures || risk['Recommended Actions'] || risk['planningMeasures'] || 'No specific recommendations provided'
+                  return typeof measures === 'string' ? measures : (measures.en || measures.es || measures.fr || 'No specific recommendations provided')
+                })()}
               </td>
             </tr>
           ))}
@@ -975,16 +981,20 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Business Purpose</h4>
             <div className="bg-blue-50 rounded-lg p-4 text-sm text-gray-800">
-              {formData.BUSINESS_OVERVIEW?.['Business Purpose'] || 'Not specified'}
+              {(() => {
+                const purpose = formData.BUSINESS_OVERVIEW?.['Business Purpose'] || 'Not specified'
+                return typeof purpose === 'string' ? purpose : (purpose.en || purpose.es || purpose.fr || 'Not specified')
+              })()}
             </div>
           </div>
 
           <div>
             <h4 className="font-medium text-gray-900 mb-3">Products & Services</h4>
             <div className="bg-green-50 rounded-lg p-4 text-sm text-gray-800">
-              {formData.BUSINESS_OVERVIEW?.['Products and Services'] || 
-               formData.BUSINESS_OVERVIEW?.['Products & Services'] || 
-               'Not specified'}
+              {(() => {
+                const products = formData.BUSINESS_OVERVIEW?.['Products and Services'] || formData.BUSINESS_OVERVIEW?.['Products & Services'] || 'Not specified'
+                return typeof products === 'string' ? products : (products.en || products.es || products.fr || 'Not specified')
+              })()}
             </div>
             </div>
           </div>
@@ -1005,31 +1015,38 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.ESSENTIAL_FUNCTIONS['Business Functions'].map((func: any, idx: number) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900 font-medium">
-                        {func['Business Function'] || '-'}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
-                        {func['Description'] || '-'}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          func['Priority Level'] === 'critical' ? 'bg-red-100 text-red-800' :
-                          func['Priority Level'] === 'important' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {func['Priority Level'] || '-'}
-                        </span>
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
-                        {func['Maximum Acceptable Downtime'] || '-'}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2 text-sm text-gray-600">
-                        {func['Critical Resources Needed'] || '-'}
-                      </td>
-                    </tr>
-                  ))}
+                  {formData.ESSENTIAL_FUNCTIONS['Business Functions'].map((func: any, idx: number) => {
+                    const getFieldValue = (field: any) => {
+                      if (!field) return '-'
+                      return typeof field === 'string' ? field : (field.en || field.es || field.fr || '-')
+                    }
+                    
+                    return (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="border border-gray-300 px-3 py-2 text-sm text-gray-900 font-medium">
+                          {getFieldValue(func['Business Function'])}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                          {getFieldValue(func['Description'])}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${
+                            func['Priority Level'] === 'critical' ? 'bg-red-100 text-red-800' :
+                            func['Priority Level'] === 'important' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-green-100 text-green-800'
+                          }`}>
+                            {getFieldValue(func['Priority Level'])}
+                          </span>
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2 text-sm text-gray-700">
+                          {getFieldValue(func['Maximum Acceptable Downtime'])}
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2 text-sm text-gray-600">
+                          {getFieldValue(func['Critical Resources Needed'])}
+                        </td>
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
