@@ -1193,6 +1193,13 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         
         {(() => {
           // Get selected strategies - they're stored as full strategy objects
+          console.log('🔍 DEBUG STRATEGIES:', {
+            hasSTRATEGIES: !!formData.STRATEGIES,
+            STRATEGIESKeys: formData.STRATEGIES ? Object.keys(formData.STRATEGIES) : [],
+            STRATEGIESValue: formData.STRATEGIES,
+            selectedStrategiesRaw: formData.STRATEGIES?.['Business Continuity Strategies']
+          })
+          
           const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
           
           if (!Array.isArray(selectedStrategies) || selectedStrategies.length === 0) {
@@ -1448,6 +1455,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 const hazardName = transformHazardName(risk['Hazard'] || risk.hazard)
                 const riskLevel = risk['Risk Level'] || 'High'
                 const hazardId = risk.hazardId || risk.hazard || risk['Hazard']
+                
+                console.log(`🎯 DEBUG ACTION PLANS for ${hazardName}:`, {
+                  hazardId,
+                  selectedStrategiesCount: selectedStrategies.length,
+                  strategiesFromDB: strategies.length
+                })
                 
                 // Get relevant strategies and their action steps
                 const relevantStrategies = selectedStrategies.filter((s: any) => 
