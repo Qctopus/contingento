@@ -1151,13 +1151,18 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     {/* Additional Risk Information */}
                     {(risk.vulnerabilities || risk.affectedFunctions || risk.potentialImpact || risk.riskCategory || risk.riskTier) && (
                       <div className="border-t pt-4 space-y-2">
-                        {risk.riskCategory && (
-                          <div className="inline-block mr-3">
-                            <span className="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-medium">
-                              Category: {risk.riskCategory}
-                            </span>
-                          </div>
-                        )}
+                        {risk.riskCategory && (() => {
+                          const category = typeof risk.riskCategory === 'string' 
+                            ? risk.riskCategory 
+                            : getLocalizedText(risk.riskCategory, locale as Locale)
+                          return category ? (
+                            <div className="inline-block mr-3">
+                              <span className="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-medium">
+                                Category: {category}
+                              </span>
+                            </div>
+                          ) : null
+                        })()}
                         {risk.riskTier && (
                           <div className="inline-block">
                             <span className={`text-xs px-3 py-1 rounded-full font-medium ${
