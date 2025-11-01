@@ -1143,10 +1143,28 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     </div>
 
                     {/* Additional Risk Information */}
-                    {(risk.vulnerabilities || risk.affectedFunctions || risk.potentialImpact) && (
+                    {(risk.vulnerabilities || risk.affectedFunctions || risk.potentialImpact || risk.riskCategory || risk.riskTier) && (
                       <div className="border-t pt-4 space-y-2">
+                        {risk.riskCategory && (
+                          <div className="inline-block mr-3">
+                            <span className="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full font-medium">
+                              Category: {risk.riskCategory}
+                            </span>
+                          </div>
+                        )}
+                        {risk.riskTier && (
+                          <div className="inline-block">
+                            <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                              risk.riskTier === 1 ? 'bg-red-100 text-red-800' : 
+                              risk.riskTier === 2 ? 'bg-yellow-100 text-yellow-800' : 
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              Tier {risk.riskTier} Priority
+                            </span>
+                          </div>
+                        )}
                         {risk.vulnerabilities && (
-                          <div>
+                          <div className="mt-2">
                             <div className="text-xs font-semibold text-gray-700 mb-1">Vulnerabilities:</div>
                             <div className="text-sm text-gray-600">{risk.vulnerabilities}</div>
                           </div>
