@@ -4,32 +4,17 @@ import 'jspdf-autotable'
 import { centralDataService } from '../../../services/centralDataService'
 import type { Strategy } from '../../../types/admin'
 
-// Transformation functions for consistent labeling
-const HAZARD_LABELS: { [key: string]: string } = {
-  'hurricane': 'Hurricane/Tropical Storm',
-  'power_outage': 'Extended Power Outage',
-  'cyber_attack': 'Cyber Attack/Security Breach',
-  'fire': 'Fire Emergency',
-  'earthquake': 'Earthquake',
-  'flood': 'Flooding',
-  'drought': 'Drought/Water Shortage',
-  'volcanic_activity': 'Volcanic Activity'
-}
-
-const STRATEGY_LABELS: { [key: string]: string } = {
-  'prevention': 'Prevention Strategies',
-  'response': 'Response Strategies', 
-  'recovery': 'Recovery Strategies'
-}
-
+// Transformation functions - All hazard data comes from Admin2 database
 function transformHazardName(hazardCode: string): string {
   if (typeof hazardCode !== 'string') return String(hazardCode || '')
-  return HAZARD_LABELS[hazardCode] || hazardCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  // Simply format the hazard code - actual names come from database
+  return hazardCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 function transformStrategyName(strategyCode: string): string {
   if (typeof strategyCode !== 'string') return String(strategyCode || '')
-  return STRATEGY_LABELS[strategyCode] || strategyCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+  // Simply format the strategy code - actual names come from database
+  return strategyCode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }
 
 // Generate action plans using database strategies
