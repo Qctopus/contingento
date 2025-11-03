@@ -139,3 +139,5 @@ Do nothing! It won't show in the plan anymore since there are no strategies for 
 
 The risk you saw was real data from your risk assessment, not hardcoded. The system now correctly filters it out when there are no protection strategies selected.
 
+
+

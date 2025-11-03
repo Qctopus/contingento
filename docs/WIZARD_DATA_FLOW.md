@@ -203,3 +203,6 @@ The system will then generate different risks and strategies appropriate for tha
 **Remember**: The sample data is just the starting point. The real power is in the system's ability to intelligently generate risk assessments and recommendations based on industry and location data. Always let the system do its job rather than pre-filling everything manually!
 
 
+
+
+

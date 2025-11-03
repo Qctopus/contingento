@@ -35,23 +35,71 @@ interface BusinessPlanReviewProps {
 
 // Layout components
 const CompactCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white border border-gray-200 rounded-lg p-6 shadow-sm ${className}`}>
+  <div className={`bg-white border border-gray-200 rounded-lg p-4 shadow-sm print-compact page-break-avoid ${className}`}>
     {children}
   </div>
 )
 
 const InfoGrid = ({ items }: { items: Array<{ label: string, value: any }> }) => (
-  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
     {items.map((item, index) => (
-      <div key={index} className="bg-gray-50 rounded-lg p-3">
-        <dt className="text-sm font-medium text-gray-600 mb-1">{item.label}</dt>
+      <div key={index} className="bg-gray-50 rounded-lg p-2">
+        <dt className="text-xs font-medium text-gray-600 mb-0.5">{item.label}</dt>
         <dd className="text-sm text-gray-900">{item.value || 'Not specified'}</dd>
       </div>
     ))}
   </div>
 )
 
-// Helper functions
+// Helper functions for small business language
+const simplifyForSmallBusiness = (text: string): string => {
+  if (!text) return text
+  
+  // Replace corporate terms with small business language
+  const replacements: Record<string, string> = {
+    'operations team': 'you and your staff',
+    'management team': 'you as the owner',
+    'dedicated staff': 'someone on your team',
+    'specialized personnel': 'trained person',
+    'department heads': 'key people',
+    'organizational structure': 'how your business is set up',
+    'stakeholder engagement': 'talking to people involved',
+    'implementation phase': 'getting it done',
+    'coordination efforts': 'working together',
+    'emergency response team': 'key people',
+    'staff members': 'you and your employees',
+    'team leader': 'owner/manager',
+    'operations coordinator': 'second-in-command',
+    'communications officer': 'person to contact customers',
+    'it specialist': 'person who handles tech',
+    'safety officer': 'person responsible for safety',
+    'finance coordinator': 'person who handles money'
+  }
+  
+  let simplified = text
+  Object.entries(replacements).forEach(([corporate, simple]) => {
+    const regex = new RegExp(corporate, 'gi')
+    simplified = simplified.replace(regex, simple)
+  })
+  
+  return simplified
+}
+
+const getFieldValue = (data: any, field: string, defaultValue: string = 'Not specified'): string => {
+  if (!data || !data[field]) return defaultValue
+  const value = data[field]
+  if (typeof value === 'string') return value
+  if (typeof value === 'object' && value.en) return value.en
+  return defaultValue
+}
+
+const hasData = (data: any): boolean => {
+  if (!data) return false
+  if (Array.isArray(data)) return data.length > 0
+  if (typeof data === 'object') return Object.keys(data).length > 0
+  return !!data
+}
+
 function getRiskLevelBadgeColor(riskLevel: string): { bg: string, text: string, border: string } {
   const level = riskLevel.toLowerCase()
   if (level.includes('extreme')) return { bg: 'bg-black', text: 'text-white', border: 'border-black' }
@@ -114,6 +162,81 @@ function calculateStrategyCost(strategy: Strategy, locale: Locale): string {
   return 'JMD 75,000-200,000'
 }
 
+// CRITICAL: Extract calculated risk data from formData
+function getRiskCalculations(formData: any, riskName: string, allRisks: any[]) {
+  // Method 1: Check RISK_CALCULATIONS (from wizard pre-fill)
+  if (formData.RISK_CALCULATIONS && Array.isArray(formData.RISK_CALCULATIONS)) {
+    const calc = formData.RISK_CALCULATIONS.find((r: any) => 
+      r.hazardName?.toLowerCase() === riskName.toLowerCase() ||
+      r.Hazard?.toLowerCase() === riskName.toLowerCase() ||
+      r.name?.toLowerCase() === riskName.toLowerCase()
+    )
+    if (calc) {
+      return {
+        likelihood: calc.likelihood || calc.Likelihood || 'Not assessed',
+        likelihoodScore: calc.likelihoodScore || calc.LikelihoodScore || null,
+        severity: calc.severity || calc.Severity || 'Not assessed',
+        severityScore: calc.severityScore || calc.SeverityScore || null,
+        riskScore: calc.riskScore || calc['Risk Score'] || calc.RiskScore || null,
+        reasoning: calc.reasoning || calc.Reasoning || null
+      }
+    }
+  }
+  
+  // Method 2: Check risk assessment matrix data
+  const riskData = allRisks.find((r: any) => {
+    const name = (r.Hazard || r.hazardName || r.name || '').toLowerCase()
+    return name === riskName.toLowerCase()
+  })
+  
+  if (riskData) {
+    return {
+      likelihood: riskData.Likelihood || riskData.likelihood || 'Not assessed',
+      likelihoodScore: riskData.likelihoodScore || riskData.LikelihoodScore || null,
+      severity: riskData.Severity || riskData.severity || 'Not assessed',
+      severityScore: riskData.severityScore || riskData.SeverityScore || null,
+      riskScore: riskData['Risk Score'] || riskData.riskScore || riskData.RiskScore || null,
+      reasoning: riskData.Reasoning || riskData.reasoning || null
+    }
+  }
+  
+  return {
+    likelihood: 'Not assessed',
+    likelihoodScore: null,
+    severity: 'Not assessed',
+    severityScore: null,
+    riskScore: null,
+    reasoning: null
+  }
+}
+
+// Calculate total cost for multiple strategies
+function calculateTotalCost(strategies: any[]): string {
+  const costs = strategies
+    .map(s => s.costEstimateJMD || '')
+    .filter(c => typeof c === 'string' && c.includes('JMD'))
+  
+  if (costs.length === 0) return 'Contact suppliers for quotes'
+  
+  // Extract ranges and sum
+  const ranges = costs.map(c => {
+    const match = c.match(/JMD\s*([\d,]+)(?:-(\d+,?\d*))?/)
+    if (!match) return null
+    return {
+      min: parseInt(match[1].replace(/,/g, '')),
+      max: match[2] ? parseInt(match[2].replace(/,/g, '')) : null
+    }
+  }).filter(Boolean) as Array<{min: number, max: number | null}>
+  
+  const totalMin = ranges.reduce((sum, r) => sum + r.min, 0)
+  const totalMax = ranges.reduce((sum, r) => sum + (r.max || r.min), 0)
+  
+  if (totalMin === totalMax) {
+    return `JMD ${totalMin.toLocaleString()}`
+  }
+  return `JMD ${totalMin.toLocaleString()} - ${totalMax.toLocaleString()}`
+}
+
 export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   formData,
   riskSummary,
@@ -139,6 +262,27 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
     loadStrategies()
   }, [])
 
+  // Comprehensive data debug logging
+  useEffect(() => {
+    console.log('📊 BusinessPlanReview Data Debug:')
+    console.log('  formData keys:', Object.keys(formData))
+    console.log('  RISK_ASSESSMENT:', formData.RISK_ASSESSMENT)
+    console.log('  RISK_CALCULATIONS:', formData.RISK_CALCULATIONS)
+    console.log('  STRATEGIES:', formData.STRATEGIES)
+    
+    if (formData.RISK_ASSESSMENT?.['Risk Assessment Matrix']) {
+      console.log('  Risk Matrix Data:')
+      formData.RISK_ASSESSMENT['Risk Assessment Matrix'].forEach((risk: any, idx: number) => {
+        console.log(`    ${idx + 1}. ${risk.Hazard || risk.name}:`, {
+          likelihood: risk.Likelihood || risk.likelihood,
+          severity: risk.Severity || risk.severity,
+          score: risk['Risk Score'] || risk.riskScore,
+          riskLevel: risk.riskLevel || risk.RiskLevel
+        })
+      })
+    }
+  }, [formData])
+
   // Get selected risks from formData
   // Support both explicit isSelected flag and absence of flag (for sample data compatibility)
   const allRisks = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
@@ -151,128 +295,140 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
     return true
   })
 
-  console.log('🔍 Risk Debug:', {
-    totalRisks: allRisks.length,
-    selectedRisks: selectedRisks.length,
-    hasRiskAssessment: !!formData.RISK_ASSESSMENT,
-    riskMatrixExists: !!formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'],
-    firstRisk: allRisks[0]
-  })
-
   // Get selected strategies from formData
   const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
-  
-  console.log('🔍 Strategy Debug:', {
-    hasStrategies: !!formData.STRATEGIES,
-    strategiesKey: formData.STRATEGIES ? Object.keys(formData.STRATEGIES) : [],
-    selectedCount: selectedStrategies.length,
-    firstStrategy: selectedStrategies[0]
-  })
 
   // Get user-selected strategies (they chose these in the wizard)
   const selectedStrategyIds = new Set(selectedStrategies.map((s: any) => s.id || s.strategyId))
 
+  // Print styles
+  const printStyles = `
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .space-y-4 {
+    row-gap: 0.5rem !important;
+  }
+  
+  .space-y-3 {
+    row-gap: 0.375rem !important;
+  }
+  
+  .p-4 {
+    padding: 0.5rem !important;
+  }
+  
+  .page-break-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  
+  .print-compact {
+    padding: 0.25rem !important;
+    margin: 0.25rem 0 !important;
+  }
+  
+  .bg-white {
+    box-shadow: none !important;
+    border: 1px solid #d1d5db !important;
+  }
+}
+`
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4 space-y-8">
+    <div className="min-h-screen bg-gray-50 py-4">
+      <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+      <div className="max-w-6xl mx-auto px-4 space-y-4">
         
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary-600 to-primary-800 text-white rounded-lg p-8 shadow-lg">
-          <h1 className="text-3xl font-bold mb-2">Business Continuity Plan</h1>
-          <p className="text-primary-100">
-            {(() => {
-              const name = formData.PLAN_INFORMATION?.['Company Name'] || 'Your Business'
-              return typeof name === 'string' ? name : getLocalizedText(name, locale) || 'Your Business'
-            })()}
-          </p>
-          <p className="text-sm text-primary-200 mt-4">
-            Generated: {new Date().toLocaleDateString()} | Version {formData.PLAN_INFORMATION?.['Plan Version'] || '1.0'}
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-between items-center">
-          <button
-            onClick={onBack}
-            className="px-6 py-2 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-          >
-            ← Back to Edit
-          </button>
-          <button
-            onClick={onExportPDF}
-            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm"
-          >
-            📄 Export as PDF
-          </button>
-        </div>
-
-        {/* SECTION 1: BUSINESS OVERVIEW */}
-        <CompactCard>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-3">
-            SECTION 1: YOUR BUSINESS
-          </h2>
-          
-          <div className="space-y-6">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-3">Business Information</h3>
-              <InfoGrid items={[
-                { 
-                  label: 'Company Name', 
-                  value: (() => {
-                    const name = formData.PLAN_INFORMATION?.['Company Name']
-                    return name && typeof name === 'string' ? name : (name ? getLocalizedText(name, locale) : 'Not specified')
-                  })()
-                },
-                { 
-                  label: 'Business Address', 
-                  value: (() => {
-                    const address = formData.PLAN_INFORMATION?.['Business Address']
-                    return address && typeof address === 'string' ? address : (address ? getLocalizedText(address, locale) : 'Not specified')
-                  })()
-                },
-                { 
-                  label: 'Plan Manager', 
-                  value: (() => {
-                    const manager = formData.PLAN_INFORMATION?.['Plan Manager']
-                    return manager && typeof manager === 'string' ? manager : (manager ? getLocalizedText(manager, locale) : 'Not specified')
-                  })()
-                },
-                { 
-                  label: 'Alternate Manager', 
-                  value: (() => {
-                    const altManager = formData.PLAN_INFORMATION?.['Alternate Manager']
-                    return altManager && typeof altManager === 'string' ? altManager : (altManager ? getLocalizedText(altManager, locale) : 'Not specified')
-                  })()
-                }
-              ]} />
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">What We Do</h3>
-              <p className="text-gray-700 leading-relaxed">
-                {(() => {
-                  const purpose = formData.BUSINESS_OVERVIEW?.['Business Purpose']
-                  return purpose && typeof purpose === 'string' ? purpose : (purpose ? getLocalizedText(purpose, locale) : 'Not specified')
-                })()}
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Products & Services</h3>
-              <p className="text-gray-700 leading-relaxed">
-                {(() => {
-                  const products = formData.BUSINESS_OVERVIEW?.['Products and Services'] || formData.BUSINESS_OVERVIEW?.['Products & Services']
-                  return products && typeof products === 'string' ? products : (products ? getLocalizedText(products, locale) : 'Not specified')
-                })()}
-              </p>
+        {/* Compact Professional Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg shadow-lg overflow-hidden no-print">
+          <div className="p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">
+              <div>
+                <h1 className="text-2xl font-bold mb-1">Business Continuity Plan</h1>
+                <p className="text-blue-100 text-sm">
+                  {getFieldValue(formData.PLAN_INFORMATION, 'Company Name', 'Your Business')}
+                </p>
+              </div>
+              <div className="text-left sm:text-right text-sm">
+                <div className="text-blue-100">Version {getFieldValue(formData.PLAN_INFORMATION, 'Plan Version', '1.0')}</div>
+                <div className="text-blue-200 text-xs">{new Date().toLocaleDateString()}</div>
+              </div>
             </div>
           </div>
-        </CompactCard>
+          
+          {/* Action Bar */}
+          <div className="bg-blue-900 bg-opacity-50 px-6 py-3 flex items-center justify-between">
+            <button
+              onClick={onBack}
+              className="text-sm font-medium text-white hover:text-blue-200 transition-colors"
+            >
+              ← Back to Edit
+            </button>
+            <button
+              onClick={onExportPDF}
+              className="px-4 py-2 bg-white text-blue-900 rounded text-sm font-semibold hover:bg-blue-50 transition-colors"
+            >
+              📄 Export PDF
+            </button>
+          </div>
+        </div>
+
+        {/* SECTION 1: BUSINESS OVERVIEW - Clean Layout */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+            <h2 className="text-lg font-bold text-gray-900">📋 SECTION 1: YOUR BUSINESS</h2>
+          </div>
+          
+          <div className="p-4">
+            {/* 2-Column Grid for Key Info */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 mb-4">
+              <InfoRow 
+                label="Business Name" 
+                value={getFieldValue(formData.PLAN_INFORMATION, 'Company Name')} 
+              />
+              <InfoRow 
+                label="Location" 
+                value={getFieldValue(formData.PLAN_INFORMATION, 'Business Address')} 
+              />
+              <InfoRow 
+                label="Plan Manager" 
+                value={getFieldValue(formData.PLAN_INFORMATION, 'Plan Manager')} 
+              />
+              <InfoRow 
+                label="Emergency Contact" 
+                value={getFieldValue(formData.PLAN_INFORMATION, 'Alternate Manager')} 
+              />
+            </div>
+            
+            {/* Business Overview */}
+            {hasData(formData.BUSINESS_OVERVIEW?.['Business Purpose']) && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="text-xs font-semibold text-gray-600 mb-1">WHAT WE DO</div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {getFieldValue(formData.BUSINESS_OVERVIEW, 'Business Purpose')}
+                </p>
+              </div>
+            )}
+            
+            {/* Products & Services */}
+            {hasData(formData.BUSINESS_OVERVIEW?.['Products and Services'] || formData.BUSINESS_OVERVIEW?.['Products & Services']) && (
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <div className="text-xs font-semibold text-gray-600 mb-1">PRODUCTS & SERVICES</div>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {getFieldValue(formData.BUSINESS_OVERVIEW, 'Products and Services') || getFieldValue(formData.BUSINESS_OVERVIEW, 'Products & Services')}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* SECTION 2: YOUR RISKS & PROTECTION PLAN */}
         <CompactCard>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-3">
-            SECTION 2: YOUR RISKS & PROTECTION PLAN
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 border-b pb-2">
+            SECTION 2: WHAT COULD GO WRONG & HOW TO PREPARE
           </h2>
 
           {selectedRisks.length === 0 ? (
@@ -296,33 +452,33 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 })
 
                 return (
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-8 border-2 border-blue-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Risk Overview</h3>
-                    <div className="grid md:grid-cols-4 gap-4">
-                      <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                        <div className="text-3xl font-bold text-gray-900">{risksWithStrategies.length}</div>
-                        <div className="text-sm text-gray-600 mt-1">Risks Addressed</div>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 mb-4 border-2 border-blue-200">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">Your Risk Overview</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="bg-white rounded-lg p-3 text-center shadow-sm">
+                        <div className="text-2xl font-bold text-gray-900">{risksWithStrategies.length}</div>
+                        <div className="text-xs text-gray-600 mt-0.5">Risks Addressed</div>
                       </div>
-                      <div className="bg-black rounded-lg p-4 text-center shadow-sm">
-                        <div className="text-3xl font-bold text-white">
+                      <div className="bg-black rounded-lg p-3 text-center shadow-sm">
+                        <div className="text-2xl font-bold text-white">
                           {risksWithStrategies.filter((r: any) => r.riskLevel?.toLowerCase().includes('extreme')).length}
                         </div>
-                        <div className="text-sm text-gray-200 mt-1">EXTREME</div>
+                        <div className="text-xs text-gray-200 mt-0.5">EXTREME</div>
                       </div>
-                      <div className="bg-red-500 rounded-lg p-4 text-center shadow-sm">
-                        <div className="text-3xl font-bold text-white">
+                      <div className="bg-red-500 rounded-lg p-3 text-center shadow-sm">
+                        <div className="text-2xl font-bold text-white">
                           {risksWithStrategies.filter((r: any) => {
                             const level = r.riskLevel?.toLowerCase() || ''
                             return level.includes('high') && !level.includes('extreme')
                           }).length}
                         </div>
-                        <div className="text-sm text-white mt-1">HIGH</div>
+                        <div className="text-xs text-white mt-0.5">HIGH</div>
                       </div>
-                      <div className="bg-yellow-500 rounded-lg p-4 text-center shadow-sm">
-                        <div className="text-3xl font-bold text-white">
+                      <div className="bg-yellow-500 rounded-lg p-3 text-center shadow-sm">
+                        <div className="text-2xl font-bold text-white">
                           {risksWithStrategies.filter((r: any) => r.riskLevel?.toLowerCase().includes('medium')).length}
                         </div>
-                        <div className="text-sm text-white mt-1">MEDIUM</div>
+                        <div className="text-xs text-white mt-0.5">MEDIUM</div>
                       </div>
                     </div>
                   </div>
@@ -331,14 +487,21 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
               {/* Sort risks by score (highest first) and filter to only those with selected strategies */}
               {selectedRisks
-                .sort((a: any, b: any) => (b.riskScore || 0) - (a.riskScore || 0))
+                .sort((a: any, b: any) => {
+                  // Get risk scores from multiple possible locations
+                  const scoreA = parseFloat(a.riskScore || a['Risk Score'] || a.RiskScore || '0')
+                  const scoreB = parseFloat(b.riskScore || b['Risk Score'] || b.RiskScore || '0')
+                  return scoreB - scoreA // Highest risk first
+                })
                 .map((risk: any, riskIndex: number) => {
                   const hazardName = transformHazardName(risk.hazard || risk.Hazard)
                   const riskLevel = risk.riskLevel || risk['Risk Level'] || 'Medium'
-                  const riskScore = risk.riskScore || risk['Risk Score'] || 5
                   const hazardId = risk.hazardId || risk.hazard
-                  const reasoning = getLocalizedText(risk.reasoning, locale)
                   const colors = getRiskLevelBadgeColor(riskLevel)
+                  
+                  // CRITICAL: Get calculated risk data (likelihood, impact, score)
+                  const riskCalc = getRiskCalculations(formData, hazardName, allRisks)
+                  const reasoning = riskCalc.reasoning || getLocalizedText(risk.reasoning, locale)
 
                   // Find strategies that address this risk AND were selected by user
                   const applicableStrategies = selectedStrategies.filter((strategy: Strategy) => {
@@ -359,79 +522,83 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                     : 'To be determined'
 
                   return (
-                    <div key={riskIndex} className={`mb-12 border-l-8 ${colors.border} rounded-r-lg bg-white shadow-lg print:break-inside-avoid`}>
+                    <div key={riskIndex} className={`mb-6 border-l-4 ${colors.border} rounded-r-lg bg-white shadow-lg print:break-inside-avoid`}>
                       {/* Risk Header */}
-                      <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b-2">
-                        <div className="flex items-start justify-between mb-4">
+                      <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b-2">
+                        <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <span className="text-3xl">⚠️</span>
-                              <h3 className="text-2xl font-bold text-gray-900">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <span className="text-2xl">⚠️</span>
+                              <h3 className="text-lg md:text-xl font-bold text-gray-900">
                                 RISK #{riskIndex + 1}: {hazardName.toUpperCase()}
                               </h3>
                             </div>
                           </div>
-                          <span className={`${colors.bg} ${colors.text} px-4 py-2 rounded-full text-sm font-bold shadow-sm whitespace-nowrap`}>
+                          <span className={`${colors.bg} ${colors.text} px-3 py-1 rounded-full text-xs font-bold shadow-sm whitespace-nowrap`}>
                             {typeof riskLevel === 'string' ? riskLevel : getLocalizedText(riskLevel, locale)}
                           </span>
                         </div>
 
-                        {/* Risk Profile */}
-                        <div className="bg-white rounded-lg p-4 border-2 border-gray-200">
-                          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-                            <span className="text-lg mr-2">📊</span>
-                            YOUR RISK PROFILE
-                          </h4>
-                          <div className="grid md:grid-cols-3 gap-4">
-                            <div className="bg-gray-50 rounded p-3">
-                              <div className="text-xs text-gray-600 mb-1">Likelihood</div>
-                              <div className="font-semibold text-gray-900">
-                                {typeof risk.likelihood === 'string' ? risk.likelihood : getLocalizedText(risk.likelihood, locale)}
-                              </div>
-                            </div>
-                            <div className="bg-gray-50 rounded p-3">
-                              <div className="text-xs text-gray-600 mb-1">Impact / Severity</div>
-                              <div className="font-semibold text-gray-900">
-                                {typeof risk.severity === 'string' ? risk.severity : getLocalizedText(risk.severity, locale)}
-                              </div>
-                            </div>
-                            <div className="bg-gray-50 rounded p-3">
-                              <div className="text-xs text-gray-600 mb-1">Risk Score</div>
-                              <div className="font-semibold text-gray-900">{riskScore}/10</div>
-                            </div>
-                          </div>
+                        {/* Risk Profile - Using MetricBox with real data */}
+                        <div className="grid grid-cols-3 gap-0 border border-gray-200 rounded-lg overflow-hidden">
+                          <MetricBox
+                            label="LIKELIHOOD"
+                            value={riskCalc.likelihood}
+                            score={riskCalc.likelihoodScore}
+                            color="blue"
+                          />
+                          <MetricBox
+                            label="IMPACT"
+                            value={riskCalc.severity}
+                            score={riskCalc.severityScore}
+                            color="orange"
+                            borderLeft
+                          />
+                          <MetricBox
+                            label="RISK SCORE"
+                            value={riskCalc.riskScore ? 
+                              (typeof riskCalc.riskScore === 'number' ? `${riskCalc.riskScore.toFixed(1)}/10` : `${riskCalc.riskScore}/10`) 
+                              : 'Not calculated'}
+                            score={null}
+                            color="red"
+                            borderLeft
+                          />
                         </div>
 
                         {/* Why This Matters */}
                         {reasoning && (
-                          <div className="mt-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4">
-                            <h4 className="font-semibold text-blue-900 mb-2 flex items-center">
-                              <span className="text-lg mr-2">🎯</span>
-                              WHY THIS MATTERS TO YOUR BUSINESS
+                          <div className="mt-3 bg-blue-50 border-l-2 border-blue-500 rounded-r-lg p-3">
+                            <h4 className="font-semibold text-blue-900 mb-1 flex items-center text-xs">
+                              <span className="text-sm mr-1.5">🎯</span>
+                              WHY THIS MATTERS
                             </h4>
-                            <p className="text-blue-800 leading-relaxed">{reasoning}</p>
+                            <p className="text-sm text-blue-800 leading-relaxed">{simplifyForSmallBusiness(reasoning)}</p>
                           </div>
                         )}
                       </div>
 
                       {/* Protection Plan for This Risk */}
-                      <div className="p-6">
-                        <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-                          <ShieldCheckIcon className="w-6 h-6 mr-2 text-green-600" />
-                          YOUR PROTECTION PLAN
-                        </h4>
+                      <div className="p-4 bg-gray-50">
+                        <div className="bg-blue-600 text-white rounded-lg p-3 mb-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-base font-bold flex items-center">
+                              <span className="mr-2">🛡️</span>
+                              WHAT YOU NEED TO DO
+                            </h4>
+                            <span className="bg-white text-blue-600 px-3 py-1 rounded-full text-sm font-bold">
+                              {applicableStrategies.length} {applicableStrategies.length === 1 ? 'Action' : 'Actions'}
+                            </span>
+                          </div>
+                        </div>
 
                         {/* This check is no longer needed since we filter out risks with no strategies above */}
                         {applicableStrategies.length > 0 && (
                           <>
-                            <p className="text-gray-700 mb-6">
-                              We recommend {applicableStrategies.length} {applicableStrategies.length === 1 ? 'strategy' : 'strategies'} to protect against this risk:
-                            </p>
 
                             {/* Each Strategy */}
                             {applicableStrategies.map((strategy: Strategy, stratIndex: number) => {
-                              const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
-                              const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale)
+                              const strategyTitle = simplifyForSmallBusiness(getLocalizedText(strategy.smeTitle || strategy.name, locale))
+                              const strategySummary = simplifyForSmallBusiness(getLocalizedText(strategy.smeSummary || strategy.description, locale))
                               // benefitsBullets is already a string array, not multilingual
                               const benefits = strategy.benefitsBullets || []
                               const realWorldExample = getLocalizedText(strategy.realWorldExample, locale)
@@ -447,195 +614,95 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                               const resources = aggregateResources(allSteps)
 
                               return (
-                                <div key={stratIndex} className="mb-8 border-2 border-gray-200 rounded-lg overflow-hidden print:break-inside-avoid">
-                                  {/* Strategy Header */}
-                                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-5 border-b-2">
-                                    <div className="flex items-start justify-between mb-3">
-                                      <h5 className="text-lg font-bold text-gray-900 flex items-center flex-1">
-                                        <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                <div key={stratIndex} className="mb-4 border-2 border-gray-300 rounded-lg overflow-hidden print:break-inside-avoid bg-white">
+                                  {/* ULTRA-SIMPLE HEADER: Just the title and cost */}
+                                  <div className="bg-gray-900 text-white p-3">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-base font-bold flex items-center">
+                                        <span className="bg-white text-gray-900 w-7 h-7 text-sm rounded-full flex items-center justify-center mr-2 font-bold">
                                           {stratIndex + 1}
                                         </span>
                                         {strategyTitle}
                                       </h5>
                                       {strategy.quickWinIndicator && (
-                                        <span className="bg-green-500 text-white text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ml-4">
+                                        <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-bold uppercase">
                                           Quick Win
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-gray-700 leading-relaxed ml-11">{strategySummary}</p>
+                                    <div className="mt-2 ml-9 text-yellow-300 font-bold text-lg">
+                                      💰 {costEstimate}
+                                    </div>
                                   </div>
 
-                                  <div className="p-5 space-y-4">
-                                    {/* Benefits */}
-                                    {Array.isArray(benefits) && benefits.length > 0 && (
-                                      <div className="bg-blue-50 rounded-lg p-4">
-                                        <h6 className="font-semibold text-blue-900 mb-2">What You Get:</h6>
-                                        <ul className="space-y-1">
-                                          {benefits.map((benefit: string, idx: number) => (
-                                            <li key={idx} className="text-sm text-blue-800 flex items-start">
-                                              <span className="text-blue-600 mr-2 mt-0.5">✓</span>
-                                              <span>{benefit}</span>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    )}
-
-                                    {/* Investment Overview */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <div className="flex items-center mb-1">
-                                          <CurrencyDollarIcon className="w-4 h-4 text-gray-600 mr-1" />
-                                          <div className="text-xs text-gray-600">Investment</div>
+                                  {/* SIMPLIFIED CONTENT: Two clear options */}
+                                  <div className="p-4 bg-gray-50">
+                                    <div className="bg-white border-2 border-gray-200 rounded-lg p-3 mb-3">
+                                      <div className="flex items-start space-x-2">
+                                        <span className="text-2xl">👷</span>
+                                        <div className="flex-1">
+                                          <div className="font-bold text-gray-900 text-sm mb-1">OPTION 1: Hire Someone</div>
+                                          <div className="text-xs text-gray-700 mb-2">{strategySummary}</div>
+                                          <div className="text-xs text-gray-600">
+                                            Cost: {costEstimate} • Time: {timeEstimate}
+                                          </div>
                                         </div>
-                                        <div className="font-semibold text-gray-900">{costEstimate}</div>
-                                      </div>
-                                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <div className="flex items-center mb-1">
-                                          <ClockIcon className="w-4 h-4 text-gray-600 mr-1" />
-                                          <div className="text-xs text-gray-600">Time Required</div>
-                                        </div>
-                                        <div className="font-semibold text-gray-900">{timeEstimate}</div>
                                       </div>
                                     </div>
 
-                                    {/* Real-world example */}
-                                    {realWorldExample && (
-                                      <div className="bg-green-50 border-l-4 border-green-500 rounded-r-lg p-4">
-                                        <h6 className="font-semibold text-green-900 mb-2">Real Success Story:</h6>
-                                        <p className="text-sm text-green-800 leading-relaxed">{realWorldExample}</p>
-                                      </div>
-                                    )}
-
-                                    {/* Budget-friendly options */}
                                     {(lowBudgetAlt || diyApproach) && (
-                                      <div className="border-t pt-4 space-y-3">
-                                        {lowBudgetAlt && (
-                                          <div>
-                                            <h6 className="font-semibold text-gray-900 mb-1">💰 Low-Budget Option:</h6>
-                                            <p className="text-sm text-gray-700 leading-relaxed">{lowBudgetAlt}</p>
-                                          </div>
-                                        )}
-                                        {diyApproach && (
-                                          <div>
-                                            <h6 className="font-semibold text-gray-900 mb-1">🔧 Do It Yourself:</h6>
-                                            <p className="text-sm text-gray-700 leading-relaxed">{diyApproach}</p>
+                                      <div className="bg-green-50 border-2 border-green-300 rounded-lg p-3 mb-3">
+                                        <div className="flex items-start space-x-2">
+                                          <span className="text-2xl">🔧</span>
+                                          <div className="flex-1">
+                                            <div className="font-bold text-gray-900 text-sm mb-1">OPTION 2: Do It Yourself</div>
+                                            <div className="text-xs text-gray-700 mb-1">
+                                              {simplifyForSmallBusiness(diyApproach || lowBudgetAlt)}
+                                            </div>
                                             {estimatedSavings && (
-                                              <p className="text-xs text-green-600 mt-1 font-medium">
-                                                Potential savings: {estimatedSavings}
-                                              </p>
+                                              <div className="text-xs text-green-700 font-bold">
+                                                💰 Save: {estimatedSavings}
+                                              </div>
                                             )}
                                           </div>
-                                        )}
+                                        </div>
                                       </div>
                                     )}
 
-                                    {/* Detailed Action Steps */}
+                                    {/* SIMPLE CHECKBOX LIST - Top 5 most important steps */}
                                     {allSteps.length > 0 && (
-                                      <div className="border-t pt-4">
-                                        <h6 className="font-semibold text-gray-900 mb-4">Exactly What To Do:</h6>
-
-                                        {/* Resources Needed */}
-                                        {resources.length > 0 && (
-                                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                                            <h6 className="font-semibold text-gray-900 mb-2">Resources & Equipment Needed:</h6>
-                                            <div className="grid md:grid-cols-2 gap-2">
-                                              {resources.map((resource, idx) => (
-                                                <div key={idx} className="text-sm text-gray-800 flex items-center">
-                                                  <span className="text-yellow-600 mr-2">□</span>
-                                                  {resource}
-                                                </div>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* BEFORE (Immediate Actions) */}
-                                        {stepsByPhase.before.length > 0 && (
-                                          <div className="mb-6">
-                                            <div className="bg-red-50 border-l-4 border-red-600 rounded-r-lg p-3 mb-3">
-                                              <h6 className="font-bold text-red-900">🔴 BEFORE (Immediate - 0-24 hours)</h6>
-                                              <p className="text-xs text-red-700 mt-1">Critical actions to take immediately</p>
-                                            </div>
-
-                                            <div className="space-y-4 ml-4">
-                                              {stepsByPhase.before.map((step: ActionStep, stepIdx: number) => (
-                                                <ActionStepCard 
-                                                  key={stepIdx} 
-                                                  step={step} 
-                                                  stepNumber={stepIdx + 1} 
-                                                  locale={locale}
-                                                  color="red"
+                                      <div className="bg-white border-2 border-blue-300 rounded-lg p-3">
+                                        <div className="font-bold text-gray-900 text-sm mb-2 flex items-center">
+                                          <span className="text-blue-600 mr-2">📋</span>
+                                          Your Action Checklist:
+                                        </div>
+                                        <div className="space-y-2">
+                                          {allSteps.slice(0, 5).map((step: ActionStep, idx: number) => {
+                                            const stepTitle = simplifyForSmallBusiness(getLocalizedText(step.smeAction || step.action || step.title, locale))
+                                            const cost = getLocalizedText(step.estimatedCostJMD, locale)
+                                            
+                                            return (
+                                              <div key={idx} className="flex items-start space-x-2 p-2 hover:bg-gray-50 rounded">
+                                                <input 
+                                                  type="checkbox" 
+                                                  className="mt-1 w-5 h-5 rounded border-gray-300"
+                                                  id={`step-${stratIndex}-${idx}`}
                                                 />
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* DURING (Short-term Actions) */}
-                                        {stepsByPhase.during.length > 0 && (
-                                          <div className="mb-6">
-                                            <div className="bg-orange-50 border-l-4 border-orange-600 rounded-r-lg p-3 mb-3">
-                                              <h6 className="font-bold text-orange-900">🟠 DURING (Short-term - 1-7 days)</h6>
-                                              <p className="text-xs text-orange-700 mt-1">Actions during and immediately after the event</p>
-                                            </div>
-
-                                            <div className="space-y-4 ml-4">
-                                              {stepsByPhase.during.map((step: ActionStep, stepIdx: number) => (
-                                                <ActionStepCard 
-                                                  key={stepIdx} 
-                                                  step={step} 
-                                                  stepNumber={stepIdx + 1} 
-                                                  locale={locale}
-                                                  color="orange"
-                                                />
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* AFTER (Medium-term Recovery) */}
-                                        {stepsByPhase.after.length > 0 && (
-                                          <div className="mb-6">
-                                            <div className="bg-blue-50 border-l-4 border-blue-600 rounded-r-lg p-3 mb-3">
-                                              <h6 className="font-bold text-blue-900">🔵 AFTER (Recovery - 1-4 weeks)</h6>
-                                              <p className="text-xs text-blue-700 mt-1">Recovery and restoration actions</p>
-                                            </div>
-
-                                            <div className="space-y-4 ml-4">
-                                              {stepsByPhase.after.map((step: ActionStep, stepIdx: number) => (
-                                                <ActionStepCard 
-                                                  key={stepIdx} 
-                                                  step={step} 
-                                                  stepNumber={stepIdx + 1} 
-                                                  locale={locale}
-                                                  color="blue"
-                                                />
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* ONGOING (Long-term Prevention) */}
-                                        {stepsByPhase.ongoing.length > 0 && (
-                                          <div className="mb-6">
-                                            <div className="bg-green-50 border-l-4 border-green-600 rounded-r-lg p-3 mb-3">
-                                              <h6 className="font-bold text-green-900">🟢 ONGOING (Prevention - 1-6 months)</h6>
-                                              <p className="text-xs text-green-700 mt-1">Long-term improvements to reduce future risk</p>
-                                            </div>
-
-                                            <div className="space-y-4 ml-4">
-                                              {stepsByPhase.ongoing.map((step: ActionStep, stepIdx: number) => (
-                                                <ActionStepCard 
-                                                  key={stepIdx} 
-                                                  step={step} 
-                                                  stepNumber={stepIdx + 1} 
-                                                  locale={locale}
-                                                  color="green"
-                                                />
-                                              ))}
-                                            </div>
+                                                <label htmlFor={`step-${stratIndex}-${idx}`} className="flex-1 cursor-pointer">
+                                                  <div className="text-sm text-gray-900 font-medium">{stepTitle}</div>
+                                                  {cost && (
+                                                    <div className="text-xs text-green-700 font-semibold mt-0.5">
+                                                      💰 {cost}
+                                                    </div>
+                                                  )}
+                                                </label>
+                                              </div>
+                                            )
+                                          })}
+                                        </div>
+                                        {allSteps.length > 5 && (
+                                          <div className="text-xs text-gray-500 mt-2 text-center">
+                                            ...and {allSteps.length - 5} more steps (see full plan for details)
                                           </div>
                                         )}
                                       </div>
@@ -645,12 +712,18 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                               )
                             })}
 
-                            {/* Total Investment for This Risk */}
-                            <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-5">
-                              <h6 className="font-bold text-gray-900 mb-2">💰 TOTAL INVESTMENT TO ADDRESS THIS RISK</h6>
-                              <p className="text-2xl font-bold text-purple-700 mb-2">{totalInvestment}</p>
-                              <p className="text-sm text-gray-700">
-                                This is the total cost to implement all {applicableStrategies.length} {applicableStrategies.length === 1 ? 'strategy' : 'strategies'} for protecting against {hazardName.toLowerCase()}.
+                            {/* Total Investment for This Risk - Using calculateTotalCost */}
+                            <div className="bg-green-50 rounded-lg p-3 border border-green-200 mt-3">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-sm font-semibold text-green-900">
+                                  💰 TOTAL INVESTMENT FOR THIS RISK
+                                </span>
+                                <span className="text-lg font-bold text-green-900">
+                                  {calculateTotalCost(applicableStrategies)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-green-800">
+                                Cost to implement all {applicableStrategies.length} {applicableStrategies.length === 1 ? 'strategy' : 'strategies'} for {hazardName.toLowerCase()}
                               </p>
                             </div>
                           </>
@@ -665,20 +738,61 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
         {/* SECTION 3: CONTACTS */}
         <CompactCard>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-3">
-            SECTION 3: EMERGENCY CONTACTS
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 border-b pb-2">
+            SECTION 3: WHO TO CALL IN AN EMERGENCY
           </h2>
           <ContactsSection formData={formData} locale={locale} />
         </CompactCard>
 
         {/* SECTION 4: TESTING & MAINTENANCE */}
         <CompactCard>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 border-b pb-3">
-            SECTION 4: TESTING & MAINTENANCE
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-3 border-b pb-2">
+            SECTION 4: KEEPING YOUR PLAN READY
           </h2>
           <TestingMaintenanceSection formData={formData} />
         </CompactCard>
       </div>
+    </div>
+  )
+}
+
+// Helper component for clean info rows
+const InfoRow = ({ label, value }: { label: string, value: string }) => (
+  <div>
+    <dt className="text-xs font-semibold text-gray-600">{label}</dt>
+    <dd className="text-sm text-gray-900 mt-0.5">{value || 'Not specified'}</dd>
+  </div>
+)
+
+// Metric Box Component for Risk Display
+const MetricBox = ({ 
+  label, 
+  value, 
+  score, 
+  color, 
+  borderLeft 
+}: { 
+  label: string
+  value: string | number
+  score?: number | null
+  color: 'blue' | 'orange' | 'red'
+  borderLeft?: boolean 
+}) => {
+  const colors = {
+    blue: 'bg-blue-50 border-blue-200 text-blue-900',
+    orange: 'bg-orange-50 border-orange-200 text-orange-900',
+    red: 'bg-red-50 border-red-200 text-red-900'
+  }
+  
+  return (
+    <div className={`${colors[color]} p-3 ${borderLeft ? 'border-l border-gray-200' : ''}`}>
+      <div className="text-xs font-semibold opacity-75 mb-1">{label}</div>
+      <div className="text-base font-bold capitalize">
+        {typeof value === 'string' ? value.replace(/_/g, ' ') : value}
+      </div>
+      {score && (
+        <div className="text-xs opacity-75 mt-1">Score: {score}/10</div>
+      )}
     </div>
   )
 }
@@ -692,13 +806,13 @@ interface ActionStepCardProps {
 }
 
 const ActionStepCard: React.FC<ActionStepCardProps> = ({ step, stepNumber, locale, color }) => {
-  const stepTitle = getLocalizedText(step.smeAction || step.action || step.title, locale)
+  const stepTitle = simplifyForSmallBusiness(getLocalizedText(step.smeAction || step.action || step.title, locale))
   const timeframe = getLocalizedText(step.timeframe, locale)
-  const responsibility = getLocalizedText(step.responsibility, locale)
-  const whyMatters = getLocalizedText(step.whyThisStepMatters, locale)
-  const whatHappens = getLocalizedText(step.whatHappensIfSkipped, locale)
-  const howToDone = getLocalizedText(step.howToKnowItsDone, locale)
-  const freeAlt = getLocalizedText(step.freeAlternative, locale)
+  const responsibility = simplifyForSmallBusiness(getLocalizedText(step.responsibility, locale))
+  const whyMatters = simplifyForSmallBusiness(getLocalizedText(step.whyThisStepMatters, locale))
+  const whatHappens = simplifyForSmallBusiness(getLocalizedText(step.whatHappensIfSkipped, locale))
+  const howToDone = simplifyForSmallBusiness(getLocalizedText(step.howToKnowItsDone, locale))
+  const freeAlt = simplifyForSmallBusiness(getLocalizedText(step.freeAlternative, locale))
   const cost = getLocalizedText(step.estimatedCostJMD, locale)
   
   const checklistRaw = step.checklist
@@ -726,30 +840,30 @@ const ActionStepCard: React.FC<ActionStepCardProps> = ({ step, stepNumber, local
   }[color]
 
   return (
-    <div className={`border-l-2 ${borderColor} pl-6 pb-4`}>
-      <div className="flex items-start mb-3">
-        <span className={`${numberBg} text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 -ml-10 flex-shrink-0`}>
+    <div className={`border-l ${borderColor} pl-3 pb-2`}>
+      <div className="flex items-start mb-2">
+        <span className={`${numberBg} text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs mr-2 -ml-5 flex-shrink-0`}>
           {stepNumber}
         </span>
         <div className="flex-1">
-          <h6 className="font-semibold text-gray-900 text-base mb-2">{stepTitle}</h6>
+          <h6 className="font-semibold text-gray-900 text-sm mb-1">{stepTitle}</h6>
           
           {/* Metadata row */}
-          <div className="flex flex-wrap gap-4 mb-3 text-sm">
+          <div className="flex flex-wrap gap-2 mb-2 text-xs">
             {timeframe && (
               <div className="flex items-center text-gray-600">
-                <ClockIcon className="w-4 h-4 mr-1" />
+                <ClockIcon className="w-3 h-3 mr-1" />
                 <span>{timeframe}</span>
               </div>
             )}
             {responsibility && (
               <div className="flex items-center text-gray-600">
-                <UserIcon className="w-4 h-4 mr-1" />
+                <UserIcon className="w-3 h-3 mr-1" />
                 <span>{responsibility}</span>
               </div>
             )}
             {step.difficultyLevel && (
-              <span className={`px-2 py-1 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
+              <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getDifficultyColor(step.difficultyLevel)}`}>
                 {step.difficultyLevel.charAt(0).toUpperCase() + step.difficultyLevel.slice(1)}
               </span>
             )}
@@ -757,28 +871,19 @@ const ActionStepCard: React.FC<ActionStepCardProps> = ({ step, stepNumber, local
 
           {/* Why this matters */}
           {whyMatters && (
-            <div className="bg-blue-50 rounded-lg p-3 mb-3">
-              <div className="text-xs font-semibold text-blue-900 mb-1">Why This Matters:</div>
-              <p className="text-sm text-blue-800">{whyMatters}</p>
+            <div className="bg-blue-50 rounded p-1.5 mb-1.5">
+              <div className="text-xs font-semibold text-blue-900 mb-0.5">Why:</div>
+              <p className="text-xs text-blue-800">{whyMatters}</p>
             </div>
           )}
 
-          {/* What happens if skipped */}
-          {whatHappens && (
-            <div className="bg-yellow-50 rounded-lg p-3 mb-3">
-              <div className="text-xs font-semibold text-yellow-900 mb-1">If You Skip This:</div>
-              <p className="text-sm text-yellow-800">{whatHappens}</p>
-            </div>
-          )}
-
-          {/* Checklist */}
+          {/* Checklist - prioritize over other info */}
           {Array.isArray(checklist) && checklist.length > 0 && (
-            <div className="mb-3">
-              <div className="text-xs font-semibold text-gray-700 mb-2">Action Checklist:</div>
-              <ul className="space-y-1">
-                {checklist.map((item: string, i: number) => (
-                  <li key={i} className="text-sm text-gray-700 flex items-start">
-                    <span className="text-gray-400 mr-2">☐</span>
+            <div className="mb-1.5">
+              <ul className="space-y-0.5">
+                {checklist.slice(0, 3).map((item: string, i: number) => (
+                  <li key={i} className="text-xs text-gray-700 flex items-start">
+                    <span className="text-gray-400 mr-1.5">☐</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -786,33 +891,25 @@ const ActionStepCard: React.FC<ActionStepCardProps> = ({ step, stepNumber, local
             </div>
           )}
 
-          {/* Completion criteria */}
-          {howToDone && (
-            <div className="bg-green-50 rounded-lg p-3 mb-3">
-              <div className="text-xs font-semibold text-green-900 mb-1">Done When:</div>
-              <p className="text-sm text-green-800">{howToDone}</p>
-            </div>
-          )}
-
           {/* Cost and alternatives */}
-          <div className="flex flex-wrap gap-4 text-sm mb-3">
+          <div className="flex flex-wrap gap-2 text-xs mb-1.5">
             {cost && (
               <div className="text-gray-700">
-                <span className="font-medium">💰 Cost:</span> {cost}
+                <span className="font-medium">💰</span> {cost}
               </div>
             )}
             {freeAlt && (
-              <div className="bg-green-100 text-green-800 px-3 py-1 rounded">
-                <span className="font-medium">🆓 Free option:</span> {freeAlt}
+              <div className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                <span className="font-medium">🆓</span> {freeAlt}
               </div>
             )}
           </div>
 
-          {/* Common mistakes */}
-          {Array.isArray(mistakes) && mistakes.length > 0 && (
-            <div className="text-sm">
-              <div className="font-semibold text-red-600 mb-1">⚠️ Common Mistakes to Avoid:</div>
-              <ul className="list-disc list-inside text-red-700 space-y-1">
+          {/* Common mistakes - only show if critical */}
+          {Array.isArray(mistakes) && mistakes.length > 0 && mistakes.length <= 2 && (
+            <div className="text-xs">
+              <div className="font-semibold text-red-600 mb-0.5">⚠️ Avoid:</div>
+              <ul className="list-disc list-inside text-red-700 space-y-0.5">
                 {mistakes.map((mistake: string, i: number) => (
                   <li key={i}>{mistake}</li>
                 ))}
@@ -825,7 +922,7 @@ const ActionStepCard: React.FC<ActionStepCardProps> = ({ step, stepNumber, local
   )
 }
 
-// Contacts Section Component
+// Contacts Section Component - Simplified for small businesses
 const ContactsSection: React.FC<{ formData: any, locale: Locale }> = ({ formData, locale }) => {
   const contacts = formData.CONTACTS_AND_INFORMATION || {}
   
@@ -834,19 +931,18 @@ const ContactsSection: React.FC<{ formData: any, locale: Locale }> = ({ formData
     return typeof field === 'string' ? field : (field.en || field.es || field.fr || '')
   }
 
-  const renderContactList = (contactList: any[], title: string, icon: string) => {
+  const staffContacts = contacts['Staff Contact Information'] || []
+  const suppliers = contacts['Supplier Information'] || []
+  const customers = contacts['Key Customer Contacts'] || []
+  const emergency = contacts['Emergency Services and Utilities'] || []
+
+  const renderContactList = (contactList: any[], title: string, borderColor: string) => {
     if (!contactList || contactList.length === 0) return null
 
     return (
-      <div className="mb-6">
-        <h3 className="font-semibold text-gray-900 mb-3 flex items-center">
-          <span className="mr-2">{icon}</span>
-          {title}
-          <span className="ml-2 bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">
-            {contactList.length}
-          </span>
-        </h3>
-        <div className="space-y-3">
+      <div className="mb-3">
+        <h3 className="font-semibold text-gray-900 mb-2 text-sm">{title}</h3>
+        <div className="space-y-1.5">
           {contactList.map((contact: any, idx: number) => {
             const name = getFieldString(contact.Name || 'Unknown')
             const position = getFieldString(contact.Position || contact['Contact Person'] || '')
@@ -855,14 +951,12 @@ const ContactsSection: React.FC<{ formData: any, locale: Locale }> = ({ formData
             const service = getFieldString(contact.Service || contact.Relationship || '')
             
             return (
-              <div key={idx} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div key={idx} className={`text-xs border-l-2 ${borderColor} pl-2 py-1 bg-gray-50 rounded-r`}>
                 <div className="font-medium text-gray-900">{name}</div>
-                {position && <div className="text-sm text-gray-600">{position}</div>}
-                {service && <div className="text-sm text-gray-600 italic">{service}</div>}
-                <div className="mt-1 text-sm text-gray-700 space-y-1">
-                  {phone && <div>📞 {phone}</div>}
-                  {email && <div>📧 {email}</div>}
-                </div>
+                {position && <div className="text-gray-600">{position}</div>}
+                {service && <div className="text-gray-600 italic">{service}</div>}
+                {phone && <div className="text-gray-600">📞 {phone}</div>}
+                {email && <div className="text-gray-600 text-xs truncate">📧 {email}</div>}
               </div>
             )
           })}
@@ -872,16 +966,20 @@ const ContactsSection: React.FC<{ formData: any, locale: Locale }> = ({ formData
   }
 
   return (
-    <div>
-      {renderContactList(contacts['Staff Contact Information'] || [], 'Staff Contacts', '👥')}
-      {renderContactList(contacts['Supplier Information'] || [], 'Key Suppliers', '🏪')}
-      {renderContactList(contacts['Key Customer Contacts'] || [], 'Key Customers', '🤝')}
-      {renderContactList(contacts['Emergency Services and Utilities'] || [], 'Emergency Services', '🚨')}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        {renderContactList(staffContacts, 'Your People', 'border-blue-300')}
+        {renderContactList(emergency, 'Emergency Services', 'border-red-300')}
+      </div>
+      <div>
+        {renderContactList(suppliers, 'Key Suppliers', 'border-green-300')}
+        {renderContactList(customers, 'Important Customers', 'border-purple-300')}
+      </div>
     </div>
   )
 }
 
-// Testing & Maintenance Section Component
+// Testing & Maintenance Section Component - Simplified for small businesses
 const TestingMaintenanceSection: React.FC<{ formData: any }> = ({ formData }) => {
   const testing = formData.TESTING_AND_MAINTENANCE || {}
   
@@ -896,51 +994,65 @@ const TestingMaintenanceSection: React.FC<{ formData: any }> = ({ formData }) =>
   const improvements = testing['Improvement Tracking'] || []
   
   return (
-    <div className="space-y-6">
-      {/* When to Review */}
-      <div>
-        <h3 className="font-semibold text-gray-900 mb-3">When to Review This Plan</h3>
-        <ul className="list-disc list-inside text-gray-700 space-y-2">
-          <li>Annually (at minimum)</li>
-          <li>After any emergency event</li>
-          <li>When business operations change significantly</li>
-          <li>When key personnel change</li>
-        </ul>
+    <div className="space-y-3">
+      <p className="text-sm text-gray-600 mb-3">
+        Your plan only works if you keep it updated and practice it regularly.
+      </p>
+
+      {/* Simple checklist format */}
+      <div className="space-y-2">
+        <div className="bg-blue-50 rounded p-3">
+          <div className="font-semibold text-sm text-gray-900 mb-1">
+            📅 Review Your Plan
+          </div>
+          <div className="text-xs text-gray-700 space-y-0.5">
+            <div>• Check it every 6 months (or after any big change)</div>
+            <div>• Update phone numbers and contacts</div>
+            <div>• Make sure everyone knows where to find it</div>
+          </div>
+        </div>
+        
+        <div className="bg-green-50 rounded p-3">
+          <div className="font-semibold text-sm text-gray-900 mb-1">
+            🏃 Practice Your Plan
+          </div>
+          <div className="text-xs text-gray-700 space-y-0.5">
+            <div>• Do a quick walk-through with your team once a year</div>
+            <div>• Make sure everyone knows their role</div>
+            <div>• Test your emergency contacts</div>
+          </div>
+        </div>
+        
+        <div className="bg-yellow-50 rounded p-3">
+          <div className="font-semibold text-sm text-gray-900 mb-1">
+            ✅ Track What Needs Fixing
+          </div>
+          <div className="text-xs text-gray-700 space-y-0.5">
+            <div>• Write down things that didn't work during practice</div>
+            <div>• Fix them before the next emergency</div>
+            <div>• Keep notes on what could be better</div>
+          </div>
+        </div>
       </div>
-      
-      {/* Testing Schedule */}
-      {testingSchedule.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-900 mb-3">Testing Schedule</h3>
-          <div className="space-y-3">
-            {testingSchedule.map((test: any, idx: number) => (
-              <div key={idx} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+
+      {/* Show any specific schedules if they exist, but keep them simple */}
+      {(testingSchedule.length > 0 || trainingSchedule.length > 0) && (
+        <div className="border-t pt-3 mt-3">
+          <h3 className="font-semibold text-gray-900 mb-2 text-sm">Your Schedule</h3>
+          <div className="space-y-1.5">
+            {testingSchedule.slice(0, 2).map((test: any, idx: number) => (
+              <div key={idx} className="bg-gray-50 rounded p-2 text-xs">
                 <div className="font-medium text-gray-900">{getFieldString(test['Test Type'])}</div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-700">
-                  <div><span className="font-medium">Frequency:</span> {getFieldString(test.Frequency)}</div>
-                  <div><span className="font-medium">Next Date:</span> {getFieldString(test['Next Date'])}</div>
-                  <div><span className="font-medium">Responsible:</span> {getFieldString(test.Responsible)}</div>
-                  {test.Participants && <div><span className="font-medium">Participants:</span> {getFieldString(test.Participants)}</div>}
+                <div className="text-gray-600">
+                  {getFieldString(test.Frequency)} • {getFieldString(test.Responsible)}
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* Training Schedule */}
-      {trainingSchedule.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-900 mb-3">Training Schedule</h3>
-          <div className="space-y-3">
-            {trainingSchedule.map((training: any, idx: number) => (
-              <div key={idx} className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+            {trainingSchedule.slice(0, 2).map((training: any, idx: number) => (
+              <div key={idx} className="bg-blue-50 rounded p-2 text-xs">
                 <div className="font-medium text-gray-900">{getFieldString(training['Training Topic'])}</div>
-                <div className="mt-2 grid grid-cols-2 gap-2 text-sm text-gray-700">
-                  <div><span className="font-medium">Frequency:</span> {getFieldString(training.Frequency)}</div>
-                  <div><span className="font-medium">Next Date:</span> {getFieldString(training['Next Date'])}</div>
-                  {training.Duration && <div><span className="font-medium">Duration:</span> {getFieldString(training.Duration)}</div>}
-                  {training.Trainer && <div><span className="font-medium">Trainer:</span> {getFieldString(training.Trainer)}</div>}
+                <div className="text-gray-600">
+                  {getFieldString(training.Frequency)}
                 </div>
               </div>
             ))}
@@ -948,59 +1060,20 @@ const TestingMaintenanceSection: React.FC<{ formData: any }> = ({ formData }) =>
         </div>
       )}
 
-      {/* Performance Metrics */}
-      {metrics.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-900 mb-3">Performance Metrics</h3>
-          <div className="space-y-3">
-            {metrics.map((metric: any, idx: number) => (
-              <div key={idx} className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <div className="font-medium text-gray-900">{getFieldString(metric.Metric)}</div>
-                <div className="mt-2 text-sm text-gray-700">
-                  <div><span className="font-medium">Target:</span> {getFieldString(metric.Target)}</div>
-                  <div><span className="font-medium">Measurement:</span> {getFieldString(metric['Measurement Method'])}</div>
-                  <div><span className="font-medium">Review:</span> {getFieldString(metric['Review Frequency'])}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Improvement Tracking */}
+      {/* Improvements if any */}
       {improvements.length > 0 && (
-        <div>
-          <h3 className="font-semibold text-gray-900 mb-3">Improvement Tracking</h3>
-          <div className="space-y-3">
-            {improvements.map((improvement: any, idx: number) => (
-              <div key={idx} className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
+        <div className="border-t pt-3 mt-3">
+          <h3 className="font-semibold text-gray-900 mb-2 text-sm">Things to Fix</h3>
+          <div className="space-y-1.5">
+            {improvements.slice(0, 3).map((improvement: any, idx: number) => (
+              <div key={idx} className="bg-yellow-50 rounded p-2 text-xs">
                 <div className="font-medium text-gray-900">{getFieldString(improvement['Issue Identified'])}</div>
-                <div className="mt-2 text-sm text-gray-700">
-                  <div><span className="font-medium">Action:</span> {getFieldString(improvement['Action Required'])}</div>
-                  <div className="flex justify-between mt-1">
-                    <span><span className="font-medium">Responsible:</span> {getFieldString(improvement.Responsible)}</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      improvement.Status === 'Completed' ? 'bg-green-100 text-green-800' :
-                      improvement.Status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
-                    }`}>
-                      {getFieldString(improvement.Status)}
-                    </span>
-                  </div>
-                </div>
+                <div className="text-gray-600">{getFieldString(improvement['Action Required'])}</div>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Tip section - always show */}
-      <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-4">
-        <p className="text-sm text-blue-800">
-          <span className="font-semibold">Tip:</span> Start with simple tabletop exercises where you discuss "what would we do if..." scenarios with your team. 
-          This is free and highly effective.
-        </p>
-      </div>
     </div>
   )
 }

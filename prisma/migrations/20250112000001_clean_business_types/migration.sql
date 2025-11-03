@@ -32,3 +32,6 @@ ALTER TABLE "BusinessType" DROP COLUMN IF EXISTS "regulatoryBurden";
 
 
 
+
+
+

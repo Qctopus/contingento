@@ -415,50 +415,9 @@ const generateRiskAssessmentMatrix = (
   location: LocationData, 
   industry: IndustryProfile
 ): any[] => {
-  const locationHazards = calculateLocationRisk(
-    location.countryCode, 
-    location.parish, 
-    location.nearCoast, 
-    location.urbanArea
-  )
-
-  const industryHazards: HazardRiskLevel[] = industry.vulnerabilities.map(vuln => ({
-    hazardId: vuln.hazardId,
-    riskLevel: vuln.defaultRiskLevel,
-    hazardName: vuln.hazardId.replace(/_/g, ' '), // Provide default hazardName
-    frequency: 'possible', // Provide default frequency
-    impact: 'moderate', // Provide default impact
-  }))
-
-  const combinedHazards: HazardRiskLevel[] = [...locationHazards, ...industryHazards]
-  const uniqueHazards = combinedHazards.reduce((acc: HazardRiskLevel[], current) => {
-    if (!acc.find(item => item.hazardId === current.hazardId)) {
-      acc.push(current)
-    }
-    return acc
-  }, [])
-
-  // Define default likelihood and severity based on risk level
-  const riskMappings: { [key: string]: { likelihood: string, severity: string } } = {
-    'very_high': { likelihood: 'almost_certain', severity: 'catastrophic' },
-    'high': { likelihood: 'likely', severity: 'major' },
-    'medium': { likelihood: 'possible', severity: 'moderate' },
-    'low': { likelihood: 'unlikely', severity: 'minor' }
-  }
-
-  return uniqueHazards.map(hazard => {
-    const { likelihood, severity } = riskMappings[hazard.riskLevel] || riskMappings.low
-    const riskScore = calculateRiskScore(likelihood, severity)
-    const riskLevel = getRiskLevel(riskScore)
-    
-    return {
-      hazard: hazard.hazardId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      likelihood,
-      severity,
-      riskScore,
-      riskLevel
-    }
-  })
+  // Return an empty array to ensure no risks are pre-filled.
+  // The user must select all risks manually through the wizard.
+  return []
 }
 
 // Generate formatted text for action plans
@@ -608,32 +567,10 @@ const generateFormattedActionPlanText = (actionPlans: any[]): {
   reviewSchedule += '- Stakeholder feedback integration\n\n'
   reviewSchedule += '**Next Scheduled Review:** ' + new Date(Date.now() + 365*24*60*60*1000).toLocaleDateString()
 
-  // Generate Testing Plan
-  const testingPlan = [
-    {
-      'Scenario': 'Power Outage Simulation',
-      'Frequency': 'Quarterly',
-      'Duration': '2 hours',
-      'Participants': 'All staff',
-      'Success Criteria': 'Business continues with backup systems within 30 minutes'
-    },
-    {
-      'Scenario': 'Communication System Failure',
-      'Frequency': 'Semi-annually',
-      'Duration': '1 hour',
-      'Participants': 'Management team',
-      'Success Criteria': 'Alternative communication established within 15 minutes'
-    },
-    {
-      'Scenario': 'Key Staff Unavailability',
-      'Frequency': 'Annually',
-      'Duration': '4 hours',
-      'Participants': 'Backup staff',
-      'Success Criteria': 'Essential functions maintained with substitute personnel'
-    }
-  ]
-
-  // Add hazard-specific testing scenarios
+  // Generate Testing Plan - REMOVED HARDCODED SCENARIOS
+  const testingPlan: any[] = []
+  
+  // Dynamically add testing scenarios based on high-risk hazards from user's risk assessment.
   highRiskPlans.forEach(plan => {
     testingPlan.push({
       'Scenario': `${plan.hazard} Response Drill`,
@@ -654,7 +591,7 @@ const generateFormattedActionPlanText = (actionPlans: any[]): {
     resourceRequirements,
     responsibleParties,
     reviewSchedule,
-    testingPlan
+    testingPlan,
   }
 }
 
