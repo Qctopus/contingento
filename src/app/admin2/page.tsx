@@ -6,6 +6,7 @@ import { BusinessTypesTab } from '@/components/admin2/BusinessTypesTab'
 import { ImprovedStrategiesActionsTab } from '@/components/admin2/ImprovedStrategiesActionsTab'
 import RiskCalculatorTab from '@/components/admin2/RiskCalculatorTab'
 import RiskMultipliersTab from '@/components/admin2/RiskMultipliersTab'
+import { CurrencyManagementTab } from '@/components/admin2/CurrencyManagementTab'
 import { UNDPHeader } from '@/components/admin2/UNDPHeader'
 import { GlobalAutoSaveProvider, GlobalAutoSaveIndicator } from '@/contexts/GlobalAutoSaveContext'
 import { Admin2DataProvider } from '@/contexts/Admin2DataContext'
@@ -27,7 +28,7 @@ interface Parish {
   }
 }
 
-type MainTab = 'locations' | 'business-types' | 'strategies-actions' | 'risk-calculator' | 'risk-multipliers'
+type MainTab = 'locations' | 'business-types' | 'strategies-actions' | 'risk-calculator' | 'risk-multipliers' | 'currency-management'
 
 export default function Admin2Page() {
   const [activeTab, setActiveTab] = useState<MainTab>('locations')
@@ -64,6 +65,7 @@ export default function Admin2Page() {
                 <TabButton tab="strategies-actions" label="Strategies & Actions" />
                 <TabButton tab="risk-multipliers" label="Risk Multipliers" />
                 <TabButton tab="risk-calculator" label="Risk Calculator" />
+                <TabButton tab="currency-management" label="💰 Currency & Costs" />
               </nav>
               <div className="px-6 py-3">
                 <GlobalAutoSaveIndicator />
@@ -88,6 +90,9 @@ export default function Admin2Page() {
           </div>
           <div style={{ display: activeTab === 'risk-calculator' ? 'block' : 'none' }}>
             <RiskCalculatorTab />
+          </div>
+          <div style={{ display: activeTab === 'currency-management' ? 'block' : 'none' }}>
+            <CurrencyManagementTab />
           </div>
         </div>
       </div>

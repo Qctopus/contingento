@@ -666,6 +666,7 @@ model RiskMitigationStrategy {
   // Relations
   businessTypeStrategies BusinessTypeStrategy[]
   actionSteps            ActionStep[]
+  itemCosts              StrategyItemCost[]
 
   @@index([category])
   @@index([strategyId])
@@ -723,7 +724,8 @@ model ActionStep {
   updatedAt         DateTime               @updatedAt
 
   // Relations
-  strategy RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  strategy  RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  itemCosts ActionStepItemCost[]
 
   @@unique([strategyId, stepId])
   @@index([strategyId])
@@ -808,4 +810,119 @@ model RiskMultiplier {
   @@index([characteristicType])
   @@index([isActive])
   @@index([priority])
+}
+
+// ============================================================================
+// CURRENCY MANAGEMENT SYSTEM
+// ============================================================================
+
+model CostItem {
+  id              String   @id @default(cuid())
+  itemId          String   @unique  // "hurricane_shutters_std"
+  name            String              // "Hurricane Shutters (Standard)"
+  description     String?             // "Roll-down shutters for standard windows"
+  category        String              // "construction" | "equipment" | "service" | "supplies"
+  
+  // Base pricing in USD
+  baseUSD         Float               // 450.00
+  baseUSDMin      Float?              // 350.00 (optional range)
+  baseUSDMax      Float?              // 550.00 (optional range)
+  
+  // Metadata
+  unit            String?             // "per window" | "per unit" | "per month"
+  complexity      String   @default("medium")  // "simple" | "medium" | "complex"
+  notes           String?             // Admin notes
+  tags            String?             // JSON array: ["hurricane", "windows", "protection"]
+  
+  // Alternative options (references to other CostItem IDs)
+  budgetAlternativeId   String?       // Points to cheaper option
+  premiumAlternativeId  String?       // Points to better option
+  
+  // Audit
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  strategyItems   StrategyItemCost[]
+  actionStepItems ActionStepItemCost[]
+  
+  @@index([category])
+  @@index([itemId])
+}
+
+model CountryCostMultiplier {
+  id              String   @id @default(cuid())
+  countryCode     String   @unique  // "JM", "HT", "BS" - links to AdminLocation.countryCode
+  
+  // Multipliers by category (relative to USD base)
+  construction    Float    @default(1.0)  // 0.70 = 30% cheaper, 1.40 = 40% more expensive
+  equipment       Float    @default(1.0)
+  service         Float    @default(1.0)
+  supplies        Float    @default(1.0)
+  
+  // Currency info
+  currency        String              // "JMD", "HTG", "BSD"
+  currencySymbol  String?             // "J$", "G", "B$"
+  exchangeRateUSD Float               // 157.50 (how many local currency = 1 USD)
+  
+  // Metadata
+  lastUpdated     DateTime @default(now())
+  updatedBy       String?
+  dataSource      String?             // "World Bank", "Manual", "Numbeo"
+  confidenceLevel String   @default("medium")  // "high" | "medium" | "low"
+  notes           String?
+  
+  @@index([countryCode])
+}
+
+model StrategyItemCost {
+  id              String   @id @default(cuid())
+  strategyId      String              // FK to RiskMitigationStrategy
+  itemId          String              // FK to CostItem
+  
+  // Configuration
+  quantity        Int      @default(1)
+  customNotes     String?
+  
+  // Manual overrides per country (JSON)
+  // Format: {"JM": {"amount": 75000, "verified": true}, "HT": {"amount": 42000, "verified": true}}
+  countryOverrides String?
+  
+  isRequired      Boolean  @default(true)  // vs optional upgrade
+  displayOrder    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  strategy        RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  item            CostItem @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  
+  @@unique([strategyId, itemId])
+  @@index([strategyId])
+  @@index([itemId])
+}
+
+model ActionStepItemCost {
+  id              String   @id @default(cuid())
+  actionStepId    String              // FK to ActionStep
+  itemId          String              // FK to CostItem
+  
+  quantity        Int      @default(1)
+  customNotes     String?
+  countryOverrides String?
+  
+  displayOrder    Int      @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  actionStep      ActionStep @relation(fields: [actionStepId], references: [id], onDelete: Cascade)
+  item            CostItem @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  
+  @@unique([actionStepId, itemId])
+  @@index([actionStepId])
+  @@index([itemId])
 }
