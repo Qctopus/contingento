@@ -27,6 +27,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       hasCalculatedCost: !!s.calculatedCostLocal,
       calculatedCostLocal: s.calculatedCostLocal,
       currencySymbol: s.currencySymbol,
+      currencyCode: s.currencyCode,
       timeToImplement: s.timeToImplement,
       implementationTime: s.implementationTime,
       actionStepsCount: s.actionSteps?.length,
@@ -78,42 +79,63 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     return String(value)
   }
 
-  // Detect user's currency from business address
+  // Detect user's currency from their country selection (NOT from address parsing!)
   const detectCurrency = () => {
-    const address = getStringValue(
-      formData.PLAN_INFORMATION?.['Business Address'] || 
-      formData.BUSINESS_OVERVIEW?.['Business Address'] || ''
-    )
+    // Get the country they selected in the wizard dropdown
+    let countryCode = 'JM' // Default to Jamaica
+    let countryName = 'Jamaica'
     
-    const parts = address.split(',').map(s => s.trim())
-    const country = parts[parts.length - 1] || 'Jamaica'
-    
-    const currencyMap: Record<string, { code: string; symbol: string; countryCode: string }> = {
-      'Jamaica': { code: 'JMD', symbol: 'J$', countryCode: 'JM' },
-      'Trinidad': { code: 'TTD', symbol: 'TT$', countryCode: 'TT' },
-      'Trinidad and Tobago': { code: 'TTD', symbol: 'TT$', countryCode: 'TT' },
-      'Barbados': { code: 'BBD', symbol: 'Bds$', countryCode: 'BB' },
-      'Bahamas': { code: 'BSD', symbol: 'B$', countryCode: 'BS' },
-      'Haiti': { code: 'HTG', symbol: 'G', countryCode: 'HT' },
-      'Dominican Republic': { code: 'DOP', symbol: 'RD$', countryCode: 'DO' },
-      'Grenada': { code: 'XCD', symbol: 'EC$', countryCode: 'GD' },
-      'Saint Lucia': { code: 'XCD', symbol: 'EC$', countryCode: 'LC' },
-      'Antigua': { code: 'XCD', symbol: 'EC$', countryCode: 'AG' },
-      'Antigua and Barbuda': { code: 'XCD', symbol: 'EC$', countryCode: 'AG' },
-      'Saint Vincent': { code: 'XCD', symbol: 'EC$', countryCode: 'VC' },
-      'Saint Vincent and the Grenadines': { code: 'XCD', symbol: 'EC$', countryCode: 'VC' },
-      'Dominica': { code: 'XCD', symbol: 'EC$', countryCode: 'DM' },
-      'Saint Kitts': { code: 'XCD', symbol: 'EC$', countryCode: 'KN' },
-      'Saint Kitts and Nevis': { code: 'XCD', symbol: 'EC$', countryCode: 'KN' },
+    // Try to get from localStorage prefill data (set during industry/location selection)
+    if (typeof window !== 'undefined') {
+      try {
+        const preFillData = localStorage.getItem('bcp-prefill-data')
+        if (preFillData) {
+          const data = JSON.parse(preFillData)
+          if (data.location?.countryCode) {
+            countryCode = data.location.countryCode
+            countryName = data.location.country || countryName
+          }
+        }
+      } catch (e) {
+        console.warn('[FormalBCPPreview] Could not load country from prefill data:', e)
+      }
     }
     
+    // Map country code to currency
+    const currencyByCode: Record<string, { code: string; symbol: string; country: string }> = {
+      'JM': { code: 'JMD', symbol: 'J$', country: 'Jamaica' },
+      'TT': { code: 'TTD', symbol: 'TT$', country: 'Trinidad and Tobago' },
+      'BB': { code: 'BBD', symbol: 'Bds$', country: 'Barbados' },
+      'BS': { code: 'BSD', symbol: 'B$', country: 'Bahamas' },
+      'HT': { code: 'HTG', symbol: 'G', country: 'Haiti' },
+      'DO': { code: 'DOP', symbol: 'RD$', country: 'Dominican Republic' },
+      'GD': { code: 'XCD', symbol: 'EC$', country: 'Grenada' },
+      'LC': { code: 'XCD', symbol: 'EC$', country: 'Saint Lucia' },
+      'AG': { code: 'XCD', symbol: 'EC$', country: 'Antigua and Barbuda' },
+      'VC': { code: 'XCD', symbol: 'EC$', country: 'Saint Vincent and the Grenadines' },
+      'DM': { code: 'XCD', symbol: 'EC$', country: 'Dominica' },
+      'KN': { code: 'XCD', symbol: 'EC$', country: 'Saint Kitts and Nevis' },
+    }
+    
+    const currencyData = currencyByCode[countryCode] || currencyByCode['JM']
+    
     return {
-      country,
-      ...(currencyMap[country] || { code: 'JMD', symbol: 'J$', countryCode: 'JM' })
+      country: countryName,
+      countryCode: countryCode,
+      code: currencyData.code,
+      symbol: currencyData.symbol
     }
   }
 
   const currencyInfo = detectCurrency()
+  
+  // Log detected currency (after function is defined)
+  console.log('[FormalBCPPreview] Detected currency:', {
+    countryCode: currencyInfo.countryCode,
+    currencyCode: currencyInfo.code,
+    currencySymbol: currencyInfo.symbol,
+    country: currencyInfo.country
+  })
 
   // Format currency with proper symbol and thousands separators
   const formatCurrency = (amount: number, currency: { code: string; symbol: string } = currencyInfo): string => {
@@ -258,9 +280,52 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   })
   
   // Get ALL selected risks that have strategies (for Section 3)
+  // COPY EXACT LOGIC FROM BusinessPlanReview.tsx lines 286-307
   const risksWithStrategies = riskMatrix.filter((r: any) => {
-    const riskId = r.hazardId
-    return strategies.some(s => s.applicableRisks?.includes(riskId))
+    const hazardName = r.hazardName || r.Hazard || ''
+    const hazardId = r.hazardId || hazardName
+    
+    // Check if any selected strategy applies to this risk (SAME AS REVIEW SECTION)
+    const hasStrategy = strategies.some((strategy: any) => {
+      if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
+      
+      return strategy.applicableRisks.some((riskId: string) => {
+        const riskIdLower = riskId.toLowerCase().replace(/_/g, ' ')
+        const hazardNameLower = hazardName.toLowerCase()
+        const hazardIdLower = (hazardId || '').toString().toLowerCase()
+        
+        return riskId === hazardId || 
+               riskId === r.hazard ||
+               riskId === hazardName ||
+               riskIdLower === hazardIdLower ||
+               riskIdLower === hazardNameLower ||
+               hazardNameLower.includes(riskIdLower) ||
+               riskIdLower.includes(hazardNameLower)
+      })
+    })
+    
+    return hasStrategy
+  })
+  
+  console.log('[FormalBCPPreview] Risk matching results:', {
+    totalRisksInMatrix: riskMatrix.length,
+    highPriorityRisks: highPriorityRisks.length,
+    risksWithStrategies: risksWithStrategies.length,
+    riskDetails: risksWithStrategies.map(r => ({
+      hazardId: r.hazardId,
+      hazardName: r.hazardName || r.Hazard,
+      riskLevel: r.riskLevel,
+      strategyCount: strategies.filter(s => {
+        if (!s.applicableRisks) return false
+        const riskIdNorm = (r.hazardId || '').toLowerCase().replace(/_/g, ' ')
+        const riskNameNorm = (r.hazardName || r.Hazard || '').toLowerCase().replace(/_/g, ' ')
+        return s.applicableRisks.some((srid: string) => {
+          const sridNorm = srid.toLowerCase().replace(/_/g, ' ')
+          return sridNorm === riskIdNorm || sridNorm === riskNameNorm || 
+                 riskNameNorm.includes(sridNorm) || sridNorm.includes(riskNameNorm)
+        })
+      }).length
+    }))
   })
   
   // Calculate total investment - USE WIZARD'S CALCULATED COSTS
@@ -633,11 +698,27 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             <div className="space-y-6">
               {risksWithStrategies.map((risk: any, riskIdx: number) => {
                 // Risk data already has multilingual content extracted
-                const riskId = risk.hazardId
-                const riskName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
-                const applicableStrategies = strategies.filter(s => 
-                  s.applicableRisks?.includes(riskId)
-                )
+                const hazardName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
+                const hazardId = risk.hazardId || hazardName
+                
+                // Find strategies that apply to this risk (SAME LOGIC AS BusinessPlanReview.tsx)
+                const applicableStrategies = strategies.filter(strategy => {
+                  if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
+                  
+                  return strategy.applicableRisks.some((riskId: string) => {
+                    const riskIdLower = riskId.toLowerCase().replace(/_/g, ' ')
+                    const hazardNameLower = hazardName.toLowerCase()
+                    const hazardIdLower = (hazardId || '').toString().toLowerCase()
+                    
+                    return riskId === hazardId || 
+                           riskId === risk.hazard ||
+                           riskId === hazardName ||
+                           riskIdLower === hazardIdLower ||
+                           riskIdLower === hazardNameLower ||
+                           hazardNameLower.includes(riskIdLower) ||
+                           riskIdLower.includes(hazardNameLower)
+                  })
+                })
                 
                 if (applicableStrategies.length === 0) return null
                 
@@ -666,7 +747,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 
                 return (
                   <div key={riskIdx} className="border-l-4 border-green-600 bg-slate-50 p-4">
-                    <div className="font-bold text-sm text-slate-800 mb-1">Protection Against: {riskName}</div>
+                    <div className="font-bold text-sm text-slate-800 mb-1">Protection Against: {hazardName}</div>
                     <div className="text-xs text-slate-600 mb-3">
                       Strategies: {applicableStrategies.length} | Total Investment: {formatCurrency(strategyCost, currencyInfo)}
                     </div>
