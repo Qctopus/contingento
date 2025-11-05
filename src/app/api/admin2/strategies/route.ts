@@ -16,9 +16,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get locale from query parameters
+    // Get query parameters
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get('locale') as Locale || 'en'
+    const skipLocalization = searchParams.get('skipLocalization') === 'true' // Admin needs all languages
 
     const strategies = await withDatabase(async () => {
       const prisma = getPrismaClient()
@@ -27,6 +28,13 @@ export async function GET(request: NextRequest) {
         include: {
           actionSteps: {
             where: { isActive: true },
+            include: {
+              itemCosts: {
+                include: {
+                  item: true
+                }
+              }
+            },
             orderBy: { sortOrder: 'asc' }
           }
         },
@@ -40,10 +48,13 @@ export async function GET(request: NextRequest) {
     // Transform database strategies to match frontend format
     let transformedStrategies = strategies.map(transformStrategyForApi)
     
-    // Always localize the content (works for all locales including 'en')
-    transformedStrategies = transformedStrategies.map(strategy => localizeStrategy(strategy, locale))
+    // Only localize for non-admin contexts (wizard, etc.)
+    // Admin interface needs all languages to allow switching
+    if (!skipLocalization) {
+      transformedStrategies = transformedStrategies.map(strategy => localizeStrategy(strategy, locale))
+    }
     
-    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale})`)
+    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale}, skipLocalization: ${skipLocalization})`)
     return createSuccessResponse(transformedStrategies)
     
   } catch (error) {

@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - List all country multipliers with country names
+// GET - List all country multipliers OR get by countryCode
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const countryCode = searchParams.get('countryCode')
+    
+    // If countryCode is provided, return single multiplier
+    if (countryCode) {
+      const multiplier = await prisma.countryCostMultiplier.findUnique({
+        where: { countryCode }
+      })
+      
+      if (!multiplier) {
+        return NextResponse.json(
+          { error: 'Country multiplier not found' },
+          { status: 404 }
+        )
+      }
+      
+      return NextResponse.json(multiplier)
+    }
+    
+    // Otherwise, list all multipliers
     const multipliers = await prisma.countryCostMultiplier.findMany({
       orderBy: { countryCode: 'asc' }
     })

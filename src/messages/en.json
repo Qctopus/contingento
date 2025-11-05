@@ -712,6 +712,7 @@
       "hazardLabels": {
         "earthquake": "Earthquake",
         "hurricane": "Hurricane/Tropical Storm",
+        "flood": "Flooding",
         "coastal_flood": "Coastal Flooding",
         "flash_flood": "Flash Flooding",
         "landslide": "Landslide",
@@ -729,6 +730,7 @@
         "civil_unrest": "Civil Unrest",
         "terrorism": "Terrorism",
         "supply_disruption": "Supply Chain Disruption",
+        "supply_chain_disruption": "Supply Chain Disruption",
         "staff_unavailable": "Key Staff Unavailability",
         "economic_downturn": "Economic Downturn",
         "urban_flooding": "Urban Flooding",

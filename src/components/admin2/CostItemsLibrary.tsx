@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { CostItemEditor } from './CostItemEditor'
+import { parseMultilingualJSON } from '@/utils/localizationUtils'
 
 interface CostItem {
   id: string
@@ -18,6 +19,17 @@ interface CostItem {
   _count?: {
     strategyItems: number
     actionStepItems: number
+  }
+}
+
+// Helper to get English text from multilingual field
+const getEnglishText = (value: string | undefined): string => {
+  if (!value) return ''
+  try {
+    const parsed = parseMultilingualJSON(value)
+    return parsed?.en || value
+  } catch {
+    return value
   }
 }
 
@@ -73,8 +85,12 @@ export function CostItemsLibrary() {
   }
   
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    // Parse multilingual fields for search
+    const nameText = getEnglishText(item.name)
+    const descText = getEnglishText(item.description)
+    
+    const matchesSearch = nameText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      descText.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = filterCategory === 'all' || item.category === filterCategory
     return matchesSearch && matchesCategory && item.isActive
   })
@@ -149,7 +165,7 @@ export function CostItemsLibrary() {
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{getEnglishText(item.name)}</h3>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                       item.category === 'construction' ? 'bg-orange-100 text-orange-800' :
                       item.category === 'equipment' ? 'bg-blue-100 text-blue-800' :
@@ -164,7 +180,7 @@ export function CostItemsLibrary() {
                   </div>
                   
                   {item.description && (
-                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                    <p className="text-sm text-gray-600 mb-2">{getEnglishText(item.description)}</p>
                   )}
                   
                   <div className="flex items-center gap-6 text-sm">

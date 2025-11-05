@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { getLocalizedText } from '@/utils/localizationUtils'
+import { costCalculationService } from '@/services/costCalculationService'
 
 interface Strategy {
   id: string
@@ -51,6 +52,7 @@ interface Strategy {
   businessSizeGuidance?: Record<string, string>
   
   actionSteps: ActionStep[]
+  costItems?: any[]
 }
 
 interface ActionStep {
@@ -69,6 +71,12 @@ interface ActionStep {
   videoTutorialUrl?: string
   phase?: string
   sortOrder: number
+  costItems?: Array<{
+    id?: string
+    itemId: string
+    quantity: number
+    notes?: string
+  }>
 }
 
 interface StrategySelectionStepProps {
@@ -76,18 +84,77 @@ interface StrategySelectionStepProps {
   selectedStrategies: string[] // IDs of selected strategies
   onStrategyToggle: (strategyId: string) => void
   onContinue: () => void
+  countryCode?: string
 }
 
 export default function StrategySelectionStep({
   strategies,
   selectedStrategies,
   onStrategyToggle,
-  onContinue
+  onContinue,
+  countryCode = 'JM'
 }: StrategySelectionStepProps) {
   const locale = useLocale() as 'en' | 'es' | 'fr'
   const t = useTranslations()
   const [expandedStrategy, setExpandedStrategy] = useState<string | null>(null)
   const [showUnselectWarning, setShowUnselectWarning] = useState<string | null>(null)
+  const [strategyCosts, setStrategyCosts] = useState<Record<string, { amount: number; currency: string; symbol: string }>>({})
+  const [currencyInfo, setCurrencyInfo] = useState<{ code: string; symbol: string }>({ code: 'JMD', symbol: 'J$' })
+  
+  // Load currency info for the selected country
+  useEffect(() => {
+    async function loadCurrencyInfo() {
+      try {
+        const multiplier = await costCalculationService.getCountryMultiplier(countryCode)
+        if (multiplier) {
+          setCurrencyInfo({
+            code: multiplier.localCurrency,
+            symbol: multiplier.currencySymbol
+          })
+        }
+      } catch (error) {
+        console.error('Error loading currency info:', error)
+      }
+    }
+    loadCurrencyInfo()
+  }, [countryCode])
+  
+  // Calculate costs for all strategies
+  useEffect(() => {
+    async function calculateCosts() {
+      const costs: Record<string, { amount: number; currency: string; symbol: string }> = {}
+      
+      for (const strategy of strategies) {
+        if (strategy.actionSteps && strategy.actionSteps.length > 0) {
+          try {
+            // calculateStrategyCost expects actionSteps array directly
+            const result = await costCalculationService.calculateStrategyCost(
+              strategy.actionSteps,
+              countryCode
+            )
+            
+            // Use the correct property names from StrategyCostCalculation
+            const amount = result.localCurrency.amount > 0 ? result.localCurrency.amount : result.totalUSD
+            if (typeof amount === 'number' && !isNaN(amount) && amount > 0) {
+              costs[strategy.id] = {
+                amount,
+                currency: result.localCurrency.code,
+                symbol: result.localCurrency.symbol
+              }
+            }
+          } catch (error) {
+            console.error(`Error calculating cost for strategy ${strategy.id}:`, error)
+          }
+        }
+      }
+      
+      setStrategyCosts(costs)
+    }
+    
+    if (strategies.length > 0) {
+      calculateCosts()
+    }
+  }, [strategies, countryCode])
   
   // Helper to translate risk names (camelCase to snake_case)
   const translateRisk = (riskName: string) => {
@@ -229,9 +296,14 @@ export default function StrategySelectionStep({
 
   // Calculate summary stats
   const selectedCount = selectedStrategies.length
-  const totalTimeRaw = calculateTotalTime(strategies.filter(s => selectedStrategies.includes(s.id)))
+  const selectedStrategyObjects = strategies.filter(s => selectedStrategies.includes(s.id))
+  const totalTimeRaw = calculateTotalTime(selectedStrategyObjects)
   const totalTime = translateTime(totalTimeRaw)
-  const totalCost = calculateTotalCost(strategies.filter(s => selectedStrategies.includes(s.id)))
+  const { totalCost, totalCostItems, costByTier } = calculateTotalCostWithItems(
+    selectedStrategyObjects, 
+    strategyCosts, 
+    currencyInfo
+  )
 
   // Handle strategy toggle with warning for essential
   const handleToggle = (strategyId: string, tier: string) => {
@@ -296,6 +368,9 @@ export default function StrategySelectionStep({
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
               translateTime={translateTime}
+              strategyCosts={strategyCosts}
+              currencyInfo={currencyInfo}
+              countryCode={countryCode}
             />
           ))}
         </div>
@@ -330,6 +405,9 @@ export default function StrategySelectionStep({
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
               translateTime={translateTime}
+              strategyCosts={strategyCosts}
+              currencyInfo={currencyInfo}
+              countryCode={countryCode}
             />
           ))}
         </div>
@@ -364,6 +442,9 @@ export default function StrategySelectionStep({
               translateLevel={translateLevel}
               translateReasoning={translateReasoning}
               translateTime={translateTime}
+              strategyCosts={strategyCosts}
+              currencyInfo={currencyInfo}
+              countryCode={countryCode}
             />
           ))}
         </div>
@@ -407,7 +488,40 @@ export default function StrategySelectionStep({
             <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')}:</span>
             <span className="font-medium">{totalCost}</span>
           </div>
+          {totalCostItems > 0 && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">📦 Cost Items:</span>
+              <span className="font-medium">{totalCostItems} items budgeted</span>
+            </div>
+          )}
         </div>
+
+        {/* Cost Breakdown by Tier */}
+        {(costByTier.essential > 0 || costByTier.recommended > 0 || costByTier.optional > 0) && (
+          <div className="border-t pt-4 mb-4">
+            <p className="text-xs font-medium text-gray-700 mb-2">💰 Budget Breakdown</p>
+            <div className="space-y-1">
+              {costByTier.essential > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-red-700">🔴 Essential:</span>
+                  <span className="font-medium">{currencyInfo.symbol}{costByTier.essential.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                </div>
+              )}
+              {costByTier.recommended > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-yellow-700">🟡 Recommended:</span>
+                  <span className="font-medium">{currencyInfo.symbol}{costByTier.recommended.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                </div>
+              )}
+              {costByTier.optional > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-green-700">🟢 Optional:</span>
+                  <span className="font-medium">{currencyInfo.symbol}{costByTier.optional.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Note: Navigation handled by wizard's universal Next button */}
       </div>
@@ -486,7 +600,10 @@ function StrategyCard({
   translateRisk,
   translateLevel,
   translateReasoning,
-  translateTime
+  translateTime,
+  strategyCosts,
+  currencyInfo,
+  countryCode
 }: any) {
   const borderColor = {
     red: 'border-red-200',
@@ -503,6 +620,45 @@ function StrategyCard({
   // Use SME-focused title if available, otherwise fall back to regular name
   const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
   const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, locale)
+  
+  // Helper to format action step costs
+  const [stepCosts, setStepCosts] = useState<Record<string, { amount: number; symbol: string; currency: string }>>({})
+  
+  // Calculate action step costs when expanded
+  useEffect(() => {
+    if (isExpanded && strategy.actionSteps?.length > 0) {
+      const calculateStepCosts = async () => {
+        const costs: Record<string, { amount: number; symbol: string; currency: string }> = {}
+        
+        for (const step of strategy.actionSteps) {
+          if (step.costItems && step.costItems.length > 0) {
+            try {
+              const result = await costCalculationService.calculateActionStepCost(
+                step.id,
+                step.costItems as any,
+                countryCode // Use country code (e.g., 'JM') not currency code (e.g., 'JMD')
+              )
+              
+              const amount = result.localCurrency.amount > 0 ? result.localCurrency.amount : result.totalUSD
+              if (typeof amount === 'number' && !isNaN(amount)) {
+                costs[step.id] = {
+                  amount,
+                  symbol: result.localCurrency.amount > 0 ? result.localCurrency.symbol : '$',
+                  currency: result.localCurrency.amount > 0 ? result.localCurrency.code : 'USD'
+                }
+              }
+            } catch (error) {
+              console.error(`Error calculating cost for step ${step.id}:`, error)
+            }
+          }
+        }
+        
+        setStepCosts(costs)
+      }
+      
+      calculateStepCosts()
+    }
+  }, [isExpanded, strategy.actionSteps, countryCode])
 
   return (
     <div className={`bg-white border-2 ${borderColor} rounded-lg overflow-hidden`}>
@@ -583,7 +739,12 @@ function StrategyCard({
               </div>
               <div>
                 <span className="text-gray-500">💰</span>{' '}
-                <span className="font-medium">{getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale)}</span>
+                <span className="font-medium">
+                  {strategyCosts[strategy.id] && strategyCosts[strategy.id].amount !== undefined
+                    ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${strategyCosts[strategy.id].currency}`
+                    : getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale)
+                  }
+                </span>
               </div>
               <div>
                 <span className="text-gray-500">⭐</span>{' '}
@@ -679,7 +840,9 @@ function StrategyCard({
                       {!step.estimatedMinutes && step.timeframe && (
                         <span>⏱️ {translateTime(step.timeframe)}</span>
                       )}
-                      {step.estimatedCostJMD && (
+                      {stepCosts[step.id] && stepCosts[step.id].amount !== undefined ? (
+                        <span>💰 {stepCosts[step.id].symbol}{stepCosts[step.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} {stepCosts[step.id].currency}</span>
+                      ) : step.estimatedCostJMD && (
                         <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
                       )}
                     </div>
@@ -783,22 +946,49 @@ function calculateTotalTime(strategies: Strategy[]): string {
   return `~${Math.round(hours / 40)} ${Math.round(hours / 40) === 1 ? 'week' : 'weeks'}`
 }
 
-function calculateTotalCost(strategies: Strategy[]): string {
-  // Simple cost estimation based on implementation cost
-  const costs = strategies.map(s => {
-    const cost = s.implementationCost
-    if (cost === 'low') return 5000
-    if (cost === 'medium') return 15000
-    if (cost === 'high') return 40000
-    if (cost === 'very_high') return 80000
-    return 10000
+function calculateTotalCostWithItems(
+  strategies: Strategy[], 
+  strategyCosts: Record<string, { amount: number; currency: string; symbol: string }>,
+  currencyInfo: { code: string; symbol: string }
+): { totalCost: string; totalCostItems: number; costByTier: { essential: number; recommended: number; optional: number } } {
+  // Use calculated costs from cost items
+  let total = 0
+  let costItemCount = 0
+  const costByTier = { essential: 0, recommended: 0, optional: 0 }
+  
+  strategies.forEach(strategy => {
+    const cost = strategyCosts[strategy.id]
+    const amount = cost?.amount || 0
+    total += amount
+    
+    // Add to tier totals
+    if (strategy.priorityTier === 'essential') {
+      costByTier.essential += amount
+    } else if (strategy.priorityTier === 'recommended') {
+      costByTier.recommended += amount
+    } else if (strategy.priorityTier === 'optional') {
+      costByTier.optional += amount
+    }
+    
+    // Count cost items across all action steps
+    if (strategy.actionSteps) {
+      strategy.actionSteps.forEach(step => {
+        if (step.costItems && Array.isArray(step.costItems)) {
+          costItemCount += step.costItems.length
+        }
+      })
+    }
   })
   
-  const total = costs.reduce((sum, c) => sum + c, 0)
+  let totalCostStr: string
+  if (total === 0) {
+    totalCostStr = `${currencyInfo.symbol}0 (No cost items assigned)`
+  } else {
+    // Format with proper currency
+    const formatted = total.toLocaleString('en-US', { maximumFractionDigits: 0 })
+    totalCostStr = `${currencyInfo.symbol}${formatted} ${currencyInfo.code}`
+  }
   
-  if (total < 10000) return `JMD ${total.toLocaleString()}`
-  const min = Math.floor(total * 0.7)
-  const max = Math.ceil(total * 1.3)
-  return `JMD ${min.toLocaleString()}-${max.toLocaleString()}`
+  return { totalCost: totalCostStr, totalCostItems: costItemCount, costByTier }
 }
 

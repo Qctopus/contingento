@@ -611,3 +611,5 @@ allRisks.forEach(r => console.log(r.Hazard, r['Risk Score']))
 
 
 
+
+

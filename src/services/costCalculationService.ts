@@ -1,296 +1,413 @@
-import { prisma } from '@/lib/prisma'
+/**
+ * Cost Calculation Service
+ * 
+ * Handles all cost calculations for strategies and action steps,
+ * including currency conversion and item-based pricing.
+ */
 
-export interface CalculatedCost {
-  countryCode: string
-  currency: string
-  currencySymbol: string
-  amount: number
-  amountMin?: number
-  amountMax?: number
-  displayText: string
-  isEstimate: boolean
-  confidenceLevel: 'high' | 'medium' | 'low'
+interface CostItem {
+  id: string
+  itemId: string
+  name: string
+  description?: string
+  category: string
+  baseUSD: number
+  baseUSDMin?: number
+  baseUSDMax?: number
+  unit?: string
+  complexity: string
+  tags?: string
 }
 
-export class CostCalculationService {
-  
+interface ActionStepItemCost {
+  id?: string
+  actionStepId: string
+  itemId: string
+  quantity: number
+  customNotes?: string
+  countryOverrides?: string
+  item?: CostItem
+}
+
+interface CountryCostMultiplier {
+  countryCode: string
+  construction: number
+  equipment: number
+  service: number
+  supplies: number
+  currency: string
+  currencySymbol?: string
+  exchangeRateUSD: number
+}
+
+interface CostBreakdownItem {
+  itemId: string
+  name: string
+  quantity: number
+  unitPriceUSD: number
+  totalUSD: number
+  localAmount: number
+  category: string
+  unit?: string
+}
+
+interface ActionStepCostCalculation {
+  totalUSD: number
+  localCurrency: {
+    code: string
+    amount: number
+    symbol: string
+  }
+  itemBreakdown: CostBreakdownItem[]
+}
+
+interface StrategyCostCalculation {
+  totalUSD: number
+  localCurrency: {
+    code: string
+    amount: number
+    symbol: string
+  }
+  byPhase: {
+    immediate: number
+    short_term: number
+    medium_term: number
+    long_term: number
+  }
+  itemBreakdown: CostBreakdownItem[]
+  stepBreakdown: Array<{
+    stepId: string
+    stepTitle: string
+    phase: string
+    totalUSD: number
+    localAmount: number
+  }>
+}
+
+class CostCalculationService {
+  private countryMultipliersCache: Map<string, CountryCostMultiplier> = new Map()
+  private costItemsCache: Map<string, CostItem> = new Map()
+
   /**
-   * Calculate cost for a specific item in a specific country
+   * Get country cost multipliers with caching
    */
-  async calculateItemCost(
-    itemId: string,
-    countryCode: string,
-    quantity: number = 1,
-    override?: { amount: number; verified: boolean }
-  ): Promise<CalculatedCost> {
-    
-    // Get cost item
-    const item = await prisma.costItem.findUnique({
-      where: { itemId }
-    })
-    
-    if (!item) {
-      throw new Error(`Cost item ${itemId} not found`)
+  async getCountryMultiplier(countryCode: string): Promise<CountryCostMultiplier | null> {
+    // Check cache first
+    if (this.countryMultipliersCache.has(countryCode)) {
+      return this.countryMultipliersCache.get(countryCode)!
     }
-    
-    // Check for manual override
-    if (override?.verified) {
-      const multiplier = await prisma.countryCostMultiplier.findUnique({
-        where: { countryCode }
-      })
+
+    try {
+      const response = await fetch(`/api/admin2/country-multipliers?countryCode=${countryCode}`)
+      if (!response.ok) {
+        console.warn(`No multiplier found for country ${countryCode}, using defaults`)
+        return null
+      }
       
-      return {
-        countryCode,
-        currency: multiplier?.currency || 'USD',
-        currencySymbol: multiplier?.currencySymbol || '$',
-        amount: override.amount * quantity,
-        displayText: this.formatCurrency(
-          override.amount * quantity,
-          multiplier?.currencySymbol || '$'
-        ),
-        isEstimate: false,
-        confidenceLevel: 'high'
-      }
-    }
-    
-    // Get country multiplier
-    const multiplier = await prisma.countryCostMultiplier.findUnique({
-      where: { countryCode }
-    })
-    
-    if (!multiplier) {
-      // Fallback to USD if country not configured
-      return {
-        countryCode,
-        currency: 'USD',
-        currencySymbol: '$',
-        amount: item.baseUSD * quantity,
-        amountMin: item.baseUSDMin ? item.baseUSDMin * quantity : undefined,
-        amountMax: item.baseUSDMax ? item.baseUSDMax * quantity : undefined,
-        displayText: this.formatCostRange(
-          item.baseUSD * quantity,
-          item.baseUSDMin ? item.baseUSDMin * quantity : undefined,
-          item.baseUSDMax ? item.baseUSDMax * quantity : undefined,
-          '$'
-        ),
-        isEstimate: false,
-        confidenceLevel: 'high'
-      }
-    }
-    
-    // Calculate cost with multiplier
-    const categoryMultiplier = this.getCategoryMultiplier(multiplier, item.category)
-    const costInUSD = item.baseUSD * quantity
-    const costInLocal = costInUSD * multiplier.exchangeRateUSD * categoryMultiplier
-    
-    let costMinInLocal, costMaxInLocal
-    if (item.baseUSDMin && item.baseUSDMax) {
-      costMinInLocal = item.baseUSDMin * quantity * multiplier.exchangeRateUSD * categoryMultiplier
-      costMaxInLocal = item.baseUSDMax * quantity * multiplier.exchangeRateUSD * categoryMultiplier
-    }
-    
-    return {
-      countryCode,
-      currency: multiplier.currency,
-      currencySymbol: multiplier.currencySymbol || multiplier.currency,
-      amount: Math.round(costInLocal),
-      amountMin: costMinInLocal ? Math.round(costMinInLocal) : undefined,
-      amountMax: costMaxInLocal ? Math.round(costMaxInLocal) : undefined,
-      displayText: this.formatCostRange(
-        costInLocal,
-        costMinInLocal,
-        costMaxInLocal,
-        multiplier.currencySymbol || multiplier.currency
-      ),
-      isEstimate: true,
-      confidenceLevel: multiplier.confidenceLevel as any || 'medium'
+      const multiplier = await response.json()
+      this.countryMultipliersCache.set(countryCode, multiplier)
+      return multiplier
+    } catch (error) {
+      console.error('Error fetching country multiplier:', error)
+      return null
     }
   }
-  
+
   /**
-   * Calculate total cost for a strategy in a specific country
+   * Get cost item by ID with caching
    */
-  async calculateStrategyCost(
-    strategyId: string,
+  async getCostItem(itemId: string): Promise<CostItem | null> {
+    if (this.costItemsCache.has(itemId)) {
+      return this.costItemsCache.get(itemId)!
+    }
+
+    try {
+      const response = await fetch(`/api/admin2/cost-items?itemId=${itemId}`)
+      if (!response.ok) return null
+      
+      const data = await response.json()
+      const item = data.items?.[0]
+      if (item) {
+        this.costItemsCache.set(itemId, item)
+      }
+      return item || null
+    } catch (error) {
+      console.error('Error fetching cost item:', error)
+      return null
+    }
+  }
+
+  /**
+   * Calculate the price of a cost item in local currency
+   */
+  async calculateItemPrice(
+    item: CostItem,
+    quantity: number,
     countryCode: string
-  ): Promise<CalculatedCost> {
+  ): Promise<{
+    unitPriceUSD: number
+    totalUSD: number
+    localAmount: number
+    localCurrency: { code: string; symbol: string }
+  }> {
+    const multiplier = await this.getCountryMultiplier(countryCode)
     
-    const strategyItems = await prisma.strategyItemCost.findMany({
-      where: { strategyId },
-      include: { item: true }
-    })
+    // Get base USD price
+    const baseUSD = item.baseUSD || 0
     
-    if (strategyItems.length === 0) {
-      // No items linked, return zero
-      const multiplier = await prisma.countryCostMultiplier.findUnique({
-        where: { countryCode }
-      })
-      
-      return {
-        countryCode,
-        currency: multiplier?.currency || 'USD',
-        currencySymbol: multiplier?.currencySymbol || '$',
-        amount: 0,
-        displayText: 'No cost data',
-        isEstimate: false,
-        confidenceLevel: 'low'
+    // Apply category multiplier if available
+    let categoryMultiplier = 1.0
+    if (multiplier) {
+      switch (item.category) {
+        case 'construction':
+          categoryMultiplier = multiplier.construction
+          break
+        case 'equipment':
+          categoryMultiplier = multiplier.equipment
+          break
+        case 'service':
+          categoryMultiplier = multiplier.service
+          break
+        case 'supplies':
+          categoryMultiplier = multiplier.supplies
+          break
       }
     }
     
-    let totalCost = 0
-    let totalMin = 0
-    let totalMax = 0
-    let hasRange = false
-    let currency = 'USD'
-    let currencySymbol = '$'
+    // Calculate adjusted USD price
+    const adjustedUSD = baseUSD * categoryMultiplier
+    const totalUSD = adjustedUSD * quantity
     
-    for (const si of strategyItems) {
-      const overrides = si.countryOverrides ? JSON.parse(si.countryOverrides) : {}
-      const cost = await this.calculateItemCost(
-        si.item.itemId,
-        countryCode,
-        si.quantity,
-        overrides[countryCode]
-      )
-      
-      totalCost += cost.amount
-      if (cost.amountMin && cost.amountMax) {
-        totalMin += cost.amountMin
-        totalMax += cost.amountMax
-        hasRange = true
-      }
-      currency = cost.currency
-      currencySymbol = cost.currencySymbol
-    }
+    // Convert to local currency
+    const exchangeRate = multiplier?.exchangeRateUSD || 1.0
+    const localAmount = totalUSD * exchangeRate
     
     return {
-      countryCode,
-      currency,
-      currencySymbol,
-      amount: Math.round(totalCost),
-      amountMin: hasRange ? Math.round(totalMin) : undefined,
-      amountMax: hasRange ? Math.round(totalMax) : undefined,
-      displayText: this.formatCostRange(
-        totalCost,
-        hasRange ? totalMin : undefined,
-        hasRange ? totalMax : undefined,
-        currencySymbol
-      ),
-      isEstimate: true,
-      confidenceLevel: 'medium'
+      unitPriceUSD: adjustedUSD,
+      totalUSD,
+      localAmount,
+      localCurrency: {
+        code: multiplier?.currency || 'USD',
+        symbol: multiplier?.currencySymbol || '$'
+      }
     }
   }
-  
+
   /**
-   * Calculate total cost for an action step in a specific country
+   * Calculate total cost for an action step
    */
   async calculateActionStepCost(
     actionStepId: string,
-    countryCode: string
-  ): Promise<CalculatedCost> {
-    
-    const actionStepItems = await prisma.actionStepItemCost.findMany({
-      where: { actionStepId },
-      include: { item: true }
-    })
-    
-    if (actionStepItems.length === 0) {
-      const multiplier = await prisma.countryCostMultiplier.findUnique({
-        where: { countryCode }
+    costItems: ActionStepItemCost[],
+    countryCode: string = 'US'
+  ): Promise<ActionStepCostCalculation> {
+    let totalUSD = 0
+    let totalLocal = 0
+    const itemBreakdown: CostBreakdownItem[] = []
+    let localCurrencyInfo = { code: 'USD', symbol: '$' }
+
+    for (const costItemLink of costItems) {
+      // Get the full cost item details
+      const item = costItemLink.item || await this.getCostItem(costItemLink.itemId)
+      if (!item) {
+        console.warn(`Cost item ${costItemLink.itemId} not found`)
+        continue
+      }
+
+      // Calculate price for this item
+      const price = await this.calculateItemPrice(item, costItemLink.quantity, countryCode)
+      
+      totalUSD += price.totalUSD
+      totalLocal += price.localAmount
+      localCurrencyInfo = price.localCurrency
+
+      itemBreakdown.push({
+        itemId: item.itemId,
+        name: item.name,
+        quantity: costItemLink.quantity,
+        unitPriceUSD: price.unitPriceUSD,
+        totalUSD: price.totalUSD,
+        localAmount: price.localAmount,
+        category: item.category,
+        unit: item.unit
       })
-      
-      return {
-        countryCode,
-        currency: multiplier?.currency || 'USD',
-        currencySymbol: multiplier?.currencySymbol || '$',
-        amount: 0,
-        displayText: 'No cost data',
-        isEstimate: false,
-        confidenceLevel: 'low'
-      }
     }
-    
-    let totalCost = 0
-    let totalMin = 0
-    let totalMax = 0
-    let hasRange = false
-    let currency = 'USD'
-    let currencySymbol = '$'
-    
-    for (const asi of actionStepItems) {
-      const overrides = asi.countryOverrides ? JSON.parse(asi.countryOverrides) : {}
-      const cost = await this.calculateItemCost(
-        asi.item.itemId,
-        countryCode,
-        asi.quantity,
-        overrides[countryCode]
-      )
-      
-      totalCost += cost.amount
-      if (cost.amountMin && cost.amountMax) {
-        totalMin += cost.amountMin
-        totalMax += cost.amountMax
-        hasRange = true
-      }
-      currency = cost.currency
-      currencySymbol = cost.currencySymbol
-    }
-    
+
     return {
-      countryCode,
-      currency,
-      currencySymbol,
-      amount: Math.round(totalCost),
-      amountMin: hasRange ? Math.round(totalMin) : undefined,
-      amountMax: hasRange ? Math.round(totalMax) : undefined,
-      displayText: this.formatCostRange(
-        totalCost,
-        hasRange ? totalMin : undefined,
-        hasRange ? totalMax : undefined,
-        currencySymbol
-      ),
-      isEstimate: true,
-      confidenceLevel: 'medium'
+      totalUSD,
+      localCurrency: {
+        code: localCurrencyInfo.code,
+        amount: totalLocal,
+        symbol: localCurrencyInfo.symbol
+      },
+      itemBreakdown
     }
   }
-  
+
   /**
-   * Get category multiplier from country data
+   * Calculate total cost for a strategy across all action steps
    */
-  private getCategoryMultiplier(multiplier: any, category: string): number {
-    const categoryKey = category as 'construction' | 'equipment' | 'service' | 'supplies'
-    return multiplier[categoryKey] || 1.0
+  async calculateStrategyCost(
+    actionSteps: Array<{
+      id: string
+      title?: string
+      smeAction?: string
+      action?: string
+      phase: string
+      costItems?: ActionStepItemCost[]
+    }>,
+    countryCode: string = 'US'
+  ): Promise<StrategyCostCalculation> {
+    let totalUSD = 0
+    let totalLocal = 0
+    const byPhase = {
+      immediate: 0,
+      short_term: 0,
+      medium_term: 0,
+      long_term: 0
+    }
+    const itemBreakdown: CostBreakdownItem[] = []
+    const stepBreakdown: Array<{
+      stepId: string
+      stepTitle: string
+      phase: string
+      totalUSD: number
+      localAmount: number
+    }> = []
+    let localCurrencyInfo = { code: 'USD', symbol: '$' }
+
+    for (const step of actionSteps) {
+      if (!step.costItems || step.costItems.length === 0) {
+        continue
+      }
+
+      const stepCost = await this.calculateActionStepCost(
+        step.id,
+        step.costItems,
+        countryCode
+      )
+
+      totalUSD += stepCost.totalUSD
+      totalLocal += stepCost.localCurrency.amount
+      localCurrencyInfo = stepCost.localCurrency
+
+      // Add to phase totals
+      const phase = step.phase as keyof typeof byPhase
+      if (byPhase[phase] !== undefined) {
+        byPhase[phase] += stepCost.totalUSD
+      }
+
+      // Add items to breakdown (merge duplicates)
+      for (const item of stepCost.itemBreakdown) {
+        const existingItem = itemBreakdown.find(i => i.itemId === item.itemId)
+        if (existingItem) {
+          existingItem.quantity += item.quantity
+          existingItem.totalUSD += item.totalUSD
+          existingItem.localAmount += item.localAmount
+        } else {
+          itemBreakdown.push({ ...item })
+        }
+      }
+
+      // Add to step breakdown
+      stepBreakdown.push({
+        stepId: step.id,
+        stepTitle: this.getStepTitle(step),
+        phase: step.phase,
+        totalUSD: stepCost.totalUSD,
+        localAmount: stepCost.localCurrency.amount
+      })
+    }
+
+    return {
+      totalUSD,
+      localCurrency: {
+        code: localCurrencyInfo.code,
+        amount: totalLocal,
+        symbol: localCurrencyInfo.symbol
+      },
+      byPhase,
+      itemBreakdown,
+      stepBreakdown
+    }
   }
-  
+
   /**
-   * Format currency with symbol and thousands separator
+   * Helper to get step title from various formats
    */
-  private formatCurrency(amount: number, symbol: string): string {
-    const formatted = Math.round(amount).toLocaleString('en-US', { 
-      maximumFractionDigits: 0 
+  private getStepTitle(step: { title?: string; smeAction?: string; action?: string }): string {
+    // Try to parse multilingual title
+    try {
+      if (step.title) {
+        const parsed = JSON.parse(step.title)
+        if (parsed.en) return parsed.en
+      }
+    } catch {
+      if (typeof step.title === 'string') return step.title
+    }
+    
+    // Fallback to smeAction or action
+    if (step.smeAction) {
+      try {
+        const parsed = JSON.parse(step.smeAction)
+        if (parsed.en) return parsed.en
+      } catch {
+        if (typeof step.smeAction === 'string') return step.smeAction
+      }
+    }
+    
+    return step.action || 'Untitled Step'
+  }
+
+  /**
+   * Format currency amount for display
+   */
+  formatCurrency(amount: number, currencyCode: string, symbol?: string): string {
+    const formatted = amount.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     })
-    return `${symbol}${formatted}`
+    
+    const displaySymbol = symbol || this.getCurrencySymbol(currencyCode)
+    return `${displaySymbol} ${formatted}`
   }
-  
+
   /**
-   * Format cost range or single cost
+   * Get currency symbol for a currency code
    */
-  private formatCostRange(
-    amount: number,
-    min: number | undefined,
-    max: number | undefined,
-    symbol: string
-  ): string {
-    if (min && max) {
-      const minFormatted = Math.round(min).toLocaleString('en-US', { maximumFractionDigits: 0 })
-      const maxFormatted = Math.round(max).toLocaleString('en-US', { maximumFractionDigits: 0 })
-      return `${symbol}${minFormatted}-${maxFormatted}`
+  private getCurrencySymbol(code: string): string {
+    const symbols: Record<string, string> = {
+      USD: '$',
+      JMD: 'J$',
+      TTD: 'TT$',
+      BBD: 'Bds$',
+      XCD: 'EC$',
+      HTG: 'G',
+      EUR: '€',
+      GBP: '£',
+      CAD: 'CA$'
     }
-    const formatted = Math.round(amount).toLocaleString('en-US', { maximumFractionDigits: 0 })
-    return `~${symbol}${formatted}`
+    return symbols[code] || code
+  }
+
+  /**
+   * Clear caches (useful when data is updated)
+   */
+  clearCaches() {
+    this.countryMultipliersCache.clear()
+    this.costItemsCache.clear()
   }
 }
 
-// Singleton export
+// Export singleton instance
 export const costCalculationService = new CostCalculationService()
 
+// Export types
+export type {
+  CostItem,
+  ActionStepItemCost,
+  CountryCostMultiplier,
+  CostBreakdownItem,
+  ActionStepCostCalculation,
+  StrategyCostCalculation
+}

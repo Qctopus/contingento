@@ -1,11 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - List all cost items
+// GET - List all cost items or get by itemId
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url)
+    const itemId = searchParams.get('itemId')
+    const category = searchParams.get('category')
+    const search = searchParams.get('search')
+    
+    // If itemId is provided, fetch specific item
+    if (itemId) {
+      const item = await prisma.costItem.findUnique({
+        where: { itemId }
+      })
+      return NextResponse.json({ items: item ? [item] : [] })
+    }
+    
+    // Build where clause for filtering
+    const where: any = { isActive: true }
+    if (category) {
+      where.category = category
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+    
     const items = await prisma.costItem.findMany({
-      where: { isActive: true },
+      where,
       include: {
         _count: {
           select: {

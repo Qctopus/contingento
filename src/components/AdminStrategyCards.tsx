@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy } from '../types/admin'
@@ -56,7 +56,6 @@ export function AdminStrategyCards({
         
         // Check if we have pre-filled strategies from admin backend
         if (preFillData?.preFilledFields?.STRATEGIES?.['Business Continuity Strategies']) {
-          console.log('🎯 Loading strategies from prefill data:', preFillData.preFilledFields.STRATEGIES['Business Continuity Strategies'])
           const preFilledStrategies = preFillData.preFilledFields.STRATEGIES['Business Continuity Strategies']
           setStrategies(preFilledStrategies)
           
@@ -65,7 +64,6 @@ export function AdminStrategyCards({
           setUseNewUI(hasNewFields)
           
           if (hasNewFields) {
-            console.log('✨ Using NEW enhanced strategy selection UI with priority tiers')
             // Auto-select essential and recommended strategies
             const autoSelectedIds = preFilledStrategies
               .filter((strategy: any) => 
@@ -77,27 +75,22 @@ export function AdminStrategyCards({
             // Also set selectedStrategies for backwards compatibility
             const autoSelected = preFilledStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
-            console.log('✅ Auto-selected essential/recommended strategies:', autoSelectedIds.length)
           } else {
-            console.log('📋 Using legacy strategy selection UI')
             // Auto-select high-effectiveness strategies (legacy)
             const autoSelected = preFilledStrategies.filter((strategy: Strategy) => 
               strategy.effectiveness && strategy.effectiveness >= 7
             )
             setSelectedStrategies(autoSelected)
             setSelectedStrategyIds(autoSelected.map(s => s.id))
-            console.log('✅ Auto-selected high-effectiveness strategies:', autoSelected.length)
           }
         } else {
           // Fallback: load all strategies from centralDataService
           const allStrategies = await centralDataService.getStrategies(true, locale)
-          console.log('📋 Loaded strategies from centralDataService:', allStrategies.length)
           
           // Check if strategies have the new priorityTier field
           const hasNewFields = allStrategies.some((s: any) => s.priorityTier !== undefined)
           
           if (hasNewFields) {
-            console.log('✨ Database strategies already have priorityTier - using directly')
             setStrategies(allStrategies)
             setUseNewUI(true)
             
@@ -112,17 +105,12 @@ export function AdminStrategyCards({
             // Also set selectedStrategies for backwards compatibility
             const autoSelected = allStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
-            console.log('✅ Auto-selected essential/recommended strategies from database:', autoSelectedIds.length)
           } else if (preFillData?.hazards && preFillData.hazards.length > 0) {
             // We have risks but strategies don't have priorityTier - match them dynamically
-            console.log('🎯 Matching strategies to user risks dynamically...')
             
             // Get high-tier risks to determine essential vs recommended strategies
             const highTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 1 || h.riskScore >= 7)
             const mediumTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 2 || (h.riskScore >= 5 && h.riskScore < 7))
-            
-            console.log('🎯 High-tier risks:', highTierRisks.map((h: any) => h.hazardId))
-            console.log('🎯 Medium-tier risks:', mediumTierRisks.map((h: any) => h.hazardId))
             
             // Enrich strategies with priority tiers based on risks
             const enrichedStrategies = allStrategies.map((strategy: any) => {
@@ -165,13 +153,6 @@ export function AdminStrategyCards({
               }
             })
             
-            console.log('✅ Enriched', enrichedStrategies.length, 'strategies with priority tiers')
-            console.log('📊 Breakdown:', {
-              essential: enrichedStrategies.filter((s: any) => s.priorityTier === 'essential').length,
-              recommended: enrichedStrategies.filter((s: any) => s.priorityTier === 'recommended').length,
-              optional: enrichedStrategies.filter((s: any) => s.priorityTier === 'optional').length
-            })
-            
             setStrategies(enrichedStrategies)
             setUseNewUI(true)
             
@@ -185,10 +166,8 @@ export function AdminStrategyCards({
             
             const autoSelected = enrichedStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
-            console.log('✅ Auto-selected essential/recommended strategies:', autoSelectedIds.length)
           } else {
             // No priorityTier and no risks - fall back to legacy UI
-            console.log('📋 Using legacy strategy selection UI (no priorityTier, no risks)')
             setStrategies(allStrategies)
             setUseNewUI(false)
             
@@ -198,7 +177,6 @@ export function AdminStrategyCards({
             )
             setSelectedStrategies(autoSelected)
             setSelectedStrategyIds(autoSelected.map(s => s.id))
-            console.log('✅ Auto-selected high-effectiveness strategies:', autoSelected.length)
           }
         }
         
@@ -272,27 +250,24 @@ export function AdminStrategyCards({
     })
   }
   
-  // Auto-save whenever selection changes
+  // Auto-save whenever selection changes (with guard to prevent infinite loops)
+  const prevSelectedIdsRef = useRef<string>('')
   useEffect(() => {
     if (strategies.length > 0) {
       const fullSelectedStrategies = strategies.filter(s => selectedStrategyIds.includes(s.id))
-      console.log('💾 Auto-saving strategies to formData:', {
-        totalStrategies: strategies.length,
-        selectedCount: fullSelectedStrategies.length,
-        selectedIds: selectedStrategyIds
-      })
+      const currentIdsString = selectedStrategyIds.sort().join(',')
       
-      if (onComplete) {
-        // Call onComplete with strategies array (not wrapped in object)
-        onComplete(fullSelectedStrategies)
-      }
-      
-      if (setUserInteracted && fullSelectedStrategies.length > 0) {
-        console.log('✅ Marking user as interacted')
-        setUserInteracted(true)
+      // Only call onComplete if the selection has actually changed
+      if (currentIdsString !== prevSelectedIdsRef.current) {
+        prevSelectedIdsRef.current = currentIdsString
+        
+        if (onComplete) {
+          // Call onComplete with strategies array (not wrapped in object)
+          onComplete(fullSelectedStrategies)
+        }
       }
     }
-  }, [selectedStrategyIds, strategies, onComplete, setUserInteracted])
+  }, [selectedStrategyIds, strategies, onComplete])
   
   const handleContinue = () => {
     // Called by StrategySelectionStep's onContinue prop
@@ -366,6 +341,7 @@ export function AdminStrategyCards({
         selectedStrategies={selectedStrategyIds}
         onStrategyToggle={handleStrategyIdToggle}
         onContinue={handleContinue}
+        countryCode={locationData?.countryCode || 'JM'}
       />
     )
   }

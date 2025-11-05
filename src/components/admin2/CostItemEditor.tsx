@@ -24,6 +24,7 @@ interface CostItemEditorProps {
 }
 
 export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) {
+  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
   const [formData, setFormData] = useState<CostItem>({
     itemId: '',
     name: '',
@@ -40,6 +41,32 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   
+  // Language labels and flags
+  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
+  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
+  
+  // Helper to parse multilingual JSON
+  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return { en: value, es: '', fr: '' }
+      }
+    }
+    return value || { en: '', es: '', fr: '' }
+  }
+  
+  // Helper to update multilingual field
+  const updateMultilingualField = (field: keyof CostItem, lang: 'en' | 'es' | 'fr', value: string) => {
+    const current = parseMultilingual(formData[field])
+    current[lang] = value
+    setFormData(prev => ({
+      ...prev,
+      [field]: JSON.stringify(current)
+    }))
+  }
+  
   useEffect(() => {
     if (item) {
       setFormData({
@@ -52,6 +79,14 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    
+    // Validate English content is present
+    const nameObj = parseMultilingual(formData.name)
+    if (!nameObj.en || !nameObj.en.trim()) {
+      setError('English name is required')
+      return
+    }
+    
     setSaving(true)
     
     try {
@@ -127,30 +162,56 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
           </div>
         )}
         
-        {/* Name */}
+        {/* Language Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Language / Idioma / Langue
+          </label>
+          <div className="flex space-x-2">
+            {(['en', 'es', 'fr'] as const).map(lang => (
+              <button
+                key={lang}
+                type="button"
+                onClick={() => setActiveLanguage(lang)}
+                className={`px-4 py-2 rounded-lg font-medium text-sm ${
+                  activeLanguage === lang
+                    ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                    : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+                }`}
+              >
+                {languageFlags[lang]} {languageLabels[lang]}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Name (Multilingual) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name <span className="text-red-500">*</span>
+            Name ({languageLabels[activeLanguage]}) <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            required
-            value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-            placeholder="e.g., Hurricane Shutters (Standard)"
+            required={activeLanguage === 'en'}
+            value={parseMultilingual(formData.name)[activeLanguage] || ''}
+            onChange={(e) => updateMultilingualField('name', activeLanguage, e.target.value)}
+            placeholder={activeLanguage === 'en' ? 'e.g., Hurricane Shutters (Standard)' : activeLanguage === 'es' ? 'ej., Persianas para Huracanes (Estándar)' : 'ex., Volets Anti-Ouragan (Standard)'}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
           />
+          {activeLanguage === 'en' && (
+            <p className="text-xs text-gray-500 mt-1">English name is required. Other languages optional.</p>
+          )}
         </div>
         
-        {/* Description */}
+        {/* Description (Multilingual) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
+            Description ({languageLabels[activeLanguage]})
           </label>
           <textarea
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Brief description of the item"
+            value={parseMultilingual(formData.description)[activeLanguage] || ''}
+            onChange={(e) => updateMultilingualField('description', activeLanguage, e.target.value)}
+            placeholder={activeLanguage === 'en' ? 'Brief description...' : activeLanguage === 'es' ? 'Breve descripción...' : 'Brève description...'}
             rows={2}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
           />

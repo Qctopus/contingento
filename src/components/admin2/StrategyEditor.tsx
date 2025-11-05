@@ -6,6 +6,8 @@ import { AutoSaveIndicator } from './AutoSaveIndicator'
 import { Strategy, ActionStep } from '../../types/admin'
 import { MultilingualArrayEditor } from './MultilingualArrayEditor'
 import { MultiCurrencyInput } from './MultiCurrencyInput'
+import { ActionStepCostItemSelector } from './ActionStepCostItemSelector'
+import { StrategyCostSummary } from './StrategyCostSummary'
 import { getLocalizedText } from '@/utils/localizationUtils'
 
 interface StrategyEditorProps {
@@ -29,7 +31,6 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     whyImportant: strategy?.whyImportant || `This strategy helps protect your business.`,
     applicableRisks: strategy?.applicableRisks || [],
     implementationCost: strategy?.implementationCost || 'medium',
-    costEstimateJMD: strategy?.costEstimateJMD || '',
     implementationTime: strategy?.implementationTime || 'weeks',
     timeToImplement: strategy?.timeToImplement || '',
     effectiveness: strategy?.effectiveness || 5,
@@ -61,6 +62,34 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     }
     return value || { en: '', es: '', fr: '' }
   }
+  
+  // Update formData when strategy prop changes (when editing a different strategy)
+  useEffect(() => {
+    if (strategy) {
+      setFormData({
+        id: strategy.id || '',
+        strategyId: strategy.strategyId || '',
+        name: strategy.name || '',
+        category: strategy.category || 'prevention',
+        description: strategy.description || '',
+        smeDescription: strategy.smeDescription || strategy.description || '',
+        whyImportant: strategy.whyImportant || `This strategy helps protect your business.`,
+        applicableRisks: strategy.applicableRisks || [],
+        implementationCost: strategy.implementationCost || 'medium',
+        implementationTime: strategy.implementationTime || 'weeks',
+        timeToImplement: strategy.timeToImplement || '',
+        effectiveness: strategy.effectiveness || 5,
+        businessTypes: strategy.businessTypes || [],
+        priority: strategy.priority || 'medium',
+        actionSteps: strategy.actionSteps || [],
+        helpfulTips: strategy.helpfulTips || [],
+        commonMistakes: strategy.commonMistakes || [],
+        successMetrics: strategy.successMetrics || [],
+        prerequisites: strategy.prerequisites || [],
+        roi: strategy.roi || 3.0
+      })
+    }
+  }, [strategy])
   
   // Helper to update multilingual field
   const updateMultilingualField = (field: keyof Strategy, lang: 'en' | 'es' | 'fr', value: string) => {
@@ -178,13 +207,8 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     }
   }, [formData.name, strategy])
 
-  // Auto-set JMD estimate when cost level changes
-  useEffect(() => {
-    const selectedCost = costOptions.find(c => c.key === formData.implementationCost)
-    if (selectedCost && !formData.costEstimateJMD) {
-      setFormData(prev => ({ ...prev, costEstimateJMD: selectedCost.jmd }))
-    }
-  }, [formData.implementationCost])
+  // Note: Cost estimates are now calculated from action step cost items
+  // The implementationCost field is kept as a categorical reference only
 
   const handleSave = async () => {
     try {
@@ -221,13 +245,14 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     const newStep: ActionStep = {
       id: `step_${Date.now()}`,
       phase: 'immediate',
+      title: '',
       action: '',
+      description: '',
       smeAction: '',
       timeframe: '',
       responsibility: 'Business Owner',
       resources: [],
-      cost: '',
-      estimatedCostJMD: '',
+      costItems: [],
       checklist: []
     }
     setEditingStep(newStep)
@@ -281,10 +306,12 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   }
 
   const isValid = () => {
-    return formData.name?.trim() && 
-           formData.description?.trim() && 
-           (formData.smeDescription?.trim() || true) && // Optional field
-           (formData.whyImportant?.trim() || true) // Optional field
+    // Check if multilingual fields have at least English content
+    const nameObj = parseMultilingual(formData.name)
+    const descObj = parseMultilingual(formData.description)
+    
+    return nameObj.en?.trim() && 
+           descObj.en?.trim()
   }
 
   const tabs = [
@@ -452,29 +479,20 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Implementation Cost *
+                  💰 Total Implementation Cost
                 </label>
-                <div className="space-y-2">
-                  {costOptions.map(cost => (
-                    <button
-                      key={cost.key}
-                      onClick={() => setFormData(prev => ({ 
-                        ...prev, 
-                        implementationCost: cost.key as any,
-                        costEstimateJMD: cost.jmd
-                      }))}
-                      className={`w-full p-3 text-left border rounded-lg transition-all ${
-                        formData.implementationCost === cost.key
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-medium">{cost.name}</div>
-                      <div className="text-sm text-blue-600">{cost.jmd}</div>
-                      <p className="text-xs text-gray-600">{cost.description}</p>
-                    </button>
-                  ))}
-                </div>
+                <StrategyCostSummary
+                  strategy={{
+                    id: formData.id,
+                    name: getLocalizedText(formData.name, 'en') || 'Strategy',
+                    actionSteps: formData.actionSteps
+                  }}
+                  countryCode="JM"
+                  showDetailed={false}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Cost is automatically calculated from action step cost items. Add cost items to action steps to see the total.
+                </p>
               </div>
 
               <div>
@@ -500,7 +518,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
               </div>
             </div>
 
-            {/* Effectiveness and ROI */}
+            {/* Effectiveness Only (ROI removed) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -521,21 +539,6 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                   <span>Low</span>
                   <span>High</span>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Return on Investment (ROI)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={formData.roi}
-                  onChange={(e) => setFormData(prev => ({ ...prev, roi: parseFloat(e.target.value) || 0 }))}
-                  placeholder="e.g., 3.5"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Expected return as a multiplier (e.g., 3.0 = 3x return)</p>
               </div>
             </div>
 
@@ -673,36 +676,52 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             </div>
 
             {/* Time Description */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  User-Friendly Time Description
-                </label>
-                <input
-                  type="text"
-                  value={formData.timeToImplement}
-                  onChange={(e) => setFormData(prev => ({ ...prev, timeToImplement: e.target.value }))}
-                  placeholder="e.g., 2-4 weeks"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <MultiCurrencyInput
-                  label="Cost Estimate (Multi-Currency) 💰"
-                  value={formData.costEstimateJMD || ''}
-                  onChange={(value) => setFormData(prev => ({ ...prev, costEstimateJMD: value }))}
-                  required={false}
-                  helpText="Add cost estimates in different currencies to support users across multiple countries. Click currency tabs to add more."
-                  placeholder="e.g., 10,000-50,000 or Free"
-                />
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                User-Friendly Time Description
+              </label>
+              <input
+                type="text"
+                value={formData.timeToImplement}
+                onChange={(e) => setFormData(prev => ({ ...prev, timeToImplement: e.target.value }))}
+                placeholder="e.g., 2-4 weeks"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Precise costs are calculated from action step cost items. This field is for general time guidance only.
+              </p>
             </div>
           </div>
         )}
 
         {currentTab === 'actions' && (
           <div className="space-y-6">
+            {/* Cost Summary at the top - ALWAYS SHOW */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <span>💰</span>
+                <span>Strategy Cost Calculation</span>
+              </h3>
+              {formData.actionSteps.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-600 mb-2">No action steps yet</p>
+                  <p className="text-sm text-gray-500">
+                    Add action steps with cost items to see the total strategy cost
+                  </p>
+                </div>
+              ) : (
+                <StrategyCostSummary
+                  strategy={{
+                    id: formData.id,
+                    name: getLocalizedText(formData.name, 'en') || 'Strategy',
+                    actionSteps: formData.actionSteps
+                  }}
+                  countryCode="JM"
+                  showDetailed={true}
+                />
+              )}
+            </div>
+
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Action Steps</h3>
               <button
@@ -777,17 +796,19 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                                 </button>
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                               <div>
                                 <span className="font-medium">Timeframe:</span> {step.timeframe || 'Not set'}
                               </div>
                               <div>
                                 <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
                               </div>
-                              <div>
-                                <span className="font-medium">Cost:</span> {getLocalizedText(step.estimatedCostJMD || step.cost, 'en') || 'Not set'}
-                              </div>
                             </div>
+                            {step.costItems && step.costItems.length > 0 && (
+                              <div className="text-xs text-blue-600 mt-2">
+                                💰 {step.costItems.length} cost item{step.costItems.length !== 1 ? 's' : ''} assigned
+                              </div>
+                            )}
                             {stepDesc && stepDesc !== stepTitle && (
                               <p className="text-sm text-gray-600 mt-2">{stepDesc}</p>
                             )}
@@ -819,7 +840,11 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <MultilingualArrayEditor
               label="Helpful Tips 💡"
               value={formData.helpfulTips || []}
-              onChange={(value) => setFormData(prev => ({ ...prev, helpfulTips: value }))}
+              onChange={(value) => {
+                // Parse the value as it could be a string or already parsed
+                const parsedValue = typeof value === 'string' ? value : JSON.stringify(value)
+                setFormData(prev => ({ ...prev, helpfulTips: parsedValue as any }))
+              }}
               helpText="Practical tips for successful implementation. Add guidance in all three languages."
               placeholder="Add a helpful tip..."
             />
@@ -828,7 +853,10 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <MultilingualArrayEditor
               label="Common Mistakes ⚠️"
               value={formData.commonMistakes || []}
-              onChange={(value) => setFormData(prev => ({ ...prev, commonMistakes: value }))}
+              onChange={(value) => {
+                const parsedValue = typeof value === 'string' ? value : JSON.stringify(value)
+                setFormData(prev => ({ ...prev, commonMistakes: parsedValue as any }))
+              }}
               helpText="Mistakes SMEs often make with this strategy. Users will see these as warnings."
               placeholder="Add a common mistake..."
             />
@@ -837,7 +865,10 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <MultilingualArrayEditor
               label="Success Metrics ✓"
               value={formData.successMetrics || []}
-              onChange={(value) => setFormData(prev => ({ ...prev, successMetrics: value }))}
+              onChange={(value) => {
+                const parsedValue = typeof value === 'string' ? value : JSON.stringify(value)
+                setFormData(prev => ({ ...prev, successMetrics: parsedValue as any }))
+              }}
               helpText="How users can measure if this strategy is working. Provide clear success indicators."
               placeholder="Add a success metric..."
             />
@@ -846,7 +877,10 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <MultilingualArrayEditor
               label="Prerequisites 📋"
               value={formData.prerequisites || []}
-              onChange={(value) => setFormData(prev => ({ ...prev, prerequisites: value }))}
+              onChange={(value) => {
+                const parsedValue = typeof value === 'string' ? value : JSON.stringify(value)
+                setFormData(prev => ({ ...prev, prerequisites: parsedValue as any }))
+              }}
               helpText="What SMEs need to have in place before starting this strategy."
               placeholder="Add a prerequisite..."
             />
@@ -1028,7 +1062,9 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                   onChange={(e) => updateMultilingualStepField('description', activeLanguage, e.target.value)}
                   placeholder={activeLanguage === 'en' ? 'Technical description for admin reference...' : activeLanguage === 'es' ? 'Descripción técnica para referencia administrativa...' : 'Description technique pour référence administrative...'}
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                    parseMultilingual(stepData.description)[activeLanguage] ? 'text-gray-900' : 'text-gray-400'
+                  }`}
                 />
               </div>
 
@@ -1041,13 +1077,15 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                   onChange={(e) => updateMultilingualStepField('smeAction', activeLanguage, e.target.value)}
                   placeholder={activeLanguage === 'en' ? 'Simple, clear description for SME users...' : activeLanguage === 'es' ? 'Descripción simple y clara para usuarios PYME...' : 'Description simple et claire pour les utilisateurs PME...'}
                   rows={3}
-                  className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
+                  className={`w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-blue-50 ${
+                    parseMultilingual(stepData.smeAction)[activeLanguage] ? 'text-gray-900' : 'text-gray-400'
+                  }`}
                 />
               </div>
             </div>
 
             {/* Details */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Timeframe *
@@ -1075,23 +1113,21 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                   ))}
                 </select>
               </div>
-
-              <div>
-                <MultiCurrencyInput
-                  label="Estimated Cost (Multi-Currency) 💰"
-                  value={stepData.estimatedCostJMD || ''}
-                  onChange={(value) => setStepData(prev => ({ ...prev, estimatedCostJMD: value }))}
-                  required={false}
-                  helpText="Add cost estimates in different currencies for this action step"
-                  placeholder="e.g., 5,000 or Free"
-                />
-              </div>
             </div>
+
+            {/* Cost Items Selector */}
+            <ActionStepCostItemSelector
+              actionStepId={stepData.id}
+              selectedItems={stepData.costItems || []}
+              onItemsChange={(items) => setStepData(prev => ({ ...prev, costItems: items }))}
+              countryCode="JM"
+            />
 
             {/* Resources */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Resources Needed
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                📦 Resources Needed
+                <span className="text-xs font-normal text-gray-500">(e.g., equipment, materials, tools)</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                 {stepData.resources.map((resource, index) => (
@@ -1108,7 +1144,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
               </div>
               <input
                 type="text"
-                placeholder="Add resource..."
+                placeholder="e.g., power drill, safety equipment, concrete..."
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.currentTarget.value.trim()) {
@@ -1117,34 +1153,34 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                   }
                 }}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 List physical items or materials needed to complete this step. Press Enter to add each item.
+              </p>
             </div>
 
             {/* Checklist */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                SME Checklist (Step-by-step guidance)
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                ✅ SME Implementation Checklist
+                <span className="text-xs font-normal text-gray-500">(Simple step-by-step instructions)</span>
               </label>
               <div className="space-y-2 mb-2">
-                {(() => {
-                  const checklist = getLocalizedText(stepData.checklist, 'en')
-                  const checklistArray = Array.isArray(checklist) ? checklist : (typeof checklist === 'string' && checklist ? [checklist] : [])
-                  return checklistArray.map((item, index) => (
-                    <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
-                      <span className="text-green-600 mt-1">•</span>
-                      <span className="text-sm text-green-800 flex-1">{item}</span>
-                      <button
-                        onClick={() => removeChecklistItem(index)}
-                        className="text-red-500 hover:text-red-700 text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))
-                })}
+                {(stepData.checklist || []).map((item, index) => (
+                  <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
+                    <span className="text-green-600 mt-1">•</span>
+                    <span className="text-sm text-green-800 flex-1">{item}</span>
+                    <button
+                      onClick={() => removeChecklistItem(index)}
+                      className="text-red-500 hover:text-red-700 text-xs"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
               </div>
               <input
                 type="text"
-                placeholder="Add checklist item..."
+                placeholder="e.g., Check local regulations, Measure installation area, Contact supplier..."
                 className="w-full px-3 py-2 border border-green-300 rounded-lg text-sm"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && e.currentTarget.value.trim()) {
@@ -1153,6 +1189,9 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                   }
                 }}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Break down this step into simple tasks an SME can follow. These will show in the business plan wizard. Press Enter to add each task.
+              </p>
             </div>
           </div>
 

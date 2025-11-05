@@ -138,8 +138,23 @@ export interface ActionStep {
   // Resources & Costs
   responsibility?: string
   resources?: string[] // Required resources
-  cost?: string
-  estimatedCostJMD?: string // JMD cost estimate
+  costItems?: Array<{
+    id?: string
+    itemId: string
+    quantity: number
+    customNotes?: string
+    item?: {
+      id: string
+      itemId: string
+      name: string
+      description?: string
+      category: string
+      baseUSD: number
+      baseUSDMin?: number
+      baseUSDMax?: number
+      unit?: string
+    }
+  }>
   checklist?: string[] // Step-by-step checklist
   
   // Validation & Completion
@@ -182,8 +197,7 @@ export interface Strategy {
   realWorldExample?: string // Caribbean success story with real business names
   
   // Implementation Details (enhanced)
-  implementationCost: 'low' | 'medium' | 'high' | 'very_high'
-  costEstimateJMD?: string // "Free" or "JMD 5,000-15,000"
+  implementationCost: 'low' | 'medium' | 'high' | 'very_high' // Categorical estimate for quick reference
   implementationTime?: 'hours' | 'days' | 'weeks' | 'months'
   timeToImplement?: string // User-friendly time description
   estimatedTotalHours?: number // Sum of all action step times
@@ -192,6 +206,10 @@ export interface Strategy {
   roi?: number // Return on investment estimate
   priority: 'low' | 'medium' | 'high' | 'critical'
   quickWinIndicator?: boolean // Fast + high impact = quick win
+  
+  // Calculated costs (computed from action step cost items)
+  calculatedCostUSD?: number // Aggregated from action steps
+  calculatedCostLocal?: number // In local currency
   
   // Wizard Integration (how strategy appears in wizard)
   defaultSelected?: boolean // Should wizard pre-check this?

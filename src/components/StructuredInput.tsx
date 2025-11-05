@@ -181,9 +181,9 @@ export function StructuredInput({
   useEffect(() => {
     if (!didMount) return
     
-    // Special handling for risk matrix - always save its data
-    if (type === 'special_risk_matrix') {
-      return // Risk matrix handles its own saving
+    // Special handling for risk matrix and strategy cards - they handle their own saving
+    if (type === 'special_risk_matrix' || type === 'special_strategy_cards') {
+      return // These types handle their own saving
     }
     
     if (hasUserInteracted) {
@@ -917,12 +917,6 @@ export function StructuredInput({
 
   // Extract location and business data from all step data
   const getContextualData = () => {
-    // Debug: Log all available data
-    if (process.env.NODE_ENV === 'development') {
-      console.log('StructuredInput stepData:', stepData)
-      console.log('StructuredInput preFillData:', preFillData)
-    }
-
     // Use preFillData first if available, then fall back to stepData
     let locationData = undefined
     let businessData = undefined
@@ -957,11 +951,6 @@ export function StructuredInput({
         businessPurpose: stepData['Business Purpose'] || stepData['Company Purpose'] || undefined,
         productsServices: stepData['Products and Services'] || stepData['Services'] || undefined
       }
-    }
-
-    // Debug: Log extracted data
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Extracted contextual data:', { locationData, businessData })
     }
 
     return { locationData, businessData }

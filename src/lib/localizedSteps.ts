@@ -362,7 +362,6 @@ export function useLocalizedSteps(): StepsCollection {
             t('contactsAndInformation.inputs.emergencyServices.tableColumns.2'),
             t('contactsAndInformation.inputs.emergencyServices.tableColumns.3'),
             t('contactsAndInformation.inputs.emergencyServices.tableColumns.4'),
-            t('contactsAndInformation.inputs.emergencyServices.tableColumns.5'),
           ],
           tableRowsPrompt: t('contactsAndInformation.inputs.emergencyServices.tableRowsPrompt'),
           examples: [

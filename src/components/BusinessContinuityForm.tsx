@@ -196,6 +196,7 @@ export function BusinessContinuityForm() {
   const lastFormDataRef = useRef<string>('')
   const isManualSaveRef = useRef(false)
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastInputValueRef = useRef<Record<string, string>>({})
 
   // Enhanced auto-save with retry logic
   const performSave = async (isManualSave: boolean = false): Promise<boolean> => {
@@ -566,19 +567,25 @@ export function BusinessContinuityForm() {
   }, [formData])
 
   const handleInputComplete = (step: string, label: string, value: any) => {
-    console.log('📝 handleInputComplete called:', {
-      step,
-      label,
-      valueType: Array.isArray(value) ? `Array(${value.length})` : typeof value,
-      value: Array.isArray(value) ? `[${value.length} items]` : value
-    })
+    // Create a unique key for this input
+    const inputKey = `${step}:${label}`
+    
+    // Serialize the value for comparison
+    const valueString = JSON.stringify(value)
+    
+    // Skip if this exact value was just processed
+    if (lastInputValueRef.current[inputKey] === valueString) {
+      return // Prevent duplicate processing
+    }
     
     // CRITICAL FIX: Don't overwrite array data with empty strings
     // This happens when components re-render with empty initialValue
     if (step === 'STRATEGIES' && typeof value === 'string' && value === '') {
-      console.log('⚠️ BLOCKED: Preventing empty string from overwriting STRATEGIES data')
       return
     }
+    
+    // Update the last value ref
+    lastInputValueRef.current[inputKey] = valueString
     
     setFormData(prev => {
       const updatedData = {
@@ -588,13 +595,6 @@ export function BusinessContinuityForm() {
           [label]: value
         }
       }
-      
-      console.log('✅ FormData updated:', {
-        step,
-        label,
-        hasData: !!updatedData[step][label],
-        dataType: Array.isArray(updatedData[step][label]) ? `Array(${updatedData[step][label].length})` : typeof updatedData[step][label]
-      })
       
       return updatedData
     })
@@ -681,15 +681,26 @@ export function BusinessContinuityForm() {
     }
   }
 
-  const exportToPDF = async () => {
+  const exportToPDF = async (mode: 'formal' | 'workbook' = 'formal') => {
     try {
-      const response = await fetch('/api/export-pdf', {
+      // Determine API endpoint based on mode
+      let endpoint = '/api/export-workbook-pdf'
+      let suffix = 'bcp-action-workbook'
+      
+      if (mode === 'formal') {
+        endpoint = '/api/export-formal-bcp'
+        suffix = 'formal-bcp'
+      }
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           planData: formData,
+          localCurrency: 'JMD',
+          exchangeRate: 150
         }),
       })
 
@@ -701,7 +712,11 @@ export function BusinessContinuityForm() {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${formData.PLAN_INFORMATION?.['Company Name'] || 'business'}-continuity-plan.pdf`
+      
+      // Determine filename based on mode
+      const companyName = formData.PLAN_INFORMATION?.['Company Name'] || 'business'
+      a.download = `${companyName}-${suffix}.pdf`
+      
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
@@ -852,17 +867,8 @@ export function BusinessContinuityForm() {
     
     const fieldLabel = currentInput.label
     const currentValue = stepAnswers[fieldLabel]
-    const hasPreFillData = !!preFillData
-    const preFilledStepData = preFillData?.preFilledFields[currentStep]
     
-    devLog('Getting current value', {
-      currentStep,
-      fieldLabel,
-      stepAnswers: Object.keys(stepAnswers),
-      currentValue: currentValue ? 'has value' : 'no value',
-      hasPreFillData,
-      preFilledStepData: preFilledStepData ? 'available' : 'none'
-    })
+    // Removed excessive logging that was causing console spam
     
     return currentValue
   }

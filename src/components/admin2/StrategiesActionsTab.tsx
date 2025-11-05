@@ -12,6 +12,58 @@ import {
   downloadCSV 
 } from '@/utils/csvUtils'
 
+// Component to display calculated strategy cost
+function StrategyCostBadge({ strategy }: { strategy: Strategy }) {
+  const [cost, setCost] = useState<string>('Calculating...')
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function calculateCost() {
+      try {
+        // Count total cost items across all action steps
+        const totalCostItems = strategy.actionSteps.reduce((sum, step) => {
+          return sum + (step.costItems?.length || 0)
+        }, 0)
+
+        if (totalCostItems === 0) {
+          setCost('No cost items')
+          setLoading(false)
+          return
+        }
+
+        // Use the cost calculation service
+        const { costCalculationService } = await import('../../services/costCalculationService')
+        const result = await costCalculationService.calculateStrategyCost(strategy.actionSteps, 'JM')
+        
+        if (result.localTotal > 0) {
+          setCost(`${result.currencySymbol}${result.localTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })}`)
+        } else if (result.usdTotal > 0) {
+          setCost(`$${result.usdTotal.toLocaleString('en-US', { maximumFractionDigits: 0 })} USD`)
+        } else {
+          setCost('No cost items')
+        }
+      } catch (error) {
+        console.error('Failed to calculate strategy cost:', error)
+        setCost('Error')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    calculateCost()
+  }, [strategy])
+
+  if (loading) {
+    return <span className="text-gray-400 text-xs">...</span>
+  }
+
+  if (cost === 'No cost items') {
+    return <span className="text-gray-400 text-xs">Not set</span>
+  }
+
+  return <span className="text-green-700 font-semibold">{cost}</span>
+}
+
 export function StrategiesActionsTab() {
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null)
@@ -396,8 +448,10 @@ export function StrategiesActionsTab() {
 
             <div className="grid grid-cols-3 gap-3 mb-4 text-center text-sm">
               <div>
-                <div className="text-gray-500">Cost</div>
-                <div className="font-medium">{strategy.costEstimateJMD || strategy.implementationCost}</div>
+                <div className="text-gray-500">Cost (Calculated)</div>
+                <div className="font-medium">
+                  <StrategyCostBadge strategy={strategy} />
+                </div>
               </div>
               <div>
                 <div className="text-gray-500">Time</div>

@@ -941,7 +941,14 @@ export async function POST(request: NextRequest) {
       },
       include: {
         actionSteps: {
-          orderBy: { sortOrder: 'asc' }
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            itemCosts: {
+              include: {
+                item: true
+              }
+            }
+          }
         }
       }
     })
@@ -1249,6 +1256,26 @@ export async function POST(request: NextRequest) {
         estimatedCostJMD: step.estimatedCostJMD,
         resources: parseJSONField(step.resources, []),
         checklist: parseJSONField(step.checklist, []),
+        
+        // Cost Items (structured costing)
+        costItems: step.itemCosts?.map((ic: any) => ({
+          id: ic.id,
+          itemId: ic.item?.itemId || ic.itemId,
+          quantity: ic.quantity,
+          notes: ic.customNotes,
+          // Include full cost item details for calculation
+          costItem: ic.item ? {
+            itemId: ic.item.itemId,
+            name: ic.item.name,
+            description: ic.item.description,
+            category: ic.item.category,
+            baseUSD: ic.item.baseUSD,
+            baseUSDMin: ic.item.baseUSDMin,
+            baseUSDMax: ic.item.baseUSDMax,
+            unit: ic.item.unit,
+            complexity: ic.item.complexity
+          } : null
+        })) || [],
         
         // Validation & Completion
         howToKnowItsDone: getLocalizedText(step.howToKnowItsDone, locale as Locale) || step.howToKnowItsDone,

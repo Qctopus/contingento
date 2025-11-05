@@ -226,7 +226,7 @@ export class CentralDataService {
 
   // STRATEGY OPERATIONS
   async getStrategies(forceRefresh: boolean = false, locale?: Locale): Promise<Strategy[]> {
-    const cacheKey = `strategies_${locale || 'en'}`
+    const cacheKey = `strategies_all_langs` // Admin needs all languages
     
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
@@ -237,14 +237,13 @@ export class CentralDataService {
       }
     }
     
-    console.log('🛡️ CentralDataService: Fetching strategies from database')
-    const url = locale ? `/api/admin2/strategies?locale=${locale}` : '/api/admin2/strategies'
+    console.log('🛡️ CentralDataService: Fetching strategies from database (all languages for admin)')
+    // Admin interface needs all languages, so skip localization
+    const url = '/api/admin2/strategies?skipLocalization=true'
     const strategies = await this.fetchWithErrorHandling<Strategy[]>(url)
     
-    // If locale is specified, localize the content
-    const localizedStrategies = locale 
-      ? strategies.map(strategy => localizeStrategy(strategy, locale))
-      : strategies
+    // Admin always gets all languages - no client-side localization
+    const localizedStrategies = strategies
     
     this.setCache(cacheKey, localizedStrategies)
     return localizedStrategies

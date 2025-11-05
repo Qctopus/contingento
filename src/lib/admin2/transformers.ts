@@ -239,6 +239,25 @@ export function transformStrategyForApi(strategy: any): any {
       resources: safeJsonParse(step.resources, []),
       checklist: safeJsonParse(step.checklist, []),
       
+      // Cost Items (NEW - structured costing system)
+      costItems: (step.itemCosts || []).map((itemCost: any) => ({
+        id: itemCost.id,
+        itemId: itemCost.itemId,
+        quantity: itemCost.quantity,
+        customNotes: itemCost.customNotes,
+        item: itemCost.item ? {
+          id: itemCost.item.id,
+          itemId: itemCost.item.itemId,
+          name: itemCost.item.name,
+          description: itemCost.item.description,
+          category: itemCost.item.category,
+          baseUSD: itemCost.item.baseUSD,
+          baseUSDMin: itemCost.item.baseUSDMin,
+          baseUSDMax: itemCost.item.baseUSDMax,
+          unit: itemCost.item.unit
+        } : undefined
+      })),
+      
       // Validation & Completion (NEW)
       howToKnowItsDone: parseMultilingualJSON(step.howToKnowItsDone) || step.howToKnowItsDone,
       exampleOutput: parseMultilingualJSON(step.exampleOutput) || step.exampleOutput,

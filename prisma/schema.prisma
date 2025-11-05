@@ -819,8 +819,8 @@ model RiskMultiplier {
 model CostItem {
   id              String   @id @default(cuid())
   itemId          String   @unique  // "hurricane_shutters_std"
-  name            String              // "Hurricane Shutters (Standard)"
-  description     String?             // "Roll-down shutters for standard windows"
+  name            String              // JSON multilingual: {"en": "Hurricane Shutters", "es": "...", "fr": "..."}
+  description     String?             // JSON multilingual: {"en": "Roll-down shutters", "es": "...", "fr": "..."}
   category        String              // "construction" | "equipment" | "service" | "supplies"
   
   // Base pricing in USD
@@ -831,7 +831,7 @@ model CostItem {
   // Metadata
   unit            String?             // "per window" | "per unit" | "per month"
   complexity      String   @default("medium")  // "simple" | "medium" | "complex"
-  notes           String?             // Admin notes
+  notes           String?             // JSON multilingual: {"en": "Admin notes", "es": "...", "fr": "..."}
   tags            String?             // JSON array: ["hurricane", "windows", "protection"]
   
   // Alternative options (references to other CostItem IDs)
