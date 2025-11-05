@@ -319,6 +319,8 @@ export interface FormalRiskItem {
 export interface FormalContinuityStrategies {
   // Investment summary
   totalInvestment: number
+  currencyCode?: string // e.g., "BBD", "JMD", "TTD"
+  currencySymbol?: string // e.g., "Bds$", "JMD", "TTD"
   investmentBreakdown: {
     prevention: number
     preventionPercentage: number

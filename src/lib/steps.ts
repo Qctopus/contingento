@@ -5,6 +5,7 @@ type TextInput = {
   required: boolean;
   prompt: string;
   examples?: string[];
+  placeholder?: string;
   options?: never;
   tableColumns?: never;
   tableRowsPrompt?: never;
@@ -283,35 +284,46 @@ export const STEPS: StepsCollection = {
         ],
       },
       {
-        type: 'select',
+        type: 'radio',
         label: 'Approximate Annual Revenue',
         required: false,
         prompt: 'What is your approximate annual revenue? Select the range that best fits your business. This helps demonstrate your business size for loan applications and insurance renewals.',
         options: [
-          { label: 'Under JMD 1 million', value: 'under_1m' },
-          { label: 'JMD 1-3 million', value: '1m_3m' },
-          { label: 'JMD 3-10 million', value: '3m_10m' },
-          { label: 'JMD 10-20 million', value: '10m_20m' },
-          { label: 'Over JMD 20 million', value: 'over_20m' },
+          { label: 'Under 1 million', value: 'under_1m' },
+          { label: '1-3 million', value: '1m_3m' },
+          { label: '3-10 million', value: '3m_10m' },
+          { label: '10-20 million', value: '10m_20m' },
+          { label: 'Over 20 million', value: 'over_20m' },
           { label: 'Prefer not to disclose', value: 'not_disclosed' },
         ],
-        examples: ['JMD 1-3 million', 'JMD 3-10 million'],
       },
       {
-        type: 'number',
+        type: 'radio',
         label: 'Total People in Business',
         required: false,
-        prompt: 'How many people work in your business total? Include yourself, family members, full-time staff, part-time staff, and regular contractors.',
-        placeholder: '5',
-        examples: ['3', '8', '15'],
+        prompt: 'How many people work in your business in total? Include yourself, family members, full-time staff, part-time staff, and regular contractors.',
+        options: [
+          { label: 'Just me (1 person)', value: '1' },
+          { label: '2-5 people', value: '2-5' },
+          { label: '6-10 people', value: '6-10' },
+          { label: '11-25 people', value: '11-25' },
+          { label: '26-50 people', value: '26-50' },
+          { label: 'More than 50 people', value: '50+' },
+        ],
       },
       {
-        type: 'text',
+        type: 'radio',
         label: 'Years in Operation',
         required: false,
-        prompt: 'How long have you been operating this business?',
-        placeholder: 'e.g., 3 years, Since 2020',
-        examples: ['2 years', 'Since 2018', '10 years', 'Just started this year'],
+        prompt: 'How long has your business been operating? This helps demonstrate your experience and track record.',
+        options: [
+          { label: 'Less than 1 year (just starting)', value: '0-1' },
+          { label: '1-2 years', value: '1-2' },
+          { label: '3-5 years', value: '3-5' },
+          { label: '6-10 years', value: '6-10' },
+          { label: '11-20 years', value: '11-20' },
+          { label: 'More than 20 years', value: '20+' },
+        ],
       },
       {
         type: 'radio',

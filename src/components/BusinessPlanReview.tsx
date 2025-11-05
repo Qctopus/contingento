@@ -205,7 +205,82 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   })
 
   // Get selected strategies (ONLY strategies user selected in wizard)
-  const selectedStrategies = formData.STRATEGIES?.['Business Continuity Strategies'] || []
+  const selectedStrategiesRaw = formData.STRATEGIES?.['Business Continuity Strategies'] || []
+  
+  // Get country code for cost calculation
+  const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || formData.BUSINESS_OVERVIEW?.['Business Address'] || ''
+  const addressParts = businessAddress.split(',').map((s: string) => s.trim())
+  const country = addressParts[addressParts.length - 1] || 'Jamaica'
+  const countryCodeMap: Record<string, string> = {
+    'Jamaica': 'JM',
+    'Barbados': 'BB',
+    'Trinidad': 'TT',
+    'Trinidad and Tobago': 'TT',
+    'Bahamas': 'BS',
+    'Haiti': 'HT',
+    'Dominican Republic': 'DO',
+    'Grenada': 'GD',
+    'Saint Lucia': 'LC',
+    'Antigua': 'AG',
+    'Antigua and Barbuda': 'AG',
+    'Saint Vincent': 'VC',
+    'Saint Vincent and the Grenadines': 'VC',
+    'Dominica': 'DM',
+    'Saint Kitts': 'KN',
+    'Saint Kitts and Nevis': 'KN',
+  }
+  const countryCode = countryCodeMap[country] || 'JM'
+  
+  // Add calculated costs to strategies
+  const [selectedStrategies, setSelectedStrategies] = useState(selectedStrategiesRaw)
+  
+  useEffect(() => {
+    async function enrichStrategiesWithCosts() {
+      if (!selectedStrategiesRaw || selectedStrategiesRaw.length === 0) {
+        setSelectedStrategies([])
+        return
+      }
+      
+      // Import cost calculation service
+      const { costCalculationService } = await import('../services/costCalculationService')
+      
+      const enrichedStrategies = await Promise.all(
+        selectedStrategiesRaw.map(async (strategy: any) => {
+          // Skip if already has calculated cost
+          if (strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0) {
+            return strategy
+          }
+          
+          // Calculate cost if strategy has action steps
+          if (strategy.actionSteps && strategy.actionSteps.length > 0) {
+            try {
+              const result = await costCalculationService.calculateStrategyCost(
+                strategy.actionSteps,
+                countryCode
+              )
+              
+              return {
+                ...strategy,
+                calculatedCostUSD: result.totalUSD,
+                calculatedCostLocal: result.localCurrency.amount,
+                currencyCode: result.localCurrency.code,
+                currencySymbol: result.localCurrency.symbol
+              }
+            } catch (error) {
+              console.error(`Error calculating cost for strategy ${strategy.id}:`, error)
+              return strategy
+            }
+          }
+          
+          return strategy
+        })
+      )
+      
+      setSelectedStrategies(enrichedStrategies)
+    }
+    
+    enrichStrategiesWithCosts()
+  }, [selectedStrategiesRaw, countryCode])
 
   // ONLY show risks that have at least 1 strategy selected
   const selectedRisks = assessedRisks.filter((risk: any) => {

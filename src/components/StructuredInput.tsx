@@ -25,6 +25,7 @@ interface StructuredInputProps {
   required?: boolean
   prompt: string
   examples?: string[]
+  placeholder?: string
   options?: Option[]
   tableColumns?: string[]
   tableRowsPrompt?: string
@@ -46,6 +47,7 @@ export function StructuredInput({
   required = false,
   prompt,
   examples,
+  placeholder,
   options,
   tableColumns = [],
   tableRowsPrompt,
@@ -82,6 +84,32 @@ export function StructuredInput({
   
   // Use custom hook for user interaction tracking
   const { hasUserInteracted, didMount, setUserInteracted: setInteracted, resetInteraction } = useUserInteraction()
+  
+  // Detect currency from location for revenue fields
+  const [detectedCurrency, setDetectedCurrency] = useState<{ code: string; symbol: string } | null>(null)
+  
+  useEffect(() => {
+    if (label === 'Approximate Annual Revenue' && preFillData?.location?.countryCode) {
+      // Currency mapping by country code
+      const currencyMap: Record<string, { code: string; symbol: string }> = {
+        'JM': { code: 'JMD', symbol: 'J$' },
+        'TT': { code: 'TTD', symbol: 'TT$' },
+        'BB': { code: 'BBD', symbol: 'Bds$' },
+        'BS': { code: 'BSD', symbol: 'B$' },
+        'HT': { code: 'HTG', symbol: 'G' },
+        'DO': { code: 'DOP', symbol: 'RD$' },
+        'GD': { code: 'XCD', symbol: 'EC$' },
+        'LC': { code: 'XCD', symbol: 'EC$' },
+        'AG': { code: 'XCD', symbol: 'EC$' },
+        'VC': { code: 'XCD', symbol: 'EC$' },
+        'DM': { code: 'XCD', symbol: 'EC$' },
+        'KN': { code: 'XCD', symbol: 'EC$' },
+      }
+      
+      const currency = currencyMap[preFillData.location.countryCode] || { code: 'JMD', symbol: 'J$' }
+      setDetectedCurrency(currency)
+    }
+  }, [label, preFillData])
 
   // Fetch smart suggestions based on business type and location
   useEffect(() => {
@@ -1050,7 +1078,7 @@ export function StructuredInput({
             className={`w-full h-32 p-3 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm placeholder:text-gray-400 ${
               hasSmartPreFill ? 'bg-blue-50 border-blue-300' : ''
             }`}
-            placeholder={t('typeAnswerHere')}
+            placeholder={placeholder || t('typeAnswerHere')}
             required={required}
           />
           

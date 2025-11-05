@@ -1097,7 +1097,27 @@ export function BusinessContinuityForm() {
                 {currentQuestion.label}
                 {currentQuestion.required && <span className="text-red-500 ml-1">*</span>}
               </h2>
-              <p className="text-gray-600 leading-relaxed">{currentQuestion.prompt}</p>
+              <p className="text-gray-600 leading-relaxed">
+                {currentQuestion.prompt}
+                {currentQuestion.label === 'Approximate Annual Revenue' && preFillData?.location?.countryCode && (() => {
+                  const currencyMap: Record<string, { code: string; symbol: string }> = {
+                    'JM': { code: 'JMD', symbol: 'J$' },
+                    'TT': { code: 'TTD', symbol: 'TT$' },
+                    'BB': { code: 'BBD', symbol: 'Bds$' },
+                    'BS': { code: 'BSD', symbol: 'B$' },
+                    'HT': { code: 'HTG', symbol: 'G' },
+                    'DO': { code: 'DOP', symbol: 'RD$' },
+                    'GD': { code: 'XCD', symbol: 'EC$' },
+                    'LC': { code: 'XCD', symbol: 'EC$' },
+                    'AG': { code: 'XCD', symbol: 'EC$' },
+                    'VC': { code: 'XCD', symbol: 'EC$' },
+                    'DM': { code: 'XCD', symbol: 'EC$' },
+                    'KN': { code: 'XCD', symbol: 'EC$' },
+                  }
+                  const currency = currencyMap[preFillData.location.countryCode] || { code: 'JMD', symbol: 'J$' }
+                  return <span className="block mt-2 text-sm font-medium text-blue-600">💰 Amounts shown are in {currency.code} ({currency.symbol})</span>
+                })()}
+              </p>
             </div>
 
             {/* Examples are rendered inside StructuredInput with de-duplication */}
@@ -1109,6 +1129,7 @@ export function BusinessContinuityForm() {
               required={currentQuestion.required}
               prompt={currentQuestion.prompt}
               examples={getIndustryExamples()}
+              placeholder={(currentQuestion as any).placeholder}
               options={currentQuestion.options}
               tableColumns={currentQuestion.tableColumns}
               tableRowsPrompt={currentQuestion.tableRowsPrompt}

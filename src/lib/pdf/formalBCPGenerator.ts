@@ -450,13 +450,22 @@ function generateContinuityStrategies(
 ) {
   addSectionHeader(doc, state, '3. CONTINUITY STRATEGIES')
 
+  // Get currency info (with fallback to JMD)
+  const currencySymbol = strategies.currencySymbol || 'JMD'
+  const currencyCode = strategies.currencyCode || 'JMD'
+  
   // 3.1 Investment Summary
   addSubsectionHeader(doc, state, '3.1 Investment Summary')
 
   doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
-  const totalJMD = `JMD ${strategies.totalInvestment.toLocaleString('en-US')}`
-  const summaryText = `We are investing ${totalJMD} in business continuity measures to protect our operations, assets, and ability to serve customers during disruptions.`
+  
+  // Format total investment with user's currency
+  const totalDisplay = strategies.totalInvestment > 0
+    ? `${currencySymbol}${strategies.totalInvestment.toLocaleString('en-US')} ${currencyCode}`
+    : 'Cost TBD'
+  
+  const summaryText = `We are investing ${totalDisplay} in business continuity measures to protect our operations, assets, and ability to serve customers during disruptions.`
   const summaryLines = doc.splitTextToSize(summaryText, PAGE_LAYOUT.CONTENT_WIDTH)
   summaryLines.forEach((line: string) => {
     doc.text(line, PAGE_LAYOUT.MARGIN_LEFT, state.currentY)
@@ -469,10 +478,11 @@ function generateContinuityStrategies(
   state.currentY += 6
   doc.setFont('helvetica', 'normal')
 
+  // Format breakdown with user's currency
   const breakdown = [
-    `Prevention (reduce likelihood): JMD ${strategies.investmentBreakdown.prevention.toLocaleString('en-US')} (${strategies.investmentBreakdown.preventionPercentage}%)`,
-    `Response (handle emergencies): JMD ${strategies.investmentBreakdown.response.toLocaleString('en-US')} (${strategies.investmentBreakdown.responsePercentage}%)`,
-    `Recovery (restore operations): JMD ${strategies.investmentBreakdown.recovery.toLocaleString('en-US')} (${strategies.investmentBreakdown.recoveryPercentage}%)`
+    `Prevention & Mitigation: ${currencySymbol}${strategies.investmentBreakdown.prevention.toLocaleString('en-US')} (${strategies.investmentBreakdown.preventionPercentage}%)`,
+    `Response Capabilities: ${currencySymbol}${strategies.investmentBreakdown.response.toLocaleString('en-US')} (${strategies.investmentBreakdown.responsePercentage}%)`,
+    `Recovery Resources: ${currencySymbol}${strategies.investmentBreakdown.recovery.toLocaleString('en-US')} (${strategies.investmentBreakdown.recoveryPercentage}%)`
   ]
 
   breakdown.forEach(item => {
@@ -499,8 +509,13 @@ function generateContinuityStrategies(
 
     doc.setFontSize(9)
     doc.setFont('helvetica', 'normal')
-    doc.text(`Strategies Implemented: ${riskGroup.strategyCount}`, PAGE_LAYOUT.MARGIN_LEFT + 2, state.currentY)
-    doc.text(`Total Investment: JMD ${riskGroup.totalInvestment.toLocaleString('en-US')}`, PAGE_LAYOUT.MARGIN_LEFT + 60, state.currentY)
+    doc.text(`Strategies: ${riskGroup.strategyCount}`, PAGE_LAYOUT.MARGIN_LEFT + 2, state.currentY)
+    
+    // Format risk group investment with user's currency
+    const riskInvestmentDisplay = riskGroup.totalInvestment > 0
+      ? `${currencySymbol}${riskGroup.totalInvestment.toLocaleString('en-US')}`
+      : 'Cost TBD'
+    doc.text(`Total Investment: ${riskInvestmentDisplay}`, PAGE_LAYOUT.MARGIN_LEFT + 60, state.currentY)
     state.currentY += 8
 
     // Each strategy
@@ -561,14 +576,21 @@ function generateContinuityStrategies(
       if (strategy.keyActions.length > 0) {
         state.currentY += 3
         doc.setFont('helvetica', 'italic')
-        doc.text('Key Actions Taken:', PAGE_LAYOUT.MARGIN_LEFT + 10, state.currentY)
+        doc.text('Key Actions:', PAGE_LAYOUT.MARGIN_LEFT + 10, state.currentY)
         state.currentY += 5
         doc.setFont('helvetica', 'normal')
 
-        strategy.keyActions.slice(0, 3).forEach(action => {
+        // Show ALL action steps (not just first 3)
+        strategy.keyActions.forEach((action, actionIdx) => {
           checkFormalPageBreak(doc, state, 10, '')
-          doc.text('✓', PAGE_LAYOUT.MARGIN_LEFT + 12, state.currentY)
-          const actionLines = doc.splitTextToSize(action.action, PAGE_LAYOUT.CONTENT_WIDTH - 20)
+          doc.text('→', PAGE_LAYOUT.MARGIN_LEFT + 12, state.currentY)
+          
+          // Format action text with timeframe if available
+          const actionText = action.timeframe 
+            ? `${action.action} (${action.timeframe})`
+            : action.action
+          
+          const actionLines = doc.splitTextToSize(actionText, PAGE_LAYOUT.CONTENT_WIDTH - 20)
           actionLines.forEach((line: string, idx: number) => {
             doc.text(line, PAGE_LAYOUT.MARGIN_LEFT + 16, state.currentY + (idx * 4))
           })

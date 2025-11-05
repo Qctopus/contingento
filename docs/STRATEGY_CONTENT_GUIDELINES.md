@@ -107,28 +107,32 @@ systems for business continuity."
 
 ## 💚 Writing Real Caribbean Success Stories
 
-**Goal**: Show a real Caribbean business that benefited from this strategy with specific numbers and places.
+**⚠️ CRITICAL: DO NOT include hardcoded costs in success stories!**
+
+See `docs/HARDCODED_COSTS_REMOVAL_GUIDE.md` for detailed guidance on costs.
+
+**Goal**: Show a real Caribbean business that benefited from this strategy with impact and context.
 
 ### Required Elements:
-1. **Location** - Specific Jamaican town/parish
+1. **Location** - Specific Caribbean town/parish
 2. **Business type** - What kind of business
 3. **Year/event** - When this happened (recent is better)
-4. **Specific costs** - JMD amounts
-5. **Clear outcome** - What happened vs what would have happened
+4. **Impact described** - What happened vs what would have happened (NO specific costs)
+5. **Clear outcome** - The benefit without dollar amounts
 
 ### Template:
 ```
 [Event] happened in [Location] in [Year]. [Business type] that had 
-[this strategy] [positive outcome with JMD amount]. [Business without 
-strategy] [negative outcome with JMD amount]. [Cost of strategy] in 
-[investment] saved/made [specific amount].
+[this strategy] [positive outcome - impact described]. [Business without 
+strategy] [negative outcome - losses described]. [Cost of strategy] 
+paid for itself quickly.
 ```
 
 ### ✅ Good Example:
 ```
-"A pharmacy in May Pen installed a JMD 180,000 generator in 2023. 
+"A pharmacy in May Pen installed a backup generator in 2023. 
 During a 3-day outage in July, they were the only pharmacy open in the area. 
-They made JMD 450,000 in extra sales while competitors lost inventory to 
+They made significant extra sales while competitors lost inventory to 
 spoilage. The generator paid for itself in one weekend."
 ```
 
@@ -136,11 +140,22 @@ spoilage. The generator paid for itself in one weekend."
 - Specific place (May Pen)
 - Specific business (pharmacy)
 - Specific time (2023, July)
-- Specific costs (JMD 180,000 investment, JMD 450,000 return)
+- Impact described (only one open, extra sales, competitors had losses)
 - Clear comparison (they stayed open, others closed)
 - Relatable outcome (paid for itself)
+- NO hardcoded costs (system provides localized pricing)
 
-### ❌ Bad Example:
+### ❌ Bad Example - Hardcoded Costs:
+```
+"A pharmacy in May Pen installed a JMD 180,000 generator in 2023. 
+During a 3-day outage they made JMD 450,000 in extra sales."
+```
+
+**Why it fails**:
+- Hardcoded JMD amounts don't work for users in Barbados, Trinidad, etc.
+- See `HARDCODED_COSTS_REMOVAL_GUIDE.md` for full explanation
+
+### ❌ Bad Example - Too Vague:
 ```
 "Many businesses have found that backup power systems provide significant 
 value during outages."
@@ -149,59 +164,81 @@ value during outages."
 **Why it fails**:
 - No specific location
 - No specific business
-- No specific numbers
 - No story
 - No Caribbean context
 
 ---
 
-## 💰 Writing Cost Estimates (JMD)
+## 💰 Writing About Costs (UPDATED - Multi-Currency System)
 
-### Rules:
-1. **Always use JMD** - not USD, not "medium cost"
-2. **Give ranges** - "JMD 15,000-80,000" (accounts for variation)
-3. **Be realistic** - based on actual Caribbean prices
-4. **Include context** - what that money covers
+**⚠️ CRITICAL CHANGE: DO NOT hardcode currency amounts!**
 
-### ✅ Good Examples:
-```
-"JMD 15,000-80,000 (shutters, supplies, securing)"
-"JMD 50,000-250,000 (depending on solution)"
-"JMD 5,000-50,000 (basic to comprehensive)"
-```
+**See `docs/HARDCODED_COSTS_REMOVAL_GUIDE.md` for complete guidance.**
 
-### Cost Ranges by Business Size:
-- **Micro** (1-5 employees): JMD 5,000-50,000
-- **Small** (6-20 employees): JMD 50,000-200,000
-- **Medium** (21-50 employees): JMD 200,000-1M+
+### ❌ NEVER Write:
+- "JMD 15,000-80,000"
+- "J$ 45,000"
+- "$500-1,000"
+- Any currency code + numbers
+
+### ✅ Instead Write:
+- "See cost breakdown below"
+- "Budget-friendly option"
+- "Significant savings"
+- "Cost-effective solution"
+- Describe what's needed, not the price
+
+### Why This Changed:
+We serve **7 Caribbean countries** with different currencies. Hardcoded "JMD" amounts confuse users in Barbados (BBD), Trinidad (TTD), Bahamas (BSD), etc.
+
+### How Costs Work Now:
+- Link **cost items** to action steps
+- System calculates based on user's country
+- Displays in local currency automatically
+- Updates with exchange rates
+
+**For complete guidelines, read:** `docs/HARDCODED_COSTS_REMOVAL_GUIDE.md`
 
 ---
 
 ## 💸 Writing Low Budget Alternatives
 
+**⚠️ DO NOT include hardcoded costs! See `HARDCODED_COSTS_REMOVAL_GUIDE.md`**
+
 **Goal**: Show the cheapest way to implement this, specific to Caribbean SMEs.
 
 ### Rules:
-1. **Be specific** - exact items and costs
+1. **Be specific** - exact items needed (NOT prices)
 2. **DIY-friendly** - something they can actually do
 3. **Still effective** - not just "do nothing"
 4. **Caribbean-available** - can buy locally
+5. **NO currency amounts** - link cost items instead
 
 ### ✅ Good Example:
 ```
-"Start with a small inverter (JMD 15,000) and car batteries (JMD 10,000 each) 
-to power essentials like cash register, internet router, and a few lights. 
-Total: JMD 35,000-50,000."
+"Start with a small inverter and car batteries to power essentials like 
+cash register, internet router, and a few lights. This budget-friendly 
+approach costs significantly less than a full generator system while 
+covering your critical needs. See cost breakdown for your country's pricing."
 ```
 
 **Why it works**:
 - Specific items (inverter, car batteries)
-- Specific costs for each
 - Says what it can power
-- Total cost calculated
-- Realistic for micro businesses
+- Notes it's budget-friendly
+- Points to cost system for actual pricing
+- Works for all Caribbean countries
 
-### ❌ Bad Example:
+### ❌ Bad Example - Hardcoded Costs:
+```
+"Start with a small inverter (JMD 15,000) and car batteries (JMD 10,000 each)..."
+```
+
+**Why it fails**:
+- Hardcoded JMD amounts don't work for non-Jamaica users
+- See `HARDCODED_COSTS_REMOVAL_GUIDE.md`
+
+### ❌ Bad Example - Too Vague:
 ```
 "Consider lower-cost alternatives that may provide adequate protection."
 ```
@@ -209,35 +246,47 @@ Total: JMD 35,000-50,000."
 **Why it fails**:
 - No specifics
 - Vague ("consider", "may")
-- No costs
 - No guidance
 
 ---
 
 ## 🔧 Writing DIY Approaches
 
+**⚠️ DO NOT include hardcoded costs! See `HARDCODED_COSTS_REMOVAL_GUIDE.md`**
+
 **Goal**: Step-by-step instructions a business owner can follow themselves.
 
 ### Format:
-Use numbered steps with specific actions and costs.
+Use numbered steps with specific actions (NO currency amounts).
 
 ### ✅ Good Example:
 ```
-"1) Buy plywood sheets and hinges (JMD 8,000)
+"1) Buy plywood sheets and hinges from your local hardware store
 2) Cut to fit your windows
-3) Paint with exterior paint (JMD 2,000)
+3) Paint with exterior paint for weather protection
 4) Install simple hinges so they fold down when not needed
-Total DIY cost: ~JMD 12,000 vs JMD 50,000+ for professional metal shutters"
+This DIY approach costs significantly less than professional metal shutters - 
+see the detailed cost breakdown for pricing in your country's currency."
 ```
 
 **Why it works**:
 - Numbered steps
-- Specific materials and costs
+- Specific materials listed
 - Clear instructions
 - Compares to professional option
-- Shows savings
+- Notes savings without hardcoded amounts
+- Points to cost system
 
-### ❌ Bad Example:
+### ❌ Bad Example - Hardcoded Costs:
+```
+"Buy plywood sheets (JMD 8,000), paint (JMD 2,000)..."
+```
+
+**Why it fails**:
+- Hardcoded JMD costs don't work for other countries
+- See `HARDCODED_COSTS_REMOVAL_GUIDE.md`
+
+### ❌ Bad Example - Too Vague:
 ```
 "You can implement this strategy yourself by following standard procedures 
 and best practices."
@@ -246,7 +295,6 @@ and best practices."
 **Why it fails**:
 - No steps
 - No specifics
-- No costs
 - No actionable guidance
 
 ---
@@ -296,11 +344,13 @@ and best practices."
 ### ✅ Good Example:
 ```json
 {
-  "micro": "JMD 35,000-50,000 for inverter + batteries. Powers essentials only.",
-  "small": "JMD 80,000-180,000 for small generator. Covers critical operations.",
-  "medium": "JMD 200,000+ for proper generator with auto-switch. Full facility backup."
+  "micro": "Budget-friendly inverter and battery setup. Powers essentials only. See cost breakdown.",
+  "small": "Small generator system. Covers critical operations. See cost breakdown.",
+  "medium": "Full generator with auto-switch. Complete facility backup. See cost breakdown."
 }
 ```
+
+**Note:** DO NOT include hardcoded costs. Link cost items instead.
 
 ---
 
@@ -516,19 +566,18 @@ benefitsBullets:
 realWorldExample: "When Hurricane Beryl hit Negril in 2024, hardware stores 
                    that had shutters and moved stock away from windows were open 
                    within days. Those that didn't prepare had weeks of cleanup and 
-                   thousands in damage. One shop owner said: 'The shutters I bought 
-                   for JMD 30,000 saved me JMD 200,000 in broken glass and water damage.'"
+                   significant damage. One shop owner said: 'The shutters I installed 
+                   saved me substantial costs in broken glass and water damage.'"
 
-costEstimateJMD: "JMD 15,000-80,000 (shutters, supplies, securing)"
+lowBudgetAlternative: "DIY plywood shutters work almost as well as metal ones 
+                       and cost much less. Tape can't stop a hurricane, but plastic 
+                       sheeting inside windows catches glass if they break. See cost 
+                       breakdown for materials pricing."
 
-lowBudgetAlternative: "DIY plywood shutters (JMD 5,000-10,000) work almost as 
-                       well as metal ones. Tape can't stop a hurricane, but plastic 
-                       sheeting inside windows (JMD 1,500) catches glass if they break."
-
-diyApproach: "1) Buy plywood sheets and hinges (JMD 8,000). 2) Cut to fit your 
-              windows. 3) Paint with exterior paint (JMD 2,000). 4) Install simple 
-              hinges so they fold down when not needed. Total DIY cost: ~JMD 12,000 
-              vs JMD 50,000+ for professional metal shutters."
+diyApproach: "1) Buy plywood sheets and hinges. 2) Cut to fit your windows. 
+              3) Paint with exterior paint for weather protection. 4) Install simple 
+              hinges so they fold down when not needed. This DIY approach costs 
+              significantly less than professional metal shutters - see cost breakdown."
 ```
 
 ---

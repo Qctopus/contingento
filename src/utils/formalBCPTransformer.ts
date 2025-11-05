@@ -222,51 +222,153 @@ function generateContinuityStrategies(
   highPriorityRisks: any[],
   limits: any
 ): FormalBCPData['continuityStrategies'] {
-  // Get currency for formatting
+  console.log('[Transformer] Processing', strategies.length, 'strategies')
+  
+  // Get currency for formatting (fallback only)
   const address = planData.PLAN_INFORMATION?.['Business Address'] || ''
   const { country } = parseAddress(address)
   const currency = getCurrencyFromCountry(country)
   
-  // Calculate total investment
-  const totalInvestment = calculateTotalInvestment(strategies, planData)
-  const investmentByCategory = calculateInvestmentByCategory(strategies, planData)
+  // ============================================================================
+  // Calculate total investment from USER'S CALCULATED COSTS
+  // ============================================================================
+  
+  const totalInvestment = strategies.reduce((sum, s) => {
+    // FIRST: Use calculated cost from wizard (already in local currency)
+    if (s.calculatedCostLocal && s.calculatedCostLocal > 0) {
+      return sum + s.calculatedCostLocal
+    }
+    // FALLBACK: Parse legacy cost string
+    const parsed = parseCostString(s.implementationCost || '')
+    return sum + parsed
+  }, 0)
+  
+  console.log('[Transformer] Total investment:', totalInvestment)
+  
+  // Get currency info from first strategy (wizard data)
+  const currencySymbol = strategies[0]?.currencySymbol || currency.split(' ')[0] || 'Bds$'
+  const currencyCode = strategies[0]?.currencyCode || 'BBD'
+  
+  // ============================================================================
+  // Calculate investment breakdown by category
+  // ============================================================================
+  
+  const categoryInvestment = {
+    prevention: 0,
+    response: 0,
+    recovery: 0
+  }
+  
+  strategies.forEach(s => {
+    const cost = s.calculatedCostLocal || parseCostString(s.implementationCost || '')
+    const category = (s.category || '').toLowerCase()
+    
+    if (category.includes('prevention') || category.includes('mitigation')) {
+      categoryInvestment.prevention += cost
+    } else if (category.includes('response') || category.includes('emergency')) {
+      categoryInvestment.response += cost
+    } else if (category.includes('recovery')) {
+      categoryInvestment.recovery += cost
+    } else {
+      // Default to prevention if unclear
+      categoryInvestment.prevention += cost
+    }
+  })
   
   const totalCategoryInvestment = 
-    investmentByCategory.prevention + 
-    investmentByCategory.response + 
-    investmentByCategory.recovery
+    categoryInvestment.prevention + 
+    categoryInvestment.response + 
+    categoryInvestment.recovery
   
-  // Generate strategies grouped by risk (NO LIMITS - show all strategies)
-  const strategiesByRisk = highPriorityRisks.map(risk => {
-    const riskStrategies = getStrategiesForRisk(
-      planData,
-      strategies,
-      risk.hazardId
+  const investmentBreakdown = {
+    prevention: categoryInvestment.prevention,
+    preventionPercentage: totalCategoryInvestment > 0 
+      ? Math.round((categoryInvestment.prevention / totalCategoryInvestment) * 100)
+      : 33,
+    response: categoryInvestment.response,
+    responsePercentage: totalCategoryInvestment > 0
+      ? Math.round((categoryInvestment.response / totalCategoryInvestment) * 100)
+      : 33,
+    recovery: categoryInvestment.recovery,
+    recoveryPercentage: totalCategoryInvestment > 0
+      ? Math.round((categoryInvestment.recovery / totalCategoryInvestment) * 100)
+      : 34
+  }
+  
+  console.log('[Transformer] Investment breakdown:', investmentBreakdown)
+  
+  // ============================================================================
+  // Group strategies by risk - USE ALL USER-SELECTED STRATEGIES (NOT JUST HIGH PRIORITY)
+  // ============================================================================
+  
+  // Get ALL risks that have at least one strategy (not just high priority)
+  const risksWithStrategies = highPriorityRisks.filter(risk => {
+    return strategies.some(s => (s.applicableRisks || []).includes(risk.hazardId))
+  })
+  
+  // If user selected strategies for non-high-priority risks, include those too
+  const allRisksInPlan = planData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
+  const additionalRisks = allRisksInPlan.filter(risk => {
+    const isHighPriority = highPriorityRisks.some(hr => hr.hazardId === risk.hazardId)
+    if (isHighPriority) return false // Already included
+    
+    // Include if has strategies
+    return strategies.some(s => (s.applicableRisks || []).includes(risk.hazardId))
+  }).map(risk => ({
+    hazardId: risk.hazardId,
+    hazardName: risk.hazardName || risk.Hazard,
+    riskScore: parseFloat(risk.riskScore || risk['Risk Score'] || 0),
+    riskLevel: risk.riskLevel || risk['Risk Level'],
+    likelihood: risk.likelihood || risk.Likelihood,
+    impact: risk.impact || risk.Impact,
+    reasoning: risk.reasoning
+  }))
+  
+  const allRisksForDisplay = [...risksWithStrategies, ...additionalRisks]
+  
+  const strategiesByRisk = allRisksForDisplay.map(risk => {
+    // Find ALL strategies that apply to this risk
+    const riskStrategies = strategies.filter(s =>
+      (s.applicableRisks || []).includes(risk.hazardId)
     )
     
-    const riskInvestment = calculateTotalInvestment(riskStrategies, planData)
+    console.log(`[Transformer] Risk "${risk.hazardName}": ${riskStrategies.length} strategies`)
     
+    // Calculate total investment for this risk
+    const riskInvestment = riskStrategies.reduce((sum, s) => {
+      return sum + (s.calculatedCostLocal || parseCostString(s.implementationCost || ''))
+    }, 0)
+    
+    // Format each strategy
     const formattedStrategies = riskStrategies.map(strategy => {
-      const actions = getCriticalActions(strategy.actionSteps || [], limits.maxActionsPerStrategy)
+      // Get ALL action steps (no limits)
+      const actions = (strategy.actionSteps || [])
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
+        .map(action => ({
+          action: simplifyForFormalDocument(action.smeAction || action.action || action.title),
+          phase: action.phase || 'implementation',
+          timeframe: action.timeframe || '',
+          estimatedMinutes: action.estimatedMinutes || 0
+        }))
+      
+      // Format cost with user's currency from wizard
+      const costDisplay = strategy.calculatedCostLocal && strategy.currencySymbol
+        ? `${strategy.currencySymbol}${Math.round(strategy.calculatedCostLocal).toLocaleString()} ${strategy.currencyCode}`
+        : 'Cost TBD'
       
       return {
         name: strategy.smeTitle || strategy.name,
         purpose: simplifyForFormalDocument(strategy.smeSummary || strategy.description || ''),
         benefits: (strategy.benefitsBullets || []).slice(0, 3),
         implementation: {
-          investmentRequired: strategy.calculatedCostLocal 
-            ? formatCurrency(strategy.calculatedCostLocal, currency)
-            : estimateInvestmentRange(strategy.implementationCost, currency),
-          setupTime: strategy.implementationTime || 'Varies',
+          investmentRequired: costDisplay,
+          setupTime: strategy.timeToImplement || strategy.implementationTime || 'Varies',
           effectiveness: strategy.effectiveness || 7,
           status: 'Planned',
           responsiblePerson: planData.PLAN_INFORMATION?.['Plan Manager'] || 'Business Owner'
         },
-        keyActions: actions.map(action => ({
-          action: simplifyForFormalDocument(action.smeAction || action.action || action.title),
-          phase: action.phase || 'implementation'
-        })),
-        lowBudgetOption: action.freeAlternative || undefined
+        keyActions: actions, // ALL actions
+        lowBudgetOption: strategy.lowBudgetAlternative || undefined
       }
     })
     
@@ -276,7 +378,9 @@ function generateContinuityStrategies(
       totalInvestment: riskInvestment,
       strategies: formattedStrategies
     }
-  })
+  }).filter(group => group.strategyCount > 0) // Only include risks that have strategies
+  
+  console.log('[Transformer] Grouped into', strategiesByRisk.length, 'risk categories')
   
   // Extract low-budget alternatives
   const lowBudgetAlternatives = strategies
@@ -297,20 +401,9 @@ function generateContinuityStrategies(
   
   return {
     totalInvestment,
-    investmentBreakdown: {
-      prevention: investmentByCategory.prevention,
-      preventionPercentage: totalCategoryInvestment > 0 
-        ? Math.round((investmentByCategory.prevention / totalCategoryInvestment) * 100)
-        : 33,
-      response: investmentByCategory.response,
-      responsePercentage: totalCategoryInvestment > 0
-        ? Math.round((investmentByCategory.response / totalCategoryInvestment) * 100)
-        : 33,
-      recovery: investmentByCategory.recovery,
-      recoveryPercentage: totalCategoryInvestment > 0
-        ? Math.round((investmentByCategory.recovery / totalCategoryInvestment) * 100)
-        : 34
-    },
+    currencyCode,
+    currencySymbol,
+    investmentBreakdown,
     strategiesByRisk,
     lowBudgetAlternatives,
     recoveryObjectives
@@ -589,5 +682,29 @@ function getNextYearDate(): string {
   const date = new Date()
   date.setFullYear(date.getFullYear() + 1)
   return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+}
+
+/**
+ * Parse cost from string like "JMD 50,000-100,000" or legacy categorical cost
+ */
+function parseCostString(costStr: string): number {
+  if (!costStr) return 0
+  
+  // Try to extract numbers
+  const amounts = costStr.match(/[\d,]+/g)
+  if (amounts && amounts.length > 0) {
+    const numbers = amounts.map((a: string) => parseInt(a.replace(/,/g, '')))
+    return Math.round(numbers.reduce((sum, val) => sum + val, 0) / numbers.length)
+  }
+  
+  // Fallback for categorical costs
+  const costMap: Record<string, number> = {
+    'low': 10000,
+    'medium': 50000,
+    'high': 150000,
+    'very_high': 300000
+  }
+  
+  return costMap[costStr.toLowerCase()] || 0
 }
 

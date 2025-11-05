@@ -740,9 +740,9 @@ function StrategyCard({
               <div>
                 <span className="text-gray-500">💰</span>{' '}
                 <span className="font-medium">
-                  {strategyCosts[strategy.id] && strategyCosts[strategy.id].amount !== undefined
+                  {strategyCosts[strategy.id]?.amount 
                     ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${strategyCosts[strategy.id].currency}`
-                    : getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, locale)
+                    : 'Cost TBD'
                   }
                 </span>
               </div>
