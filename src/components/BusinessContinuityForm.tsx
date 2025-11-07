@@ -900,7 +900,8 @@ export function BusinessContinuityForm() {
       )}
 
       {/* Navigation Sidebar */}
-      <div className="w-80 bg-white border-r overflow-y-auto">
+      <div className="w-80 bg-white border-r flex flex-col">
+        <div className="overflow-y-auto flex-1">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">{t('common.businessContinuityPlan')}</h2>
@@ -1043,11 +1044,12 @@ export function BusinessContinuityForm() {
             </button>
           </div>
         </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="w-full px-6 py-6">
+      <div className="flex-1 flex flex-col">
+        <div className="w-full px-6 py-6 overflow-y-auto flex-1">
           {/* Progress Header */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">

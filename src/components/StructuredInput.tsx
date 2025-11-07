@@ -484,11 +484,22 @@ export function StructuredInput({
                 key={index}
                 type="button"
                 onClick={() => {
-                  // Add example as a new table row
+                  // Parse example string and fill appropriate columns
                   const newRow: TableRow = {}
+                  
+                  // Try to parse the example string by common separators (-, |, ,)
+                  // Format: "John Smith - Manager - 876-555-0123 - j.smith@company.com - Wife: 876-555-0124"
+                  const parts = example.split(' - ').map(p => p.trim())
+                  
+                  // Fill columns based on parsed parts and column types
                   tableColumns.forEach((column, colIndex) => {
-                    newRow[column] = colIndex === 0 ? example : ''
+                    if (colIndex < parts.length) {
+                      newRow[column] = parts[colIndex]
+                    } else {
+                      newRow[column] = ''
+                    }
                   })
+                  
                   // If table is empty or only has one completely empty row, replace it
                   // Otherwise add as new row
                   setTableRows(prev => {

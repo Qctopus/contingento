@@ -28,6 +28,9 @@
       'Key Personnel Involved': 'Sarah Johnson (General Manager), Michael Chen (Operations Manager), Patricia Williams (Finance Director), David Martinez (Marketing Director), Lisa Thompson (Executive Chef - 15 years experience), James Rodriguez (IT Manager), Robert Taylor (Facilities Manager), Maria Santos (Spa Director), 45 full-time staff, 15 part-time seasonal staff. Key suppliers: Caribbean Food Distributors (daily produce), Island Power Solutions (generator maintenance), Atlantic Linen Services (daily linen), TechCare IT (24/7 support).',
       'Minimum Resource Requirements': 'Minimum 25 staff (10 housekeeping, 5 front desk, 5 kitchen, 3 maintenance, 2 security). Essential equipment: Reservation system, payment processing, 2 backup generators, water supply and treatment, WiFi network, kitchen equipment (refrigeration, stoves), laundry facilities. Critical records: Guest reservations database, employee contact list, supplier agreements, insurance policies, property deeds, financial accounts access.',
       'Customer Base': 'Primary: North American tourists aged 35-65 seeking luxury Caribbean vacations (60% of bookings, average stay 5-7 nights). Secondary: European travelers from UK, Germany, France (25%, average 10-14 nights). Tertiary: Regional Caribbean business travelers and weekend guests (10%). Special: Destination wedding couples and groups (5%, high-value bookings). VIP clients include repeat guests (loyalty program with 500 members), corporate retreat groups, and celebrity guests requiring privacy.',
+      'Approximate Annual Revenue': '3m_10m',
+      'Total People in Business': '26-50',
+      'Years in Operation': '6-10',
       'Service Provider BCP Status': 'partial'
     },
     
@@ -159,9 +162,49 @@
       ]
     },
     
-    // NOTE: STRATEGIES will be auto-loaded from the admin database based on risks
-    // The wizard will auto-select strategies based on the risk profile
-    // This happens dynamically in the AdminStrategyCards component
+    STRATEGIES: {
+      'Prevention Strategies (Before Emergencies)': [
+        'maintenance',
+        'physical_security',
+        'cybersecurity',
+        'insurance',
+        'employee_training',
+        'supplier_diversity',
+        'financial_reserves',
+        'data_backup',
+        'building_upgrades',
+        'emergency_supplies',
+        'risk_monitoring'
+      ],
+      'Response Strategies (During Emergencies)': [
+        'emergency_team',
+        'safety_procedures',
+        'emergency_communication',
+        'alternative_locations',
+        'emergency_inventory',
+        'customer_continuity',
+        'emergency_services',
+        'closure_procedures',
+        'essential_operations'
+      ],
+      'Recovery Strategies (After Emergencies)': [
+        'damage_assessment',
+        'insurance_claims',
+        'business_resumption',
+        'employee_support',
+        'customer_retention',
+        'reputation_management',
+        'lessons_learned',
+        'plan_updates'
+      ],
+      'Long-term Resilience': [
+        'strengthen_infrastructure',
+        'strategic_partnerships',
+        'diversify_revenue',
+        'update_technology',
+        'continuous_improvement'
+      ]
+    },
     
     ACTION_PLAN: {
       'Emergency Response Team': [

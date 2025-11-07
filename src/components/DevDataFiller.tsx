@@ -55,7 +55,7 @@ export function DevDataFiller() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2 print:hidden">
+    <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 print:hidden">
       <button
         onClick={fillWithSampleData}
         disabled={isLoading}
