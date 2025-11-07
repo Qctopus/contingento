@@ -155,3 +155,5 @@ function estimateCostFromString(cost: string): number {
   return costMap[cost?.toLowerCase()] || 1000
 }
 
+
+

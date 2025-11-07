@@ -310,8 +310,26 @@ export function calculateInvestmentByCategory(
 /**
  * Simplify jargon for formal document (keep it professional but accessible)
  */
-export function simplifyForFormalDocument(text: string): string {
+export function simplifyForFormalDocument(text: string | any): string {
   if (!text) return ''
+  
+  // CRITICAL FIX: Handle multilingual objects (extract English text)
+  if (typeof text === 'object' && !Array.isArray(text)) {
+    // Extract string from multilingual object
+    const extracted = text.en || text.es || text.fr || JSON.stringify(text)
+    if (typeof extracted !== 'string') return ''
+    text = extracted
+  }
+  
+  // Handle arrays
+  if (Array.isArray(text)) {
+    return text.length > 0 ? simplifyForFormalDocument(text[0]) : ''
+  }
+  
+  // Ensure we have a string
+  if (typeof text !== 'string') {
+    return String(text)
+  }
   
   const replacements: Record<string, string> = {
     'stakeholder': 'interested party',

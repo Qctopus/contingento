@@ -1,185 +1,192 @@
 /**
- * Validation schemas and utilities for Admin2 API
+ * Validation utilities for Admin2 API routes
  */
 
 export interface ValidationResult {
   isValid: boolean
-  errors: string[]
+  errors?: string[]
 }
 
 /**
- * Validate Parish data
- */
-export function validateParishData(data: any): ValidationResult {
-  const errors: string[] = []
-  
-  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
-    errors.push('Parish name is required and must be a non-empty string')
-  }
-  
-  if (!data.region || typeof data.region !== 'string' || data.region.trim().length === 0) {
-    errors.push('Parish region is required and must be a non-empty string')
-  }
-  
-  if (typeof data.population !== 'number' || data.population < 0) {
-    errors.push('Population must be a non-negative number')
-  }
-  
-  // Validate risk profile if provided
-  if (data.riskProfile) {
-    const riskErrors = validateRiskProfile(data.riskProfile)
-    errors.push(...riskErrors)
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  }
-}
-
-/**
- * Validate risk profile data
- */
-function validateRiskProfile(riskProfile: any): string[] {
-  const errors: string[] = []
-  const riskTypes = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage']
-  
-  for (const riskType of riskTypes) {
-    const risk = riskProfile[riskType]
-    if (risk) {
-      if (typeof risk.level !== 'number' || risk.level < 0 || risk.level > 10) {
-        errors.push(`${riskType} level must be a number between 0 and 10`)
-      }
-      
-      if (risk.notes && typeof risk.notes !== 'string') {
-        errors.push(`${riskType} notes must be a string`)
-      }
-    }
-  }
-  
-  return errors
-}
-
-/**
- * Validate BusinessType data
- */
-export function validateBusinessTypeData(data: any): ValidationResult {
-  const errors: string[] = []
-  
-  if (!data.name || (typeof data.name !== 'string' && typeof data.name !== 'object')) {
-    errors.push('Business type name is required')
-  }
-  
-  if (!data.category || typeof data.category !== 'string' || data.category.trim().length === 0) {
-    errors.push('Business type category is required and must be a non-empty string')
-  }
-  
-  // Validate risk vulnerabilities if provided
-  if (data.riskVulnerabilities && Array.isArray(data.riskVulnerabilities)) {
-    for (let i = 0; i < data.riskVulnerabilities.length; i++) {
-      const rv = data.riskVulnerabilities[i]
-      
-      if (!rv.riskType || typeof rv.riskType !== 'string') {
-        errors.push(`Risk vulnerability ${i + 1}: riskType is required and must be a string`)
-      }
-      
-      if (typeof rv.vulnerabilityLevel !== 'number' || rv.vulnerabilityLevel < 0 || rv.vulnerabilityLevel > 10) {
-        errors.push(`Risk vulnerability ${i + 1}: vulnerabilityLevel must be a number between 0 and 10`)
-      }
-      
-      if (typeof rv.impactSeverity !== 'number' || rv.impactSeverity < 0 || rv.impactSeverity > 10) {
-        errors.push(`Risk vulnerability ${i + 1}: impactSeverity must be a number between 0 and 10`)
-      }
-    }
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  }
-}
-
-/**
- * Validate Strategy data
+ * Validate strategy data before creating or updating
  */
 export function validateStrategyData(data: any): ValidationResult {
   const errors: string[] = []
   
+  // Required fields
   if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
-    errors.push('Strategy name is required and must be a non-empty string')
+    errors.push('Strategy name is required')
   }
   
-  if (!data.category || typeof data.category !== 'string') {
-    errors.push('Strategy category is required and must be a string')
+  if (data.name && data.name.length > 200) {
+    errors.push('Strategy name must be less than 200 characters')
   }
   
-  const validCategories = ['prevention', 'preparation', 'response', 'recovery']
-  if (data.category && !validCategories.includes(data.category)) {
-    errors.push(`Strategy category must be one of: ${validCategories.join(', ')}`)
+  // Optional validation for category
+  if (data.category) {
+    const validCategories = ['preparation', 'prevention', 'response', 'recovery', 'mitigation']
+    if (!validCategories.includes(data.category.toLowerCase())) {
+      errors.push(`Category must be one of: ${validCategories.join(', ')}`)
+    }
   }
   
-  const validCosts = ['low', 'medium', 'high', 'very_high']
-  if (data.implementationCost && !validCosts.includes(data.implementationCost)) {
-    errors.push(`Implementation cost must be one of: ${validCosts.join(', ')}`)
-  }
-  
-  const validTimes = ['hours', 'days', 'weeks', 'months']
-  if (data.implementationTime && !validTimes.includes(data.implementationTime)) {
-    errors.push(`Implementation time must be one of: ${validTimes.join(', ')}`)
-  }
-  
+  // Optional validation for effectiveness
   if (data.effectiveness !== undefined) {
-    if (typeof data.effectiveness !== 'number' || data.effectiveness < 1 || data.effectiveness > 10) {
-      errors.push('Effectiveness must be a number between 1 and 10')
+    const effectiveness = Number(data.effectiveness)
+    if (isNaN(effectiveness) || effectiveness < 0 || effectiveness > 10) {
+      errors.push('Effectiveness must be a number between 0 and 10')
     }
   }
   
+  // Optional validation for ROI
   if (data.roi !== undefined) {
-    if (typeof data.roi !== 'number' || data.roi < 0) {
-      errors.push('ROI must be a non-negative number')
+    const roi = Number(data.roi)
+    if (isNaN(roi) || roi < 0) {
+      errors.push('ROI must be a positive number')
     }
   }
   
-  // Validate arrays
-  if (data.applicableRisks && !Array.isArray(data.applicableRisks)) {
-    errors.push('Applicable risks must be an array')
-  }
-  
-  if (data.applicableBusinessTypes && !Array.isArray(data.applicableBusinessTypes)) {
-    errors.push('Applicable business types must be an array')
-  }
-  
-  if (data.prerequisites && !Array.isArray(data.prerequisites)) {
-    errors.push('Prerequisites must be an array')
+  // Optional validation for priority
+  if (data.priority) {
+    const validPriorities = ['low', 'medium', 'high', 'critical', 'essential']
+    if (!validPriorities.includes(data.priority.toLowerCase())) {
+      errors.push(`Priority must be one of: ${validPriorities.join(', ')}`)
+    }
   }
   
   return {
     isValid: errors.length === 0,
-    errors
+    errors: errors.length > 0 ? errors : undefined
   }
 }
 
 /**
- * Sanitize string input
+ * Validate action step data before creating or updating
  */
-export function sanitizeString(input: any): string {
-  if (typeof input !== 'string') return ''
-  return input.trim().substring(0, 1000) // Limit length to prevent abuse
+export function validateActionStepData(data: any): ValidationResult {
+  const errors: string[] = []
+  
+  // Required fields
+  if (!data.smeAction && !data.action) {
+    errors.push('Action step must have an action description')
+  }
+  
+  if (!data.phase) {
+    errors.push('Action step must have a phase (planning, implementation, or ongoing)')
+  } else {
+    const validPhases = ['planning', 'implementation', 'ongoing', 'maintenance']
+    if (!validPhases.includes(data.phase.toLowerCase())) {
+      errors.push(`Phase must be one of: ${validPhases.join(', ')}`)
+    }
+  }
+  
+  // Optional validation for sortOrder
+  if (data.sortOrder !== undefined) {
+    const sortOrder = Number(data.sortOrder)
+    if (isNaN(sortOrder) || sortOrder < 0) {
+      errors.push('Sort order must be a non-negative number')
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  }
 }
 
 /**
- * Sanitize and validate array input
+ * Validate cost item data before creating or updating
  */
-export function sanitizeArray(input: any, maxLength: number = 100): any[] {
-  if (!Array.isArray(input)) return []
-  return input.slice(0, maxLength) // Limit array length
+export function validateCostItemData(data: any): ValidationResult {
+  const errors: string[] = []
+  
+  // Required fields
+  if (!data.itemName || typeof data.itemName !== 'string' || data.itemName.trim().length === 0) {
+    errors.push('Cost item name is required')
+  }
+  
+  // Optional validation for costs
+  if (data.baseUSD !== undefined) {
+    const baseUSD = Number(data.baseUSD)
+    if (isNaN(baseUSD) || baseUSD < 0) {
+      errors.push('Base USD cost must be a non-negative number')
+    }
+  }
+  
+  if (data.baseUSDMin !== undefined) {
+    const baseUSDMin = Number(data.baseUSDMin)
+    if (isNaN(baseUSDMin) || baseUSDMin < 0) {
+      errors.push('Minimum USD cost must be a non-negative number')
+    }
+  }
+  
+  if (data.baseUSDMax !== undefined) {
+    const baseUSDMax = Number(data.baseUSDMax)
+    if (isNaN(baseUSDMax) || baseUSDMax < 0) {
+      errors.push('Maximum USD cost must be a non-negative number')
+    }
+  }
+  
+  // Validate min/max relationship
+  if (data.baseUSDMin !== undefined && data.baseUSDMax !== undefined) {
+    const min = Number(data.baseUSDMin)
+    const max = Number(data.baseUSDMax)
+    if (!isNaN(min) && !isNaN(max) && min > max) {
+      errors.push('Minimum cost cannot be greater than maximum cost')
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  }
 }
 
 /**
- * Sanitize numeric input
+ * Validate business type data before creating or updating
  */
-export function sanitizeNumber(input: any, min: number = 0, max: number = 10): number {
-  const num = Number(input)
-  if (isNaN(num)) return min
-  return Math.max(min, Math.min(max, num))
+export function validateBusinessTypeData(data: any): ValidationResult {
+  const errors: string[] = []
+  
+  // Required fields
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+    errors.push('Business type name is required')
+  }
+  
+  if (data.name && data.name.length > 200) {
+    errors.push('Business type name must be less than 200 characters')
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  }
+}
+
+/**
+ * Validate parish data before creating or updating
+ */
+export function validateParishData(data: any): ValidationResult {
+  const errors: string[] = []
+  
+  // Required fields
+  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+    errors.push('Parish name is required')
+  }
+  
+  if (data.name && data.name.length > 200) {
+    errors.push('Parish name must be less than 200 characters')
+  }
+  
+  // Validate country code if provided
+  if (data.countryCode) {
+    if (typeof data.countryCode !== 'string' || data.countryCode.length !== 2) {
+      errors.push('Country code must be a 2-letter ISO code (e.g., JM, BB)')
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors.length > 0 ? errors : undefined
+  }
 }

@@ -330,3 +330,5 @@ Verify costs display correctly:
 
 **Remember:** Every hardcoded cost confuses non-Jamaica users. Keep content universal, let the system handle localization.
 
+
+

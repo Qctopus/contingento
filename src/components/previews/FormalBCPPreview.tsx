@@ -10,30 +10,50 @@ interface FormalBCPPreviewProps {
   formData: any
   strategies: any[]
   risks: any[]
+  countryCode?: string  // Optional: country code for currency detection
 }
 
 export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   formData,
   strategies,
-  risks
+  risks,
+  countryCode: propCountryCode
 }) => {
-  // Log what we received
+  // ============================================================================
+  // ENHANCED DEBUGGING - Track complete data flow
+  // ============================================================================
+  console.log('[FormalBCPPreview] ========================================')
   console.log('[FormalBCPPreview] Received props:', {
     strategiesCount: strategies.length,
     risksCount: risks.length,
-    strategies: strategies.map(s => ({
-      name: s.name,
-      category: s.category,
+    hasFormData: !!formData
+  })
+  
+  console.log('[FormalBCPPreview] Individual strategy details:', 
+    strategies.map((s, idx) => ({
+      index: idx + 1,
+      name: s.name || s.smeTitle || 'Unnamed',
       hasCalculatedCost: !!s.calculatedCostLocal,
       calculatedCostLocal: s.calculatedCostLocal,
       currencySymbol: s.currencySymbol,
       currencyCode: s.currencyCode,
-      timeToImplement: s.timeToImplement,
-      implementationTime: s.implementationTime,
-      actionStepsCount: s.actionSteps?.length,
-      applicableRisks: s.applicableRisks
+      implementationCost: s.implementationCost,
+      applicableRisks: s.applicableRisks,
+      applicableRisksCount: s.applicableRisks?.length || 0
     }))
+  )
+  
+  console.log('[FormalBCPPreview] Strategy cost summary:', {
+    withCalculatedCost: strategies.filter(s => s.calculatedCostLocal > 0).length,
+    withCurrencyData: strategies.filter(s => s.currencySymbol && s.currencyCode).length,
+    withImplementationCost: strategies.filter(s => s.implementationCost).length,
+    totalStrategies: strategies.length
   })
+  
+  // DIAGNOSTIC: Show all unique risk IDs from strategies
+  console.log('[FormalBCPPreview] All applicableRisks IDs from strategies:', 
+    [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
+  )
   
   // Enhanced helper to safely extract string from multilingual or simple field
   const getStringValue = (value: any, locale: string = 'en'): string => {
@@ -85,19 +105,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     let countryCode = 'JM' // Default to Jamaica
     let countryName = 'Jamaica'
     
-    // Try to get from localStorage prefill data (set during industry/location selection)
-    if (typeof window !== 'undefined') {
-      try {
-        const preFillData = localStorage.getItem('bcp-prefill-data')
-        if (preFillData) {
-          const data = JSON.parse(preFillData)
-          if (data.location?.countryCode) {
-            countryCode = data.location.countryCode
-            countryName = data.location.country || countryName
+    // PRIORITY 1: Use countryCode passed as prop from BusinessPlanReview
+    if (propCountryCode) {
+      countryCode = propCountryCode
+      console.log('[FormalBCPPreview] Using countryCode from prop:', countryCode)
+    } else {
+      // PRIORITY 2: Try to get from localStorage prefill data (set during industry/location selection)
+      if (typeof window !== 'undefined') {
+        try {
+          const preFillData = localStorage.getItem('bcp-prefill-data')
+          if (preFillData) {
+            const data = JSON.parse(preFillData)
+            if (data.location?.countryCode) {
+              countryCode = data.location.countryCode
+              countryName = data.location.country || countryName
+              console.log('[FormalBCPPreview] Using countryCode from localStorage:', countryCode)
+            }
           }
+        } catch (e) {
+          console.warn('[FormalBCPPreview] Could not load country from prefill data:', e)
         }
-      } catch (e) {
-        console.warn('[FormalBCPPreview] Could not load country from prefill data:', e)
       }
     }
     
@@ -240,8 +267,41 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
   const topFunctions = essentialFunctions.slice(0, 6)
   
+  // Get ALL functions with their priorities and downtime data
+  const functionsWithPriorities = (formData.ESSENTIAL_FUNCTIONS?.['Function Priorities'] || [])
+    .map((func: any) => ({
+      name: getStringValue(func.functionName || func.name || func.function),
+      priority: func.priority || func.priorityLevel || 'N/A',
+      maxDowntime: getStringValue(func.maxDowntime || func.maximumDowntime || ''),
+      impact: getStringValue(func.impact || func.impactNotes || ''),
+      rto: getStringValue(func.rto || func.recoveryTimeObjective || ''),
+      rpo: getStringValue(func.rpo || func.recoveryPointObjective || ''),
+      recoveryStrategy: getStringValue(func.recoveryStrategy || '')
+    }))
+    .filter(f => f.name) // Only include if has a name
+  
+  // Get target markets
+  const targetMarkets = formData.BUSINESS_OVERVIEW?.['Target Markets'] || 
+                       formData.BUSINESS_OVERVIEW?.['Primary Customers'] || []
+  
+  // Get full products/services list
+  const productsServices = formData.BUSINESS_OVERVIEW?.['Products and Services'] || 
+                          formData.BUSINESS_OVERVIEW?.['Key Products/Services'] || ''
+  
   // Get risk matrix with proper filtering
-  const riskMatrix = (formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || [])
+  const riskMatrixRaw = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
+  
+  console.log('[FormalBCPPreview] Raw riskMatrix from formData:', {
+    total: riskMatrixRaw.length,
+    sample: riskMatrixRaw[0] ? {
+      hazardId: riskMatrixRaw[0].hazardId,
+      hazardName: riskMatrixRaw[0].hazardName,
+      Hazard: riskMatrixRaw[0].Hazard,
+      isSelected: riskMatrixRaw[0].isSelected
+    } : null
+  })
+  
+  const riskMatrix = riskMatrixRaw
     .filter((r: any) => r.isSelected !== false) // CRITICAL: Only show user-selected risks
     .map((r: any) => {
       // FIX: Extract impact - try multiple field names including Severity
@@ -272,6 +332,41 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         isSelected: r.isSelected
       }
     })
+  
+  // DIAGNOSTIC: Show all risk IDs from riskMatrix
+  console.log('[FormalBCPPreview] Risks in riskMatrix:', {
+    total: riskMatrix.length,
+    hazardIds: riskMatrix.map(r => r.hazardId).sort(),
+    hazardNames: riskMatrix.map(r => r.hazardName).sort()
+  })
+  
+  // DIAGNOSTIC: Compare risk IDs
+  const strategyRiskIds = [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
+  const matrixRiskIds = [...new Set(riskMatrix.map(r => r.hazardId))].sort()
+  const matrixRiskNames = [...new Set(riskMatrix.map(r => r.hazardName))].sort()
+  
+  console.log('[FormalBCPPreview] 🔍 RISK ID COMPARISON:')
+  console.log('  Strategy applicableRisks:', strategyRiskIds)
+  console.log('  Matrix hazardIds:', matrixRiskIds)
+  console.log('  Matrix hazardNames:', matrixRiskNames)
+  
+  // Check for mismatches
+  const unmatchedStrategyRisks = strategyRiskIds.filter(srid => {
+    const sridNorm = srid.toLowerCase().replace(/_/g, ' ')
+    return !matrixRiskIds.some(mid => {
+      const midNorm = (mid || '').toLowerCase().replace(/_/g, ' ')
+      return sridNorm === midNorm || sridNorm.includes(midNorm) || midNorm.includes(sridNorm)
+    }) && !matrixRiskNames.some(mname => {
+      const mnameNorm = mname.toLowerCase().replace(/_/g, ' ')
+      return sridNorm === mnameNorm || sridNorm.includes(mnameNorm) || mnameNorm.includes(sridNorm)
+    })
+  })
+  
+  if (unmatchedStrategyRisks.length > 0) {
+    console.warn('[FormalBCPPreview] ⚠️ WARNING: Some strategy risk IDs don\'t match matrix:',unmatchedStrategyRisks)
+  } else {
+    console.log('[FormalBCPPreview] ✅ All strategy risk IDs have matches in matrix')
+  }
 
   // Get high-priority risks (HIGH or EXTREME only) for Section 2
   const highPriorityRisks = riskMatrix.filter((r: any) => {
@@ -279,54 +374,70 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     return level.includes('high') || level.includes('extreme')
   })
   
+  // Helper function to normalize risk IDs for flexible matching
+  const normalizeRiskId = (id: string): string => {
+    if (!id) return ''
+    
+    // Convert camelCase to snake_case: cyberAttack → cyber_attack
+    const withUnderscores = id.replace(/([a-z])([A-Z])/g, '$1_$2')
+    
+    // Convert to lowercase and replace underscores/spaces with a common separator
+    return withUnderscores.toLowerCase().replace(/[_\s-]+/g, '_')
+  }
+  
   // Get ALL selected risks that have strategies (for Section 3)
-  // COPY EXACT LOGIC FROM BusinessPlanReview.tsx lines 286-307
+  // ENHANCED: Now handles camelCase ↔ snake_case conversion
   const risksWithStrategies = riskMatrix.filter((r: any) => {
     const hazardName = r.hazardName || r.Hazard || ''
     const hazardId = r.hazardId || hazardName
     
-    // Check if any selected strategy applies to this risk (SAME AS REVIEW SECTION)
+    // Normalize the risk identifiers
+    const hazardIdNorm = normalizeRiskId(hazardId)
+    const hazardNameNorm = normalizeRiskId(hazardName)
+    
+    // Check if any selected strategy applies to this risk
     const hasStrategy = strategies.some((strategy: any) => {
       if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
       
       return strategy.applicableRisks.some((riskId: string) => {
-        const riskIdLower = riskId.toLowerCase().replace(/_/g, ' ')
-        const hazardNameLower = hazardName.toLowerCase()
-        const hazardIdLower = (hazardId || '').toString().toLowerCase()
+        const riskIdNorm = normalizeRiskId(riskId)
         
-        return riskId === hazardId || 
-               riskId === r.hazard ||
-               riskId === hazardName ||
-               riskIdLower === hazardIdLower ||
-               riskIdLower === hazardNameLower ||
-               hazardNameLower.includes(riskIdLower) ||
-               riskIdLower.includes(hazardNameLower)
+        // Try multiple matching approaches
+        return riskIdNorm === hazardIdNorm || 
+               riskIdNorm === hazardNameNorm ||
+               hazardIdNorm.includes(riskIdNorm) ||
+               riskIdNorm.includes(hazardIdNorm) ||
+               hazardNameNorm.includes(riskIdNorm) ||
+               riskIdNorm.includes(hazardNameNorm)
       })
     })
     
     return hasStrategy
   })
   
-  console.log('[FormalBCPPreview] Risk matching results:', {
+  console.log('[FormalBCPPreview] ========================================')
+  console.log('[FormalBCPPreview] Display mode: SHOW ALL USER-SELECTED STRATEGIES')
+  console.log('[FormalBCPPreview] Risk assessment summary:', {
     totalRisksInMatrix: riskMatrix.length,
     highPriorityRisks: highPriorityRisks.length,
-    risksWithStrategies: risksWithStrategies.length,
-    riskDetails: risksWithStrategies.map(r => ({
-      hazardId: r.hazardId,
-      hazardName: r.hazardName || r.Hazard,
-      riskLevel: r.riskLevel,
-      strategyCount: strategies.filter(s => {
-        if (!s.applicableRisks) return false
-        const riskIdNorm = (r.hazardId || '').toLowerCase().replace(/_/g, ' ')
-        const riskNameNorm = (r.hazardName || r.Hazard || '').toLowerCase().replace(/_/g, ' ')
-        return s.applicableRisks.some((srid: string) => {
-          const sridNorm = srid.toLowerCase().replace(/_/g, ' ')
-          return sridNorm === riskIdNorm || sridNorm === riskNameNorm || 
-                 riskNameNorm.includes(sridNorm) || sridNorm.includes(riskNameNorm)
-        })
-      }).length
-    }))
+    risksWithMatchedStrategies: risksWithStrategies.length
   })
+  
+  console.log('[FormalBCPPreview] Strategy display logic:', {
+    totalUserSelectedStrategies: strategies.length,
+    displayMode: 'ALL STRATEGIES (not filtered by risk)',
+    reasoning: 'Wizard already filtered by location, business type, and multipliers'
+  })
+  
+  console.log('[FormalBCPPreview] Individual strategy breakdown:')
+  strategies.forEach((s, idx) => {
+    const stratName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
+    const cost = s.calculatedCostLocal || 0
+    const risks = s.applicableRisks?.length || 0
+    console.log(`  ${idx + 1}. "${stratName}" - ${cost > 0 ? currencyInfo.symbol + cost : 'Cost TBD'} - Protects: ${risks} risks`)
+  })
+  
+  console.log('[FormalBCPPreview] ========================================')
   
   // Calculate total investment - USE WIZARD'S CALCULATED COSTS
   const calculateInvestment = () => {
@@ -394,12 +505,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     .filter(Boolean)
     .join(' | ') || 'Contact pending'
   
-  // Get emergency contacts
+  // Get ALL contacts (categorized)
   const contacts = formData.CONTACTS?.['Contact Information'] || []
+  const staffContactsData = formData.CONTACTS?.['Staff Contact Information'] || 
+                           formData.CONTACTS_AND_INFORMATION?.['Staff Contact Information'] || []
   const emergencyContacts = contacts.filter((c: any) => 
     c.category === 'emergency_services' || c.category === 'utilities'
   )
-  const keySuppliers = contacts.filter((c: any) => c.category === 'suppliers').slice(0, 3)
+  const allSuppliers = contacts.filter((c: any) => c.category === 'suppliers')
+  const keyCustomers = contacts.filter((c: any) => c.category === 'customers')
+  const insuranceContacts = contacts.filter((c: any) => c.category === 'insurance')
+  const bankingContacts = contacts.filter((c: any) => c.category === 'banking')
+  const utilitiesContacts = contacts.filter((c: any) => c.category === 'utilities')
+  
+  // Get vital records data
+  const vitalRecords = formData.VITAL_RECORDS?.['Records Inventory'] || []
+  
+  // Get testing & maintenance data
+  const testingSchedule = formData.TESTING?.['Testing Schedule'] || []
+  const trainingPrograms = formData.TESTING?.['Training Programs'] || []
+  const improvements = formData.TESTING?.['Improvements Needed'] || []
   
   return (
     <div className="bg-white border-2 border-slate-300 shadow-lg rounded-lg overflow-hidden">
@@ -509,6 +634,107 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     {func.description && (
                       <div className="text-xs text-slate-600 mt-1">{func.description}</div>
                     )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Target Markets & Customers */}
+          {targetMarkets && targetMarkets.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">1.5 Target Markets</h3>
+              <div className="bg-slate-50 p-4 rounded">
+                {Array.isArray(targetMarkets) ? (
+                  <ul className="space-y-1">
+                    {targetMarkets.map((market: any, idx: number) => (
+                      <li key={idx} className="text-sm text-slate-700 flex items-start">
+                        <span className="text-blue-600 mr-2">•</span>
+                        <span>{getStringValue(market.name || market)}</span>
+                        {market.percentage && (
+                          <span className="text-slate-600 ml-2">({market.percentage}% of revenue)</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-sm text-slate-700">{getStringValue(targetMarkets)}</p>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Full Products & Services */}
+          {productsServices && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">1.6 Products & Services</h3>
+              <div className="bg-slate-50 p-4 rounded">
+                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                  {getStringValue(productsServices)}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {/* Critical Functions Analysis with Priorities */}
+          {functionsWithPriorities.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">1.7 Critical Function Analysis</h3>
+              <p className="text-xs text-slate-600 mb-3">
+                Priority levels, maximum acceptable downtime, and recovery objectives for our most critical business functions.
+              </p>
+              <div className="space-y-3">
+                {functionsWithPriorities.map((func: any, idx: number) => (
+                  <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
+                    <div className="bg-slate-100 px-4 py-2 font-semibold text-sm">
+                      {func.name}
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <span className="text-slate-600">Priority:</span>{' '}
+                          <span className="font-semibold text-slate-900">
+                            {func.priority !== 'N/A' ? `${func.priority}/10` : 'Not specified'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">Max Downtime:</span>{' '}
+                          <span className="font-semibold text-slate-900">
+                            {func.maxDowntime || 'Not specified'}
+                          </span>
+                        </div>
+                        {func.rto && (
+                          <div>
+                            <span className="text-slate-600">RTO:</span>{' '}
+                            <span className="font-semibold text-slate-900">{func.rto}</span>
+                          </div>
+                        )}
+                        {func.rpo && (
+                          <div>
+                            <span className="text-slate-600">RPO:</span>{' '}
+                            <span className="font-semibold text-slate-900">{func.rpo}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {func.impact && (
+                        <div className="mt-2">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">Impact if Disrupted:</div>
+                          <div className="text-xs text-slate-700 bg-yellow-50 border-l-4 border-yellow-400 p-2">
+                            {func.impact}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {func.recoveryStrategy && (
+                        <div className="mt-2">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">Recovery Strategy:</div>
+                          <div className="text-xs text-slate-700 bg-green-50 border-l-4 border-green-400 p-2">
+                            {func.recoveryStrategy}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -648,7 +874,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   const category = (s.category || '').toLowerCase()
                   
                   // Log for debugging
-                  console.log(`[Preview] Strategy "${s.name}" category: "${s.category}" → cost: ${cost}`)
+                  const strategyName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
+                  console.log(`[Preview] Strategy "${strategyName}" category: "${s.category}" → cost: ${cost}`)
                   
                   if (category.includes('prevent') || category.includes('mitigat') || category.includes('prepar')) {
                     categoryInvestment.prevention += cost
@@ -692,129 +919,194 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </div>
           </div>
           
-          {/* Strategies by Risk */}
+          {/* ALL Selected Strategies - Organized by Priority */}
           <div className="mb-6">
             <h3 className="text-sm font-bold text-slate-700 mb-3">3.2 Our Preparation Strategies</h3>
-            <div className="space-y-6">
-              {risksWithStrategies.map((risk: any, riskIdx: number) => {
-                // Risk data already has multilingual content extracted
-                const hazardName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
-                const hazardId = risk.hazardId || hazardName
+            <p className="text-xs text-slate-600 mb-4">
+              These {strategies.length} strategies were selected based on your business needs, location risks, and operational requirements.
+            </p>
+            
+            <div className="space-y-4">
+              {strategies.map((strategy: any, stratIdx: number) => {
+                // Get cost - PRIORITIZE calculatedCostLocal
+                const strategyCost = strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0
+                  ? strategy.calculatedCostLocal
+                  : parseCostString(strategy.implementationCost || strategy.cost || '')
                 
-                // Find strategies that apply to this risk (SAME LOGIC AS BusinessPlanReview.tsx)
-                const applicableStrategies = strategies.filter(strategy => {
-                  if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
-                  
-                  return strategy.applicableRisks.some((riskId: string) => {
-                    const riskIdLower = riskId.toLowerCase().replace(/_/g, ' ')
-                    const hazardNameLower = hazardName.toLowerCase()
-                    const hazardIdLower = (hazardId || '').toString().toLowerCase()
+                // Get risks this strategy protects against
+                const protectsAgainst = strategy.applicableRisks || []
+                const protectsAgainstNames = protectsAgainst.map((riskId: string) => {
+                  // Find matching risk name from riskMatrix
+                  const matchingRisk = riskMatrix.find((r: any) => {
+                    const riskIdNorm = normalizeRiskId(riskId)
+                    const hazardIdNorm = normalizeRiskId(r.hazardId || '')
+                    const hazardNameNorm = normalizeRiskId(r.hazardName || r.Hazard || '')
                     
-                    return riskId === hazardId || 
-                           riskId === risk.hazard ||
-                           riskId === hazardName ||
-                           riskIdLower === hazardIdLower ||
-                           riskIdLower === hazardNameLower ||
-                           hazardNameLower.includes(riskIdLower) ||
-                           riskIdLower.includes(hazardNameLower)
+                    return riskIdNorm === hazardIdNorm || 
+                           riskIdNorm === hazardNameNorm ||
+                           hazardIdNorm.includes(riskIdNorm) ||
+                           hazardNameNorm.includes(riskIdNorm)
                   })
-                })
+                  
+                  if (matchingRisk) {
+                    return matchingRisk.hazardName || matchingRisk.Hazard
+                  }
+                  
+                  // Fallback: Format the risk ID nicely
+                  return riskId.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
+                }).filter(Boolean)
                 
-                if (applicableStrategies.length === 0) return null
+                // PRIORITY: Use calculated cost from wizard (already in correct currency)
+                const costAmount = strategyCost
                 
-                // Calculate total cost for this risk - USE WIZARD'S CALCULATED COSTS
-                const strategyCost = applicableStrategies.reduce((sum, s) => {
-                  // FIRST: Use calculated cost from wizard
-                  if (s.calculatedCostLocal && s.calculatedCostLocal > 0) {
-                    return sum + s.calculatedCostLocal
+                // CRITICAL FIX: Always use detected currency (currencyInfo) as the source of truth
+                const useCurrency = (strategy.calculatedCostLocal > 0 && strategy.currencySymbol) 
+                  ? { symbol: strategy.currencySymbol, code: strategy.currencyCode }
+                  : currencyInfo
+                
+                const costDisplay = costAmount > 0
+                  ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()} ${useCurrency.code}`
+                  : 'Cost TBD'
+                
+                // Debug log for each strategy
+                const stratName = getStringValue(strategy.smeTitle || strategy.name) || 'Unnamed'
+                console.log(`[FormalBCP] Rendering strategy #${stratIdx + 1}: "${stratName}" cost=${costAmount}`)
+                
+                // Extract timeline/timeframe - PRIORITY: Use estimatedTotalHours first
+                const getTimeline = (): string => {
+                  // PRIORITY 1: Use estimatedTotalHours (what wizard shows)
+                  if (strategy.estimatedTotalHours && strategy.estimatedTotalHours > 0) {
+                    const hours = strategy.estimatedTotalHours
+                    let formatted = ''
+                    if (hours < 1) formatted = 'Less than 1 hour'
+                    else if (hours === 1) formatted = '1 hour'
+                    else if (hours < 8) formatted = `~${hours}h`
+                    else if (hours < 40) formatted = `~${Math.round(hours / 8)} days`
+                    else if (hours < 160) formatted = `~${Math.round(hours / 40)} weeks`
+                    else formatted = `~${Math.round(hours / 160)} months`
+                    
+                    return formatted
                   }
                   
-                  // FALLBACK: Parse legacy cost string
-                  const costStr = s.implementationCost || s.cost || ''
-                  const parsedCost = parseCostString(costStr)
+                  // PRIORITY 2: Use timeToImplement or implementationTime
+                  const timeStr = getStringValue(
+                    strategy.timeToImplement || 
+                    strategy.implementationTime ||
+                    strategy.timeframe || 
+                    ''
+                  )
                   
-                  if (parsedCost > 0) {
-                    return sum + parsedCost
-                  }
+                  if (timeStr) return timeStr
                   
-                  // Last resort: legacy cost estimate
-                  if (s.costEstimateJMD && typeof s.costEstimateJMD === 'number') {
-                    return sum + s.costEstimateJMD
-                  }
-                  
-                  return sum
-                }, 0)
+                  // PRIORITY 3: Fallback to 'TBD'
+                  return 'TBD'
+                }
+                
+                const timeline = getTimeline()
+                
+                // Extract effectiveness rating
+                const effectiveness = strategy.effectiveness || 0
+                
+                // Get priority badge
+                const priorityTier = strategy.priorityTier || strategy.selectionTier || 'recommended'
+                const priorityBadge = priorityTier === 'essential' 
+                  ? { label: 'ESSENTIAL', color: 'bg-red-100 text-red-800' }
+                  : priorityTier === 'recommended'
+                  ? { label: 'RECOMMENDED', color: 'bg-yellow-100 text-yellow-800' }
+                  : { label: 'OPTIONAL', color: 'bg-green-100 text-green-800' }
                 
                 return (
-                  <div key={riskIdx} className="border-l-4 border-green-600 bg-slate-50 p-4">
-                    <div className="font-bold text-sm text-slate-800 mb-1">Protection Against: {hazardName}</div>
-                    <div className="text-xs text-slate-600 mb-3">
-                      Strategies: {applicableStrategies.length} | Total Investment: {formatCurrency(strategyCost, currencyInfo)}
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {applicableStrategies.map((strategy: any, stratIdx: number) => {
-                        // Use calculated cost if available, fallback to parsing
-                        const costAmount = strategy.calculatedCostLocal || parseCostString(strategy.implementationCost || '')
-                        const costDisplay = strategy.currencySymbol && costAmount > 0
-                          ? `${strategy.currencySymbol}${Math.round(costAmount).toLocaleString()} ${strategy.currencyCode}`
-                          : costAmount > 0 
-                          ? formatCurrency(costAmount, currencyInfo)
-                          : 'Cost TBD'
-                        
-                        // Extract timeline/timeframe
-                        const timeline = getStringValue(
-                          strategy.timeToImplement || 
-                          strategy.implementationTime ||
-                          strategy.timeframe || 
-                          'TBD'
-                        )
-                        
-                        // Extract effectiveness rating
-                        const effectiveness = strategy.effectiveness || 0
-                        
-                        return (
-                          <div key={stratIdx} className="bg-white border border-slate-200 rounded p-3">
-                            <div className="font-semibold text-sm text-slate-800 mb-2">
-                              {stratIdx + 1}. {getStringValue(strategy.smeTitle || strategy.name || strategy.title)}
-                            </div>
-                            
-                            {(strategy.smeSummary || strategy.description) && (
-                              <p className="text-xs text-slate-600 mb-2 italic">{getStringValue(strategy.smeSummary || strategy.description)}</p>
-                            )}
-                            
-                            <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                              <div>
-                                <span className="font-semibold">Investment:</span> {costDisplay}
-                              </div>
-                              <div>
-                                <span className="font-semibold">Timeline:</span> {timeline}
-                              </div>
-                              <div>
-                                <span className="font-semibold">Effectiveness:</span> {effectiveness > 0 ? `${effectiveness}/10` : 'N/A'}
-                              </div>
-                            </div>
-                            
-                            {/* Show ALL action steps (not just first 3) */}
-                            {strategy.actionSteps && strategy.actionSteps.length > 0 && (
-                              <div className="mt-3 space-y-1">
-                                <div className="font-semibold text-xs text-slate-700 mb-2">Key Actions:</div>
-                                {strategy.actionSteps.map((step: any, stepIdx: number) => {
-                                  const actionText = getStringValue(step.smeAction || step.action || step.title || '')
-                                  const timeframe = step.timeframe ? ` (${step.timeframe})` : ''
-                                  
-                                  return (
-                                    <div key={stepIdx} className="text-xs text-slate-600 flex gap-2">
-                                      <span className="text-green-600 font-bold">→</span>
-                                      <span>{actionText}{timeframe}</span>
-                                    </div>
-                                  )
-                                })}
-                              </div>
+                  <div key={stratIdx} className="border-2 border-slate-300 rounded-lg overflow-hidden bg-white">
+                    {/* Strategy Header */}
+                    <div className="bg-slate-100 px-4 py-3 border-b border-slate-300">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="bg-slate-700 text-white px-2 py-1 rounded text-xs font-bold">
+                              #{stratIdx + 1}
+                            </span>
+                            <span className={`px-2 py-1 rounded text-xs font-bold ${priorityBadge.color}`}>
+                              {priorityBadge.label}
+                            </span>
+                            {strategy.quickWinIndicator && (
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">
+                                ⚡ QUICK WIN
+                              </span>
                             )}
                           </div>
-                        )
-                      })}
+                          <h4 className="font-bold text-base text-slate-900">
+                            {getStringValue(strategy.smeTitle || strategy.name || strategy.title)}
+                          </h4>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs text-slate-600">Investment</div>
+                          <div className="font-bold text-lg text-green-700">{costDisplay}</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Strategy Content */}
+                    <div className="p-4">
+                      {/* Description */}
+                      {(strategy.smeSummary || strategy.description) && (
+                        <p className="text-sm text-slate-700 mb-3 leading-relaxed">
+                          {getStringValue(strategy.smeSummary || strategy.description)}
+                        </p>
+                      )}
+                      
+                      {/* Quick Stats Grid */}
+                      <div className="grid grid-cols-3 gap-3 mb-4 bg-slate-50 p-3 rounded">
+                        <div>
+                          <div className="text-xs text-slate-600 mb-1">Timeline</div>
+                          <div className="font-semibold text-sm text-slate-900">{timeline}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-slate-600 mb-1">Effectiveness</div>
+                          <div className="font-semibold text-sm text-slate-900">
+                            {effectiveness > 0 ? `${effectiveness}/10` : 'N/A'}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-slate-600 mb-1">Complexity</div>
+                          <div className="font-semibold text-sm text-slate-900 capitalize">
+                            {strategy.complexityLevel || 'Moderate'}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Protects Against */}
+                      {protectsAgainstNames.length > 0 && (
+                        <div className="mb-4">
+                          <div className="text-xs font-semibold text-slate-700 mb-2">🛡️ Protects Against:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {protectsAgainstNames.map((riskName: string, idx: number) => (
+                              <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                                {riskName}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Action Steps */}
+                      {strategy.actionSteps && strategy.actionSteps.length > 0 && (
+                        <div>
+                          <div className="text-xs font-semibold text-slate-700 mb-2">📋 Key Actions:</div>
+                          <div className="space-y-2">
+                            {strategy.actionSteps.map((step: any, stepIdx: number) => {
+                              const actionText = getStringValue(step.smeAction || step.action || step.title || '')
+                              const timeframe = step.timeframe ? ` (${step.timeframe})` : ''
+                              
+                              return (
+                                <div key={stepIdx} className="flex gap-2 text-sm text-slate-700">
+                                  <span className="text-green-600 font-bold flex-shrink-0">→</span>
+                                  <span>{actionText}{timeframe}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )
@@ -823,11 +1115,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           </div>
         </section>
 
-        {/* SECTION 4: EMERGENCY RESPONSE */}
+        {/* SECTION 4: EMERGENCY RESPONSE & CONTACTS */}
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">4</div>
-            <h2 className="text-xl font-bold text-slate-900">Emergency Response</h2>
+            <h2 className="text-xl font-bold text-slate-900">Emergency Response & Contacts</h2>
           </div>
           
           <div className="mb-6">
@@ -852,9 +1144,38 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </table>
           </div>
           
+          {/* Staff Contact Roster */}
+          {staffContactsData.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">4.2 Staff Contact Roster</h3>
+              <p className="text-xs text-slate-600 mb-3">Contact information for all team members during emergencies.</p>
+              <table className="w-full border border-slate-300 text-sm">
+                <thead className="bg-slate-100">
+                  <tr>
+                    <th className="px-3 py-2 text-left">Name</th>
+                    <th className="px-3 py-2 text-left">Position</th>
+                    <th className="px-3 py-2 text-left">Phone</th>
+                    <th className="px-3 py-2 text-left">Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffContactsData.map((contact: any, idx: number) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.name || contact.Name)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.position || contact.Position || contact.role)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.phone || contact.Phone)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact.email || contact.Email)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {/* Emergency Services */}
           {emergencyContacts.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.2 Critical Emergency Contacts</h3>
+              <h3 className="text-sm font-bold text-slate-700 mb-3">4.3 Emergency Services</h3>
               <div className="grid md:grid-cols-2 gap-3">
                 {emergencyContacts.map((contact: any, idx: number) => (
                   <div key={idx} className="bg-red-50 border border-red-200 rounded p-3">
@@ -869,35 +1190,228 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </div>
           )}
           
-          {keySuppliers.length > 0 && (
+          {/* Utilities Contacts */}
+          {utilitiesContacts.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.3 Key Suppliers</h3>
+              <h3 className="text-sm font-bold text-slate-700 mb-3">4.4 Utilities & Essential Services</h3>
+              <div className="space-y-2">
+                {utilitiesContacts.map((contact: any, idx: number) => (
+                  <div key={idx} className="border border-slate-300 rounded p-3 bg-white">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div>
+                        <span className="text-slate-600">Service:</span>{' '}
+                        <span className="font-semibold">{getStringValue(contact.service || contact.name)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-600">Provider:</span>{' '}
+                        <span className="font-semibold">{getStringValue(contact.provider || contact.company)}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-600">Phone:</span>{' '}
+                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                      </div>
+                      {contact.accountNumber && (
+                        <div>
+                          <span className="text-slate-600">Account #:</span>{' '}
+                          <span>{getStringValue(contact.accountNumber)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Suppliers */}
+          {allSuppliers.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">4.5 Supplier Directory</h3>
               <table className="w-full border border-slate-300 text-sm">
                 <thead className="bg-slate-100">
                   <tr>
                     <th className="px-3 py-2 text-left">Supplier</th>
                     <th className="px-3 py-2 text-left">Product/Service</th>
                     <th className="px-3 py-2 text-left">Contact</th>
+                    {allSuppliers.some((s: any) => s.criticality) && (
+                      <th className="px-3 py-2 text-left">Criticality</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {keySuppliers.map((supplier: any, idx: number) => (
+                  {allSuppliers.map((supplier: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                       <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.name || supplier.companyName)}</td>
                       <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.service || supplier.productType || 'Various')}</td>
                       <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.phone || supplier.phoneNumber)}</td>
+                      {allSuppliers.some((s: any) => s.criticality) && (
+                        <td className="px-3 py-2 border-t border-slate-200">
+                          {supplier.criticality && (
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              supplier.criticality === 'critical' ? 'bg-red-100 text-red-800' :
+                              supplier.criticality === 'important' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {supplier.criticality}
+                            </span>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+          
+          {/* Insurance & Banking */}
+          {(insuranceContacts.length > 0 || bankingContacts.length > 0) && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">4.6 Insurance & Banking Partners</h3>
+              <div className="space-y-3">
+                {insuranceContacts.map((contact: any, idx: number) => (
+                  <div key={`ins-${idx}`} className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
+                    <div className="font-semibold text-sm text-blue-900 mb-2">Insurance</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div>
+                        <span className="text-blue-700">Company:</span>{' '}
+                        <span className="font-semibold">{getStringValue(contact.company || contact.name)}</span>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Agent:</span>{' '}
+                        <span>{getStringValue(contact.agentName || contact.contactPerson)}</span>
+                      </div>
+                      <div>
+                        <span className="text-blue-700">Phone:</span>{' '}
+                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                      </div>
+                      {contact.policyNumber && (
+                        <div>
+                          <span className="text-blue-700">Policy #:</span>{' '}
+                          <span>{getStringValue(contact.policyNumber)}</span>
+                        </div>
+                      )}
+                      {contact.coverage && (
+                        <div className="col-span-2">
+                          <span className="text-blue-700">Coverage:</span>{' '}
+                          <span>{getStringValue(contact.coverage)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                
+                {bankingContacts.map((contact: any, idx: number) => (
+                  <div key={`bank-${idx}`} className="border-2 border-green-200 rounded-lg p-3 bg-green-50">
+                    <div className="font-semibold text-sm text-green-900 mb-2">Banking</div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                      <div>
+                        <span className="text-green-700">Bank:</span>{' '}
+                        <span className="font-semibold">{getStringValue(contact.bank || contact.name)}</span>
+                      </div>
+                      <div>
+                        <span className="text-green-700">Branch:</span>{' '}
+                        <span>{getStringValue(contact.branch)}</span>
+                      </div>
+                      <div>
+                        <span className="text-green-700">Manager:</span>{' '}
+                        <span>{getStringValue(contact.manager || contact.contactPerson)}</span>
+                      </div>
+                      <div>
+                        <span className="text-green-700">Phone:</span>{' '}
+                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* SECTION 5: PLAN MAINTENANCE */}
+        {/* SECTION 5: VITAL RECORDS & DATA PROTECTION */}
+        {vitalRecords.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+              <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
+              <h2 className="text-xl font-bold text-slate-900">Vital Records & Data Protection</h2>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-slate-700 leading-relaxed">
+                Critical records and data must be protected, backed up regularly, and recoverable quickly to ensure business continuity. 
+                The following records are essential to our operations and have established protection and recovery procedures.
+              </p>
+            </div>
+            
+            <div className="space-y-3">
+              {vitalRecords.map((record: any, idx: number) => (
+                <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
+                  <div className="bg-slate-100 px-4 py-2 font-semibold text-sm flex items-center justify-between">
+                    <span>{getStringValue(record.recordType || record.name)}</span>
+                    {record.format && (
+                      <span className="text-xs bg-slate-200 px-2 py-1 rounded">
+                        {getStringValue(record.format)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-2 gap-3 text-xs mb-3">
+                      {record.storageLocation && (
+                        <div>
+                          <span className="text-slate-600">Storage Location:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.storageLocation)}</span>
+                        </div>
+                      )}
+                      {record.backupLocation && (
+                        <div>
+                          <span className="text-slate-600">Backup Location:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.backupLocation)}</span>
+                        </div>
+                      )}
+                      {record.backupFrequency && (
+                        <div>
+                          <span className="text-slate-600">Backup Frequency:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.backupFrequency)}</span>
+                        </div>
+                      )}
+                      {record.responsiblePerson && (
+                        <div>
+                          <span className="text-slate-600">Responsible Person:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.responsiblePerson)}</span>
+                        </div>
+                      )}
+                      {record.retentionPeriod && (
+                        <div>
+                          <span className="text-slate-600">Retention Period:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.retentionPeriod)}</span>
+                        </div>
+                      )}
+                      {record.recoveryTime && (
+                        <div>
+                          <span className="text-slate-600">Recovery Time:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.recoveryTime)}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {record.backupProcedure && (
+                      <div className="mt-2 bg-blue-50 border-l-4 border-blue-400 p-2">
+                        <div className="text-xs font-semibold text-blue-900 mb-1">Backup Procedure:</div>
+                        <div className="text-xs text-blue-800">{getStringValue(record.backupProcedure)}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* SECTION 6: PLAN MAINTENANCE & TESTING */}
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
-            <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
+            <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">{vitalRecords.length > 0 ? '6' : '5'}</div>
             <h2 className="text-xl font-bold text-slate-900">Plan Maintenance & Testing</h2>
           </div>
           
@@ -918,13 +1432,173 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </div>
           </div>
           
-          <div className="text-sm text-slate-700">
+          <div className="text-sm text-slate-700 mb-6">
             <div className="font-semibold mb-1">Responsibility:</div>
             <p>{planManagerInfo} is responsible for ensuring the plan stays current and conducting regular tests.</p>
           </div>
+          
+          {/* Testing Schedule */}
+          {testingSchedule.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">
+                {vitalRecords.length > 0 ? '6.1' : '5.1'} Testing & Exercise Schedule
+              </h3>
+              <p className="text-xs text-slate-600 mb-3">
+                Scheduled tests to verify preparedness and identify improvements needed.
+              </p>
+              <div className="space-y-2">
+                {testingSchedule.map((test: any, idx: number) => (
+                  <div key={idx} className="border border-slate-300 rounded p-3 bg-white">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="font-semibold text-sm text-slate-800">
+                        {getStringValue(test.testType || test.name)}
+                      </div>
+                      <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                        {getStringValue(test.frequency || 'As scheduled')}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      {test.nextTestDate && (
+                        <div>
+                          <span className="text-slate-600">Next Test:</span>{' '}
+                          <span className="font-semibold">{getStringValue(test.nextTestDate)}</span>
+                        </div>
+                      )}
+                      {test.responsible && (
+                        <div>
+                          <span className="text-slate-600">Responsible:</span>{' '}
+                          <span className="font-semibold">{getStringValue(test.responsible)}</span>
+                        </div>
+                      )}
+                      {test.participants && (
+                        <div className="col-span-2">
+                          <span className="text-slate-600">Participants:</span>{' '}
+                          <span>{getStringValue(test.participants)}</span>
+                        </div>
+                      )}
+                    </div>
+                    {test.description && (
+                      <div className="mt-2 text-xs text-slate-700 bg-slate-50 p-2 rounded">
+                        {getStringValue(test.description)}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Training Programs */}
+          {trainingPrograms.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">
+                {vitalRecords.length > 0 ? '6.2' : '5.2'} Training Programs
+              </h3>
+              <p className="text-xs text-slate-600 mb-3">
+                Staff training ensures everyone knows their role in emergency response and recovery.
+              </p>
+              <div className="space-y-2">
+                {trainingPrograms.map((program: any, idx: number) => (
+                  <div key={idx} className="border-2 border-green-300 rounded-lg p-3 bg-green-50">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="font-semibold text-sm text-green-900">
+                        {getStringValue(program.trainingName || program.name)}
+                      </div>
+                      {program.duration && (
+                        <div className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
+                          {getStringValue(program.duration)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-xs mb-2">
+                      {program.targetAudience && (
+                        <div>
+                          <span className="text-green-700">Audience:</span>{' '}
+                          <span className="font-semibold text-green-900">{getStringValue(program.targetAudience)}</span>
+                        </div>
+                      )}
+                      {program.frequency && (
+                        <div>
+                          <span className="text-green-700">Frequency:</span>{' '}
+                          <span className="font-semibold text-green-900">{getStringValue(program.frequency)}</span>
+                        </div>
+                      )}
+                      {program.trainer && (
+                        <div>
+                          <span className="text-green-700">Trainer:</span>{' '}
+                          <span className="font-semibold text-green-900">{getStringValue(program.trainer)}</span>
+                        </div>
+                      )}
+                      {program.nextSessionDate && (
+                        <div>
+                          <span className="text-green-700">Next Session:</span>{' '}
+                          <span className="font-semibold text-green-900">{getStringValue(program.nextSessionDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                    {program.topics && (
+                      <div className="mt-2">
+                        <div className="text-xs font-semibold text-green-800 mb-1">Topics Covered:</div>
+                        <div className="text-xs text-green-800">
+                          {Array.isArray(program.topics) 
+                            ? program.topics.map((t: any) => getStringValue(t)).join(' • ')
+                            : getStringValue(program.topics)
+                          }
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Improvements Needed */}
+          {improvements.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-bold text-slate-700 mb-3">
+                {vitalRecords.length > 0 ? '6.3' : '5.3'} Identified Improvements
+              </h3>
+              <p className="text-xs text-slate-600 mb-3">
+                Areas for improvement identified through testing, exercises, or actual incidents.
+              </p>
+              <div className="space-y-2">
+                {improvements.map((improvement: any, idx: number) => (
+                  <div key={idx} className="border-l-4 border-yellow-400 bg-yellow-50 p-3">
+                    <div className="font-semibold text-sm text-yellow-900 mb-1">
+                      {getStringValue(improvement.area || improvement.title)}
+                    </div>
+                    <div className="text-xs text-yellow-800 mb-2">
+                      {getStringValue(improvement.issue || improvement.description)}
+                    </div>
+                    {improvement.action && (
+                      <div className="text-xs">
+                        <span className="text-yellow-700">Action:</span>{' '}
+                        <span className="text-yellow-900">{getStringValue(improvement.action)}</span>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-3 text-xs mt-2">
+                      {improvement.priority && (
+                        <div>
+                          <span className="text-yellow-700">Priority:</span>{' '}
+                          <span className="font-semibold text-yellow-900">{getStringValue(improvement.priority)}</span>
+                        </div>
+                      )}
+                      {improvement.targetDate && (
+                        <div>
+                          <span className="text-yellow-700">Target Date:</span>{' '}
+                          <span className="font-semibold text-yellow-900">{getStringValue(improvement.targetDate)}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* SECTION 6: CERTIFICATION */}
+        {/* SECTION 7: CERTIFICATION */}
         <section className="border-t-2 border-slate-300 pt-6 mt-8">
           <div className="mb-6">
             <h3 className="text-sm font-bold text-slate-700 mb-3">Plan Approval</h3>

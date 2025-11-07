@@ -207,29 +207,67 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   // Get selected strategies (ONLY strategies user selected in wizard)
   const selectedStrategiesRaw = formData.STRATEGIES?.['Business Continuity Strategies'] || []
   
-  // Get country code for cost calculation
-  const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || formData.BUSINESS_OVERVIEW?.['Business Address'] || ''
-  const addressParts = businessAddress.split(',').map((s: string) => s.trim())
-  const country = addressParts[addressParts.length - 1] || 'Jamaica'
-  const countryCodeMap: Record<string, string> = {
-    'Jamaica': 'JM',
-    'Barbados': 'BB',
-    'Trinidad': 'TT',
-    'Trinidad and Tobago': 'TT',
-    'Bahamas': 'BS',
-    'Haiti': 'HT',
-    'Dominican Republic': 'DO',
-    'Grenada': 'GD',
-    'Saint Lucia': 'LC',
-    'Antigua': 'AG',
-    'Antigua and Barbuda': 'AG',
-    'Saint Vincent': 'VC',
-    'Saint Vincent and the Grenadines': 'VC',
-    'Dominica': 'DM',
-    'Saint Kitts': 'KN',
-    'Saint Kitts and Nevis': 'KN',
+  // Get country code for cost calculation - PRIORITY ORDER
+  const getCountryCode = (): string => {
+    // PRIORITY 1: Try from localStorage prefill data (set during industry selection)
+    if (typeof window !== 'undefined') {
+      try {
+        const preFillData = localStorage.getItem('bcp-prefill-data')
+        if (preFillData) {
+          const data = JSON.parse(preFillData)
+          if (data.location?.countryCode) {
+            console.log('[BusinessPlanReview] Country code from prefill data:', data.location.countryCode)
+            return data.location.countryCode
+          }
+        }
+      } catch (e) {
+        console.warn('[BusinessPlanReview] Could not load country from prefill data:', e)
+      }
+    }
+    
+    // PRIORITY 2: Parse from business address (less reliable)
+    const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || formData.BUSINESS_OVERVIEW?.['Business Address'] || ''
+    const addressParts = businessAddress.split(',').map((s: string) => s.trim())
+    const country = addressParts[addressParts.length - 1] || 'Jamaica'
+    
+    const countryCodeMap: Record<string, string> = {
+      'Jamaica': 'JM',
+      'Barbados': 'BB',
+      'Trinidad': 'TT',
+      'Trinidad and Tobago': 'TT',
+      'Bahamas': 'BS',
+      'Haiti': 'HT',
+      'Dominican Republic': 'DO',
+      'Grenada': 'GD',
+      'Saint Lucia': 'LC',
+      'Antigua': 'AG',
+      'Antigua and Barbuda': 'AG',
+      'Saint Vincent': 'VC',
+      'Saint Vincent and the Grenadines': 'VC',
+      'Dominica': 'DM',
+      'Saint Kitts': 'KN',
+      'Saint Kitts and Nevis': 'KN',
+    }
+    
+    // Try exact match first
+    let countryCode = countryCodeMap[country]
+    
+    // If no exact match, try partial match (e.g., "Barbados BB17000" contains "Barbados")
+    if (!countryCode) {
+      for (const [countryName, code] of Object.entries(countryCodeMap)) {
+        if (country.includes(countryName)) {
+          countryCode = code
+          console.log('[BusinessPlanReview] Country code matched from address:', countryCode, '(partial match)')
+          return code
+        }
+      }
+    }
+    
+    console.log('[BusinessPlanReview] Country code from address:', countryCode || 'JM (default)')
+    return countryCode || 'JM'
   }
-  const countryCode = countryCodeMap[country] || 'JM'
+  
+  const countryCode = getCountryCode()
   
   // Add calculated costs to strategies
   const [selectedStrategies, setSelectedStrategies] = useState(selectedStrategiesRaw)
@@ -248,16 +286,25 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         selectedStrategiesRaw.map(async (strategy: any) => {
           // Skip if already has calculated cost
           if (strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0) {
+            console.log(`[BusinessPlanReview] Strategy "${strategy.name}" already has cost:`, strategy.calculatedCostLocal, strategy.currencySymbol)
             return strategy
           }
           
           // Calculate cost if strategy has action steps
           if (strategy.actionSteps && strategy.actionSteps.length > 0) {
             try {
+              console.log(`[BusinessPlanReview] Calculating cost for strategy "${strategy.name}" with country code:`, countryCode)
+              
               const result = await costCalculationService.calculateStrategyCost(
                 strategy.actionSteps,
                 countryCode
               )
+              
+              console.log(`[BusinessPlanReview] Cost calculated for "${strategy.name}":`, {
+                totalUSD: result.totalUSD,
+                localAmount: result.localCurrency.amount,
+                currency: result.localCurrency.symbol + result.localCurrency.code
+              })
               
               return {
                 ...strategy,
@@ -267,14 +314,28 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 currencySymbol: result.localCurrency.symbol
               }
             } catch (error) {
-              console.error(`Error calculating cost for strategy ${strategy.id}:`, error)
+              console.error(`[BusinessPlanReview] Error calculating cost for strategy ${strategy.id}:`, error)
               return strategy
             }
           }
           
+          console.log(`[BusinessPlanReview] Strategy "${strategy.name}" has no action steps, skipping cost calculation`)
           return strategy
         })
       )
+      
+      console.log('[BusinessPlanReview] ========================================')
+      console.log('[BusinessPlanReview] Enriched strategies summary:', {
+        total: enrichedStrategies.length,
+        withCosts: enrichedStrategies.filter(s => s.calculatedCostLocal > 0).length,
+        strategies: enrichedStrategies.map(s => ({
+          name: s.name,
+          cost: s.calculatedCostLocal || 0,
+          currency: s.currencySymbol || 'N/A',
+          applicableRisks: s.applicableRisks?.length || 0
+        }))
+      })
+      console.log('[BusinessPlanReview] ========================================')
       
       setSelectedStrategies(enrichedStrategies)
     }
@@ -478,11 +539,30 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
       {/* Main Content - Browser Preview (NO PDF YET) */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         {exportMode === 'formal' ? (
-          <FormalBCPPreview 
-            formData={formData}
-            strategies={selectedStrategies}
-            risks={selectedRisks}
-          />
+          <>
+            {/* DEBUG: Log what we're passing to preview */}
+            {(() => {
+              console.log('[BusinessPlanReview] Passing to FormalBCPPreview:', {
+                strategiesCount: selectedStrategies.length,
+                risksCount: selectedRisks.length,
+                countryCode: countryCode,
+                strategiesWithCosts: selectedStrategies.filter(s => s.calculatedCostLocal > 0).length,
+                sampleStrategy: selectedStrategies[0] ? {
+                  name: selectedStrategies[0].name,
+                  calculatedCostLocal: selectedStrategies[0].calculatedCostLocal,
+                  currencySymbol: selectedStrategies[0].currencySymbol,
+                  applicableRisks: selectedStrategies[0].applicableRisks
+                } : null
+              })
+              return null
+            })()}
+            <FormalBCPPreview 
+              formData={formData}
+              strategies={selectedStrategies}
+              risks={selectedRisks}
+              countryCode={countryCode}
+            />
+          </>
         ) : (
           <WorkbookPreview
             formData={formData}

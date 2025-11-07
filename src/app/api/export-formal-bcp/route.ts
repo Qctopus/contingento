@@ -59,11 +59,11 @@ export async function POST(req: Request) {
     const businessAddress = planData.PLAN_INFORMATION?.['Business Address'] || 
                            planData.BUSINESS_OVERVIEW?.['Business Address'] || ''
     
-    // Extract country from address (last part after comma)
+    // CRITICAL FIX: Extract country from address (handle formats like "Barbados BB17000")
     const addressParts = businessAddress.split(',').map((s: string) => s.trim())
-    const country = addressParts[addressParts.length - 1] || 'Jamaica'
+    let country = addressParts[addressParts.length - 1] || 'Jamaica'
     
-    // Map country to country code
+    // Map country to country code (using partial match to handle "Barbados BB17000" -> "Barbados")
     const countryCodeMap: Record<string, string> = {
       'Jamaica': 'JM',
       'Barbados': 'BB',
@@ -83,7 +83,22 @@ export async function POST(req: Request) {
       'Saint Kitts and Nevis': 'KN',
     }
     
-    const countryCode = countryCodeMap[country] || 'JM'
+    // Try exact match first
+    let countryCode = countryCodeMap[country]
+    
+    // If no exact match, try partial match (e.g., "Barbados BB17000" contains "Barbados")
+    if (!countryCode) {
+      for (const [countryName, code] of Object.entries(countryCodeMap)) {
+        if (country.includes(countryName)) {
+          countryCode = code
+          country = countryName // Normalize to clean country name
+          break
+        }
+      }
+    }
+    
+    // Default to Jamaica if still no match
+    countryCode = countryCode || 'JM'
     
     console.log('[Formal BCP] User country:', country, '→ Code:', countryCode)
 

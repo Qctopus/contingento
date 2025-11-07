@@ -222,7 +222,17 @@ function generateContinuityStrategies(
   highPriorityRisks: any[],
   limits: any
 ): FormalBCPData['continuityStrategies'] {
+  console.log('[Transformer] ========================================')
   console.log('[Transformer] Processing', strategies.length, 'strategies')
+  console.log('[Transformer] High priority risks:', highPriorityRisks.length)
+  console.log('[Transformer] Strategy details:', strategies.map((s, idx) => ({
+    index: idx + 1,
+    name: s.smeTitle || s.name,
+    calculatedCostLocal: s.calculatedCostLocal,
+    currencySymbol: s.currencySymbol,
+    currencyCode: s.currencyCode,
+    applicableRisks: s.applicableRisks
+  })))
   
   // Get currency for formatting (fallback only)
   const address = planData.PLAN_INFORMATION?.['Business Address'] || ''
@@ -326,6 +336,15 @@ function generateContinuityStrategies(
   
   const allRisksForDisplay = [...risksWithStrategies, ...additionalRisks]
   
+  console.log('[Transformer] Risks with strategies:')
+  console.log(`  - High priority risks with strategies: ${risksWithStrategies.length}`)
+  console.log(`  - Additional (non-high priority) risks with strategies: ${additionalRisks.length}`)
+  console.log(`  - TOTAL risks to display: ${allRisksForDisplay.length}`)
+  allRisksForDisplay.forEach((r, idx) => {
+    const count = strategies.filter(s => (s.applicableRisks || []).includes(r.hazardId)).length
+    console.log(`    ${idx + 1}. ${r.hazardName} (${r.riskLevel}): ${count} strategies`)
+  })
+  
   const strategiesByRisk = allRisksForDisplay.map(risk => {
     // Find ALL strategies that apply to this risk
     const riskStrategies = strategies.filter(s =>
@@ -351,14 +370,25 @@ function generateContinuityStrategies(
           estimatedMinutes: action.estimatedMinutes || 0
         }))
       
-      // Format cost with user's currency from wizard
-      const costDisplay = strategy.calculatedCostLocal && strategy.currencySymbol
-        ? `${strategy.currencySymbol}${Math.round(strategy.calculatedCostLocal).toLocaleString()} ${strategy.currencyCode}`
+      // CRITICAL FIX: Format cost with proper currency fallback
+      // Use strategy currency if available, otherwise fall back to detected country currency
+      const costAmount = strategy.calculatedCostLocal || parseCostString(strategy.implementationCost || '')
+      
+      const useCurrency = (strategy.calculatedCostLocal > 0 && strategy.currencySymbol)
+        ? { symbol: strategy.currencySymbol, code: strategy.currencyCode }
+        : { symbol: currencySymbol, code: currencyCode }
+      
+      const costDisplay = costAmount > 0
+        ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()} ${useCurrency.code}`
         : 'Cost TBD'
       
+      // Extract string values from multilingual objects
+      const strategyName = simplifyForFormalDocument(strategy.smeTitle || strategy.name)
+      const strategyPurpose = simplifyForFormalDocument(strategy.smeSummary || strategy.description || '')
+      
       return {
-        name: strategy.smeTitle || strategy.name,
-        purpose: simplifyForFormalDocument(strategy.smeSummary || strategy.description || ''),
+        name: strategyName,
+        purpose: strategyPurpose,
         benefits: (strategy.benefitsBullets || []).slice(0, 3),
         implementation: {
           investmentRequired: costDisplay,
@@ -372,15 +402,24 @@ function generateContinuityStrategies(
       }
     })
     
+    // CRITICAL FIX: Extract risk name from multilingual object
+    const riskName = simplifyForFormalDocument(risk.hazardName) || 'Unnamed Risk'
+    
     return {
-      riskName: risk.hazardName,
+      riskName: riskName,
       strategyCount: riskStrategies.length,
       totalInvestment: riskInvestment,
       strategies: formattedStrategies
     }
   }).filter(group => group.strategyCount > 0) // Only include risks that have strategies
   
-  console.log('[Transformer] Grouped into', strategiesByRisk.length, 'risk categories')
+  console.log('[Transformer] Final grouping results:')
+  console.log(`  - Risk categories with strategies: ${strategiesByRisk.length}`)
+  console.log(`  - Total unique strategies across all risks: ${[...new Set(strategiesByRisk.flatMap(r => r.strategies.map(s => s.name)))].length}`)
+  strategiesByRisk.forEach((group, idx) => {
+    console.log(`    ${idx + 1}. ${group.riskName}: ${group.strategyCount} strategies`)
+  })
+  console.log('[Transformer] ========================================')
   
   // Extract low-budget alternatives
   const lowBudgetAlternatives = strategies

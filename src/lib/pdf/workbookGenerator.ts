@@ -711,3 +711,5 @@ function addPageFooter(doc: jsPDF, pageNumber: number): void {
   doc.text(`Page ${pageNumber}`, PAGE_LAYOUT.WIDTH - PAGE_LAYOUT.MARGIN_RIGHT, footerY, { align: 'right' })
 }
 
+
+
