@@ -505,26 +505,193 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     .filter(Boolean)
     .join(' | ') || 'Contact pending'
   
-  // Get ALL contacts (categorized)
-  const contacts = formData.CONTACTS?.['Contact Information'] || []
-  const staffContactsData = formData.CONTACTS?.['Staff Contact Information'] || 
-                           formData.CONTACTS_AND_INFORMATION?.['Staff Contact Information'] || []
-  const emergencyContacts = contacts.filter((c: any) => 
-    c.category === 'emergency_services' || c.category === 'utilities'
-  )
-  const allSuppliers = contacts.filter((c: any) => c.category === 'suppliers')
-  const keyCustomers = contacts.filter((c: any) => c.category === 'customers')
-  const insuranceContacts = contacts.filter((c: any) => c.category === 'insurance')
-  const bankingContacts = contacts.filter((c: any) => c.category === 'banking')
-  const utilitiesContacts = contacts.filter((c: any) => c.category === 'utilities')
+  // Get ALL contacts - FIX: Extract from correct wizard data structure
+  // The wizard saves contacts in separate arrays under CONTACTS_AND_INFORMATION, not in a single array with categories
+  const contactsAndInfo = formData.CONTACTS_AND_INFORMATION || formData.CONTACTS || {}
+  
+  // Staff contacts
+  const staffContactsData = contactsAndInfo['Staff Contact Information'] || []
+  
+  // Suppliers
+  const allSuppliers = contactsAndInfo['Supplier Information'] || []
+  
+  // Customers
+  const keyCustomers = contactsAndInfo['Key Customer Contacts'] || []
+  
+  // Emergency Services and Utilities (combined in wizard, need to separate)
+  const emergencyServicesAndUtilities = contactsAndInfo['Emergency Services and Utilities'] || []
+  
+  // Try to separate emergency services from utilities based on service type
+  const emergencyContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('police') || serviceType.includes('fire') || 
+           serviceType.includes('ambulance') || serviceType.includes('medical') ||
+           serviceType.includes('emergency')
+  })
+  
+  const utilitiesContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('electric') || serviceType.includes('water') || 
+           serviceType.includes('internet') || serviceType.includes('phone') ||
+           serviceType.includes('gas') || serviceType.includes('sewage')
+  })
+  
+  // Insurance and Banking (might be combined with utilities, or separate)
+  const insuranceContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('insurance')
+  })
+  
+  const bankingContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('bank') || serviceType.includes('financial')
+  })
+  
+  // Legacy fallback: Try old 'Contact Information' array with categories if new structure is empty
+  const legacyContacts = formData.CONTACTS?.['Contact Information'] || []
+  if (legacyContacts.length > 0 && 
+      staffContactsData.length === 0 && 
+      allSuppliers.length === 0 && 
+      emergencyServicesAndUtilities.length === 0) {
+    // Use legacy structure with category filtering
+    console.warn('[FormalBCPPreview] Using legacy contact structure with categories')
+  }
   
   // Get vital records data
-  const vitalRecords = formData.VITAL_RECORDS?.['Records Inventory'] || []
+  // PRIMARY: 'Vital Records Inventory' (from VITAL_RECORDS step in steps.ts)
+  // FALLBACK: 'Records Inventory' (legacy)
+  const vitalRecords = formData.VITAL_RECORDS?.['Vital Records Inventory'] || 
+                      formData.VITAL_RECORDS?.['Records Inventory'] || []
   
   // Get testing & maintenance data
-  const testingSchedule = formData.TESTING?.['Testing Schedule'] || []
-  const trainingPrograms = formData.TESTING?.['Training Programs'] || []
-  const improvements = formData.TESTING?.['Improvements Needed'] || []
+  // PRIMARY: from TESTING_AND_MAINTENANCE step (matches steps.ts naming)
+  // FALLBACK: from TESTING (legacy naming)
+  const testingSchedule = formData.TESTING_AND_MAINTENANCE?.['Plan Testing Schedule'] || 
+                         formData.TESTING?.['Plan Testing Schedule'] || 
+                         formData.TESTING?.['Testing Schedule'] || []
+  const trainingPrograms = formData.TESTING_AND_MAINTENANCE?.['Training Schedule'] || 
+                          formData.TESTING?.['Training Schedule'] || 
+                          formData.TESTING?.['Training Programs'] || []
+  const improvements = formData.TESTING_AND_MAINTENANCE?.['Improvement Tracking'] || 
+                      formData.TESTING?.['Improvement Tracking'] || 
+                      formData.TESTING?.['Improvements Needed'] || []
+  
+  // ============================================================================
+  // COMPREHENSIVE DATA AVAILABILITY CHECK - Debug logging
+  // ============================================================================
+  console.group('🔍 BCP Data Availability Check')
+  
+  console.log('%c📊 Section 4: Contact Details', 'font-weight: bold; color: #2563eb')
+  console.log('  ✓ 4.1 Emergency Leadership:', planManagerInfo ? '✅ Present' : '❌ Missing')
+  console.log('  ✓ 4.2 Staff Contact Roster:', staffContactsData.length, 'contacts', staffContactsData.length > 0 ? '✅' : '❌')
+  console.log('  ✓ 4.3 Emergency Services:', emergencyContacts.length, 'services', emergencyContacts.length > 0 ? '✅' : '❌')
+  console.log('  ✓ 4.4 Utilities & Essential Services:', utilitiesContacts.length, 'utilities', utilitiesContacts.length > 0 ? '✅' : '❌')
+  console.log('  ✓ 4.5 Supplier Directory (ALL):', allSuppliers.length, 'suppliers', allSuppliers.length > 0 ? '✅' : '❌')
+  console.log('  ✓ 4.6 Insurance & Banking:', 
+    `${insuranceContacts.length} insurance + ${bankingContacts.length} banking`,
+    (insuranceContacts.length > 0 || bankingContacts.length > 0) ? '✅' : '❌')
+  console.log('  ✓ 4.7 Key Customers (optional):', keyCustomers.length, 'customers', keyCustomers.length > 0 ? '✅' : '(optional)')
+  
+  console.log('%c📊 Section 5: Vital Records & Data Protection', 'font-weight: bold; color: #2563eb')
+  console.log('  ✓ Vital Records Inventory:', vitalRecords.length, 'records', vitalRecords.length > 0 ? '✅' : '(optional)')
+  
+  console.log('%c📊 Section 6: Testing & Maintenance', 'font-weight: bold; color: #2563eb')
+  console.log('  ✓ 6.1 Testing Schedule:', testingSchedule.length, 'tests', testingSchedule.length > 0 ? '✅' : '(optional)')
+  console.log('  ✓ 6.2 Training Programs:', trainingPrograms.length, 'programs', trainingPrograms.length > 0 ? '✅' : '(optional)')
+  console.log('  ✓ 6.3 Improvements Tracking:', improvements.length, 'improvements', improvements.length > 0 ? '✅' : '(optional)')
+  
+  console.log('%c📊 Section 1: Business Overview Enhancements', 'font-weight: bold; color: #2563eb')
+  console.log('  ✓ 1.5 Target Markets:', targetMarkets ? (Array.isArray(targetMarkets) ? `${targetMarkets.length} markets ✅` : 'Present ✅') : '(optional)')
+  console.log('  ✓ 1.6 Products/Services:', productsServices ? 'Present ✅' : '(optional)')
+  console.log('  ✓ 1.7 Critical Function Analysis:', functionsWithPriorities.length, 'functions', functionsWithPriorities.length > 0 ? '✅' : '(optional)')
+  
+  // Debug raw data structure - show which top-level keys exist
+  console.log('%c🔍 Raw Data Structure Check:', 'font-weight: bold; color: #7c3aed')
+  console.log('  - formData.CONTACTS keys:', Object.keys(formData.CONTACTS || {}))
+  console.log('  - formData.CONTACTS_AND_INFORMATION keys:', Object.keys(formData.CONTACTS_AND_INFORMATION || {}))
+  console.log('  - formData.VITAL_RECORDS keys:', Object.keys(formData.VITAL_RECORDS || {}))
+  console.log('  - formData.TESTING keys:', Object.keys(formData.TESTING || {}))
+  console.log('  - formData.TESTING_AND_MAINTENANCE keys:', Object.keys(formData.TESTING_AND_MAINTENANCE || {}))
+  console.log('  - formData.BUSINESS_OVERVIEW keys:', Object.keys(formData.BUSINESS_OVERVIEW || {}))
+  console.log('  - formData.ESSENTIAL_FUNCTIONS keys:', Object.keys(formData.ESSENTIAL_FUNCTIONS || {}))
+  
+  // Debug contacts structure
+  if (emergencyServicesAndUtilities.length > 0) {
+    console.log('%c🔍 Emergency Services & Utilities structure:', 'color: #059669')
+    console.log('  - Total combined:', emergencyServicesAndUtilities.length)
+    console.log('  - Sample entry:', emergencyServicesAndUtilities[0])
+    console.log('  - Service types found:', [...new Set(emergencyServicesAndUtilities.map((c: any) => c['Service Type'] || c.serviceType || c.type))].filter(Boolean))
+    console.log('  - Emergency services extracted:', emergencyContacts.length)
+    console.log('  - Utilities extracted:', utilitiesContacts.length)
+    console.log('  - Insurance extracted:', insuranceContacts.length)
+    console.log('  - Banking extracted:', bankingContacts.length)
+  }
+  
+  if (allSuppliers.length > 0) {
+    console.log('%c🔍 Supplier structure:', 'color: #059669')
+    console.log('  - Total suppliers:', allSuppliers.length)
+    console.log('  - Sample supplier:', allSuppliers[0])
+    console.log('  - All suppliers will be shown in Section 4.5 (not limited to 3)')
+  }
+  
+  // Summary report
+  console.log('%c📋 SUMMARY REPORT', 'font-weight: bold; font-size: 14px; color: #dc2626')
+  const totalSections = 7 // Total possible sections
+  const presentSections = [
+    true, // Section 1 always present
+    riskMatrix.length > 0, // Section 2
+    strategies.length > 0, // Section 3
+    true, // Section 4 always present (has 4.1 at minimum)
+    vitalRecords.length > 0, // Section 5
+    true, // Section 6 always present (base text)
+    true, // Section 7 always present (certification)
+  ].filter(Boolean).length
+  
+  const requiredData = {
+    'Emergency Leadership (4.1)': planManagerInfo,
+    'Staff Contacts (4.2)': staffContactsData.length > 0,
+    'Emergency Services (4.3)': emergencyContacts.length > 0,
+    'Utilities (4.4)': utilitiesContacts.length > 0,
+    'Suppliers (4.5)': allSuppliers.length > 0,
+    'Insurance/Banking (4.6)': insuranceContacts.length > 0 || bankingContacts.length > 0,
+  }
+  
+  const optionalData = {
+    'Vital Records (Section 5)': vitalRecords.length > 0,
+    'Testing Schedule (6.1)': testingSchedule.length > 0,
+    'Training Programs (6.2)': trainingPrograms.length > 0,
+    'Improvements (6.3)': improvements.length > 0,
+    'Target Markets (1.5)': targetMarkets && (Array.isArray(targetMarkets) ? targetMarkets.length > 0 : true),
+    'Products/Services (1.6)': !!productsServices,
+    'Function Analysis (1.7)': functionsWithPriorities.length > 0,
+  }
+  
+  const requiredPresent = Object.values(requiredData).filter(Boolean).length
+  const requiredTotal = Object.keys(requiredData).length
+  const optionalPresent = Object.values(optionalData).filter(Boolean).length
+  const optionalTotal = Object.keys(optionalData).length
+  
+  console.log(`  Sections with content: ${presentSections}/${totalSections}`)
+  console.log(`  Required data: ${requiredPresent}/${requiredTotal} ${requiredPresent === requiredTotal ? '✅ ALL PRESENT' : '⚠️ SOME MISSING'}`)
+  console.log(`  Optional data: ${optionalPresent}/${optionalTotal} present`)
+  
+  if (requiredPresent < requiredTotal) {
+    console.warn('%c⚠️ MISSING REQUIRED DATA:', 'font-weight: bold; color: #dc2626')
+    Object.entries(requiredData).forEach(([key, value]) => {
+      if (!value) console.warn(`  ❌ ${key}`)
+    })
+  } else {
+    console.log('%c✅ All required data is present!', 'font-weight: bold; color: #059669')
+  }
+  
+  if (optionalPresent > 0) {
+    console.log('%cℹ️ Optional enhancements present:', 'font-weight: bold; color: #2563eb')
+    Object.entries(optionalData).forEach(([key, value]) => {
+      if (value) console.log(`  ✅ ${key}`)
+    })
+  }
+  
+  console.groupEnd()
   
   return (
     <div className="bg-white border-2 border-slate-300 shadow-lg rounded-lg overflow-hidden">
@@ -1156,15 +1323,17 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     <th className="px-3 py-2 text-left">Position</th>
                     <th className="px-3 py-2 text-left">Phone</th>
                     <th className="px-3 py-2 text-left">Email</th>
+                    <th className="px-3 py-2 text-left">Emergency Contact</th>
                   </tr>
                 </thead>
                 <tbody>
                   {staffContactsData.map((contact: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.name || contact.Name)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.position || contact.Position || contact.role)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.phone || contact.Phone)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact.email || contact.Email)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Name || contact.name)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Position || contact.position || contact.role || contact.Role)}</td>
+                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Phone || contact.phone || contact['Mobile Phone'])}</td>
+                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact.Email || contact.email || contact['Email Address'])}</td>
+                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact['Emergency Contact'] || contact.emergencyContact || '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1179,10 +1348,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               <div className="grid md:grid-cols-2 gap-3">
                 {emergencyContacts.map((contact: any, idx: number) => (
                   <div key={idx} className="bg-red-50 border border-red-200 rounded p-3">
-                    <div className="font-semibold text-sm text-slate-800">{getStringValue(contact.name || contact.serviceName)}</div>
-                    <div className="text-xs text-slate-600">{getStringValue(contact.phone || contact.phoneNumber)}</div>
-                    {contact.accountNumber && (
-                      <div className="text-xs text-slate-500 mt-1">Account: {getStringValue(contact.accountNumber)}</div>
+                    <div className="font-semibold text-sm text-slate-800">
+                      {getStringValue(contact['Service Type'] || contact.serviceType || contact.type || contact.name)}
+                    </div>
+                    <div className="text-xs text-slate-700 mt-1">
+                      {getStringValue(contact['Organization Name'] || contact.organizationName || contact.organization)}
+                    </div>
+                    <div className="text-xs text-slate-600 mt-1">
+                      📞 {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
+                    </div>
+                    {contact['24/7 Emergency'] && (
+                      <div className="text-xs text-red-700 font-semibold mt-1">
+                        🚨 Emergency: {getStringValue(contact['24/7 Emergency'])}
+                      </div>
                     )}
                   </div>
                 ))}
@@ -1200,20 +1378,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div>
                         <span className="text-slate-600">Service:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact.service || contact.name)}</span>
+                        <span className="font-semibold">{getStringValue(contact['Service Type'] || contact.serviceType || contact.service || contact.type)}</span>
                       </div>
                       <div>
                         <span className="text-slate-600">Provider:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact.provider || contact.company)}</span>
+                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.provider || contact.company)}</span>
                       </div>
                       <div>
                         <span className="text-slate-600">Phone:</span>{' '}
-                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
                       </div>
-                      {contact.accountNumber && (
+                      {(contact['Account Number'] || contact.accountNumber) && (
                         <div>
                           <span className="text-slate-600">Account #:</span>{' '}
-                          <span>{getStringValue(contact.accountNumber)}</span>
+                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
+                        </div>
+                      )}
+                      {contact['Email Address'] && (
+                        <div className="col-span-2">
+                          <span className="text-slate-600">Email:</span>{' '}
+                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
                         </div>
                       )}
                     </div>
@@ -1227,36 +1411,35 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           {allSuppliers.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-bold text-slate-700 mb-3">4.5 Supplier Directory</h3>
+              <p className="text-xs text-slate-600 mb-3">All {allSuppliers.length} suppliers listed with complete contact information.</p>
               <table className="w-full border border-slate-300 text-sm">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-3 py-2 text-left">Supplier</th>
+                    <th className="px-3 py-2 text-left">Supplier Name</th>
+                    <th className="px-3 py-2 text-left">Contact Person</th>
                     <th className="px-3 py-2 text-left">Product/Service</th>
-                    <th className="px-3 py-2 text-left">Contact</th>
-                    {allSuppliers.some((s: any) => s.criticality) && (
-                      <th className="px-3 py-2 text-left">Criticality</th>
-                    )}
+                    <th className="px-3 py-2 text-left">Phone</th>
+                    <th className="px-3 py-2 text-left">Email</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allSuppliers.map((supplier: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.name || supplier.companyName)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.service || supplier.productType || 'Various')}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(supplier.phone || supplier.phoneNumber)}</td>
-                      {allSuppliers.some((s: any) => s.criticality) && (
-                        <td className="px-3 py-2 border-t border-slate-200">
-                          {supplier.criticality && (
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              supplier.criticality === 'critical' ? 'bg-red-100 text-red-800' :
-                              supplier.criticality === 'important' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {supplier.criticality}
-                            </span>
-                          )}
-                        </td>
-                      )}
+                      <td className="px-3 py-2 border-t border-slate-200 font-semibold">
+                        {getStringValue(supplier.Name || supplier.name || supplier.companyName || supplier['Supplier Name'])}
+                      </td>
+                      <td className="px-3 py-2 border-t border-slate-200">
+                        {getStringValue(supplier['Contact Person'] || supplier.contactPerson || supplier.contact)}
+                      </td>
+                      <td className="px-3 py-2 border-t border-slate-200">
+                        {getStringValue(supplier.Service || supplier.service || supplier.productType || supplier['Goods/Services Supplied'] || 'Various')}
+                      </td>
+                      <td className="px-3 py-2 border-t border-slate-200">
+                        {getStringValue(supplier.Phone || supplier.phone || supplier.phoneNumber || supplier['Phone Number'])}
+                      </td>
+                      <td className="px-3 py-2 border-t border-slate-200 text-xs">
+                        {getStringValue(supplier.Email || supplier.email || supplier['Email Address'])}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1271,30 +1454,28 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               <div className="space-y-3">
                 {insuranceContacts.map((contact: any, idx: number) => (
                   <div key={`ins-${idx}`} className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
-                    <div className="font-semibold text-sm text-blue-900 mb-2">Insurance</div>
+                    <div className="font-semibold text-sm text-blue-900 mb-2">
+                      {getStringValue(contact['Service Type'] || contact.serviceType || 'Insurance')}
+                    </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div>
                         <span className="text-blue-700">Company:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact.company || contact.name)}</span>
-                      </div>
-                      <div>
-                        <span className="text-blue-700">Agent:</span>{' '}
-                        <span>{getStringValue(contact.agentName || contact.contactPerson)}</span>
+                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.company || contact.name)}</span>
                       </div>
                       <div>
                         <span className="text-blue-700">Phone:</span>{' '}
-                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
                       </div>
-                      {contact.policyNumber && (
-                        <div>
-                          <span className="text-blue-700">Policy #:</span>{' '}
-                          <span>{getStringValue(contact.policyNumber)}</span>
+                      {(contact['Email Address'] || contact.email) && (
+                        <div className="col-span-2">
+                          <span className="text-blue-700">Email:</span>{' '}
+                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
                         </div>
                       )}
-                      {contact.coverage && (
+                      {(contact['Account Number'] || contact.accountNumber || contact.policyNumber) && (
                         <div className="col-span-2">
-                          <span className="text-blue-700">Coverage:</span>{' '}
-                          <span>{getStringValue(contact.coverage)}</span>
+                          <span className="text-blue-700">Account/Policy #:</span>{' '}
+                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber || contact.policyNumber)}</span>
                         </div>
                       )}
                     </div>
@@ -1303,24 +1484,30 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 
                 {bankingContacts.map((contact: any, idx: number) => (
                   <div key={`bank-${idx}`} className="border-2 border-green-200 rounded-lg p-3 bg-green-50">
-                    <div className="font-semibold text-sm text-green-900 mb-2">Banking</div>
+                    <div className="font-semibold text-sm text-green-900 mb-2">
+                      {getStringValue(contact['Service Type'] || contact.serviceType || 'Banking')}
+                    </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                       <div>
                         <span className="text-green-700">Bank:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact.bank || contact.name)}</span>
-                      </div>
-                      <div>
-                        <span className="text-green-700">Branch:</span>{' '}
-                        <span>{getStringValue(contact.branch)}</span>
-                      </div>
-                      <div>
-                        <span className="text-green-700">Manager:</span>{' '}
-                        <span>{getStringValue(contact.manager || contact.contactPerson)}</span>
+                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.bank || contact.name)}</span>
                       </div>
                       <div>
                         <span className="text-green-700">Phone:</span>{' '}
-                        <span>{getStringValue(contact.phone || contact.phoneNumber)}</span>
+                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
                       </div>
+                      {(contact['Email Address'] || contact.email) && (
+                        <div className="col-span-2">
+                          <span className="text-green-700">Email:</span>{' '}
+                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
+                        </div>
+                      )}
+                      {(contact['Account Number'] || contact.accountNumber) && (
+                        <div className="col-span-2">
+                          <span className="text-green-700">Account #:</span>{' '}
+                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1348,7 +1535,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               {vitalRecords.map((record: any, idx: number) => (
                 <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
                   <div className="bg-slate-100 px-4 py-2 font-semibold text-sm flex items-center justify-between">
-                    <span>{getStringValue(record.recordType || record.name)}</span>
+                    <span>{getStringValue(record['Record Type'] || record.recordType || record.name)}</span>
                     {record.format && (
                       <span className="text-xs bg-slate-200 px-2 py-1 rounded">
                         {getStringValue(record.format)}
@@ -1357,28 +1544,28 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   </div>
                   <div className="p-4">
                     <div className="grid grid-cols-2 gap-3 text-xs mb-3">
-                      {record.storageLocation && (
+                      {(record.Location || record.location || record.storageLocation) && (
                         <div>
-                          <span className="text-slate-600">Storage Location:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.storageLocation)}</span>
+                          <span className="text-slate-600">Primary Location:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record.Location || record.location || record.storageLocation)}</span>
                         </div>
                       )}
-                      {record.backupLocation && (
+                      {(record['Backup Location'] || record.backupLocation) && (
                         <div>
                           <span className="text-slate-600">Backup Location:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.backupLocation)}</span>
+                          <span className="font-semibold">{getStringValue(record['Backup Location'] || record.backupLocation)}</span>
                         </div>
                       )}
-                      {record.backupFrequency && (
+                      {(record['Update Frequency'] || record.updateFrequency || record.backupFrequency) && (
                         <div>
-                          <span className="text-slate-600">Backup Frequency:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.backupFrequency)}</span>
+                          <span className="text-slate-600">Update Frequency:</span>{' '}
+                          <span className="font-semibold">{getStringValue(record['Update Frequency'] || record.updateFrequency || record.backupFrequency)}</span>
                         </div>
                       )}
-                      {record.responsiblePerson && (
+                      {(record['Responsible Person'] || record.responsiblePerson) && (
                         <div>
                           <span className="text-slate-600">Responsible Person:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.responsiblePerson)}</span>
+                          <span className="font-semibold">{getStringValue(record['Responsible Person'] || record.responsiblePerson)}</span>
                         </div>
                       )}
                       {record.retentionPeriod && (
@@ -1451,29 +1638,29 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   <div key={idx} className="border border-slate-300 rounded p-3 bg-white">
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-semibold text-sm text-slate-800">
-                        {getStringValue(test.testType || test.name)}
+                        {getStringValue(test['Test Type'] || test.testType || test.name)}
                       </div>
                       <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
-                        {getStringValue(test.frequency || 'As scheduled')}
+                        {getStringValue(test.Frequency || test.frequency || 'As scheduled')}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      {test.nextTestDate && (
+                      {(test['Next Date'] || test.nextTestDate || test.nextDate) && (
                         <div>
                           <span className="text-slate-600">Next Test:</span>{' '}
-                          <span className="font-semibold">{getStringValue(test.nextTestDate)}</span>
+                          <span className="font-semibold">{getStringValue(test['Next Date'] || test.nextTestDate || test.nextDate)}</span>
                         </div>
                       )}
-                      {test.responsible && (
+                      {(test.Responsible || test.responsible) && (
                         <div>
                           <span className="text-slate-600">Responsible:</span>{' '}
-                          <span className="font-semibold">{getStringValue(test.responsible)}</span>
+                          <span className="font-semibold">{getStringValue(test.Responsible || test.responsible)}</span>
                         </div>
                       )}
-                      {test.participants && (
+                      {(test.Participants || test.participants) && (
                         <div className="col-span-2">
                           <span className="text-slate-600">Participants:</span>{' '}
-                          <span>{getStringValue(test.participants)}</span>
+                          <span>{getStringValue(test.Participants || test.participants)}</span>
                         </div>
                       )}
                     </div>
@@ -1502,37 +1689,31 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   <div key={idx} className="border-2 border-green-300 rounded-lg p-3 bg-green-50">
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-semibold text-sm text-green-900">
-                        {getStringValue(program.trainingName || program.name)}
+                        {getStringValue(program['Training Topic'] || program.trainingTopic || program.trainingName || program.name)}
                       </div>
-                      {program.duration && (
+                      {(program.Duration || program.duration) && (
                         <div className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
-                          {getStringValue(program.duration)}
+                          {getStringValue(program.Duration || program.duration)}
                         </div>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-xs mb-2">
-                      {program.targetAudience && (
-                        <div>
-                          <span className="text-green-700">Audience:</span>{' '}
-                          <span className="font-semibold text-green-900">{getStringValue(program.targetAudience)}</span>
-                        </div>
-                      )}
-                      {program.frequency && (
+                      {(program.Frequency || program.frequency) && (
                         <div>
                           <span className="text-green-700">Frequency:</span>{' '}
-                          <span className="font-semibold text-green-900">{getStringValue(program.frequency)}</span>
+                          <span className="font-semibold text-green-900">{getStringValue(program.Frequency || program.frequency)}</span>
                         </div>
                       )}
-                      {program.trainer && (
-                        <div>
-                          <span className="text-green-700">Trainer:</span>{' '}
-                          <span className="font-semibold text-green-900">{getStringValue(program.trainer)}</span>
-                        </div>
-                      )}
-                      {program.nextSessionDate && (
+                      {(program['Next Date'] || program.nextDate || program.nextSessionDate) && (
                         <div>
                           <span className="text-green-700">Next Session:</span>{' '}
-                          <span className="font-semibold text-green-900">{getStringValue(program.nextSessionDate)}</span>
+                          <span className="font-semibold text-green-900">{getStringValue(program['Next Date'] || program.nextDate || program.nextSessionDate)}</span>
+                        </div>
+                      )}
+                      {(program.Trainer || program.trainer) && (
+                        <div className="col-span-2">
+                          <span className="text-green-700">Trainer:</span>{' '}
+                          <span className="font-semibold text-green-900">{getStringValue(program.Trainer || program.trainer)}</span>
                         </div>
                       )}
                     </div>
@@ -1566,28 +1747,35 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 {improvements.map((improvement: any, idx: number) => (
                   <div key={idx} className="border-l-4 border-yellow-400 bg-yellow-50 p-3">
                     <div className="font-semibold text-sm text-yellow-900 mb-1">
-                      {getStringValue(improvement.area || improvement.title)}
+                      {getStringValue(improvement['Issue Identified'] || improvement.issueIdentified || improvement.area || improvement.title)}
                     </div>
                     <div className="text-xs text-yellow-800 mb-2">
-                      {getStringValue(improvement.issue || improvement.description)}
+                      <span className="text-yellow-700">Action Required:</span>{' '}
+                      {getStringValue(improvement['Action Required'] || improvement.actionRequired || improvement.action || improvement.description)}
                     </div>
-                    {improvement.action && (
-                      <div className="text-xs">
-                        <span className="text-yellow-700">Action:</span>{' '}
-                        <span className="text-yellow-900">{getStringValue(improvement.action)}</span>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3 text-xs mt-2">
-                      {improvement.priority && (
+                    <div className="grid grid-cols-3 gap-3 text-xs mt-2">
+                      {(improvement.Responsible || improvement.responsible) && (
                         <div>
-                          <span className="text-yellow-700">Priority:</span>{' '}
-                          <span className="font-semibold text-yellow-900">{getStringValue(improvement.priority)}</span>
+                          <span className="text-yellow-700">Responsible:</span>{' '}
+                          <span className="font-semibold text-yellow-900">{getStringValue(improvement.Responsible || improvement.responsible)}</span>
                         </div>
                       )}
-                      {improvement.targetDate && (
+                      {(improvement['Due Date'] || improvement.dueDate || improvement.targetDate) && (
                         <div>
-                          <span className="text-yellow-700">Target Date:</span>{' '}
-                          <span className="font-semibold text-yellow-900">{getStringValue(improvement.targetDate)}</span>
+                          <span className="text-yellow-700">Due Date:</span>{' '}
+                          <span className="font-semibold text-yellow-900">{getStringValue(improvement['Due Date'] || improvement.dueDate || improvement.targetDate)}</span>
+                        </div>
+                      )}
+                      {(improvement.Status || improvement.status) && (
+                        <div>
+                          <span className="text-yellow-700">Status:</span>{' '}
+                          <span className={`font-semibold px-2 py-0.5 rounded text-xs ${
+                            (improvement.Status || improvement.status) === 'Completed' ? 'bg-green-100 text-green-800' :
+                            (improvement.Status || improvement.status) === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {getStringValue(improvement.Status || improvement.status)}
+                          </span>
                         </div>
                       )}
                     </div>
