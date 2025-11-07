@@ -380,10 +380,29 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
     return score >= 6 && score < 8
   }).length
 
+  // Calculate total investment - PRIORITY: Use calculated costs from costCalculationService
   const totalInvestment = selectedStrategies.reduce((sum: number, strategy: Strategy) => {
+    const stratName = strategy.name || strategy.smeTitle || 'Unnamed'
+    
+    // FIRST: Use calculatedCostLocal from wizard (already in correct local currency)
+    if (strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0) {
+      console.log(`[BusinessPlanReview] Adding ${strategy.calculatedCostLocal} for "${stratName}" (from calculatedCostLocal)`)
+      return sum + strategy.calculatedCostLocal
+    }
+    
+    // FALLBACK: Use legacy calculation for strategies without calculated costs
     const cost = calculateStrategyCost(strategy)
+    if (cost.hasRealData) {
+      console.log(`[BusinessPlanReview] Adding ${cost.maxJMD} for "${stratName}" (from legacy calculation)`)
+    }
     return sum + (cost.hasRealData ? cost.maxJMD : 0)
   }, 0)
+  
+  console.log('[BusinessPlanReview] Total investment calculated:', {
+    total: totalInvestment,
+    strategiesCount: selectedStrategies.length,
+    withCalculatedCost: selectedStrategies.filter(s => s.calculatedCostLocal > 0).length
+  })
 
   // ============================================================================
   // RENDER
