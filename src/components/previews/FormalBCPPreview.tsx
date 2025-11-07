@@ -718,67 +718,65 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       </div>
 
       {/* Document Body */}
-      <div className="px-10 py-8 space-y-8">
+      <div className="px-6 py-5 space-y-5">
         
         {/* SECTION 1: BUSINESS OVERVIEW */}
         <section>
-          <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">1</div>
             <h2 className="text-xl font-bold text-slate-900">Business Overview</h2>
           </div>
           
-          {/* Business Information Table */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">1.1 Business Information</h3>
-            <table className="w-full border border-slate-300 text-sm">
-              <tbody>
-                <tr className="border-b border-slate-300">
-                  <td className="px-4 py-2 bg-slate-100 font-semibold w-1/3">Business Name</td>
-                  <td className="px-4 py-2">{companyName}</td>
-                </tr>
-                <tr className="border-b border-slate-300">
-                  <td className="px-4 py-2 bg-slate-100 font-semibold">Business Type</td>
-                  <td className="px-4 py-2">{businessType}</td>
-                </tr>
-                <tr className={yearsInOperation || totalPeople || annualRevenue ? "border-b border-slate-300" : ""}>
-                  <td className="px-4 py-2 bg-slate-100 font-semibold">Physical Address</td>
-                  <td className="px-4 py-2">{businessAddress || 'Not specified'}</td>
-                </tr>
-                {yearsInOperation && (
-                  <tr className={totalPeople || annualRevenue ? "border-b border-slate-300" : ""}>
-                    <td className="px-4 py-2 bg-slate-100 font-semibold">Years in Operation</td>
-                    <td className="px-4 py-2">{yearsInOperation}</td>
-                  </tr>
-                )}
-                {totalPeople && (
-                  <tr className={annualRevenue ? "border-b border-slate-300" : ""}>
-                    <td className="px-4 py-2 bg-slate-100 font-semibold">Total People in Business</td>
-                    <td className="px-4 py-2">{totalPeople}</td>
-                  </tr>
-                )}
-                {annualRevenue && (
-                  <tr>
-                    <td className="px-4 py-2 bg-slate-100 font-semibold">Approximate Annual Revenue</td>
-                    <td className="px-4 py-2">{formatRevenue(annualRevenue)}</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          {/* Business Information Table - Compact 2-Column Grid Layout */}
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">1.1 Business Information</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 border border-slate-300 rounded">
+              <div className="border-b lg:border-b lg:border-r border-slate-300 bg-slate-50 px-3 py-1.5">
+                <span className="text-xs font-semibold text-slate-600">Business Name</span>
+                <div className="text-sm text-slate-900 mt-0.5">{companyName}</div>
+              </div>
+              <div className="border-b lg:border-b border-slate-300 bg-slate-50 px-3 py-1.5">
+                <span className="text-xs font-semibold text-slate-600">Business Type</span>
+                <div className="text-sm text-slate-900 mt-0.5">{businessType}</div>
+              </div>
+              <div className={`${yearsInOperation || totalPeople || annualRevenue ? "border-b lg:border-b lg:border-r" : "lg:border-r"} border-slate-300 bg-slate-50 px-3 py-1.5`}>
+                <span className="text-xs font-semibold text-slate-600">Physical Address</span>
+                <div className="text-sm text-slate-900 mt-0.5">{businessAddress || 'Not specified'}</div>
+              </div>
+              {yearsInOperation && (
+                <div className={`${totalPeople || annualRevenue ? "border-b lg:border-b" : ""} border-slate-300 bg-slate-50 px-3 py-1.5`}>
+                  <span className="text-xs font-semibold text-slate-600">Years in Operation</span>
+                  <div className="text-sm text-slate-900 mt-0.5">{yearsInOperation}</div>
+                </div>
+              )}
+              {totalPeople && (
+                <div className={`${annualRevenue ? "border-b lg:border-b lg:border-r" : "lg:border-r"} border-slate-300 bg-slate-50 px-3 py-1.5`}>
+                  <span className="text-xs font-semibold text-slate-600">Total People in Business</span>
+                  <div className="text-sm text-slate-900 mt-0.5">{totalPeople}</div>
+                </div>
+              )}
+              {annualRevenue && (
+                <div className="bg-slate-50 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-slate-600">Approximate Annual Revenue</span>
+                  <div className="text-sm text-slate-900 mt-0.5">{formatRevenue(annualRevenue)}</div>
+                </div>
+              )}
+            </div>
           </div>
           
           {/* Business Purpose */}
           {businessPurpose && (
-            <div className="mb-6">
+            <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">1.2 Business Purpose</h3>
-              <p className="text-sm text-slate-700 leading-relaxed">{businessPurpose}</p>
+              <p className="text-sm text-slate-700 leading-normal">{businessPurpose}</p>
             </div>
           )}
           
           {/* Key Strengths */}
           {competitiveAdvantages.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">1.3 Key Strengths</h3>
-              <ul className="list-none space-y-1">
+              <ul className="list-none space-y-0.5">
                 {competitiveAdvantages.slice(0, 3).map((adv, idx) => (
                   <li key={idx} className="text-sm text-slate-700 flex items-start">
                     <span className="text-green-600 mr-2">✓</span>
@@ -791,15 +789,15 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Essential Operations */}
           {topFunctions.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">1.4 Essential Operations</h3>
-              <p className="text-xs text-slate-600 mb-3">These functions are critical to keeping our business running:</p>
-              <div className="space-y-2">
+              <p className="text-xs text-slate-600 mb-2">These functions are critical to keeping our business running:</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {topFunctions.map((func: any, idx: number) => (
-                  <div key={idx} className="border-l-4 border-green-600 bg-slate-50 px-4 py-2">
+                  <div key={idx} className="border-l-4 border-green-600 bg-slate-50 px-3 py-1.5">
                     <div className="font-semibold text-sm text-slate-800">{func.name}</div>
                     {func.description && (
-                      <div className="text-xs text-slate-600 mt-1">{func.description}</div>
+                      <div className="text-xs text-slate-600 mt-0.5">{func.description}</div>
                     )}
                   </div>
                 ))}
@@ -809,17 +807,17 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Target Markets & Customers */}
           {targetMarkets && targetMarkets.length > 0 && (
-            <div className="mb-6">
+            <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">1.5 Target Markets</h3>
-              <div className="bg-slate-50 p-4 rounded">
+              <div className="bg-slate-50 p-3 rounded">
                 {Array.isArray(targetMarkets) ? (
-                  <ul className="space-y-1">
+                  <ul className="space-y-0.5">
                     {targetMarkets.map((market: any, idx: number) => (
                       <li key={idx} className="text-sm text-slate-700 flex items-start">
                         <span className="text-blue-600 mr-2">•</span>
                         <span>{getStringValue(market.name || market)}</span>
                         {market.percentage && (
-                          <span className="text-slate-600 ml-2">({market.percentage}% of revenue)</span>
+                          <span className="text-xs text-slate-600 ml-2">({market.percentage}% of revenue)</span>
                         )}
                       </li>
                     ))}
@@ -833,10 +831,10 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Full Products & Services */}
           {productsServices && (
-            <div className="mb-6">
+            <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">1.6 Products & Services</h3>
-              <div className="bg-slate-50 p-4 rounded">
-                <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+              <div className="bg-slate-50 p-3 rounded">
+                <p className="text-sm text-slate-700 leading-normal whitespace-pre-line">
                   {getStringValue(productsServices)}
                 </p>
               </div>
@@ -845,19 +843,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Critical Functions Analysis with Priorities */}
           {functionsWithPriorities.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">1.7 Critical Function Analysis</h3>
-              <p className="text-xs text-slate-600 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">1.7 Critical Function Analysis</h3>
+              <p className="text-xs text-slate-600 mb-2">
                 Priority levels, maximum acceptable downtime, and recovery objectives for our most critical business functions.
               </p>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                 {functionsWithPriorities.map((func: any, idx: number) => (
-                  <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
-                    <div className="bg-slate-100 px-4 py-2 font-semibold text-sm">
+                  <div key={idx} className="border border-slate-300 rounded overflow-hidden">
+                    <div className="bg-slate-100 px-3 py-1.5 font-semibold text-sm">
                       {func.name}
                     </div>
-                    <div className="p-4 space-y-2">
-                      <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 space-y-1.5">
+                      <div className="grid grid-cols-2 gap-2 text-xs">
                         <div>
                           <span className="text-slate-600">Priority:</span>{' '}
                           <span className="font-semibold text-slate-900">
@@ -885,18 +883,18 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       </div>
                       
                       {func.impact && (
-                        <div className="mt-2">
-                          <div className="text-xs font-semibold text-slate-700 mb-1">Impact if Disrupted:</div>
-                          <div className="text-xs text-slate-700 bg-yellow-50 border-l-4 border-yellow-400 p-2">
+                        <div>
+                          <div className="text-xs font-semibold text-slate-700 mb-0.5">Impact if Disrupted:</div>
+                          <div className="text-xs text-slate-700 bg-yellow-50 border-l-2 border-yellow-400 p-1.5">
                             {func.impact}
                           </div>
                         </div>
                       )}
                       
                       {func.recoveryStrategy && (
-                        <div className="mt-2">
-                          <div className="text-xs font-semibold text-slate-700 mb-1">Recovery Strategy:</div>
-                          <div className="text-xs text-slate-700 bg-green-50 border-l-4 border-green-400 p-2">
+                        <div>
+                          <div className="text-xs font-semibold text-slate-700 mb-0.5">Recovery Strategy:</div>
+                          <div className="text-xs text-slate-700 bg-green-50 border-l-2 border-green-400 p-1.5">
                             {func.recoveryStrategy}
                           </div>
                         </div>
@@ -911,23 +909,23 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 2: RISK ASSESSMENT */}
         <section>
-          <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">2</div>
             <h2 className="text-xl font-bold text-slate-900">Risk Assessment</h2>
           </div>
           
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">2.1 Risk Identification</h3>
-            <p className="text-sm text-slate-700 leading-relaxed">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">2.1 Risk Identification</h3>
+            <p className="text-sm text-slate-700 leading-normal">
               We have identified <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations, 
               including <strong className="text-red-700">{highPriorityRisks.length} high-priority risks</strong> requiring immediate attention.
             </p>
           </div>
           
           {/* High-Priority Risks Detail */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">2.2 Major Risks Analysis</h3>
-            <div className="space-y-4">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">2.2 Major Risks Analysis</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
               {highPriorityRisks.map((risk: any, idx: number) => {
                 // Risk data already has multilingual content extracted
                 const riskName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
@@ -938,32 +936,30 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 const reasoning = risk.reasoning || 'Assessment pending'
                 
                 return (
-                  <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
-                    <div className={`px-4 py-2 font-bold text-sm ${
+                  <div key={idx} className="border border-slate-300 rounded overflow-hidden">
+                    <div className={`px-3 py-1.5 font-bold text-sm ${
                       riskLevel === 'EXTREME' ? 'bg-red-700 text-white' : 'bg-orange-600 text-white'
                     }`}>
                       RISK: {riskName}
                     </div>
-                    <table className="w-full text-sm">
-                      <tbody>
-                        <tr className="border-b border-slate-200">
-                          <td className="px-4 py-2 bg-slate-50 font-semibold w-1/3">Risk Score</td>
-                          <td className="px-4 py-2">{riskScore.toFixed(1)}/10 ({riskLevel})</td>
-                        </tr>
-                        <tr className="border-b border-slate-200">
-                          <td className="px-4 py-2 bg-slate-50 font-semibold">Likelihood</td>
-                          <td className="px-4 py-2">{likelihood}</td>
-                        </tr>
-                        <tr className="border-b border-slate-200">
-                          <td className="px-4 py-2 bg-slate-50 font-semibold">Potential Impact</td>
-                          <td className="px-4 py-2">{impact}</td>
-                        </tr>
-                        <tr>
-                          <td className="px-4 py-2 bg-slate-50 font-semibold">Our Vulnerability</td>
-                          <td className="px-4 py-2 text-slate-700">{reasoning}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                    <div className="p-3 space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-slate-600 font-semibold">Risk Score:</span>
+                        <span className="text-slate-900">{riskScore.toFixed(1)}/10 ({riskLevel})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600 font-semibold">Likelihood:</span>
+                        <span className="text-slate-900">{likelihood}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600 font-semibold">Potential Impact:</span>
+                        <span className="text-slate-900">{impact}</span>
+                      </div>
+                      <div>
+                        <div className="text-slate-600 font-semibold mb-0.5">Our Vulnerability:</div>
+                        <div className="text-slate-700 text-xs">{reasoning}</div>
+                      </div>
+                    </div>
                   </div>
                 )
               })}
@@ -971,17 +967,17 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           </div>
           
           {/* Complete Risk Summary Table */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">2.3 Complete Risk Summary</h3>
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">2.3 Complete Risk Summary</h3>
             <div className="overflow-x-auto">
-              <table className="w-full border border-slate-300 text-sm">
+              <table className="w-full border border-slate-300 text-xs">
                 <thead className="bg-slate-800 text-white">
                   <tr>
-                    <th className="px-3 py-2 text-left">Risk</th>
-                    <th className="px-3 py-2 text-left">Likelihood</th>
-                    <th className="px-3 py-2 text-left">Impact</th>
-                    <th className="px-3 py-2 text-left">Score</th>
-                    <th className="px-3 py-2 text-left">Status</th>
+                    <th className="px-2 py-1.5 text-left">Risk</th>
+                    <th className="px-2 py-1.5 text-left">Likelihood</th>
+                    <th className="px-2 py-1.5 text-left">Impact</th>
+                    <th className="px-2 py-1.5 text-left">Score</th>
+                    <th className="px-2 py-1.5 text-left">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -994,12 +990,12 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     
                     return (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="px-3 py-2 border-t border-slate-200">{risk.hazardName || risk.Hazard || 'Unnamed'}</td>
-                        <td className="px-3 py-2 border-t border-slate-200">{risk.likelihood || risk.Likelihood || 'N/A'}</td>
-                        <td className="px-3 py-2 border-t border-slate-200">{risk.impact || risk.Impact || 'N/A'}</td>
-                        <td className="px-3 py-2 border-t border-slate-200 font-semibold">{riskScore.toFixed(1)}</td>
-                        <td className="px-3 py-2 border-t border-slate-200">
-                          <span className={`text-xs px-2 py-1 rounded ${
+                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.hazardName || risk.Hazard || 'Unnamed'}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.likelihood || risk.Likelihood || 'N/A'}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.impact || risk.Impact || 'N/A'}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200 font-semibold">{riskScore.toFixed(1)}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
                             hasStrategies ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
                           }`}>
                             {hasStrategies ? 'Addressed' : 'Planned'}
@@ -1016,14 +1012,14 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 3: CONTINUITY STRATEGIES */}
         <section>
-          <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">3</div>
             <h2 className="text-xl font-bold text-slate-900">Continuity Strategies</h2>
           </div>
           
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">3.1 Investment Summary</h3>
-            <div className="bg-green-50 border-2 border-green-600 rounded-lg p-4">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">3.1 Investment Summary</h3>
+            <div className="bg-green-50 border-2 border-green-600 rounded-lg p-3">
               <p className="text-sm text-slate-700 mb-2">
                 We are investing <strong className="text-green-800 text-lg">{formatCurrency(totalInvestment, currencyInfo)}</strong> in business continuity measures 
                 to protect our operations, assets, and ability to serve customers during disruptions.
@@ -1065,7 +1061,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   const recoveryPct = Math.round((categoryInvestment.recovery / totalCategory) * 100)
                   
                   return (
-                    <div className="text-xs text-slate-600 mt-3">
+                    <div className="text-xs text-slate-600 mt-2 space-y-0.5">
                       <div className="font-semibold mb-1">Investment Breakdown:</div>
                       <div>• Prevention & Mitigation: {formatCurrency(categoryInvestment.prevention, currencyInfo)} ({preventionPct}%)</div>
                       <div>• Response Capabilities: {formatCurrency(categoryInvestment.response, currencyInfo)} ({responsePct}%)</div>
@@ -1074,7 +1070,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   )
                 } else {
                   return (
-                    <div className="text-xs text-slate-600 mt-3">
+                    <div className="text-xs text-slate-600 mt-2 space-y-0.5">
                       <div className="font-semibold mb-1">Investment Breakdown:</div>
                       <div>• Prevention & Mitigation: Reducing risk likelihood</div>
                       <div>• Response Capabilities: Handling emergencies effectively</div>
@@ -1087,13 +1083,13 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           </div>
           
           {/* ALL Selected Strategies - Organized by Priority */}
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">3.2 Our Preparation Strategies</h3>
-            <p className="text-xs text-slate-600 mb-4">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">3.2 Our Preparation Strategies</h3>
+            <p className="text-xs text-slate-600 mb-3">
               These {strategies.length} strategies were selected based on your business needs, location risks, and operational requirements.
             </p>
             
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {strategies.map((strategy: any, stratIdx: number) => {
                 // Get cost - PRIORITIZE calculatedCostLocal
                 const strategyCost = strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0
@@ -1139,9 +1135,85 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 const stratName = getStringValue(strategy.smeTitle || strategy.name) || 'Unnamed'
                 console.log(`[FormalBCP] Rendering strategy #${stratIdx + 1}: "${stratName}" cost=${costAmount}`)
                 
-                // Extract timeline/timeframe - PRIORITY: Use estimatedTotalHours first
+                // Extract timeline/timeframe - Calculate from action steps or use provided value
                 const getTimeline = (): string => {
-                  // PRIORITY 1: Use estimatedTotalHours (what wizard shows)
+                  // PRIORITY 1: Calculate from action steps timeframes if available
+                  if (strategy.actionSteps && strategy.actionSteps.length > 0) {
+                    const totalHours = strategy.actionSteps.reduce((total: number, step: any) => {
+                      const timeframe = step.timeframe || ''
+                      
+                      // Parse different timeframe formats
+                      if (!timeframe || typeof timeframe !== 'string') return total
+                      
+                      const lowerTimeframe = timeframe.toLowerCase()
+                      
+                      // Check for specific patterns
+                      if (lowerTimeframe.includes('month')) {
+                        // Extract number of months if specified
+                        const monthMatch = timeframe.match(/(\d+)\s*month/)
+                        const months = monthMatch ? parseInt(monthMatch[1]) : 1
+                        return total + (months * 160) // 160 hours per month (4 weeks)
+                      }
+                      if (lowerTimeframe.includes('week')) {
+                        const weekMatch = timeframe.match(/(\d+)\s*week/)
+                        const weeks = weekMatch ? parseInt(weekMatch[1]) : 1
+                        return total + (weeks * 40) // 40 hours per week
+                      }
+                      if (lowerTimeframe.includes('day')) {
+                        const dayMatch = timeframe.match(/(\d+)[-\s]*(\d*)\s*day/)
+                        if (dayMatch) {
+                          // Handle ranges like "1-2 days"
+                          const minDays = parseInt(dayMatch[1])
+                          const maxDays = dayMatch[2] ? parseInt(dayMatch[2]) : minDays
+                          const avgDays = (minDays + maxDays) / 2
+                          return total + (avgDays * 8) // 8 hours per day
+                        }
+                        return total + 8 // Default to 1 day
+                      }
+                      if (lowerTimeframe.includes('hour')) {
+                        const hourMatch = timeframe.match(/(\d+)\s*hour/)
+                        const hours = hourMatch ? parseInt(hourMatch[1]) : 1
+                        return total + hours
+                      }
+                      if (lowerTimeframe.includes('minute')) {
+                        const minuteMatch = timeframe.match(/(\d+)\s*minute/)
+                        const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 30
+                        return total + (minutes / 60)
+                      }
+                      
+                      // If timeframe is just text like "Start this week", "Start next month"
+                      if (lowerTimeframe.includes('start') || lowerTimeframe.includes('ongoing')) {
+                        return total + 1 // Add 1 hour for setup/ongoing tasks
+                      }
+                      
+                      // Default: add 1 hour if we can't parse it
+                      return total + 1
+                    }, 0)
+                    
+                    if (totalHours > 0) {
+                      let formatted = ''
+                      if (totalHours < 1) formatted = 'Less than 1 hour'
+                      else if (totalHours === 1) formatted = '1 hour'
+                      else if (totalHours < 8) formatted = `~${Math.round(totalHours)}h`
+                      else if (totalHours < 40) {
+                        const days = Math.round(totalHours / 8)
+                        formatted = `~${days} ${days === 1 ? 'day' : 'days'}`
+                      }
+                      else if (totalHours < 160) {
+                        const weeks = Math.round(totalHours / 40)
+                        formatted = `~${weeks} ${weeks === 1 ? 'week' : 'weeks'}`
+                      }
+                      else {
+                        const months = Math.round(totalHours / 160)
+                        formatted = `~${months} ${months === 1 ? 'month' : 'months'}`
+                      }
+                      
+                      console.log(`[FormalBCP] Calculated timeline for "${stratName}": ${totalHours}h from ${strategy.actionSteps.length} steps → "${formatted}"`)
+                      return formatted
+                    }
+                  }
+                  
+                  // PRIORITY 2: Use estimatedTotalHours if no action steps
                   if (strategy.estimatedTotalHours && strategy.estimatedTotalHours > 0) {
                     const hours = strategy.estimatedTotalHours
                     let formatted = ''
@@ -1155,7 +1227,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     return formatted
                   }
                   
-                  // PRIORITY 2: Use timeToImplement or implementationTime
+                  // PRIORITY 3: Use timeToImplement or implementationTime string
                   const timeStr = getStringValue(
                     strategy.timeToImplement || 
                     strategy.implementationTime ||
@@ -1165,7 +1237,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   
                   if (timeStr) return timeStr
                   
-                  // PRIORITY 3: Fallback to 'TBD'
+                  // PRIORITY 4: Fallback to 'TBD'
                   return 'TBD'
                 }
                 
@@ -1183,59 +1255,59 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   : { label: 'OPTIONAL', color: 'bg-green-100 text-green-800' }
                 
                 return (
-                  <div key={stratIdx} className="border-2 border-slate-300 rounded-lg overflow-hidden bg-white">
+                  <div key={stratIdx} className="border border-slate-300 rounded overflow-hidden bg-white">
                     {/* Strategy Header */}
-                    <div className="bg-slate-100 px-4 py-3 border-b border-slate-300">
-                      <div className="flex items-start justify-between gap-3">
+                    <div className="bg-slate-100 px-3 py-2 border-b border-slate-300">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="bg-slate-700 text-white px-2 py-1 rounded text-xs font-bold">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="bg-slate-700 text-white px-1.5 py-0.5 rounded text-xs font-bold">
                               #{stratIdx + 1}
                             </span>
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${priorityBadge.color}`}>
+                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${priorityBadge.color}`}>
                               {priorityBadge.label}
                             </span>
                             {strategy.quickWinIndicator && (
-                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold">
+                              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs font-bold">
                                 ⚡ QUICK WIN
                               </span>
                             )}
                           </div>
-                          <h4 className="font-bold text-base text-slate-900">
+                          <h4 className="font-bold text-sm text-slate-900">
                             {getStringValue(strategy.smeTitle || strategy.name || strategy.title)}
                           </h4>
                         </div>
                         <div className="text-right">
                           <div className="text-xs text-slate-600">Investment</div>
-                          <div className="font-bold text-lg text-green-700">{costDisplay}</div>
+                          <div className="font-bold text-base text-green-700">{costDisplay}</div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Strategy Content */}
-                    <div className="p-4">
+                    <div className="p-3">
                       {/* Description */}
                       {(strategy.smeSummary || strategy.description) && (
-                        <p className="text-sm text-slate-700 mb-3 leading-relaxed">
+                        <p className="text-xs text-slate-700 mb-2 leading-normal">
                           {getStringValue(strategy.smeSummary || strategy.description)}
                         </p>
                       )}
                       
                       {/* Quick Stats Grid */}
-                      <div className="grid grid-cols-3 gap-3 mb-4 bg-slate-50 p-3 rounded">
+                      <div className="grid grid-cols-3 gap-2 mb-2 bg-slate-50 p-2 rounded">
                         <div>
-                          <div className="text-xs text-slate-600 mb-1">Timeline</div>
-                          <div className="font-semibold text-sm text-slate-900">{timeline}</div>
+                          <div className="text-xs text-slate-600 mb-0.5">Timeline</div>
+                          <div className="font-semibold text-xs text-slate-900">{timeline}</div>
                         </div>
                         <div>
-                          <div className="text-xs text-slate-600 mb-1">Effectiveness</div>
-                          <div className="font-semibold text-sm text-slate-900">
+                          <div className="text-xs text-slate-600 mb-0.5">Effectiveness</div>
+                          <div className="font-semibold text-xs text-slate-900">
                             {effectiveness > 0 ? `${effectiveness}/10` : 'N/A'}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-slate-600 mb-1">Complexity</div>
-                          <div className="font-semibold text-sm text-slate-900 capitalize">
+                          <div className="text-xs text-slate-600 mb-0.5">Complexity</div>
+                          <div className="font-semibold text-xs text-slate-900 capitalize">
                             {strategy.complexityLevel || 'Moderate'}
                           </div>
                         </div>
@@ -1243,11 +1315,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       
                       {/* Protects Against */}
                       {protectsAgainstNames.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-xs font-semibold text-slate-700 mb-2">🛡️ Protects Against:</div>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="mb-2">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">🛡️ Protects Against:</div>
+                          <div className="flex flex-wrap gap-1">
                             {protectsAgainstNames.map((riskName: string, idx: number) => (
-                              <span key={idx} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                              <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
                                 {riskName}
                               </span>
                             ))}
@@ -1258,14 +1330,14 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       {/* Action Steps */}
                       {strategy.actionSteps && strategy.actionSteps.length > 0 && (
                         <div>
-                          <div className="text-xs font-semibold text-slate-700 mb-2">📋 Key Actions:</div>
-                          <div className="space-y-2">
+                          <div className="text-xs font-semibold text-slate-700 mb-1">📋 Key Actions:</div>
+                          <div className="space-y-1">
                             {strategy.actionSteps.map((step: any, stepIdx: number) => {
                               const actionText = getStringValue(step.smeAction || step.action || step.title || '')
                               const timeframe = step.timeframe ? ` (${step.timeframe})` : ''
                               
                               return (
-                                <div key={stepIdx} className="flex gap-2 text-sm text-slate-700">
+                                <div key={stepIdx} className="flex gap-1.5 text-xs text-slate-700">
                                   <span className="text-green-600 font-bold flex-shrink-0">→</span>
                                   <span>{actionText}{timeframe}</span>
                                 </div>
@@ -1284,26 +1356,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 4: EMERGENCY RESPONSE & CONTACTS */}
         <section>
-          <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">4</div>
             <h2 className="text-xl font-bold text-slate-900">Emergency Response & Contacts</h2>
           </div>
           
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">4.1 Emergency Leadership</h3>
-            <table className="w-full border border-slate-300 text-sm">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">4.1 Emergency Leadership</h3>
+            <table className="w-full border border-slate-300 text-xs">
               <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-4 py-2 text-left border-r border-slate-300">Role</th>
-                  <th className="px-4 py-2 text-left border-r border-slate-300">Person</th>
-                  <th className="px-4 py-2 text-left">Contact</th>
+                  <th className="px-3 py-1.5 text-left border-r border-slate-300">Role</th>
+                  <th className="px-3 py-1.5 text-left border-r border-slate-300">Person</th>
+                  <th className="px-3 py-1.5 text-left">Contact</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="px-4 py-2 border-t border-slate-300 font-semibold">Plan Manager</td>
-                  <td className="px-4 py-2 border-t border-slate-300">{planManagerInfo}</td>
-                  <td className="px-4 py-2 border-t border-slate-300">
+                  <td className="px-3 py-1.5 border-t border-slate-300 font-semibold">Plan Manager</td>
+                  <td className="px-3 py-1.5 border-t border-slate-300">{planManagerInfo}</td>
+                  <td className="px-3 py-1.5 border-t border-slate-300">
                     {planManagerContactDisplay}
                   </td>
                 </tr>
@@ -1313,27 +1385,27 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Staff Contact Roster */}
           {staffContactsData.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.2 Staff Contact Roster</h3>
-              <p className="text-xs text-slate-600 mb-3">Contact information for all team members during emergencies.</p>
-              <table className="w-full border border-slate-300 text-sm">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">4.2 Staff Contact Roster</h3>
+              <p className="text-xs text-slate-600 mb-2">Contact information for all team members during emergencies.</p>
+              <table className="w-full border border-slate-300 text-xs">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-3 py-2 text-left">Name</th>
-                    <th className="px-3 py-2 text-left">Position</th>
-                    <th className="px-3 py-2 text-left">Phone</th>
-                    <th className="px-3 py-2 text-left">Email</th>
-                    <th className="px-3 py-2 text-left">Emergency Contact</th>
+                    <th className="px-2 py-1.5 text-left">Name</th>
+                    <th className="px-2 py-1.5 text-left">Position</th>
+                    <th className="px-2 py-1.5 text-left">Phone</th>
+                    <th className="px-2 py-1.5 text-left">Email</th>
+                    <th className="px-2 py-1.5 text-left">Emergency Contact</th>
                   </tr>
                 </thead>
                 <tbody>
                   {staffContactsData.map((contact: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Name || contact.name)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Position || contact.position || contact.role || contact.Role)}</td>
-                      <td className="px-3 py-2 border-t border-slate-200">{getStringValue(contact.Phone || contact.phone || contact['Mobile Phone'])}</td>
-                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact.Email || contact.email || contact['Email Address'])}</td>
-                      <td className="px-3 py-2 border-t border-slate-200 text-xs">{getStringValue(contact['Emergency Contact'] || contact.emergencyContact || '')}</td>
+                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Name || contact.name)}</td>
+                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Position || contact.position || contact.role || contact.Role)}</td>
+                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Phone || contact.phone || contact['Mobile Phone'])}</td>
+                      <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact.Email || contact.email || contact['Email Address'])}</td>
+                      <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact['Emergency Contact'] || contact.emergencyContact || '')}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1343,22 +1415,22 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Emergency Services */}
           {emergencyContacts.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.3 Emergency Services</h3>
-              <div className="grid md:grid-cols-2 gap-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">4.3 Emergency Services</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {emergencyContacts.map((contact: any, idx: number) => (
-                  <div key={idx} className="bg-red-50 border border-red-200 rounded p-3">
-                    <div className="font-semibold text-sm text-slate-800">
+                  <div key={idx} className="bg-red-50 border border-red-200 rounded p-2">
+                    <div className="font-semibold text-xs text-slate-800">
                       {getStringValue(contact['Service Type'] || contact.serviceType || contact.type || contact.name)}
                     </div>
-                    <div className="text-xs text-slate-700 mt-1">
+                    <div className="text-xs text-slate-700 mt-0.5">
                       {getStringValue(contact['Organization Name'] || contact.organizationName || contact.organization)}
                     </div>
-                    <div className="text-xs text-slate-600 mt-1">
+                    <div className="text-xs text-slate-600 mt-0.5">
                       📞 {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
                     </div>
                     {contact['24/7 Emergency'] && (
-                      <div className="text-xs text-red-700 font-semibold mt-1">
+                      <div className="text-xs text-red-700 font-semibold mt-0.5">
                         🚨 Emergency: {getStringValue(contact['24/7 Emergency'])}
                       </div>
                     )}
@@ -1370,12 +1442,12 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Utilities Contacts */}
           {utilitiesContacts.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.4 Utilities & Essential Services</h3>
-              <div className="space-y-2">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">4.4 Utilities & Essential Services</h3>
+              <div className="grid md:grid-cols-2 gap-2">
                 {utilitiesContacts.map((contact: any, idx: number) => (
-                  <div key={idx} className="border border-slate-300 rounded p-3 bg-white">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <div key={idx} className="border border-slate-300 rounded p-2 bg-white">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                       <div>
                         <span className="text-slate-600">Service:</span>{' '}
                         <span className="font-semibold">{getStringValue(contact['Service Type'] || contact.serviceType || contact.service || contact.type)}</span>
@@ -1409,35 +1481,35 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Suppliers */}
           {allSuppliers.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.5 Supplier Directory</h3>
-              <p className="text-xs text-slate-600 mb-3">All {allSuppliers.length} suppliers listed with complete contact information.</p>
-              <table className="w-full border border-slate-300 text-sm">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">4.5 Supplier Directory</h3>
+              <p className="text-xs text-slate-600 mb-2">All {allSuppliers.length} suppliers listed with complete contact information.</p>
+              <table className="w-full border border-slate-300 text-xs">
                 <thead className="bg-slate-100">
                   <tr>
-                    <th className="px-3 py-2 text-left">Supplier Name</th>
-                    <th className="px-3 py-2 text-left">Contact Person</th>
-                    <th className="px-3 py-2 text-left">Product/Service</th>
-                    <th className="px-3 py-2 text-left">Phone</th>
-                    <th className="px-3 py-2 text-left">Email</th>
+                    <th className="px-2 py-1.5 text-left">Supplier Name</th>
+                    <th className="px-2 py-1.5 text-left">Contact Person</th>
+                    <th className="px-2 py-1.5 text-left">Product/Service</th>
+                    <th className="px-2 py-1.5 text-left">Phone</th>
+                    <th className="px-2 py-1.5 text-left">Email</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allSuppliers.map((supplier: any, idx: number) => (
                     <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-3 py-2 border-t border-slate-200 font-semibold">
+                      <td className="px-2 py-1.5 border-t border-slate-200 font-semibold">
                         {getStringValue(supplier.Name || supplier.name || supplier.companyName || supplier['Supplier Name'])}
                       </td>
-                      <td className="px-3 py-2 border-t border-slate-200">
+                      <td className="px-2 py-1.5 border-t border-slate-200">
                         {getStringValue(supplier['Contact Person'] || supplier.contactPerson || supplier.contact)}
                       </td>
-                      <td className="px-3 py-2 border-t border-slate-200">
+                      <td className="px-2 py-1.5 border-t border-slate-200">
                         {getStringValue(supplier.Service || supplier.service || supplier.productType || supplier['Goods/Services Supplied'] || 'Various')}
                       </td>
-                      <td className="px-3 py-2 border-t border-slate-200">
+                      <td className="px-2 py-1.5 border-t border-slate-200">
                         {getStringValue(supplier.Phone || supplier.phone || supplier.phoneNumber || supplier['Phone Number'])}
                       </td>
-                      <td className="px-3 py-2 border-t border-slate-200 text-xs">
+                      <td className="px-2 py-1.5 border-t border-slate-200">
                         {getStringValue(supplier.Email || supplier.email || supplier['Email Address'])}
                       </td>
                     </tr>
@@ -1449,15 +1521,15 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Insurance & Banking */}
           {(insuranceContacts.length > 0 || bankingContacts.length > 0) && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">4.6 Insurance & Banking Partners</h3>
-              <div className="space-y-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">4.6 Insurance & Banking Partners</h3>
+              <div className="grid md:grid-cols-2 gap-2">
                 {insuranceContacts.map((contact: any, idx: number) => (
-                  <div key={`ins-${idx}`} className="border-2 border-blue-200 rounded-lg p-3 bg-blue-50">
-                    <div className="font-semibold text-sm text-blue-900 mb-2">
+                  <div key={`ins-${idx}`} className="border border-blue-200 rounded p-2 bg-blue-50">
+                    <div className="font-semibold text-xs text-blue-900 mb-1">
                       {getStringValue(contact['Service Type'] || contact.serviceType || 'Insurance')}
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                       <div>
                         <span className="text-blue-700">Company:</span>{' '}
                         <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.company || contact.name)}</span>
@@ -1483,11 +1555,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 ))}
                 
                 {bankingContacts.map((contact: any, idx: number) => (
-                  <div key={`bank-${idx}`} className="border-2 border-green-200 rounded-lg p-3 bg-green-50">
-                    <div className="font-semibold text-sm text-green-900 mb-2">
+                  <div key={`bank-${idx}`} className="border border-green-200 rounded p-2 bg-green-50">
+                    <div className="font-semibold text-xs text-green-900 mb-1">
                       {getStringValue(contact['Service Type'] || contact.serviceType || 'Banking')}
                     </div>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
                       <div>
                         <span className="text-green-700">Bank:</span>{' '}
                         <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.bank || contact.name)}</span>
@@ -1519,31 +1591,31 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         {/* SECTION 5: VITAL RECORDS & DATA PROTECTION */}
         {vitalRecords.length > 0 && (
           <section>
-            <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+            <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
               <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
               <h2 className="text-xl font-bold text-slate-900">Vital Records & Data Protection</h2>
             </div>
             
-            <div className="mb-4">
-              <p className="text-sm text-slate-700 leading-relaxed">
+            <div className="mb-3">
+              <p className="text-sm text-slate-700 leading-normal">
                 Critical records and data must be protected, backed up regularly, and recoverable quickly to ensure business continuity. 
                 The following records are essential to our operations and have established protection and recovery procedures.
               </p>
             </div>
             
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               {vitalRecords.map((record: any, idx: number) => (
-                <div key={idx} className="border-2 border-slate-300 rounded-lg overflow-hidden">
-                  <div className="bg-slate-100 px-4 py-2 font-semibold text-sm flex items-center justify-between">
+                <div key={idx} className="border border-slate-300 rounded overflow-hidden">
+                  <div className="bg-slate-100 px-3 py-1.5 font-semibold text-xs flex items-center justify-between">
                     <span>{getStringValue(record['Record Type'] || record.recordType || record.name)}</span>
                     {record.format && (
-                      <span className="text-xs bg-slate-200 px-2 py-1 rounded">
+                      <span className="text-xs bg-slate-200 px-1.5 py-0.5 rounded">
                         {getStringValue(record.format)}
                       </span>
                     )}
                   </div>
-                  <div className="p-4">
-                    <div className="grid grid-cols-2 gap-3 text-xs mb-3">
+                  <div className="p-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
                       {(record.Location || record.location || record.storageLocation) && (
                         <div>
                           <span className="text-slate-600">Primary Location:</span>{' '}
@@ -1583,8 +1655,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     </div>
                     
                     {record.backupProcedure && (
-                      <div className="mt-2 bg-blue-50 border-l-4 border-blue-400 p-2">
-                        <div className="text-xs font-semibold text-blue-900 mb-1">Backup Procedure:</div>
+                      <div className="mt-1.5 bg-blue-50 border-l-2 border-blue-400 p-1.5">
+                        <div className="text-xs font-semibold text-blue-900 mb-0.5">Backup Procedure:</div>
                         <div className="text-xs text-blue-800">{getStringValue(record.backupProcedure)}</div>
                       </div>
                     )}
@@ -1597,19 +1669,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 6: PLAN MAINTENANCE & TESTING */}
         <section>
-          <div className="flex items-center gap-3 mb-4 pb-2 border-b-2 border-slate-800">
+          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">{vitalRecords.length > 0 ? '6' : '5'}</div>
             <h2 className="text-xl font-bold text-slate-900">Plan Maintenance & Testing</h2>
           </div>
           
-          <div className="mb-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="mb-4">
+            <div className="bg-blue-50 border border-blue-200 rounded p-3">
               <p className="text-sm text-slate-700">
                 We regularly test our preparedness to ensure this plan works when needed. 
                 This plan is reviewed <strong>quarterly</strong> and updated whenever business circumstances change.
               </p>
-              <div className="mt-3 text-xs text-slate-600">
-                <div className="font-semibold mb-1">Plan Updates When:</div>
+              <div className="mt-2 text-xs text-slate-600 space-y-0.5">
+                <div className="font-semibold mb-0.5">Plan Updates When:</div>
                 <div>• We move locations or make major facility changes</div>
                 <div>• Key personnel change</div>
                 <div>• After any actual emergency or disruption</div>
@@ -1619,32 +1691,32 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </div>
           </div>
           
-          <div className="text-sm text-slate-700 mb-6">
+          <div className="text-sm text-slate-700 mb-4">
             <div className="font-semibold mb-1">Responsibility:</div>
             <p>{planManagerInfo} is responsible for ensuring the plan stays current and conducting regular tests.</p>
           </div>
           
           {/* Testing Schedule */}
           {testingSchedule.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">
                 {vitalRecords.length > 0 ? '6.1' : '5.1'} Testing & Exercise Schedule
               </h3>
-              <p className="text-xs text-slate-600 mb-3">
+              <p className="text-xs text-slate-600 mb-2">
                 Scheduled tests to verify preparedness and identify improvements needed.
               </p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {testingSchedule.map((test: any, idx: number) => (
-                  <div key={idx} className="border border-slate-300 rounded p-3 bg-white">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="font-semibold text-sm text-slate-800">
+                  <div key={idx} className="border border-slate-300 rounded p-2 bg-white">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="font-semibold text-xs text-slate-800">
                         {getStringValue(test['Test Type'] || test.testType || test.name)}
                       </div>
-                      <div className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                      <div className="text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
                         {getStringValue(test.Frequency || test.frequency || 'As scheduled')}
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div className="grid grid-cols-2 gap-2 text-xs">
                       {(test['Next Date'] || test.nextTestDate || test.nextDate) && (
                         <div>
                           <span className="text-slate-600">Next Test:</span>{' '}
@@ -1677,27 +1749,27 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Training Programs */}
           {trainingPrograms.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">
                 {vitalRecords.length > 0 ? '6.2' : '5.2'} Training Programs
               </h3>
-              <p className="text-xs text-slate-600 mb-3">
+              <p className="text-xs text-slate-600 mb-2">
                 Staff training ensures everyone knows their role in emergency response and recovery.
               </p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {trainingPrograms.map((program: any, idx: number) => (
-                  <div key={idx} className="border-2 border-green-300 rounded-lg p-3 bg-green-50">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="font-semibold text-sm text-green-900">
+                  <div key={idx} className="border border-green-300 rounded p-2 bg-green-50">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="font-semibold text-xs text-green-900">
                         {getStringValue(program['Training Topic'] || program.trainingTopic || program.trainingName || program.name)}
                       </div>
                       {(program.Duration || program.duration) && (
-                        <div className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded">
+                        <div className="text-xs bg-green-200 text-green-800 px-1.5 py-0.5 rounded">
                           {getStringValue(program.Duration || program.duration)}
                         </div>
                       )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs mb-2">
+                    <div className="grid grid-cols-2 gap-2 text-xs mb-1.5">
                       {(program.Frequency || program.frequency) && (
                         <div>
                           <span className="text-green-700">Frequency:</span>{' '}
@@ -1736,24 +1808,24 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* Improvements Needed */}
           {improvements.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-700 mb-2">
                 {vitalRecords.length > 0 ? '6.3' : '5.3'} Identified Improvements
               </h3>
-              <p className="text-xs text-slate-600 mb-3">
+              <p className="text-xs text-slate-600 mb-2">
                 Areas for improvement identified through testing, exercises, or actual incidents.
               </p>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {improvements.map((improvement: any, idx: number) => (
-                  <div key={idx} className="border-l-4 border-yellow-400 bg-yellow-50 p-3">
-                    <div className="font-semibold text-sm text-yellow-900 mb-1">
+                  <div key={idx} className="border-l-2 border-yellow-400 bg-yellow-50 p-2">
+                    <div className="font-semibold text-xs text-yellow-900 mb-0.5">
                       {getStringValue(improvement['Issue Identified'] || improvement.issueIdentified || improvement.area || improvement.title)}
                     </div>
-                    <div className="text-xs text-yellow-800 mb-2">
+                    <div className="text-xs text-yellow-800 mb-1">
                       <span className="text-yellow-700">Action Required:</span>{' '}
                       {getStringValue(improvement['Action Required'] || improvement.actionRequired || improvement.action || improvement.description)}
                     </div>
-                    <div className="grid grid-cols-3 gap-3 text-xs mt-2">
+                    <div className="grid grid-cols-3 gap-2 text-xs mt-1">
                       {(improvement.Responsible || improvement.responsible) && (
                         <div>
                           <span className="text-yellow-700">Responsible:</span>{' '}
@@ -1787,14 +1859,14 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         </section>
 
         {/* SECTION 7: CERTIFICATION */}
-        <section className="border-t-2 border-slate-300 pt-6 mt-8">
-          <div className="mb-6">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">Plan Approval</h3>
-            <div className="bg-slate-50 border border-slate-300 rounded-lg p-6">
-              <p className="text-sm text-slate-700 mb-4">
+        <section className="border-t-2 border-slate-300 pt-5 mt-5">
+          <div className="mb-4">
+            <h3 className="text-sm font-bold text-slate-700 mb-2">Plan Approval</h3>
+            <div className="bg-slate-50 border border-slate-300 rounded-lg p-4">
+              <p className="text-sm text-slate-700 mb-3">
                 This Business Continuity Plan was prepared on <strong>{new Date().toLocaleDateString()}</strong> and is approved for implementation:
               </p>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div>
                   <div className="text-xs text-slate-600 mb-1">Business Owner/Manager:</div>
                   <div className="border-b-2 border-slate-400 w-64 h-8"></div>
@@ -1809,11 +1881,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             </div>
           </div>
           
-          <div className="bg-green-50 border-2 border-green-600 rounded-lg p-4 text-center">
-            <div className="text-xs font-semibold text-green-900 mb-2">Technical Assistance Provided By:</div>
+          <div className="bg-green-50 border-2 border-green-600 rounded-lg p-3 text-center">
+            <div className="text-xs font-semibold text-green-900 mb-1">Technical Assistance Provided By:</div>
             <div className="text-sm font-bold text-green-800">UNDP Caribbean | CARICHAM</div>
-            <div className="text-xs text-green-700 mt-1">(Caribbean Chamber of Commerce)</div>
-            <div className="text-xs text-slate-600 mt-3">
+            <div className="text-xs text-green-700 mt-0.5">(Caribbean Chamber of Commerce)</div>
+            <div className="text-xs text-slate-600 mt-2">
               Industry Standards Referenced: UNDP Business Continuity Framework • CARICHAM SME Best Practices
             </div>
           </div>
@@ -1821,7 +1893,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       </div>
       
       {/* Footer Note */}
-      <div className="bg-slate-100 px-10 py-4 border-t border-slate-300">
+      <div className="bg-slate-100 px-6 py-3 border-t border-slate-300">
         <div className="text-xs text-slate-600 text-center">
           📄 This is a browser preview. You can scroll through all sections to review your plan before downloading.
         </div>
