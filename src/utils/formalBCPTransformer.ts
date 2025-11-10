@@ -271,16 +271,21 @@ function generateContinuityStrategies(
   
   strategies.forEach(s => {
     const cost = s.calculatedCostLocal || parseCostString(s.implementationCost || '')
-    const category = (s.category || '').toLowerCase()
     
-    if (category.includes('prevention') || category.includes('mitigation')) {
-      categoryInvestment.prevention += cost
-    } else if (category.includes('response') || category.includes('emergency')) {
-      categoryInvestment.response += cost
-    } else if (category.includes('recovery')) {
-      categoryInvestment.recovery += cost
+    // Categorize by executionTiming of action steps
+    const hasBeforeSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'before_crisis')
+    const hasDuringSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'during_crisis')
+    const hasAfterSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'after_crisis')
+    
+    // Distribute cost proportionally based on phases covered
+    const phaseCount = (hasBeforeSteps ? 1 : 0) + (hasDuringSteps ? 1 : 0) + (hasAfterSteps ? 1 : 0)
+    if (phaseCount > 0) {
+      const costPerPhase = cost / phaseCount
+      if (hasBeforeSteps) categoryInvestment.prevention += costPerPhase
+      if (hasDuringSteps) categoryInvestment.response += costPerPhase
+      if (hasAfterSteps) categoryInvestment.recovery += costPerPhase
     } else {
-      // Default to prevention if unclear
+      // No timing info - default to prevention
       categoryInvestment.prevention += cost
     }
   })
@@ -379,7 +384,7 @@ function generateContinuityStrategies(
         : { symbol: currencySymbol, code: currencyCode }
       
       const costDisplay = costAmount > 0
-        ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()} ${useCurrency.code}`
+        ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()}`
         : 'Cost TBD'
       
       // Extract string values from multilingual objects

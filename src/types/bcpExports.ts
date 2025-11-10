@@ -299,7 +299,7 @@ export interface FormalRiskAssessment {
   
   // Business impact without preparation
   potentialImpact: {
-    revenueL oss: string
+    revenueLoss: string
     assetDamage: string
     recoveryTime: string
     customerRelationships: string

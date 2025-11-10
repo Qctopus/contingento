@@ -217,6 +217,7 @@ export function transformStrategyForApi(strategy: any): any {
       
       // Basic Info
       phase: step.phase,
+      executionTiming: step.executionTiming, // 'before_crisis' | 'during_crisis' | 'after_crisis'
       title: parseMultilingualJSON(step.title) || step.title,
       action: parseMultilingualJSON(step.description) || step.description,
       description: parseMultilingualJSON(step.description) || step.description,

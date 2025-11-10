@@ -320,3 +320,5 @@ Fixed 4 critical issues that were causing PDF generation to fail:
 PDF generation should now work without crashes, though cost calculation needs further investigation.
 
 
+
+

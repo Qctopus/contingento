@@ -52,7 +52,6 @@ export async function PUT(
           applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
           prerequisites: safeJsonStringify(strategyData.prerequisites || []),
           maintenanceRequirement: strategyData.maintenanceRequirement,
-          roi: strategyData.roi,
           priority: strategyData.priority,
           isActive: strategyData.isActive ?? true,
           updatedAt: new Date()

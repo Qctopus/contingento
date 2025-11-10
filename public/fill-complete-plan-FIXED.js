@@ -130,21 +130,6 @@
           reasoning: 'Hospitality industry increasingly targeted, high data volumes'
         },
         { 
-          'Hazard': 'Key Staff Unavailability', 
-          'Likelihood': 'Likely (7-8)', 
-          'Severity': 'Moderate (4-6)', 
-          'Risk Level': 'High', 
-          'Recommended Actions': 'Cross-train all department supervisors on critical operations; Document all standard operating procedures with step-by-step guides; Maintain current contact list for temporary staffing agencies; Develop succession planning for all key positions; Keep updated emergency contact information for all staff; Establish relationships with other hotels for staff sharing in emergencies',
-          hazardId: 'staff_loss',
-          isPreSelected: true,
-          riskTier: 1,
-          initialTier: 1,
-          riskScore: 7.5,
-          initialRiskScore: 7.5,
-          baseScore: 6.8,
-          reasoning: 'Service-dependent industry with specialized staff requirements'
-        },
-        { 
           'Hazard': 'Supply Chain Disruption', 
           'Likelihood': 'Possible (4-6)', 
           'Severity': 'Moderate (4-6)', 
@@ -377,22 +362,6 @@
         isCalculated: true,
         riskTier: 1,
         riskCategory: 'Technology'
-      },
-      {
-        hazardId: 'staff_loss',
-        hazardName: 'Key Staff Unavailability',
-        riskLevel: 'high',
-        frequency: 'likely',
-        impact: 'moderate',
-        likelihood: 7,
-        severity: 6,
-        riskScore: 6.5,
-        isPreSelected: true,
-        isAvailable: true,
-        reasoning: 'Service-dependent industry with specialized staff requirements',
-        isCalculated: true,
-        riskTier: 1,
-        riskCategory: 'Operational'
       },
       {
         hazardId: 'supply_chain',

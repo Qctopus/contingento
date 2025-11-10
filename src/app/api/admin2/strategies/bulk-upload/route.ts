@@ -294,7 +294,6 @@ export async function GET() {
       const strategies = await prisma.riskMitigationStrategy.findMany({
         where: { isActive: true },
         orderBy: [
-          { category: 'asc' },
           { name: 'asc' }
         ]
       })

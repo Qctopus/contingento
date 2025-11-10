@@ -40,8 +40,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     helpfulTips: strategy?.helpfulTips || [],
     commonMistakes: strategy?.commonMistakes || [],
     successMetrics: strategy?.successMetrics || [],
-    prerequisites: strategy?.prerequisites || [],
-    roi: strategy?.roi || 3.0
+    prerequisites: strategy?.prerequisites || []
   })
 
   const [editingStep, setEditingStep] = useState<ActionStep | null>(null)
@@ -85,8 +84,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
         helpfulTips: strategy.helpfulTips || [],
         commonMistakes: strategy.commonMistakes || [],
         successMetrics: strategy.successMetrics || [],
-        prerequisites: strategy.prerequisites || [],
-        roi: strategy.roi || 3.0
+        prerequisites: strategy.prerequisites || []
       })
     }
   }, [strategy])
@@ -746,37 +744,43 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
               </div>
             ) : (
               <div className="space-y-4">
-                {['immediate', 'short_term', 'medium_term', 'long_term'].map(phase => {
-                  const phaseSteps = formData.actionSteps.filter(step => step.phase === phase)
-                  if (phaseSteps.length === 0) return null
+                {['before_crisis', 'during_crisis', 'after_crisis'].map(timing => {
+                  const timingSteps = formData.actionSteps.filter(step => step.executionTiming === timing)
+                  if (timingSteps.length === 0) return null
 
-                  const phaseConfig = {
-                    immediate: { name: 'Immediate Actions', icon: '⚡', description: 'Right now (this week)' },
-                    short_term: { name: 'Short-term Actions', icon: '📅', description: 'Next 1-4 weeks' },
-                    medium_term: { name: 'Medium-term Actions', icon: '📊', description: 'Next 1-3 months' },
-                    long_term: { name: 'Long-term Actions', icon: '🎯', description: 'Next 3-12 months' }
-                  }[phase] || { name: phase, icon: '📋', description: '' }
+                  const timingConfig = {
+                    before_crisis: { name: '🛡️ BEFORE Crisis (Prevention & Preparation)', icon: '🛡️', description: 'Actions to prepare and prevent crises', color: 'blue' },
+                    during_crisis: { name: '⚡ DURING Crisis (Response)', icon: '⚡', description: 'Actions to take when crisis is happening', color: 'orange' },
+                    after_crisis: { name: '🔄 AFTER Crisis (Recovery)', icon: '🔄', description: 'Actions for recovery and restoration', color: 'green' }
+                  }[timing] || { name: timing, icon: '📋', description: '', color: 'gray' }
+
+                  const borderColor = {
+                    blue: 'border-blue-300 bg-blue-50',
+                    orange: 'border-orange-300 bg-orange-50',
+                    green: 'border-green-300 bg-green-50',
+                    gray: 'border-gray-300 bg-gray-50'
+                  }[timingConfig.color]
 
                   return (
-                    <div key={phase} className="border border-gray-200 rounded-lg p-6">
+                    <div key={timing} className={`border-2 rounded-lg p-6 ${borderColor}`}>
                       <div className="flex items-center space-x-3 mb-4">
-                        <span className="text-2xl">{phaseConfig.icon}</span>
+                        <span className="text-2xl">{timingConfig.icon}</span>
                         <div>
-                          <h4 className="text-lg font-medium text-gray-900">{phaseConfig.name}</h4>
-                          <p className="text-sm text-gray-600">{phaseConfig.description}</p>
+                          <h4 className="text-lg font-medium text-gray-900">{timingConfig.name}</h4>
+                          <p className="text-sm text-gray-700">{timingConfig.description}</p>
                         </div>
-                        <div className="ml-auto text-sm text-gray-500">
-                          {phaseSteps.length} step{phaseSteps.length !== 1 ? 's' : ''}
+                        <div className="ml-auto text-sm font-medium text-gray-700">
+                          {timingSteps.length} step{timingSteps.length !== 1 ? 's' : ''}
                         </div>
                       </div>
 
                       <div className="space-y-3">
-                        {phaseSteps.map((step, index) => {
+                        {timingSteps.map((step, index) => {
                           const stepTitle = getLocalizedText(step.title || step.smeAction || step.action, 'en')
                           const stepDesc = getLocalizedText(step.description || step.smeAction || step.action, 'en')
                           
                           return (
-                          <div key={step.id} className="bg-gray-50 rounded-lg p-4">
+                          <div key={step.id} className="bg-white rounded-lg p-4 border border-gray-200">
                             <div className="flex items-start justify-between mb-2">
                               <h5 className="font-medium text-gray-900">
                                 {stepTitle}

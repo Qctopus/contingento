@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { getLocalizedText } from '@/utils/localizationUtils'
 import { costCalculationService } from '@/services/costCalculationService'
+import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
 
 interface Strategy {
   id: string
@@ -323,25 +324,33 @@ export default function StrategySelectionStep({
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          📋 {t('steps.strategySelection.headerTitle')}
-        </h2>
-        <p className="text-gray-600">
-          {t('steps.strategySelection.headerDescription', { count: strategies.length })}
-        </p>
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-          <p className="text-sm text-blue-900">
-            {t('steps.strategySelection.selectionInstructions')}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Full Width */}
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            📋 {t('steps.strategySelection.headerTitle')}
+          </h2>
+          <p className="text-gray-600">
+            {t('steps.strategySelection.headerDescription', { count: strategies.length })}
           </p>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-900">
+              {t('steps.strategySelection.selectionInstructions')}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ESSENTIAL STRATEGIES */}
-      {essential.length > 0 && (
-        <div className="space-y-4">
+      {/* Main Content - Two Column Layout */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* LEFT COLUMN: Strategy Cards (2/3 width on desktop) */}
+          <div className="flex-1 lg:w-2/3 space-y-6">{/* Strategy sections will go here */}
+
+            {/* ESSENTIAL STRATEGIES */}
+            {essential.length > 0 && (
+              <div className="space-y-4">
           <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-red-900 mb-1">
               🔴 {t('steps.strategySelection.essentialTitle')}
@@ -376,9 +385,9 @@ export default function StrategySelectionStep({
         </div>
       )}
 
-      {/* RECOMMENDED STRATEGIES */}
-      {recommended.length > 0 && (
-        <div className="space-y-4">
+            {/* RECOMMENDED STRATEGIES */}
+            {recommended.length > 0 && (
+              <div className="space-y-4">
           <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-yellow-900 mb-1">
               🟡 {t('steps.strategySelection.recommendedTitle')}
@@ -409,13 +418,13 @@ export default function StrategySelectionStep({
               currencyInfo={currencyInfo}
               countryCode={countryCode}
             />
-          ))}
-        </div>
-      )}
+              ))}
+              </div>
+            )}
 
-      {/* OPTIONAL STRATEGIES */}
-      {optional.length > 0 && (
-        <div className="space-y-4">
+            {/* OPTIONAL STRATEGIES */}
+            {optional.length > 0 && (
+              <div className="space-y-4">
           <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
             <h3 className="text-lg font-bold text-green-900 mb-1">
               🟢 {t('steps.strategySelection.optionalTitle')}
@@ -446,12 +455,16 @@ export default function StrategySelectionStep({
               currencyInfo={currencyInfo}
               countryCode={countryCode}
             />
-          ))}
-        </div>
-      )}
+              ))}
+              </div>
+            )}
+          </div>
 
-      {/* Summary Panel */}
-      <div className="sticky bottom-0 bg-white rounded-lg border-2 border-blue-500 shadow-lg p-6">
+          {/* RIGHT COLUMN: Summary Panel (1/3 width on desktop, sticky) */}
+          <div className="lg:w-1/3">
+            <div className="lg:sticky lg:top-6 space-y-4">
+              {/* Main Summary Card */}
+              <div className="bg-white rounded-lg border-2 border-blue-500 shadow-lg p-6">
         <h3 className="font-bold text-gray-900 mb-4">📊 {t('steps.strategySelection.planSummaryTitle')}</h3>
         
         <div className="space-y-2 text-sm mb-4">
@@ -485,7 +498,7 @@ export default function StrategySelectionStep({
             <span className="font-medium">{totalTime}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')}:</span>
+            <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')} ({currencyInfo.code}):</span>
             <span className="font-medium">{totalCost}</span>
           </div>
           {totalCostItems > 0 && (
@@ -499,7 +512,7 @@ export default function StrategySelectionStep({
         {/* Cost Breakdown by Tier */}
         {(costByTier.essential > 0 || costByTier.recommended > 0 || costByTier.optional > 0) && (
           <div className="border-t pt-4 mb-4">
-            <p className="text-xs font-medium text-gray-700 mb-2">💰 Budget Breakdown</p>
+            <p className="text-xs font-medium text-gray-700 mb-2">💰 Budget Breakdown ({currencyInfo.code})</p>
             <div className="space-y-1">
               {costByTier.essential > 0 && (
                 <div className="flex justify-between text-xs">
@@ -523,35 +536,36 @@ export default function StrategySelectionStep({
           </div>
         )}
 
-        {/* Note: Navigation handled by wizard's universal Next button */}
-      </div>
+                {/* Note: Navigation handled by wizard's universal Next button */}
+              </div>
 
-      {/* Warning Modal */}
-      {/* Strategy Selection Summary - No duplicate button, wizard handles navigation */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 p-6 sticky bottom-0 shadow-lg">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
-              {selectedStrategies.length}
-            </div>
-            <div>
-              <div className="font-bold text-gray-900 text-lg">
-                {selectedStrategies.length} {selectedStrategies.length === 1 ? 'Strategy' : 'Strategies'} Selected
+              {/* Quick Stats Card */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
+                    {selectedStrategies.length}
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-gray-600">Action Steps</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedStrategies.reduce((sum, id) => {
+                        const strategy = [...essential, ...recommended, ...optional].find(s => s.id === id)
+                        return sum + (strategy?.actionSteps?.length || 0)
+                      }, 0)}
+                    </div>
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="font-bold text-gray-900">
+                    {selectedStrategies.length} {selectedStrategies.length === 1 ? 'Strategy' : 'Strategies'} Selected
+                  </div>
+                  <div className="text-xs text-gray-600 mt-1">
+                    {selectedStrategies.length === 0 
+                      ? 'Select at least one strategy to continue' 
+                      : 'Ready to continue - click Next below'}
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-gray-700">
-                {selectedStrategies.length === 0 
-                  ? 'Select at least one strategy to continue' 
-                  : 'Ready to continue - click Next below'}
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg px-4 py-2 border border-blue-300">
-            <div className="text-xs text-gray-600">Action Steps</div>
-            <div className="text-2xl font-bold text-blue-600">
-              {selectedStrategies.reduce((sum, id) => {
-                const strategy = [...essential, ...recommended, ...optional].find(s => s.id === id)
-                return sum + (strategy?.actionSteps?.length || 0)
-              }, 0)}
             </div>
           </div>
         </div>
@@ -620,6 +634,19 @@ function StrategyCard({
   // Use SME-focused title if available, otherwise fall back to regular name
   const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
   const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, locale)
+  
+  // Calculate dynamic time from action steps
+  const displayTime = useMemo(() => {
+    const calculatedHours = calculateStrategyTimeFromSteps(strategy.actionSteps || [])
+    const formatted = formatHoursToDisplay(calculatedHours)
+    
+    // Validate timeframes
+    validateActionStepTimeframes(strategy)
+    
+    console.log(`[Wizard] Strategy "${displayTitle}": ${calculatedHours}h from ${strategy.actionSteps?.length || 0} steps → "${formatted}"`)
+    
+    return formatted
+  }, [strategy.actionSteps, displayTitle, strategy])
   
   // Helper to format action step costs
   const [stepCosts, setStepCosts] = useState<Record<string, { amount: number; symbol: string; currency: string }>>({})
@@ -690,6 +717,15 @@ function StrategyCard({
               <p className="text-sm text-gray-600 mb-3">{displaySummary}</p>
             )}
             
+            {/* Console logging for debugging */}
+            {(() => {
+              const costDisplay = strategyCosts[strategy.id]?.amount 
+                ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                : 'Cost TBD'
+              console.log(`[Wizard] Strategy "${displayTitle}": ${costDisplay} | Time: ${displayTime}`)
+              return null
+            })()}
+            
             {/* Why Section - Generated Reasoning */}
             {strategy.reasoning && (
               <div className="mb-3">
@@ -734,28 +770,18 @@ function StrategyCard({
               <div>
                 <span className="text-gray-500">⏱️</span>{' '}
                 <span className="font-medium">
-                  {strategy.estimatedTotalHours ? `~${strategy.estimatedTotalHours}h` : (strategy.timeToImplement || strategy.implementationTime)}
+                  {displayTime}
                 </span>
               </div>
               <div>
                 <span className="text-gray-500">💰</span>{' '}
                 <span className="font-medium">
                   {strategyCosts[strategy.id]?.amount 
-                    ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${strategyCosts[strategy.id].currency}`
+                    ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
                     : 'Cost TBD'
                   }
                 </span>
               </div>
-              <div>
-                <span className="text-gray-500">⭐</span>{' '}
-                <span className="font-medium">{strategy.effectiveness}/10</span>
-              </div>
-              {strategy.complexityLevel && (
-                <div>
-                  <span className="text-gray-500">🎯</span>{' '}
-                  <span className="font-medium capitalize">{translateLevel(strategy.complexityLevel)}</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -841,7 +867,7 @@ function StrategyCard({
                         <span>⏱️ {translateTime(step.timeframe)}</span>
                       )}
                       {stepCosts[step.id] && stepCosts[step.id].amount !== undefined ? (
-                        <span>💰 {stepCosts[step.id].symbol}{stepCosts[step.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })} {stepCosts[step.id].currency}</span>
+                        <span>💰 {stepCosts[step.id].symbol}{stepCosts[step.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                       ) : step.estimatedCostJMD && (
                         <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
                       )}
@@ -921,29 +947,18 @@ function StrategyCard({
   )
 }
 
+// Note: formatHoursToDisplay is now imported from @/utils/timeCalculation
+
 // Helper functions
 function calculateTotalTime(strategies: Strategy[]): string {
-  // Simplified - you can make this more sophisticated
-  const hours = strategies.reduce((total, s) => {
-    const time = s.timeToImplement || s.implementationTime
-    
-    // Safety check: ensure time is a string before calling .includes()
-    if (!time || typeof time !== 'string') {
-      // If we have estimatedTotalHours, use that
-      if (s.estimatedTotalHours) return total + s.estimatedTotalHours
-      // Otherwise default to 1 hour
-      return total + 1
-    }
-    
-    if (time.includes('hour')) return total + 2
-    if (time.includes('day')) return total + 8
-    if (time.includes('week')) return total + 40
-    return total + 1
+  // Calculate total hours from all strategy action steps
+  const totalHours = strategies.reduce((total, s) => {
+    const strategyHours = calculateStrategyTimeFromSteps(s.actionSteps || [])
+    return total + strategyHours
   }, 0)
   
-  if (hours < 8) return `~${hours}h`
-  if (hours < 40) return `~${Math.round(hours / 8)} ${Math.round(hours / 8) === 1 ? 'day' : 'days'}`
-  return `~${Math.round(hours / 40)} ${Math.round(hours / 40) === 1 ? 'week' : 'weeks'}`
+  // Format using the utility function
+  return formatHoursToDisplay(totalHours)
 }
 
 function calculateTotalCostWithItems(
@@ -984,9 +999,12 @@ function calculateTotalCostWithItems(
   if (total === 0) {
     totalCostStr = `${currencyInfo.symbol}0 (No cost items assigned)`
   } else {
-    // Format with proper currency
+    // Format with proper currency symbol only (no code suffix)
     const formatted = total.toLocaleString('en-US', { maximumFractionDigits: 0 })
-    totalCostStr = `${currencyInfo.symbol}${formatted} ${currencyInfo.code}`
+    totalCostStr = `${currencyInfo.symbol}${formatted}`
+    
+    // Console log for debugging
+    console.log(`[Wizard] Total cost: ${totalCostStr} (${costItemCount} items budgeted)`)
   }
   
   return { totalCost: totalCostStr, totalCostItems: costItemCount, costByTier }

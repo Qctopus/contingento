@@ -5,6 +5,7 @@
  */
 
 import React from 'react'
+import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
 
 interface FormalBCPPreviewProps {
   formData: any
@@ -164,12 +165,12 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     country: currencyInfo.country
   })
 
-  // Format currency with proper symbol and thousands separators
+  // Format currency with proper symbol and thousands separators (symbol only, no code suffix)
   const formatCurrency = (amount: number, currency: { code: string; symbol: string } = currencyInfo): string => {
     if (amount === 0 || isNaN(amount)) return 'Cost TBD'
     
     const formatted = Math.round(amount).toLocaleString('en-US')
-    return `${currency.symbol}${formatted} ${currency.code}`
+    return `${currency.symbol}${formatted}`
   }
 
   // Parse cost string to get numeric value
@@ -914,99 +915,157 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
             <h2 className="text-xl font-bold text-slate-900">Risk Assessment</h2>
           </div>
           
+          {/* Overview Summary */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">2.1 Risk Identification</h3>
             <p className="text-sm text-slate-700 leading-normal">
-              We have identified <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations, 
-              including <strong className="text-red-700">{highPriorityRisks.length} high-priority risks</strong> requiring immediate attention.
+              We have identified and assessed <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations. 
+              Below is our complete risk analysis with mitigation status.
             </p>
           </div>
           
-          {/* High-Priority Risks Detail */}
+          {/* Risk Severity Legend */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">2.2 Major Risks Analysis</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {highPriorityRisks.map((risk: any, idx: number) => {
-                // Risk data already has multilingual content extracted
-                const riskName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
-                const riskScore = risk.riskScore || risk['Risk Score'] || 0
-                const riskLevel = risk.riskLevel || risk['Risk Level'] || (riskScore >= 7.5 ? 'EXTREME' : 'HIGH')
-                const likelihood = risk.likelihood || risk.Likelihood || 'Not assessed'
-                const impact = risk.impact || risk.Impact || 'Not assessed'
-                const reasoning = risk.reasoning || 'Assessment pending'
-                
-                return (
-                  <div key={idx} className="border border-slate-300 rounded overflow-hidden">
-                    <div className={`px-3 py-1.5 font-bold text-sm ${
-                      riskLevel === 'EXTREME' ? 'bg-red-700 text-white' : 'bg-orange-600 text-white'
-                    }`}>
-                      RISK: {riskName}
-                    </div>
-                    <div className="p-3 space-y-1.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-slate-600 font-semibold">Risk Score:</span>
-                        <span className="text-slate-900">{riskScore.toFixed(1)}/10 ({riskLevel})</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-600 font-semibold">Likelihood:</span>
-                        <span className="text-slate-900">{likelihood}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-600 font-semibold">Potential Impact:</span>
-                        <span className="text-slate-900">{impact}</span>
-                      </div>
-                      <div>
-                        <div className="text-slate-600 font-semibold mb-0.5">Our Vulnerability:</div>
-                        <div className="text-slate-700 text-xs">{reasoning}</div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+              <div className="text-xs font-semibold text-slate-700 mb-2">Risk Severity Levels:</div>
+              <div className="flex flex-wrap gap-3 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-red-700 rounded"></div>
+                  <span className="font-semibold">EXTREME</span>
+                  <span className="text-slate-600">(Score ≥8.0)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-orange-600 rounded"></div>
+                  <span className="font-semibold">HIGH</span>
+                  <span className="text-slate-600">(Score 6.0-7.9)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+                  <span className="font-semibold">MEDIUM</span>
+                  <span className="text-slate-600">(Score 4.0-5.9)</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 bg-green-600 rounded"></div>
+                  <span className="font-semibold">LOW</span>
+                  <span className="text-slate-600">(Score &lt;4.0)</span>
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Complete Risk Summary Table */}
+          {/* Unified Risk Cards - Organized by Severity */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">2.3 Complete Risk Summary</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border border-slate-300 text-xs">
-                <thead className="bg-slate-800 text-white">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left">Risk</th>
-                    <th className="px-2 py-1.5 text-left">Likelihood</th>
-                    <th className="px-2 py-1.5 text-left">Impact</th>
-                    <th className="px-2 py-1.5 text-left">Score</th>
-                    <th className="px-2 py-1.5 text-left">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {riskMatrix.map((risk: any, idx: number) => {
-                    // Risk matrix already filtered by isSelected
+            <h3 className="text-sm font-bold text-slate-700 mb-3">2.1 Identified Risks & Mitigation Status</h3>
+            
+            {/* Sort risks by score (highest first) */}
+            {(() => {
+              const sortedRisks = [...riskMatrix].sort((a, b) => {
+                const scoreA = a.riskScore || a['Risk Score'] || 0
+                const scoreB = b.riskScore || b['Risk Score'] || 0
+                return scoreB - scoreA
+              })
+              
+              return (
+                <div className="space-y-2">
+                  {sortedRisks.map((risk: any, idx: number) => {
+                    const riskName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
                     const riskScore = risk.riskScore || risk['Risk Score'] || 0
+                    let riskLevel = risk.riskLevel || risk['Risk Level'] || 'MEDIUM'
+                    
+                    // Determine risk level from score if not provided
+                    if (riskScore >= 8.0) riskLevel = 'EXTREME'
+                    else if (riskScore >= 6.0) riskLevel = 'HIGH'
+                    else if (riskScore >= 4.0) riskLevel = 'MEDIUM'
+                    else riskLevel = 'LOW'
+                    
+                    const likelihood = risk.likelihood || risk.Likelihood || 'Not assessed'
+                    const impact = risk.impact || risk.Impact || 'Not assessed'
+                    const reasoning = risk.reasoning || ''
+                    
                     const hasStrategies = strategies.some(s => 
                       s.applicableRisks?.includes(risk.hazardId)
                     )
                     
+                    // Color coding by severity
+                    const colorClasses = {
+                      'EXTREME': {
+                        bg: 'bg-red-50',
+                        border: 'border-red-300',
+                        badge: 'bg-red-700 text-white',
+                        text: 'text-red-900'
+                      },
+                      'HIGH': {
+                        bg: 'bg-orange-50',
+                        border: 'border-orange-300',
+                        badge: 'bg-orange-600 text-white',
+                        text: 'text-orange-900'
+                      },
+                      'MEDIUM': {
+                        bg: 'bg-yellow-50',
+                        border: 'border-yellow-300',
+                        badge: 'bg-yellow-500 text-white',
+                        text: 'text-yellow-900'
+                      },
+                      'LOW': {
+                        bg: 'bg-green-50',
+                        border: 'border-green-300',
+                        badge: 'bg-green-600 text-white',
+                        text: 'text-green-900'
+                      }
+                    }
+                    
+                    const colors = colorClasses[riskLevel as keyof typeof colorClasses] || colorClasses['MEDIUM']
+                    
                     return (
-                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.hazardName || risk.Hazard || 'Unnamed'}</td>
-                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.likelihood || risk.Likelihood || 'N/A'}</td>
-                        <td className="px-2 py-1.5 border-t border-slate-200">{risk.impact || risk.Impact || 'N/A'}</td>
-                        <td className="px-2 py-1.5 border-t border-slate-200 font-semibold">{riskScore.toFixed(1)}</td>
-                        <td className="px-2 py-1.5 border-t border-slate-200">
-                          <span className={`text-xs px-1.5 py-0.5 rounded ${
-                            hasStrategies ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {hasStrategies ? 'Addressed' : 'Planned'}
-                          </span>
-                        </td>
-                      </tr>
+                      <div key={idx} className={`border ${colors.border} ${colors.bg} rounded-lg overflow-hidden`}>
+                        <div className="p-3">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${colors.badge}`}>
+                                  {riskLevel}
+                                </span>
+                                <h4 className={`font-bold text-sm ${colors.text}`}>{riskName}</h4>
+                              </div>
+                              {reasoning && (
+                                <p className="text-xs text-slate-700 leading-relaxed">{reasoning}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-slate-600">Risk Score</div>
+                              <div className={`text-2xl font-bold ${colors.text}`}>{riskScore.toFixed(1)}</div>
+                              <div className="text-xs text-slate-500">out of 10</div>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-200">
+                            <div>
+                              <div className="text-xs text-slate-600 font-semibold">Likelihood:</div>
+                              <div className="text-xs text-slate-900">{likelihood}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-600 font-semibold">Impact:</div>
+                              <div className="text-xs text-slate-900">{impact}</div>
+                            </div>
+                            <div>
+                              <div className="text-xs text-slate-600 font-semibold">Status:</div>
+                              <div>
+                                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                  hasStrategies 
+                                    ? 'bg-green-100 text-green-800 border border-green-300' 
+                                    : 'bg-slate-100 text-slate-700 border border-slate-300'
+                                }`}>
+                                  {hasStrategies ? '✓ Addressed' : 'Planned'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     )
                   })}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              )
+            })()}
           </div>
         </section>
 
@@ -1018,7 +1077,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           </div>
           
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">3.1 Investment Summary</h3>
+            <h3 className="text-sm font-bold text-slate-700 mb-2">3.1 Investment Summary ({currencyInfo.code})</h3>
             <div className="bg-green-50 border-2 border-green-600 rounded-lg p-3">
               <p className="text-sm text-slate-700 mb-2">
                 We are investing <strong className="text-green-800 text-lg">{formatCurrency(totalInvestment, currencyInfo)}</strong> in business continuity measures 
@@ -1034,21 +1093,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 
                 strategies.forEach(s => {
                   const cost = s.calculatedCostLocal || parseCostString(s.implementationCost || '')
-                  const category = (s.category || '').toLowerCase()
                   
                   // Log for debugging
                   const strategyName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
-                  console.log(`[Preview] Strategy "${strategyName}" category: "${s.category}" → cost: ${cost}`)
+                  console.log(`[Preview] Strategy "${strategyName}" → cost: ${cost}`)
                   
-                  if (category.includes('prevent') || category.includes('mitigat') || category.includes('prepar')) {
-                    categoryInvestment.prevention += cost
-                  } else if (category.includes('response') || category.includes('emergency') || category.includes('react')) {
-                    categoryInvestment.response += cost
-                  } else if (category.includes('recover') || category.includes('restor') || category.includes('continuity')) {
-                    categoryInvestment.recovery += cost
+                  // Categorize by executionTiming of action steps
+                  // Count costs based on when steps are executed
+                  const hasBeforeSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'before_crisis')
+                  const hasDuringSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'during_crisis')
+                  const hasAfterSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'after_crisis')
+                  
+                  // Distribute cost proportionally based on phases covered
+                  const phaseCount = (hasBeforeSteps ? 1 : 0) + (hasDuringSteps ? 1 : 0) + (hasAfterSteps ? 1 : 0)
+                  if (phaseCount > 0) {
+                    const costPerPhase = cost / phaseCount
+                    if (hasBeforeSteps) categoryInvestment.prevention += costPerPhase
+                    if (hasDuringSteps) categoryInvestment.response += costPerPhase
+                    if (hasAfterSteps) categoryInvestment.recovery += costPerPhase
                   } else {
-                    // Default to prevention if unclear
-                    console.log(`[Preview] Unknown category "${s.category}", defaulting to prevention`)
+                    // No timing info - default to prevention
                     categoryInvestment.prevention += cost
                   }
                 })
@@ -1128,120 +1192,35 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   : currencyInfo
                 
                 const costDisplay = costAmount > 0
-                  ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()} ${useCurrency.code}`
+                  ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()}`
                   : 'Cost TBD'
                 
-                // Debug log for each strategy
+                // Extract timeline/timeframe - Calculate from action steps
                 const stratName = getStringValue(strategy.smeTitle || strategy.name) || 'Unnamed'
-                console.log(`[FormalBCP] Rendering strategy #${stratIdx + 1}: "${stratName}" cost=${costAmount}`)
                 
-                // Extract timeline/timeframe - Calculate from action steps or use provided value
                 const getTimeline = (): string => {
-                  // PRIORITY 1: Calculate from action steps timeframes if available
-                  if (strategy.actionSteps && strategy.actionSteps.length > 0) {
-                    const totalHours = strategy.actionSteps.reduce((total: number, step: any) => {
-                      const timeframe = step.timeframe || ''
-                      
-                      // Parse different timeframe formats
-                      if (!timeframe || typeof timeframe !== 'string') return total
-                      
-                      const lowerTimeframe = timeframe.toLowerCase()
-                      
-                      // Check for specific patterns
-                      if (lowerTimeframe.includes('month')) {
-                        // Extract number of months if specified
-                        const monthMatch = timeframe.match(/(\d+)\s*month/)
-                        const months = monthMatch ? parseInt(monthMatch[1]) : 1
-                        return total + (months * 160) // 160 hours per month (4 weeks)
-                      }
-                      if (lowerTimeframe.includes('week')) {
-                        const weekMatch = timeframe.match(/(\d+)\s*week/)
-                        const weeks = weekMatch ? parseInt(weekMatch[1]) : 1
-                        return total + (weeks * 40) // 40 hours per week
-                      }
-                      if (lowerTimeframe.includes('day')) {
-                        const dayMatch = timeframe.match(/(\d+)[-\s]*(\d*)\s*day/)
-                        if (dayMatch) {
-                          // Handle ranges like "1-2 days"
-                          const minDays = parseInt(dayMatch[1])
-                          const maxDays = dayMatch[2] ? parseInt(dayMatch[2]) : minDays
-                          const avgDays = (minDays + maxDays) / 2
-                          return total + (avgDays * 8) // 8 hours per day
-                        }
-                        return total + 8 // Default to 1 day
-                      }
-                      if (lowerTimeframe.includes('hour')) {
-                        const hourMatch = timeframe.match(/(\d+)\s*hour/)
-                        const hours = hourMatch ? parseInt(hourMatch[1]) : 1
-                        return total + hours
-                      }
-                      if (lowerTimeframe.includes('minute')) {
-                        const minuteMatch = timeframe.match(/(\d+)\s*minute/)
-                        const minutes = minuteMatch ? parseInt(minuteMatch[1]) : 30
-                        return total + (minutes / 60)
-                      }
-                      
-                      // If timeframe is just text like "Start this week", "Start next month"
-                      if (lowerTimeframe.includes('start') || lowerTimeframe.includes('ongoing')) {
-                        return total + 1 // Add 1 hour for setup/ongoing tasks
-                      }
-                      
-                      // Default: add 1 hour if we can't parse it
-                      return total + 1
-                    }, 0)
-                    
-                    if (totalHours > 0) {
-                      let formatted = ''
-                      if (totalHours < 1) formatted = 'Less than 1 hour'
-                      else if (totalHours === 1) formatted = '1 hour'
-                      else if (totalHours < 8) formatted = `~${Math.round(totalHours)}h`
-                      else if (totalHours < 40) {
-                        const days = Math.round(totalHours / 8)
-                        formatted = `~${days} ${days === 1 ? 'day' : 'days'}`
-                      }
-                      else if (totalHours < 160) {
-                        const weeks = Math.round(totalHours / 40)
-                        formatted = `~${weeks} ${weeks === 1 ? 'week' : 'weeks'}`
-                      }
-                      else {
-                        const months = Math.round(totalHours / 160)
-                        formatted = `~${months} ${months === 1 ? 'month' : 'months'}`
-                      }
-                      
-                      console.log(`[FormalBCP] Calculated timeline for "${stratName}": ${totalHours}h from ${strategy.actionSteps.length} steps → "${formatted}"`)
-                      return formatted
-                    }
+                  // Validate action step timeframes
+                  validateActionStepTimeframes(strategy)
+                  
+                  // ONLY METHOD: Calculate from action steps
+                  const calculatedHours = calculateStrategyTimeFromSteps(strategy.actionSteps || [])
+                  const formatted = formatHoursToDisplay(calculatedHours)
+                  
+                  console.log(`[Preview] Strategy "${stratName}": ${calculatedHours}h from ${strategy.actionSteps?.length || 0} steps → "${formatted}"`)
+                  
+                  // Fallback only if no action steps at all
+                  if (calculatedHours === 0 && strategy.estimatedTotalHours) {
+                    console.warn(`[Preview] No action steps for "${stratName}", using fallback estimatedTotalHours: ${strategy.estimatedTotalHours}h`)
+                    return formatHoursToDisplay(strategy.estimatedTotalHours)
                   }
                   
-                  // PRIORITY 2: Use estimatedTotalHours if no action steps
-                  if (strategy.estimatedTotalHours && strategy.estimatedTotalHours > 0) {
-                    const hours = strategy.estimatedTotalHours
-                    let formatted = ''
-                    if (hours < 1) formatted = 'Less than 1 hour'
-                    else if (hours === 1) formatted = '1 hour'
-                    else if (hours < 8) formatted = `~${hours}h`
-                    else if (hours < 40) formatted = `~${Math.round(hours / 8)} days`
-                    else if (hours < 160) formatted = `~${Math.round(hours / 40)} weeks`
-                    else formatted = `~${Math.round(hours / 160)} months`
-                    
-                    return formatted
-                  }
-                  
-                  // PRIORITY 3: Use timeToImplement or implementationTime string
-                  const timeStr = getStringValue(
-                    strategy.timeToImplement || 
-                    strategy.implementationTime ||
-                    strategy.timeframe || 
-                    ''
-                  )
-                  
-                  if (timeStr) return timeStr
-                  
-                  // PRIORITY 4: Fallback to 'TBD'
-                  return 'TBD'
+                  return formatted
                 }
                 
                 const timeline = getTimeline()
+                
+                // Debug log for each strategy
+                console.log(`[Preview] Strategy "${stratName}": ${costDisplay} | Timeline: ${timeline}`)
                 
                 // Extract effectiveness rating
                 const effectiveness = strategy.effectiveness || 0

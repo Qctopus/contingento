@@ -207,6 +207,21 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   // Get selected strategies (ONLY strategies user selected in wizard)
   const selectedStrategiesRaw = formData.STRATEGIES?.['Business Continuity Strategies'] || []
   
+  // DEBUG: Check if strategies are being loaded from formData
+  console.log('[BusinessPlanReview] ========================================')
+  console.log('[BusinessPlanReview] Loading strategies from formData.STRATEGIES')
+  console.log('[BusinessPlanReview] formData.STRATEGIES:', formData.STRATEGIES)
+  console.log('[BusinessPlanReview] selectedStrategiesRaw:', selectedStrategiesRaw)
+  console.log('[BusinessPlanReview] selectedStrategiesRaw.length:', selectedStrategiesRaw.length)
+  if (selectedStrategiesRaw.length > 0) {
+    console.log('[BusinessPlanReview] First strategy:', selectedStrategiesRaw[0])
+  } else {
+    console.warn('[BusinessPlanReview] ⚠️ NO STRATEGIES FOUND IN FORMDATA!')
+    console.warn('[BusinessPlanReview] Check: Did user complete STRATEGIES step in wizard?')
+    console.warn('[BusinessPlanReview] Check: formData keys:', Object.keys(formData))
+  }
+  console.log('[BusinessPlanReview] ========================================')
+  
   // Get country code for cost calculation - PRIORITY ORDER
   const getCountryCode = (): string => {
     // PRIORITY 1: Try from localStorage prefill data (set during industry selection)
@@ -300,10 +315,11 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 countryCode
               )
               
-              console.log(`[BusinessPlanReview] Cost calculated for "${strategy.name}":`, {
+              console.log(`[BusinessPlanReview] Cost and time calculated for "${strategy.name}":`, {
                 totalUSD: result.totalUSD,
                 localAmount: result.localCurrency.amount,
-                currency: result.localCurrency.symbol + result.localCurrency.code
+                currency: result.localCurrency.symbol + result.localCurrency.code,
+                calculatedHours: result.calculatedHours
               })
               
               return {
@@ -311,7 +327,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 calculatedCostUSD: result.totalUSD,
                 calculatedCostLocal: result.localCurrency.amount,
                 currencyCode: result.localCurrency.code,
-                currencySymbol: result.localCurrency.symbol
+                currencySymbol: result.localCurrency.symbol,
+                calculatedHours: result.calculatedHours // Add calculated time
               }
             } catch (error) {
               console.error(`[BusinessPlanReview] Error calculating cost for strategy ${strategy.id}:`, error)
@@ -583,12 +600,31 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             />
           </>
         ) : (
-          <WorkbookPreview
-            formData={formData}
-            riskSummary={formData.RISK_ASSESSMENT || riskSummary}
-            strategies={selectedStrategies}
-            totalInvestment={totalInvestment}
-          />
+          <>
+            {/* DEBUG: Log what we're passing to WorkbookPreview */}
+            {(() => {
+              console.log('[BusinessPlanReview] Passing to WorkbookPreview:', {
+                strategiesCount: selectedStrategies.length,
+                strategiesWithCosts: selectedStrategies.filter(s => s.calculatedCostLocal > 0).length,
+                sampleStrategy: selectedStrategies[0] ? {
+                  name: selectedStrategies[0].name,
+                  calculatedCostLocal: selectedStrategies[0].calculatedCostLocal,
+                  currencySymbol: selectedStrategies[0].currencySymbol,
+                  applicableRisks: selectedStrategies[0].applicableRisks,
+                  category: selectedStrategies[0].category,
+                  actionStepsCount: selectedStrategies[0].actionSteps?.length
+                } : null,
+                allStrategiesApplicableRisks: selectedStrategies.flatMap(s => s.applicableRisks || [])
+              })
+              return null
+            })()}
+            <WorkbookPreview
+              formData={formData}
+              riskSummary={formData.RISK_ASSESSMENT || riskSummary}
+              strategies={selectedStrategies}
+              totalInvestment={totalInvestment}
+            />
+          </>
         )}
       </div>
 

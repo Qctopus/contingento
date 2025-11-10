@@ -88,7 +88,6 @@ export async function POST(request: NextRequest) {
         businessTypes: strategy.businessTypes || [],
         applicableRisks: strategy.applicableRisks || [],
         prerequisites: strategy.prerequisites || [],
-        roi: strategy.roi || 3.0,
         successMetrics: strategy.successMetrics || [],
         commonMistakes: strategy.commonMistakes || [],
         helpfulTips: strategy.helpfulTips || [],
@@ -185,8 +184,7 @@ export async function GET(request: NextRequest) {
         cost: strategy.implementationCost,
         timeToImplement: strategy.timeToImplement,
         effectiveness: strategy.effectiveness,
-        priority: strategy.priority,
-        roi: strategy.roi
+        priority: strategy.priority
       })),
       totalCount: strategies.length,
       filters: {

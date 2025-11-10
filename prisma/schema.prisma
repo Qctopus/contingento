@@ -607,10 +607,9 @@ model BusinessRiskVulnerability {
 
 model RiskMitigationStrategy {
   id                     String   @id @default(cuid())
-  strategyId             String   @unique // e.g., 'backup_generator', 'emergency_fund'
-  name                   String   // e.g., 'Backup Generator System'
-  category               String   // 'prevention', 'preparation', 'response', 'recovery'
-  description            String
+  strategyId             String   @unique // e.g., 'hurricane_comprehensive', 'emergency_response'
+  name                   String   // JSON multilingual: {"en":"Hurricane Preparedness","es":"...","fr":"..."}
+  description            String   // JSON multilingual
   
   // SME-Focused Content (benefit-driven, plain language)
   smeTitle               String?  // Short, benefit-focused title (e.g., "Stay Connected During Emergencies")
@@ -627,7 +626,6 @@ model RiskMitigationStrategy {
   estimatedTotalHours    Int?     // Sum of all action step times (calculated or manual)
   complexityLevel        String?  @default("moderate") // 'simple' | 'moderate' | 'advanced'
   effectiveness          Int?     @default(7) // 1-10 scale
-  roi                    Float?   @default(3.0) // Return on investment multiplier
   priority               String?  @default("medium") // 'low', 'medium', 'high', 'critical'
   quickWinIndicator      Boolean  @default(false) // Fast + high impact = quick win
   
@@ -668,7 +666,6 @@ model RiskMitigationStrategy {
   actionSteps            ActionStep[]
   itemCosts              StrategyItemCost[]
 
-  @@index([category])
   @@index([strategyId])
   @@index([selectionTier])
   @@index([quickWinIndicator])
@@ -679,6 +676,7 @@ model ActionStep {
   strategyId        String
   stepId            String                 // e.g., 'step_1', 'step_2'
   phase             String                 @default("immediate") // 'immediate', 'short_term', 'medium_term', 'long_term'
+  executionTiming   String?                // 'before_crisis' | 'during_crisis' | 'after_crisis' - When to execute this action
   title             String
   description       String
   smeAction         String?                // Simplified action description for SMEs
@@ -730,6 +728,7 @@ model ActionStep {
   @@unique([strategyId, stepId])
   @@index([strategyId])
   @@index([phase])
+  @@index([executionTiming])
   @@index([difficultyLevel])
   @@index([isOptional])
 }

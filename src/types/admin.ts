@@ -120,6 +120,7 @@ export interface ActionStep {
   stepId?: string
   strategyId?: string
   phase: 'immediate' | 'short_term' | 'medium_term' | 'long_term'
+  executionTiming?: 'before_crisis' | 'during_crisis' | 'after_crisis' // When to execute this action
   title: string
   action?: string // Technical action description (legacy)
   description: string

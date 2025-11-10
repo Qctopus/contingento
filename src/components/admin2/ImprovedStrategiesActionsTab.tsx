@@ -529,7 +529,7 @@ export function ImprovedStrategiesActionsTab() {
         sampleHeaders={[
           'Data Type', 'Strategy ID', 'Strategy Name', 'Strategy Category', 'Strategy Priority', 
           'Strategy Description', 'SME Description', 'Why Important', 'Implementation Cost', 
-          'Time to Implement', 'Effectiveness', 'ROI', 'Applicable Risks', 'Business Types',
+          'Time to Implement', 'Effectiveness', 'Applicable Risks', 'Business Types',
           'Action Step ID', 'Action Step Phase', 'Action Step Description', 'SME Action',
           'Action Step Timeframe', 'Action Step Responsibility', 'Action Step Cost', 
           'Action Step Resources', 'Action Step Checklist'
@@ -616,23 +616,17 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
             </p>
 
             {/* Compact Metrics */}
-            <div className="grid grid-cols-3 gap-2 mb-3 text-xs">
+            <div className="grid grid-cols-2 gap-2 mb-3 text-xs">
               <div className="text-center">
                 <div className="text-gray-500">Cost</div>
                 <div className="font-medium truncate">
-                  {strategy.costEstimateJMD || strategy.implementationCost}
+                  {getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost || 'See breakdown'}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-gray-500">Time</div>
                 <div className="font-medium truncate">
-                  {strategy.timeToImplement || strategy.implementationTime}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-gray-500">ROI</div>
-                <div className="font-medium">
-                  {strategy.roi ? `${strategy.roi}x` : 'N/A'}
+                  {getLocalizedText(strategy.timeToImplement, 'en') || strategy.implementationTime || 'TBD'}
                 </div>
               </div>
             </div>
@@ -965,14 +959,10 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
         </div>
 
         {/* Quick Metrics Bar */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+        <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
           <div className="text-center p-2 bg-blue-50 rounded">
             <div className="text-lg font-bold text-blue-600">{strategy.effectiveness}/10</div>
             <div className="text-blue-700">Effectiveness</div>
-          </div>
-          <div className="text-center p-2 bg-green-50 rounded">
-            <div className="text-lg font-bold text-green-600">{strategy.roi || 'N/A'}</div>
-            <div className="text-green-700">ROI</div>
           </div>
           <div className="text-center p-2 bg-purple-50 rounded">
             <div className="text-lg font-bold text-purple-600">{strategy.applicableRisks.length}</div>
@@ -1098,12 +1088,12 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Implementation Cost:</span>
-                <span className="text-sm text-gray-900">{getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost}</span>
+                <span className="text-sm text-gray-900">{getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost || 'See breakdown'}</span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Time to Implement:</span>
-                <span className="text-sm text-gray-900">{strategy.timeToImplement || strategy.implementationTime}</span>
+                <span className="text-sm text-gray-900">{getLocalizedText(strategy.timeToImplement, 'en') || strategy.implementationTime || 'TBD'}</span>
               </div>
 
               <div>

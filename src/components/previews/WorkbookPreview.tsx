@@ -1,31 +1,28 @@
 /**
- * Crisis-Ready Action Workbook Component
- * Emergency-focused, grab-and-go field guide
- * Print-friendly, single column, large text, practical checklists
+ * Action Workbook - Practical Crisis Prevention & Response Guide
+ * 
+ * A print-friendly, grab-and-go workbook that business owners can:
+ * - Use to implement prevention strategies BEFORE a crisis
+ * - Pull out and follow DURING an emergency
+ * - Reference for recovery steps AFTER an incident
+ * 
+ * DATA SOURCES:
+ * - formData: All wizard-entered information
+ * - strategies: Database strategies with action steps and costs
+ * - riskSummary: Risk assessment results
  */
 
 import React from 'react'
+import { calculateStrategyTimeFromSteps, formatHoursToDisplay } from '@/utils/timeCalculation'
 
 interface ActionStep {
   id: string
   title: string
   description: string
   smeAction?: string
-  whyThisStepMatters?: string
-  whatHappensIfSkipped?: string
-  estimatedMinutes?: number
-  difficultyLevel?: string
-  howToKnowItsDone?: string
-  exampleOutput?: string
-  freeAlternative?: string
-  lowTechOption?: string
-  commonMistakesForStep?: string[]
-  videoTutorialUrl?: string
-  phase?: string
+  timeframe?: string
   sortOrder: number
-  checklist?: string[]
   costItems?: Array<{
-    id?: string
     itemId: string
     quantity: number
     notes?: string
@@ -39,18 +36,14 @@ interface Strategy {
   smeTitle?: string
   description: string
   smeSummary?: string
+  priorityLevel?: string // 'essential' | 'recommended' | 'optional'
   applicableRisks: string[]
   actionSteps: ActionStep[]
   calculatedCostLocal?: number
   calculatedCostUSD?: number
   currencyCode?: string
   currencySymbol?: string
-  benefitsBullets?: string[]
-  realWorldExample?: string
-  diyApproach?: string
-  lowBudgetAlternative?: string
-  estimatedDIYSavings?: string
-  timeToImplement?: string
+  calculatedHours?: number
 }
 
 interface WorkbookPreviewProps {
@@ -66,89 +59,11 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
   strategies,
   totalInvestment
 }) => {
+  
   // ============================================================================
-  // ENHANCED DEBUGGING - Track complete data flow
+  // HELPER FUNCTIONS
   // ============================================================================
-  console.log('[WorkbookPreview] ========================================')
-  console.log('[WorkbookPreview] Received props:', {
-    strategiesCount: strategies.length,
-    hasRiskSummary: !!riskSummary,
-    hasFormData: !!formData,
-    totalInvestment
-  })
   
-  console.log('[WorkbookPreview] Individual strategy details:', 
-    strategies.map((s, idx) => ({
-      index: idx + 1,
-      name: s.name || s.smeTitle || 'Unnamed',
-      category: s.category,
-      hasCalculatedCost: !!s.calculatedCostLocal,
-      calculatedCostLocal: s.calculatedCostLocal,
-      currencySymbol: s.currencySymbol,
-      actionStepsCount: s.actionSteps?.length || 0,
-      applicableRisks: s.applicableRisks,
-      applicableRisksCount: s.applicableRisks?.length || 0
-    }))
-  )
-  
-  console.log('[WorkbookPreview] Strategy cost summary:', {
-    withCalculatedCost: strategies.filter(s => s.calculatedCostLocal > 0).length,
-    withCurrencyData: strategies.filter(s => s.currencySymbol && s.currencyCode).length,
-    totalStrategies: strategies.length
-  })
-  
-  // DIAGNOSTIC: Show all unique risk IDs from strategies
-  console.log('[WorkbookPreview] All applicableRisks IDs from strategies:', 
-    [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
-  )
-  
-  const companyName = formData.PLAN_INFORMATION?.['Company Name'] || 'Your Business'
-  const planManager = formData.PLAN_INFORMATION?.['Plan Manager'] || 'Not specified'
-  const planManagerPhone = formData.PLAN_INFORMATION?.['Plan Manager Phone'] || ''
-  const planManagerEmail = formData.PLAN_INFORMATION?.['Plan Manager Email'] || ''
-  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  
-  // Extract risks from multiple possible locations
-  const riskMatrix = riskSummary?.['Risk Assessment Matrix'] || 
-                     riskSummary?.['Hazard Applicability Assessment'] ||
-                     riskSummary?.risks ||
-                     []
-  
-  const risks = Array.isArray(riskMatrix) ? riskMatrix.filter((r: any) => 
-    r && (r.hazard || r.Hazard || r.riskType)
-  ) : []
-  
-  // Sort risks by severity
-  const sortedRisks = [...risks].sort((a, b) => {
-    const scoreA = a.riskScore || 0
-    const scoreB = b.riskScore || 0
-    return scoreB - scoreA
-  })
-  
-  const topThreeRisks = sortedRisks.slice(0, 3)
-  
-  // DIAGNOSTIC: Show all risk IDs from riskMatrix
-  console.log('[WorkbookPreview] Risks in riskMatrix:', {
-    total: risks.length,
-    hazardIds: risks.map(r => r.hazardId).filter(Boolean).sort(),
-    hazardNames: risks.map(r => r.hazard || r.Hazard).filter(Boolean).sort()
-  })
-  
-  // DIAGNOSTIC: Compare risk IDs
-  const strategyRiskIds = [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
-  const matrixRiskIds = [...new Set(risks.map(r => r.hazardId).filter(Boolean))].sort()
-  const matrixRiskNames = [...new Set(risks.map(r => r.hazard || r.Hazard).filter(Boolean))].sort()
-  
-  console.log('[WorkbookPreview] 🔍 RISK ID COMPARISON:')
-  console.log('  Strategy applicableRisks:', strategyRiskIds)
-  console.log('  Matrix hazardIds:', matrixRiskIds)
-  console.log('  Matrix hazardNames:', matrixRiskNames)
-
-  // Get currency info from strategies
-  const currencySymbol = strategies[0]?.currencySymbol || 'JMD'
-  const currencyCode = strategies[0]?.currencyCode || 'JMD'
-
-  // Helper to safely get string from potentially multilingual field
   const getStringValue = (value: any): string => {
     if (!value) return ''
     if (typeof value === 'string') return value
@@ -158,1670 +73,1418 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
     return String(value)
   }
   
-  // Helper to get risk emoji
   const getRiskEmoji = (hazard: string): string => {
     const h = hazard.toLowerCase()
-    if (h.includes('hurricane') || h.includes('tropical')) return '🌀'
+    if (h.includes('hurricane') || h.includes('tropical') || h.includes('storm')) return '🌀'
     if (h.includes('earthquake')) return '🏚️'
     if (h.includes('flood')) return '🌊'
     if (h.includes('fire')) return '🔥'
-    if (h.includes('cyber')) return '💻'
-    if (h.includes('power')) return '⚡'
-    if (h.includes('pandemic') || h.includes('health')) return '🏥'
+    if (h.includes('cyber') || h.includes('data')) return '💻'
+    if (h.includes('power') || h.includes('outage')) return '⚡'
+    if (h.includes('pandemic') || h.includes('health') || h.includes('disease')) return '🏥'
+    if (h.includes('supply') || h.includes('shortage')) return '📦'
     return '⚠️'
   }
-
-  // ============================================================================
-  // COMPREHENSIVE DATA EXTRACTION FROM WIZARD
-  // ============================================================================
-
-  // Extract additional business details
-  const businessAddress = formData.PLAN_INFORMATION?.['Business Address'] || ''
-  const planVersion = formData.PLAN_INFORMATION?.['Plan Version'] || '1.0'
-  const alternateManager = formData.PLAN_INFORMATION?.['Alternate Manager'] || ''
-  const lastUpdated = currentDate
-
-  // Parse location from address
-  const addressParts = businessAddress.split(',').map((s: string) => s.trim())
-  const parish = addressParts.length > 1 ? addressParts[addressParts.length - 2] : ''
-  const country = addressParts.length > 0 ? addressParts[addressParts.length - 1] : ''
-
-  // Extract business details
-  const businessLicense = formData.BUSINESS_OVERVIEW?.['Business License Number'] || ''
-  const businessPurpose = formData.BUSINESS_OVERVIEW?.['Business Purpose'] || ''
-
-  // ============================================================================
-  // EXTRACT ALL CONTACT INFORMATION
-  // ============================================================================
   
-  const contactsAndInfo = formData.CONTACTS_AND_INFORMATION || formData.CONTACTS || {}
+  const getRiskSeverityBadge = (score: number) => {
+    if (score >= 20) return { label: 'EXTREME', color: 'bg-red-600 text-white' }
+    if (score >= 15) return { label: 'HIGH', color: 'bg-orange-500 text-white' }
+    if (score >= 10) return { label: 'MEDIUM', color: 'bg-yellow-500 text-white' }
+    return { label: 'LOW', color: 'bg-green-500 text-white' }
+  }
   
-  // Staff contacts
-  const staffContactsRaw = contactsAndInfo['Staff Contact Information'] || []
-  const staffContactsList = staffContactsRaw.map((contact: any) => ({
-    name: getStringValue(contact.Name || contact.name || ''),
-    position: getStringValue(contact.Position || contact.Role || contact.position || ''),
-    phone: getStringValue(contact['Mobile Phone'] || contact.Phone || contact.phone || ''),
-    alternatePhone: getStringValue(contact['Home Phone'] || contact['Alt Phone'] || ''),
-    email: getStringValue(contact['Email Address'] || contact.Email || contact.email || ''),
-    emergencyRole: getStringValue(contact['Emergency Role'] || contact['Emergency Contact'] || ''),
-    verified: false
-  }))
-  
-  // Emergency Services and Utilities (combined in wizard)
-  const emergencyServicesAndUtilities = contactsAndInfo['Emergency Services and Utilities'] || []
-  
-  // Emergency services (police, fire, ambulance)
-  const emergencyContactsList = emergencyServicesAndUtilities
-    .filter((c: any) => {
-      const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-      return serviceType.includes('police') || serviceType.includes('fire') || 
-             serviceType.includes('ambulance') || serviceType.includes('medical') ||
-             serviceType.includes('emergency')
-    })
-    .map((contact: any) => ({
-      name: getStringValue(contact['Organization Name'] || contact.organizationName || contact.name || ''),
-      service: getStringValue(contact['Service Type'] || contact.serviceType || contact.type || ''),
-      phone: getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone || ''),
-      is24_7: contact['24/7 Emergency'] || contact.is24_7 || false,
-      notes: getStringValue(contact.Notes || contact.notes || ''),
-      verified: false
-    }))
-  
-  // Utilities
-  const utilitiesList = emergencyServicesAndUtilities
-    .filter((c: any) => {
-      const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-      return serviceType.includes('electric') || serviceType.includes('water') || 
-             serviceType.includes('internet') || serviceType.includes('phone') ||
-             serviceType.includes('gas') || serviceType.includes('sewage')
-    })
-    .map((contact: any) => ({
-      service: getStringValue(contact['Service Type'] || contact.serviceType || contact.name || ''),
-      provider: getStringValue(contact['Organization Name'] || contact.organizationName || contact.provider || ''),
-      phone: getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone || ''),
-      accountNumber: getStringValue(contact['Account Number'] || contact.accountNumber || contact['Account #'] || ''),
-      verified: false
-    }))
-  
-  // Insurance
-  const insuranceList = emergencyServicesAndUtilities
-    .filter((c: any) => {
-      const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-      return serviceType.includes('insurance')
-    })
-    .map((contact: any) => ({
-      type: getStringValue(contact['Service Type'] || contact.insuranceType || contact.type || ''),
-      company: getStringValue(contact['Organization Name'] || contact.company || contact.provider || ''),
-      policyNumber: getStringValue(contact['Account Number'] || contact.policyNumber || contact['Policy #'] || ''),
-      agent: getStringValue(contact['Contact Person'] || contact.agent || contact.contact || ''),
-      phone: getStringValue(contact['Phone Number'] || contact.phone || ''),
-      verified: false
-    }))
-  
-  // Suppliers
-  const suppliersRaw = contactsAndInfo['Supplier Information'] || []
-  const suppliersList = suppliersRaw.map((supplier: any) => ({
-    name: getStringValue(supplier.Name || supplier.name || supplier['Supplier Name'] || ''),
-    product: getStringValue(supplier.Service || supplier.service || supplier['Goods/Services Supplied'] || ''),
-    contactPerson: getStringValue(supplier['Contact Person'] || supplier.contactPerson || ''),
-    phone: getStringValue(supplier.Phone || supplier['Phone Number'] || supplier.phone || ''),
-    email: getStringValue(supplier.Email || supplier.email || ''),
-    criticality: supplier.criticality || supplier.Criticality || 'normal',
-    verified: false
-  }))
-  
-  // Banking (from emergency services and utilities)
-  const bankingList = emergencyServicesAndUtilities
-    .filter((c: any) => {
-      const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-      return serviceType.includes('bank') || serviceType.includes('financial')
-    })
-    .map((contact: any) => ({
-      institution: getStringValue(contact['Organization Name'] || contact.organizationName || ''),
-      accountNumber: getStringValue(contact['Account Number'] || contact.accountNumber || ''),
-      phone: getStringValue(contact['Phone Number'] || contact.phone || ''),
-      verified: false
-    }))
-
-  // ============================================================================
-  // EXTRACT STRATEGIES WITH DETAILED ACTION STEPS
-  // ============================================================================
-  
-  const strategiesWithDetails = strategies.map((strategy: any) => {
-    const strategyName = getStringValue(strategy.name || strategy.smeTitle || 'Unnamed Strategy')
-    const category = strategy.category || 'general'
-    
-    // Extract timeline
-    let timeline = ''
-    if (strategy.estimatedTotalHours && strategy.estimatedTotalHours > 0) {
-      const hours = strategy.estimatedTotalHours
-      if (hours < 1) timeline = 'Less than 1 hour'
-      else if (hours === 1) timeline = '1 hour'
-      else if (hours < 8) timeline = `~${hours}h`
-      else if (hours < 40) timeline = `~${Math.round(hours / 8)} days`
-      else if (hours < 160) timeline = `~${Math.round(hours / 40)} weeks`
-      else timeline = `~${Math.round(hours / 160)} months`
-    } else {
-      timeline = getStringValue(strategy.timeToImplement || '')
-    }
-    
-    const totalCost = strategy.calculatedCostLocal || 0
-    const currencySymbol = strategy.currencySymbol || 'JMD'
-    const currencyCode = strategy.currencyCode || 'JMD'
-    
-    // Extract action steps with full details
-    const actionSteps = (strategy.actionSteps || []).map((step: any, idx: number) => ({
-      stepNumber: idx + 1,
-      action: getStringValue(step.smeAction || step.action || step.title || ''),
-      why: getStringValue(step.whyThisStepMatters || ''),
-      doneWhen: getStringValue(step.howToKnowItsDone || ''),
-      estimatedTime: step.estimatedMinutes ? `${step.estimatedMinutes} min` : getStringValue(step.estimatedTime || ''),
-      freeAlternative: getStringValue(step.freeAlternative || ''),
-      costItems: step.costItems || [],
-      checklist: Array.isArray(step.checklist) ? step.checklist : [],
-      phase: step.phase || 'medium_term',
-      completed: false
-    }))
-    
-    return {
-      id: strategy.id,
-      name: strategyName,
-      category,
-      timeline,
-      totalCost,
-      currencySymbol,
-      currencyCode,
-      actionSteps,
-      applicableRisks: strategy.applicableRisks || []
-    }
-  })
-  
-  // Group strategies by category for organized display
-  const strategiesByCategory = {
-    prevention: strategiesWithDetails.filter(s => s.category === 'prevention'),
-    response: strategiesWithDetails.filter(s => s.category === 'response'),
-    recovery: strategiesWithDetails.filter(s => s.category === 'recovery')
+  const formatCurrency = (amount: number, symbol: string = '$') => {
+    return `${symbol}${amount.toLocaleString()}`
   }
 
   // ============================================================================
-  // EXTRACT ESSENTIAL FUNCTIONS
+  // DATA EXTRACTION
   // ============================================================================
   
-  const essentialFunctions = formData.ESSENTIAL_FUNCTIONS?.['Essential Functions'] || []
-  const functionPriorities = formData.ESSENTIAL_FUNCTIONS?.['Function Priorities'] || []
+  // Basic business information
+  const companyName = getStringValue(formData.PLAN_INFORMATION?.['Company Name'] || formData.BUSINESS_OVERVIEW?.['Company Name'] || 'Your Business')
+  const businessAddress = getStringValue(formData.PLAN_INFORMATION?.['Business Address'] || formData.BUSINESS_OVERVIEW?.['Business Address'] || '')
+  const planManager = getStringValue(formData.PLAN_INFORMATION?.['Plan Manager'] || 'Not specified')
+  const planManagerPhone = getStringValue(formData.PLAN_INFORMATION?.['Phone'] || '')
+  const planManagerEmail = getStringValue(formData.PLAN_INFORMATION?.['Email'] || '')
+  const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   
-  const criticalFunctions = functionPriorities
-    .filter((f: any) => f.priority && parseInt(f.priority) >= 7)
-    .slice(0, 5)
-    .map((func: any) => ({
-      name: getStringValue(func.functionName || func.name || ''),
-      priority: func.priority || 'N/A',
-      maxDowntime: getStringValue(func.maxDowntime || func.acceptableDowntime || ''),
-      rto: getStringValue(func.rto || func.recoveryTimeObjective || ''),
-      rpo: getStringValue(func.rpo || func.recoveryPointObjective || '')
-    }))
-
-  // ============================================================================
-  // EXTRACT TESTING & MAINTENANCE DATA
-  // ============================================================================
+  // Currency information
+  const currencySymbol = strategies[0]?.currencySymbol || '$'
+  const currencyCode = strategies[0]?.currencyCode || 'USD'
   
-  const testingSchedule = formData.TESTING_AND_MAINTENANCE?.['Plan Testing Schedule'] || 
-                         formData.TESTING?.['Plan Testing Schedule'] || 
-                         formData.TESTING?.['Testing Schedule'] || []
+  // Risk data
+  const riskMatrix = riskSummary?.['Risk Assessment Matrix'] || 
+                     riskSummary?.['Hazard Applicability Assessment'] ||
+                     riskSummary?.risks ||
+                     []
   
-  const testingChecklist = testingSchedule.map((test: any) => ({
-    testType: getStringValue(test['Test Type'] || test.type || ''),
-    frequency: getStringValue(test.Frequency || test.frequency || ''),
-    nextDate: getStringValue(test['Next Test Date'] || test.nextDate || ''),
-    responsible: getStringValue(test['Responsible Person'] || test.responsible || ''),
-    completed: false
-  }))
+  const risks = Array.isArray(riskMatrix) ? riskMatrix.filter((r: any) => 
+    r && (r.hazard || r.Hazard || r.riskType)
+  ) : []
   
-  const trainingPrograms = formData.TESTING_AND_MAINTENANCE?.['Training Schedule'] || 
-                          formData.TESTING?.['Training Schedule'] || 
-                          formData.TESTING?.['Training Programs'] || []
+  // Sort risks by severity (highest first)
+  const sortedRisks = [...risks].sort((a, b) => {
+    const scoreA = a.riskScore || a['Risk Score'] || 0
+    const scoreB = b.riskScore || b['Risk Score'] || 0
+    return scoreB - scoreA
+  })
   
-  const trainingList = trainingPrograms.map((program: any) => ({
-    programName: getStringValue(program['Training Type'] || program.programName || program.name || ''),
-    frequency: getStringValue(program.Frequency || program.frequency || ''),
-    participants: getStringValue(program['Target Audience'] || program.participants || program.audience || ''),
-    completed: false
-  }))
-
-  // ============================================================================
-  // EXTRACT VITAL RECORDS
-  // ============================================================================
+  // Contacts data
+  const contactsAndInfo = formData.CONTACTS_AND_INFORMATION || {}
+  const staffContactsRaw = contactsAndInfo['Staff Contact Information'] || []
+  const emergencyServicesAndUtilities = contactsAndInfo['Emergency Services and Utilities'] || []
+  const suppliersRaw = contactsAndInfo['Supplier Information'] || []
   
+  // Emergency contacts (police, fire, ambulance)
+  const emergencyContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('police') || serviceType.includes('fire') || 
+           serviceType.includes('ambulance') || serviceType.includes('medical') ||
+           serviceType.includes('emergency')
+  })
+  
+  // Utilities contacts (electricity, water, internet)
+  const utilitiesContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('electric') || serviceType.includes('water') || 
+           serviceType.includes('internet') || serviceType.includes('phone') ||
+           serviceType.includes('gas') || serviceType.includes('utility')
+  })
+  
+  // Insurance & Banking
+  const insuranceContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('insurance')
+  })
+  
+  const bankingContacts = emergencyServicesAndUtilities.filter((c: any) => {
+    const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
+    return serviceType.includes('bank') || serviceType.includes('financial')
+  })
+  
+  // Vital records
   const vitalRecords = formData.VITAL_RECORDS?.['Vital Records Inventory'] || 
                       formData.VITAL_RECORDS?.['Records Inventory'] || []
   
-  const recordsList = vitalRecords.map((record: any) => ({
-    recordType: getStringValue(record['Record Type'] || record.recordType || record.name || ''),
-    format: getStringValue(record.Format || record.format || ''),
-    location: getStringValue(record.Location || record['Primary Location'] || record.primaryLocation || record.location || ''),
-    backup: getStringValue(record['Backup Location'] || record.backupLocation || record['Backup Storage'] || ''),
-    responsible: getStringValue(record['Responsible Person'] || record.responsible || ''),
-    verified: false
-  }))
-
-  // ============================================================================
-  // END OF DATA EXTRACTION
-  // ============================================================================
-
-  // Helper to format currency
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US').format(Math.round(amount))
-  }
-
-  // Helper to normalize risk IDs for flexible matching (same as FormalBCP)
-  const normalizeRiskId = (id: string): string => {
-    if (!id) return ''
-    
-    // Convert camelCase to snake_case: cyberAttack → cyber_attack
-    const withUnderscores = id.replace(/([a-z])([A-Z])/g, '$1_$2')
-    
-    // Convert to lowercase and replace underscores/spaces with a common separator
-    return withUnderscores.toLowerCase().replace(/[_\s-]+/g, '_')
+  // Helper to parse applicableRisks (can be string or array)
+  const parseApplicableRisks = (risks: any): string[] => {
+    if (!risks) return []
+    if (Array.isArray(risks)) return risks
+    if (typeof risks === 'string') {
+      try {
+        const parsed = JSON.parse(risks)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return []
   }
   
-  // Helper to get strategies for a specific risk
-  const getStrategiesForRisk = (risk: any): Strategy[] => {
-    const hazardName = getStringValue(risk.hazard || risk.Hazard)
-    const hazardId = risk.hazardId || hazardName
-    
-    // Normalize the risk identifiers
-    const hazardIdNorm = normalizeRiskId(hazardId)
-    const hazardNameNorm = normalizeRiskId(hazardName)
-    
-    return strategies.filter((strategy: Strategy) => {
-      if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
-      
-      return strategy.applicableRisks.some((riskId: string) => {
-        const riskIdNorm = normalizeRiskId(riskId)
-        
-        // Try multiple matching approaches
-        return riskIdNorm === hazardIdNorm || 
-               riskIdNorm === hazardNameNorm ||
-               hazardIdNorm.includes(riskIdNorm) ||
-               riskIdNorm.includes(hazardIdNorm) ||
-               hazardNameNorm.includes(riskIdNorm) ||
-               riskIdNorm.includes(hazardNameNorm)
-      })
-    })
-  }
+  // Organize strategies by type
+  // All strategies are now organized by their action steps' executionTiming
+  // (before_crisis, during_crisis, after_crisis)
+  
+  // Essential vs Optional strategies
+  const essentialStrategies = strategies.filter(s => s.priorityLevel === 'essential')
+  const recommendedStrategies = strategies.filter(s => s.priorityLevel === 'recommended')
+  const optionalStrategies = strategies.filter(s => s.priorityLevel === 'optional')
 
-  // Helper to calculate cost for action step
-  const calculateStepCost = (step: ActionStep): number => {
-    if (!step.costItems || step.costItems.length === 0) return 0
-    
-    return step.costItems.reduce((sum, ci) => {
-      if (ci.item) {
-        const qty = ci.quantity || 1
-        const cost = ci.item.baseUSDMax || ci.item.baseUSD || 0
-        // Assuming exchange rate or using local currency if available
-        return sum + (cost * qty * 150) // Default exchange rate
-      }
-      return sum
-    }, 0)
-  }
+  console.log('[WorkbookPreview] Data loaded:', {
+    companyName,
+    risksCount: risks.length,
+    strategiesCount: strategies.length,
+    riskSpecificCount: riskSpecificStrategies.length,
+    genericCount: genericStrategies.length,
+    staffContactsCount: staffContactsRaw.length,
+    emergencyContactsCount: emergencyContacts.length
+  })
+  
+  console.log('[WorkbookPreview] Strategy details:', 
+    strategies.map(s => ({
+      name: getStringValue(s.name || s.smeTitle),
+      strategyType: s.strategyType,
+      applicableRisksRaw: s.applicableRisks,
+      applicableRisksParsed: parseApplicableRisks(s.applicableRisks),
+      beforeSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'before_crisis').length || 0,
+      duringSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'during_crisis').length || 0,
+      afterSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'after_crisis').length || 0
+    }))
+  )
 
-  // Phase configurations
-  const phaseConfig: Record<string, { label: string, emoji: string }> = {
-    immediate: { label: 'IMMEDIATE (24-48 hours)', emoji: '🔴' },
-    short_term: { label: 'SHORT-TERM (1-2 weeks)', emoji: '🟠' },
-    medium_term: { label: 'MEDIUM-TERM (1-3 months)', emoji: '🟡' },
-    long_term: { label: 'LONG-TERM (3+ months)', emoji: '🟢' }
-  }
-
+  // ============================================================================
+  // RENDER WORKBOOK
+  // ============================================================================
+  
   return (
     <div className="bg-white print:shadow-none" style={{ maxWidth: '8.5in', margin: '0 auto' }}>
-      {/* COVER PAGE - Emergency-First Design */}
-      <div className="border-8 border-red-600 p-8 text-center bg-white page-break-after" style={{ minHeight: '11in' }}>
+      
+      {/* ====================================================================== */}
+      {/* COVER PAGE */}
+      {/* ====================================================================== */}
+      <div className="border-4 border-blue-600 p-8 text-center bg-white page-break-after">
         <div className="mb-8">
-          <h1 className="text-5xl font-black mb-4 text-gray-900 tracking-tight" style={{ fontSize: '3rem', lineHeight: '1.1' }}>
-            CRISIS ACTION WORKBOOK
+          <div className="text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wide">Business Continuity</div>
+          <h1 className="text-5xl font-black mb-6 text-gray-900" style={{ fontSize: '3rem', lineHeight: '1.1' }}>
+            ACTION WORKBOOK
           </h1>
-          <div className="text-3xl font-bold text-red-600 mb-8" style={{ fontSize: '2rem' }}>
+          <div className="text-3xl font-bold text-blue-600 mb-4" style={{ fontSize: '2rem' }}>
             {companyName}
           </div>
+          {businessAddress && (
+            <div className="text-lg text-gray-600 mb-8">{businessAddress}</div>
+          )}
         </div>
 
-        {/* Emergency Quick Access Box */}
+        {/* Emergency Contact Box */}
         <div className="border-4 border-red-500 bg-red-50 p-6 mb-8 text-left">
-          <h2 className="text-2xl font-black mb-4 text-red-900 text-center" style={{ fontSize: '1.5rem' }}>
-            ⚠️ IN CASE OF EMERGENCY
+          <h2 className="text-2xl font-black mb-4 text-red-900 text-center">
+            🚨 EMERGENCY CONTACTS
           </h2>
-          <div className="space-y-4 text-lg" style={{ fontSize: '1.125rem' }}>
-            <div className="flex justify-between border-b-2 border-red-200 pb-2">
-              <span className="font-bold">Emergency Services:</span>
-              <span className="font-mono">{emergencyContactsList.length > 0 ? emergencyContactsList[0].phone : '________________'}</span>
-            </div>
+          <div className="space-y-3 text-lg">
+            {emergencyContacts.length > 0 ? (
+              emergencyContacts.slice(0, 3).map((contact: any, idx: number) => (
+                <div key={idx} className="flex justify-between border-b-2 border-red-200 pb-2">
+                  <span className="font-bold">
+                    {getStringValue(contact['Service Type'] || contact.serviceType || 'Emergency')}:
+                  </span>
+                  <span className="font-mono">
+                    {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone || '___-___-____')}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="flex justify-between border-b-2 border-red-200 pb-2">
+                <span className="font-bold">Emergency Services:</span>
+                <span className="font-mono">___-___-____</span>
+              </div>
+            )}
             <div className="flex justify-between border-b-2 border-red-200 pb-2">
               <span className="font-bold">Plan Manager ({planManager}):</span>
-              <span className="font-mono">{planManagerPhone || '________________'}</span>
-            </div>
-            <div className="flex justify-between border-b-2 border-red-200 pb-2">
-              <span className="font-bold">Alternate Contact:</span>
-              <span className="font-mono">{alternateManager || '________________'}</span>
+              <span className="font-mono">{planManagerPhone || '___-___-____'}</span>
             </div>
           </div>
-          <div className="mt-6 p-4 bg-yellow-100 border-2 border-yellow-600">
-            <p className="text-xl font-bold text-center text-yellow-900" style={{ fontSize: '1.25rem' }}>
-              IF YOU'RE READING THIS IN AN EMERGENCY,<br/>GO TO PAGE 2 (QUICK REFERENCE)
+          <div className="mt-6 p-4 bg-yellow-100 border-2 border-yellow-600 rounded">
+            <p className="text-xl font-bold text-center text-yellow-900">
+              IF EMERGENCY IN PROGRESS → TURN TO PAGE 2
             </p>
           </div>
         </div>
 
-        {/* Table of Contents */}
-        <div className="border-2 border-gray-400 p-6 text-left">
-          <h2 className="text-2xl font-black mb-4 text-gray-900" style={{ fontSize: '1.5rem' }}>
-            📑 TABLE OF CONTENTS
-          </h2>
-          <div className="space-y-2 text-base" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Page 1: Quick Reference Guide (Emergency Flowchart)</span>
-              <span className="font-mono">2</span>
+        {/* What This Workbook Contains */}
+        <div className="border-2 border-gray-300 p-6 text-left mb-8">
+          <h2 className="text-2xl font-black mb-4 text-gray-900">📋 What's Inside</h2>
+          <div className="space-y-2 text-base">
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">1.</span>
+              <span><strong>Quick Reference Guide</strong> - Emergency decision flowchart</span>
             </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Page 2: Emergency Contact Lists</span>
-              <span className="font-mono">3</span>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">2.</span>
+              <span><strong>Risk Action Plans</strong> - What to do BEFORE, DURING & AFTER each risk</span>
             </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Page 3: Your Top 3 Critical Risks</span>
-              <span className="font-mono">4</span>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">3.</span>
+              <span><strong>Implementation Checklists</strong> - Track your prevention work</span>
             </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Page 4+: Risk Action Plans (BEFORE/DURING/AFTER)</span>
-              <span className="font-mono">5</span>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">4.</span>
+              <span><strong>Contact Directory</strong> - All key contacts in one place</span>
             </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Implementation Checklists & Budget Trackers</span>
-              <span className="font-mono">{5 + risks.length}</span>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">5.</span>
+              <span><strong>Document Locator</strong> - Where to find critical records</span>
             </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Vital Documents Locator</span>
-              <span className="font-mono">{6 + risks.length + strategies.length}</span>
-            </div>
-            <div className="flex justify-between border-b border-gray-300 pb-1">
-              <span>Incident Log Templates (Blank Forms)</span>
-              <span className="font-mono">{7 + risks.length + strategies.length}</span>
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 font-bold">6.</span>
+              <span><strong>Incident Log</strong> - Templates for recording events</span>
             </div>
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-8 pt-4 border-t-2 border-gray-300">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Last Updated:</strong> {currentDate}
-          </p>
-          <p className="text-base text-gray-600 mt-2" style={{ fontSize: '1rem' }}>
-            <strong>Update Schedule:</strong> Review quarterly or after any major change
-          </p>
-          <p className="text-sm text-gray-500 mt-4" style={{ fontSize: '0.875rem' }}>
-            UNDP x CARICHAM Business Continuity Planning Initiative
-          </p>
-        </div>
-      </div>
-
-      {/* PAGE 1: QUICK REFERENCE GUIDE - Single Page Emergency Guide */}
-      <div className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-        <div className="border-4 border-black p-2 mb-6">
-          <h1 className="text-4xl font-black text-center text-red-600" style={{ fontSize: '2.5rem' }}>
-            🚨 QUICK REFERENCE GUIDE
-          </h1>
-          <p className="text-center text-xl font-bold mt-2" style={{ fontSize: '1.25rem' }}>
-            ONE-PAGE EMERGENCY FLOWCHART
-          </p>
-        </div>
-
-        {/* Who to Call First */}
-        <div className="border-4 border-red-500 bg-red-50 p-4 mb-6">
-          <h2 className="text-2xl font-black mb-4 text-red-900" style={{ fontSize: '1.5rem' }}>
-            📞 WHO TO CALL FIRST
-          </h2>
-          <div className="space-y-3 text-lg" style={{ fontSize: '1.125rem' }}>
-            <div className="flex items-center gap-3 bg-white p-3 border-2 border-red-300">
-              <span className="text-3xl">☑️</span>
-              <div className="flex-1">
-                <strong>Emergency Services (Police/Fire/Ambulance):</strong>
-                <div className="text-2xl font-mono mt-1 border-b-2 border-gray-400" style={{ fontSize: '1.5rem' }}>
-                  {emergencyContactsList.length > 0 ? emergencyContactsList[0].phone : '______________________________'}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-white p-3 border-2 border-red-300">
-              <span className="text-3xl">☑️</span>
-              <div className="flex-1">
-                <strong>Plan Manager ({planManager}):</strong>
-                <div className="text-2xl font-mono mt-1 border-b-2 border-gray-400" style={{ fontSize: '1.5rem' }}>
-                  {planManagerPhone || '______________________________'}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 bg-white p-3 border-2 border-red-300">
-              <span className="text-3xl">☑️</span>
-              <div className="flex-1">
-                <strong>Insurance Agent:</strong>
-                <div className="text-2xl font-mono mt-1 border-b-2 border-gray-400" style={{ fontSize: '1.5rem' }}>
-                  {insuranceList.length > 0 ? insuranceList[0].phone : '______________________________'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Critical Numbers */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="border-2 border-gray-600 p-4 bg-gray-50">
-            <h3 className="text-lg font-black mb-3" style={{ fontSize: '1.125rem' }}>💳 CRITICAL ACCOUNT NUMBERS</h3>
-            <div className="space-y-2 text-base" style={{ fontSize: '1rem' }}>
-              <div>
-                <strong>Insurance Policy #:</strong>
-                <div className="border-b-2 border-gray-400 font-mono">
-                  {insuranceList.length > 0 && insuranceList[0].policyNumber ? insuranceList[0].policyNumber : '_______________'}
-                </div>
-              </div>
-              <div>
-                <strong>Bank Account #:</strong>
-                <div className="border-b-2 border-gray-400 font-mono">
-                  {bankingList.length > 0 && bankingList[0].accountNumber ? bankingList[0].accountNumber : '_______________'}
-                </div>
-              </div>
-              <div>
-                <strong>Business License #:</strong>
-                <div className="border-b-2 border-gray-400 font-mono">
-                  {businessLicense || '_______________'}
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="border-2 border-blue-600 p-4 bg-blue-50">
-            <h3 className="text-lg font-black mb-3" style={{ fontSize: '1.125rem' }}>📍 EMERGENCY LOCATIONS</h3>
-            <p className="text-xs text-blue-700 mb-2">⚠️ Fill these in and post this page prominently</p>
-            <div className="space-y-2 text-base" style={{ fontSize: '1rem' }}>
-              <div>
-                <strong>Assembly Point:</strong>
-                <div className="border-b-2 border-gray-600 bg-white p-1">_______________</div>
-              </div>
-              <div>
-                <strong>Alternate Location:</strong>
-                <div className="border-b-2 border-gray-600 bg-white p-1">_______________</div>
-              </div>
-              <div>
-                <strong>Safe/Vital Records:</strong>
-                <div className="border-b-2 border-gray-600 bg-white p-1">_______________</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Top 3 Critical Risks */}
-        <div className="border-4 border-orange-500 bg-orange-50 p-4">
-          <h2 className="text-2xl font-black mb-4 text-orange-900" style={{ fontSize: '1.5rem' }}>
-            ⚠️ YOUR TOP 3 CRITICAL RISKS
-          </h2>
-          <div className="space-y-2">
-            {topThreeRisks.map((risk, idx) => (
-              <div key={idx} className="flex items-center gap-3 bg-white p-3 border-2 border-orange-300 text-lg" style={{ fontSize: '1.125rem' }}>
-                <span className="text-3xl">{getRiskEmoji(getStringValue(risk.hazard || risk.Hazard))}</span>
-                <strong className="flex-1">{idx + 1}. {getStringValue(risk.hazard || risk.Hazard)}</strong>
-                <span className="px-3 py-1 bg-red-600 text-white font-bold rounded">
-                  {getStringValue(risk.riskLevel || risk.RiskLevel)}
-                </span>
-              </div>
-            ))}
-            {topThreeRisks.length === 0 && (
-              <div className="text-lg text-gray-600 text-center py-4" style={{ fontSize: '1.125rem' }}>
-                Complete risk assessment to see your top risks here
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Page Footer */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Page 1 of {5 + risks.length + strategies.length}</strong> | {companyName} | Updated: {currentDate}
-          </p>
-        </div>
-      </div>
-
-      {/* PAGE 2: EMERGENCY CONTACT LISTS - Large Type, Easy to Read */}
-      <div className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-        <div className="border-4 border-black p-2 mb-6">
-          <h1 className="text-4xl font-black text-center text-blue-600" style={{ fontSize: '2.5rem' }}>
-            📞 EMERGENCY CONTACT LISTS
-          </h1>
-        </div>
-
-        {/* Update Reminder */}
-        <div className="bg-yellow-100 border-4 border-yellow-600 p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">⚠️</span>
+        {/* Document Info */}
+        <div className="border-t-2 border-gray-300 pt-6 text-left">
+          <div className="grid grid-cols-2 gap-4 text-base mb-4">
             <div>
-              <h3 className="text-xl font-black text-yellow-900 mb-2" style={{ fontSize: '1.25rem' }}>
-                KEEP THIS UPDATED!
-              </h3>
-              <p className="text-lg text-yellow-800" style={{ fontSize: '1.125rem' }}>
-                Verify all contact numbers quarterly. Check the box when verified.
-              </p>
+              <span className="font-bold text-gray-700">Plan Manager:</span><br/>
+              <span>{planManager}</span>
+            </div>
+            <div>
+              <span className="font-bold text-gray-700">Contact:</span><br/>
+              <span>{planManagerPhone || planManagerEmail || 'See staff directory'}</span>
+            </div>
+            <div>
+              <span className="font-bold text-gray-700">Date Created:</span><br/>
+              <span>{currentDate}</span>
+            </div>
+            <div>
+              <span className="font-bold text-gray-700">Next Review:</span><br/>
+              <span>Quarterly or after any incident</span>
             </div>
           </div>
-        </div>
-
-        {/* Emergency Services */}
-        <div className="border-4 border-red-500 bg-white p-6 mb-4">
-          <h2 className="text-2xl font-black mb-4 flex items-center gap-2" style={{ fontSize: '1.5rem' }}>
-            <span>🚨</span> EMERGENCY SERVICES
-          </h2>
-          <div className="space-y-4">
-            {emergencyContactsList.length > 0 ? (
-              emergencyContactsList.slice(0, 5).map((contact, idx) => (
-                <div key={idx} className="border-2 border-gray-400 p-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                    <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>
-                      {contact.name || contact.service}
-                    </span>
-                  </div>
-                  <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                    <div className="flex justify-between">
-                      <strong>{contact.service && contact.name ? 'Service:' : 'Type:'}</strong>
-                      <span className="flex-1 ml-4">{contact.service}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Phone:</strong>
-                      <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                        {contact.phone || '______________________________'}
-                      </span>
-                    </div>
-                    {contact.is24_7 && (
-                      <div className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded inline-block">
-                        24/7 Available
-                      </div>
-                    )}
-                    {contact.notes && (
-                      <div className="text-sm text-gray-600 mt-2">
-                        <strong>Notes:</strong> {contact.notes}
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <strong>Last Verified:</strong>
-                      <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                        _______________
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <>
-                <div className="border-2 border-gray-400 p-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                    <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>Police</span>
-                  </div>
-                  <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                    <div className="flex justify-between">
-                      <strong>Phone:</strong>
-                      <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                        ______________________________
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Last Verified:</strong>
-                      <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                        _______________
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="border-2 border-gray-400 p-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                    <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>Fire Department</span>
-                  </div>
-                  <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                    <div className="flex justify-between">
-                      <strong>Phone:</strong>
-                      <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                        ______________________________
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Last Verified:</strong>
-                      <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                        _______________
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="border-2 border-gray-400 p-4">
-                  <div className="flex items-center gap-4 mb-3">
-                    <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                    <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>Ambulance / Hospital</span>
-                  </div>
-                  <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                    <div className="flex justify-between">
-                      <strong>Phone:</strong>
-                      <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                        ______________________________
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <strong>Last Verified:</strong>
-                      <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                        _______________
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+          <div className="text-sm text-gray-500 text-center pt-4 border-t border-gray-200">
+            UNDP x CARICHAM Business Continuity Planning Initiative
           </div>
-        </div>
-
-        {/* Key Business Contacts */}
-        <div className="border-4 border-blue-500 bg-white p-6">
-          <h2 className="text-2xl font-black mb-4 flex items-center gap-2" style={{ fontSize: '1.5rem' }}>
-            <span>👔</span> KEY BUSINESS CONTACTS
-          </h2>
-          <div className="space-y-4">
-            <div className="border-2 border-gray-400 p-4">
-              <div className="flex items-center gap-4 mb-3">
-                <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>Plan Manager: {planManager}</span>
-              </div>
-              <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                <div className="flex justify-between">
-                  <strong>Mobile:</strong>
-                  <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                    {planManagerPhone || '______________________________'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Alt Phone:</strong>
-                  <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                    ______________________________
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <strong>Email:</strong>
-                  <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                    {planManagerEmail || '_______________________________________'}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {insuranceList.length > 0 && (
-              <div className="border-2 border-gray-400 p-4">
-                <div className="flex items-center gap-4 mb-3">
-                  <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                  <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>
-                    Insurance Agent
-                  </span>
-                </div>
-                <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                  <div className="flex justify-between">
-                    <strong>Company:</strong>
-                    <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                      {insuranceList[0].company || '_______________________________________'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Agent Name:</strong>
-                    <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                      {insuranceList[0].agent || '_______________________________________'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Phone:</strong>
-                    <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                      {insuranceList[0].phone || '______________________________'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Policy #:</strong>
-                    <span className="font-mono border-b-2 border-gray-400 flex-1 ml-4">
-                      {insuranceList[0].policyNumber || '_______________________________________'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-            {insuranceList.length === 0 && (
-              <div className="border-2 border-gray-400 p-4">
-                <div className="flex items-center gap-4 mb-3">
-                  <input type="checkbox" className="w-8 h-8 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                  <span className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>Insurance Agent</span>
-                </div>
-                <div className="text-lg space-y-2" style={{ fontSize: '1.125rem' }}>
-                  <div className="flex justify-between">
-                    <strong>Company:</strong>
-                    <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                      _______________________________________
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Agent Name:</strong>
-                    <span className="border-b-2 border-gray-400 flex-1 ml-4">
-                      _______________________________________
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Phone:</strong>
-                    <span className="text-2xl font-mono border-b-2 border-gray-400 flex-1 ml-4" style={{ fontSize: '1.5rem' }}>
-                      ______________________________
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <strong>Policy #:</strong>
-                    <span className="font-mono border-b-2 border-gray-400 flex-1 ml-4">
-                      _______________________________________
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Page Footer */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Page 2 of {5 + risks.length + strategies.length}</strong> | {companyName} | Updated: {currentDate}
-          </p>
         </div>
       </div>
 
-      {/* RISK-SPECIFIC ACTION PAGES - One Risk Per Page */}
+      {/* ====================================================================== */}
+      {/* PAGE 1: QUICK REFERENCE GUIDE - Emergency Decision Tree */}
+      {/* ====================================================================== */}
+      <div className="p-8 page-break-after">
+        <div className="border-4 border-red-600 p-4 mb-6">
+          <h1 className="text-4xl font-black text-center text-red-900">
+            ⚡ QUICK REFERENCE GUIDE
+          </h1>
+          <p className="text-center text-lg mt-2 text-red-700">
+            Use this page when an emergency is happening NOW
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {/* Step 1: Ensure Safety */}
+          <div className="border-4 border-red-500 bg-red-50 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-red-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-black">1</div>
+              <h2 className="text-2xl font-black text-red-900">ENSURE SAFETY FIRST</h2>
+            </div>
+            <ul className="space-y-2 text-lg ml-16">
+              <li className="flex items-start gap-2">
+                <span className="text-red-600">▶</span>
+                <span>Evacuate if building is unsafe (fire, structural damage, flooding)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-red-600">▶</span>
+                <span>Account for all staff and visitors</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-red-600">▶</span>
+                <span>Call emergency services if anyone is injured: <strong className="font-mono">
+                  {emergencyContacts[0] ? getStringValue(emergencyContacts[0]['Phone Number'] || emergencyContacts[0].phoneNumber) : '911 or local emergency number'}
+                </strong></span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Step 2: Assess the Situation */}
+          <div className="border-4 border-orange-500 bg-orange-50 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-orange-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-black">2</div>
+              <h2 className="text-2xl font-black text-orange-900">ASSESS THE SITUATION</h2>
+            </div>
+            <ul className="space-y-2 text-lg ml-16">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-600">▶</span>
+                <span>What type of emergency is this? (Check risk sections for specific guidance)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-600">▶</span>
+                <span>Can business operations continue safely?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-orange-600">▶</span>
+                <span>What resources are compromised? (power, water, equipment, data, etc.)</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Step 3: Activate Response */}
+          <div className="border-4 border-yellow-500 bg-yellow-50 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-yellow-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-black">3</div>
+              <h2 className="text-2xl font-black text-yellow-900">ACTIVATE RESPONSE PLAN</h2>
+            </div>
+            <ul className="space-y-2 text-lg ml-16">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-600">▶</span>
+                <span>Notify Plan Manager: <strong>{planManager} - {planManagerPhone || planManagerEmail}</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-600">▶</span>
+                <span>Alert staff using contact list (see Contact Directory section)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-600">▶</span>
+                <span>Turn to the specific RISK section for detailed DURING/AFTER actions</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-600">▶</span>
+                <span>Begin recording events in Incident Log (back of workbook)</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Step 4: Protect Critical Operations */}
+          <div className="border-4 border-blue-500 bg-blue-50 p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="bg-blue-600 text-white w-12 h-12 rounded-full flex items-center justify-center text-2xl font-black">4</div>
+              <h2 className="text-2xl font-black text-blue-900">PROTECT CRITICAL OPERATIONS</h2>
+            </div>
+            <ul className="space-y-2 text-lg ml-16">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600">▶</span>
+                <span>Secure vital records and backup data (see Document Locator)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600">▶</span>
+                <span>Contact insurance provider immediately: {insuranceContacts.length > 0 ? (
+                  <strong className="font-mono">
+                    {getStringValue(insuranceContacts[0]['Phone Number'] || insuranceContacts[0].phoneNumber)}
+                  </strong>
+                ) : '(see Insurance contacts)'}</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-600">▶</span>
+                <span>Document all damage with photos/videos for insurance claims</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Quick Risk Finder */}
+          <div className="border-2 border-gray-400 bg-gray-50 p-4 mt-6">
+            <h3 className="text-xl font-black mb-3 text-gray-900">📍 Find Your Risk Section:</h3>
+            <div className="grid grid-cols-2 gap-2 text-base">
+              {sortedRisks.slice(0, 6).map((risk: any, idx: number) => {
+                const hazardName = getStringValue(risk.hazard || risk.Hazard || 'Risk')
+                const emoji = getRiskEmoji(hazardName)
+                const pageNum = 3 + idx // Approximate page number
+                return (
+                  <div key={idx} className="flex justify-between items-center border-b border-gray-300 pb-1">
+                    <span>{emoji} {hazardName}</span>
+                    <span className="font-mono text-gray-600">Page ~{pageNum}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ====================================================================== */}
+      {/* SECTION 2: RISK-SPECIFIC ACTION PLANS */}
+      {/* For each risk: BEFORE (prevention), DURING (response), AFTER (recovery) */}
+      {/* ====================================================================== */}
       {sortedRisks.map((risk: any, riskIdx: number) => {
-        const hazardName = getStringValue(risk.hazard || risk.Hazard)
-        const riskLevel = getStringValue(risk.riskLevel || risk.RiskLevel)
-        const riskEmoji = getRiskEmoji(hazardName)
-        const isHighSeverity = riskLevel.toLowerCase().includes('extreme') || riskLevel.toLowerCase().includes('high')
-        const hazardId = risk.hazardId || hazardName
+        const hazardId = risk.hazardId || risk.id
+        const hazardName = getStringValue(risk.hazard || risk.Hazard || 'Risk')
+        const riskScore = risk.riskScore || risk['Risk Score'] || 0
+        const likelihood = risk.likelihood || risk.Likelihood || 'Unknown'
+        const impact = risk.impact || risk.Impact || 'Unknown'
+        const vulnerability = getStringValue(risk.vulnerability || risk.Vulnerability || '')
+        const emoji = getRiskEmoji(hazardName)
+        const severityBadge = getRiskSeverityBadge(riskScore)
         
-        // Normalize risk identifiers for matching
-        const hazardIdNorm = normalizeRiskId(hazardId)
-        const hazardNameNorm = normalizeRiskId(hazardName)
-        
-        // Get ALL strategies that apply to this risk (using normalized matching)
-        const riskStrategies = strategies.filter((strategy: any) => {
-          if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
-          
-          return strategy.applicableRisks.some((riskId: string) => {
-            const riskIdNorm = normalizeRiskId(riskId)
+        // Find strategies that apply to this risk
+        // Check both risk-specific AND generic strategies
+        const matchingStrategies = [...riskSpecificStrategies, ...genericStrategies].filter(s => {
+          const applicableRisks = parseApplicableRisks(s.applicableRisks)
+          return applicableRisks.some((riskId: string) => {
+            // Normalize for comparison
+            const riskIdNorm = (riskId || '').toString().toLowerCase().replace(/_/g, ' ').trim()
+            const hazardIdNorm = (hazardId || '').toString().toLowerCase().replace(/_/g, ' ').trim()
+            const hazardNameNorm = (hazardName || '').toString().toLowerCase().trim()
             
-            return riskIdNorm === hazardIdNorm || 
+            // Match by ID or by name (with normalization)
+            return riskId === hazardId || 
+                   riskId === hazardName ||
+                   riskIdNorm === hazardIdNorm ||
                    riskIdNorm === hazardNameNorm ||
-                   hazardIdNorm.includes(riskIdNorm) ||
-                   riskIdNorm.includes(hazardIdNorm) ||
                    hazardNameNorm.includes(riskIdNorm) ||
                    riskIdNorm.includes(hazardNameNorm)
           })
         })
         
-        // Collect all action steps grouped by category
-        const preventionSteps: any[] = []
-        const responseSteps: any[] = []
-        const recoverySteps: any[] = []
+        // Extract steps by execution timing from matching strategies
+        const beforeStrategies = matchingStrategies.map(s => ({
+          ...s,
+          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'before_crisis') || []
+        })).filter(s => s.actionSteps.length > 0)
         
-        riskStrategies.forEach((strategy: any) => {
-          const strategyName = getStringValue(strategy.smeTitle || strategy.name || 'Unnamed Strategy')
-          const category = (strategy.category || '').toLowerCase()
-          
-          // Get action steps from strategy
-          const actionSteps = strategy.actionSteps || []
-          
-          actionSteps.forEach((step: any) => {
-            const stepWithContext = { 
-              ...step, 
-              strategyName, 
-              currencySymbol: strategy.currencySymbol || currencySymbol,
-              action: getStringValue(step.smeAction || step.action || step.title || ''),
-              why: getStringValue(step.whyThisStepMatters || ''),
-              doneWhen: getStringValue(step.howToKnowItsDone || ''),
-              estimatedTime: step.estimatedMinutes ? `${step.estimatedMinutes} min` : getStringValue(step.estimatedTime || ''),
-              checklist: Array.isArray(step.checklist) ? step.checklist : []
-            }
-            
-            // Categorize by strategy category OR by step phase
-            const stepPhase = (step.phase || '').toLowerCase()
-            
-            if (category.includes('prevent') || category.includes('mitigat') || category.includes('prepar') || 
-                stepPhase.includes('prevent') || stepPhase === 'immediate' || stepPhase === 'short_term') {
-              preventionSteps.push(stepWithContext)
-            } else if (category.includes('response') || category.includes('emergency') || category.includes('react') ||
-                       stepPhase.includes('response') || stepPhase === 'medium_term') {
-              responseSteps.push(stepWithContext)
-            } else if (category.includes('recover') || category.includes('restor') || category.includes('continuity') ||
-                       stepPhase.includes('recover') || stepPhase === 'long_term') {
-              recoverySteps.push(stepWithContext)
-            } else {
-              // Default to prevention if unclear
-              preventionSteps.push(stepWithContext)
-            }
-          })
-        })
+        const duringStrategies = matchingStrategies.map(s => ({
+          ...s,
+          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'during_crisis') || []
+        })).filter(s => s.actionSteps.length > 0)
         
-        const totalActionSteps = preventionSteps.length + responseSteps.length + recoverySteps.length
-        
-        // Debug logging for this risk
-        console.log(`[WorkbookPreview] Risk "${hazardName}" (ID: ${hazardId})`, {
-          matchedStrategies: riskStrategies.length,
-          strategyNames: riskStrategies.map(s => getStringValue(s.smeTitle || s.name)),
-          preventionSteps: preventionSteps.length,
-          responseSteps: responseSteps.length,
-          recoverySteps: recoverySteps.length,
-          totalSteps: totalActionSteps
-        })
+        const afterStrategies = matchingStrategies.map(s => ({
+          ...s,
+          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'after_crisis') || []
+        })).filter(s => s.actionSteps.length > 0)
         
         return (
-          <div key={riskIdx} className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
+          <div key={riskIdx} className="p-8 page-break-after">
             {/* Risk Header */}
-            <div className={`border-4 p-4 mb-6 ${
-              isHighSeverity ? 'border-red-600 bg-red-50' : 'border-orange-500 bg-orange-50'
-            }`}>
+            <div className="border-4 border-gray-800 p-4 mb-6">
               <div className="flex items-center justify-between mb-2">
-                <h1 className="text-3xl font-black" style={{ fontSize: '2rem' }}>
-                  {riskEmoji} RISK: {hazardName.toUpperCase()}
+                <h1 className="text-4xl font-black text-gray-900">
+                  {emoji} {hazardName}
                 </h1>
-                <div className={`px-4 py-2 rounded font-black text-xl ${
-                  isHighSeverity ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
-                }`} style={{ fontSize: '1.25rem' }}>
-                  {riskLevel}
+                <div className={`px-4 py-2 rounded text-xl font-black ${severityBadge.color}`}>
+                  {severityBadge.label}
                 </div>
               </div>
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-lg font-bold" style={{ fontSize: '1.125rem' }}>Risk Score:</span>
-                <div className="flex-1 bg-white border-2 border-gray-400 rounded-full h-6">
-                  <div 
-                    className={`h-full rounded-full ${
-                      isHighSeverity ? 'bg-red-600' : 'bg-orange-500'
-                    }`}
-                    style={{ width: `${(risk.riskScore || 0) * 10}%` }}
-                  ></div>
+              <div className="grid grid-cols-3 gap-4 text-base mt-4 border-t-2 border-gray-300 pt-4">
+                <div>
+                  <span className="font-bold text-gray-700">Risk Score:</span> {riskScore}/25
                 </div>
-                <span className="text-xl font-black" style={{ fontSize: '1.25rem' }}>
-                  {risk.riskScore || 0}/10
-                </span>
+                <div>
+                  <span className="font-bold text-gray-700">Likelihood:</span> {likelihood}
+                </div>
+                <div>
+                  <span className="font-bold text-gray-700">Impact:</span> {impact}
+                </div>
               </div>
-              
-              {/* Show applicable strategies count */}
-              {riskStrategies.length > 0 && (
-                <div className="mt-3 text-base font-bold" style={{ fontSize: '1rem' }}>
-                  📋 {riskStrategies.length} {riskStrategies.length === 1 ? 'Strategy' : 'Strategies'} | {totalActionSteps} Action {totalActionSteps === 1 ? 'Step' : 'Steps'}
+              {vulnerability && (
+                <div className="mt-3 p-3 bg-gray-100 rounded text-sm">
+                  <span className="font-bold text-gray-700">Why This Matters to Us:</span> {vulnerability}
                 </div>
               )}
             </div>
 
-            {/* BEFORE (PREPARATION) Section */}
-            <div className="border-4 border-blue-600 bg-blue-50 p-6 mb-6">
-              <h2 className="text-2xl font-black mb-4 text-blue-900 flex items-center gap-2" style={{ fontSize: '1.5rem' }}>
-                <span>🔧</span> BEFORE (PREPARATION)
-              </h2>
-              <div className="space-y-4 bg-white p-4 border-2 border-blue-400">
-                {preventionSteps.length > 0 ? (
-                  preventionSteps.map((step, idx) => (
-                    <div key={idx} className="mb-4">
-                      <div className="flex items-start gap-4">
-                        <input type="checkbox" className="w-8 h-8 mt-1 flex-shrink-0" style={{ width: '2rem', height: '2rem' }} disabled />
-                        <div className="flex-1">
-                          <p className="text-lg font-bold mb-1" style={{ fontSize: '1.125rem' }}>
-                            {step.action}
-                          </p>
-                          <div className="text-sm text-gray-600 italic mb-2" style={{ fontSize: '0.875rem' }}>
-                            From: {step.strategyName}
-                          </div>
-                          <div className="text-base space-y-1" style={{ fontSize: '1rem' }}>
-                            {step.why && (
-                              <div className="text-sm text-gray-700">
-                                <strong>Why:</strong> {step.why}
-                              </div>
-                            )}
-                            {step.estimatedTime && (
-                              <div className="text-sm">
-                                <strong>Time Needed:</strong> {step.estimatedTime}
-                              </div>
-                            )}
-                            {step.doneWhen && (
-                              <div className="text-sm text-green-700">
-                                <strong>Done When:</strong> {step.doneWhen}
-                              </div>
-                            )}
-                            {step.checklist && step.checklist.length > 0 && (
-                              <div className="mt-2 ml-4 space-y-1 text-sm" style={{ fontSize: '0.875rem' }}>
-                                {step.checklist.slice(0, 3).map((item: any, i: number) => (
-                                  <div key={i} className="flex items-start gap-2">
-                                    <span className="text-blue-600">▪</span>
-                                    <span>{getStringValue(item)}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            <div className="mt-2 pt-2 border-t">
-                              <div className="flex gap-4 text-sm">
-                                <span>Due: __________</span>
-                                <span>Responsible: _______________</span>
-                              </div>
-                            </div>
+            {/* BEFORE: Prevention & Preparation */}
+            <div className="mb-6">
+              <div className="bg-blue-600 text-white p-3 mb-3">
+                <h2 className="text-2xl font-black">🛡️ BEFORE: Prevention & Preparation</h2>
+                <p className="text-sm mt-1">Do these things NOW to reduce risk and prepare for potential impact</p>
+              </div>
+              
+              {beforeStrategies.length > 0 ? (
+                <div className="space-y-4">
+                  {beforeStrategies.map((strategy, sIdx) => {
+                    const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                    const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
+                    const stratCost = strategy.calculatedCostLocal || 0
+                    const stratTime = strategy.calculatedHours 
+                      ? formatHoursToDisplay(strategy.calculatedHours)
+                      : calculateStrategyTimeFromSteps(strategy.actionSteps) 
+                        ? formatHoursToDisplay(calculateStrategyTimeFromSteps(strategy.actionSteps))
+                        : 'TBD'
+                    const isEssential = strategy.priorityLevel === 'essential'
+                    
+                    return (
+                      <div key={sIdx} className={`border-2 ${isEssential ? 'border-red-400 bg-red-50' : 'border-blue-300 bg-blue-50'} p-4`}>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-bold text-gray-900 flex-1">
+                            {isEssential && <span className="text-red-600">⚠️ ESSENTIAL: </span>}
+                            {stratName}
+                          </h3>
+                          <div className="text-right text-sm ml-4">
+                            <div className="font-bold text-blue-900">{formatCurrency(stratCost, currencySymbol)}</div>
+                            <div className="text-gray-600">{stratTime}</div>
                           </div>
                         </div>
+                        <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Action Steps */}
+                        {strategy.actionSteps && strategy.actionSteps.length > 0 && (
+                          <div className="ml-4">
+                            <div className="font-bold text-sm text-gray-800 mb-2">Action Steps:</div>
+                            <ol className="space-y-2">
+                              {strategy.actionSteps
+                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .map((step, stepIdx) => {
+                                  const stepText = getStringValue(step.smeAction || step.title || step.description)
+                                  const stepTime = step.timeframe
+                                  return (
+                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
+                                      <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                        {stepIdx + 1}
+                                      </span>
+                                      <div className="flex-1">
+                                        <span>{stepText}</span>
+                                        {stepTime && (
+                                          <span className="ml-2 text-gray-600 italic">({stepTime})</span>
+                                        )}
+                                      </div>
+                                      <span className="flex-shrink-0 w-6 h-6 border-2 border-gray-400 rounded"></span>
+                                    </li>
+                                  )
+                                })}
+                            </ol>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-6 text-gray-500 text-lg" style={{ fontSize: '1.125rem' }}>
-                    <p>⚠️ No prevention steps defined for this risk.</p>
-                    <p className="text-base mt-2" style={{ fontSize: '1rem' }}>Complete the wizard to add prevention strategies.</p>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="border-2 border-gray-300 bg-gray-50 p-4 text-center text-gray-600">
+                  No specific prevention strategies assigned for this risk yet.<br/>
+                  Review general preparedness measures in the Implementation Checklist section.
+                </div>
+              )}
+            </div>
+
+            {/* DURING: Emergency Response */}
+            <div className="mb-6">
+              <div className="bg-red-600 text-white p-3 mb-3">
+                <h2 className="text-2xl font-black">🚨 DURING: Emergency Response</h2>
+                <p className="text-sm mt-1">Follow these steps when this emergency is happening NOW</p>
+              </div>
+              
+              {duringStrategies.length > 0 ? (
+                <div className="space-y-4">
+                  {duringStrategies.map((strategy, sIdx) => {
+                    const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                    const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
+                    
+                    return (
+                      <div key={sIdx} className="border-2 border-red-400 bg-red-50 p-4">
+                        <h3 className="text-lg font-bold text-red-900 mb-2">{stratName}</h3>
+                        <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Action Steps */}
+                        {strategy.actionSteps && strategy.actionSteps.length > 0 && (
+                          <div className="ml-4">
+                            <ol className="space-y-2">
+                              {strategy.actionSteps
+                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .map((step, stepIdx) => {
+                                  const stepText = getStringValue(step.smeAction || step.title || step.description)
+                                  return (
+                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
+                                      <span className="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                        {stepIdx + 1}
+                                      </span>
+                                      <span className="flex-1">{stepText}</span>
+                                    </li>
+                                  )
+                                })}
+                            </ol>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="border-2 border-gray-300 bg-gray-50 p-4">
+                  <div className="font-bold text-gray-800 mb-2">General Emergency Response:</div>
+                  <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
+                    <li>Ensure all staff and visitors are safe - evacuate if necessary</li>
+                    <li>Contact emergency services if needed: {emergencyContacts[0] ? getStringValue(emergencyContacts[0]['Phone Number'] || emergencyContacts[0].phoneNumber) : '911'}</li>
+                    <li>Alert Plan Manager: {planManager} - {planManagerPhone}</li>
+                    <li>Communicate with staff using contact list</li>
+                    <li>Document the situation (photos, notes, timeline)</li>
+                    <li>Contact insurance provider as soon as safe to do so</li>
+                    <li>Begin recording in Incident Log</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+
+            {/* AFTER: Recovery */}
+            <div className="mb-6">
+              <div className="bg-green-600 text-white p-3 mb-3">
+                <h2 className="text-2xl font-black">🔄 AFTER: Recovery & Return</h2>
+                <p className="text-sm mt-1">Steps to restore operations and get back to business</p>
+              </div>
+              
+              {afterStrategies.length > 0 ? (
+                <div className="space-y-4">
+                  {afterStrategies.map((strategy, sIdx) => {
+                    const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                    const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
+                    const stratCost = strategy.calculatedCostLocal || 0
+                    
+                    return (
+                      <div key={sIdx} className="border-2 border-green-400 bg-green-50 p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="text-lg font-bold text-green-900 flex-1">{stratName}</h3>
+                          {stratCost > 0 && (
+                            <div className="text-sm font-bold text-green-900 ml-4">
+                              {formatCurrency(stratCost, currencySymbol)}
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Action Steps */}
+                        {strategy.actionSteps && strategy.actionSteps.length > 0 && (
+                          <div className="ml-4">
+                            <ol className="space-y-2">
+                              {strategy.actionSteps
+                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .map((step, stepIdx) => {
+                                  const stepText = getStringValue(step.smeAction || step.title || step.description)
+                                  const stepTime = step.timeframe
+                                  return (
+                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
+                                      <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                        {stepIdx + 1}
+                                      </span>
+                                      <div className="flex-1">
+                                        <span>{stepText}</span>
+                                        {stepTime && (
+                                          <span className="ml-2 text-gray-600 italic">({stepTime})</span>
+                                        )}
+                                      </div>
+                                    </li>
+                                  )
+                                })}
+                            </ol>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="border-2 border-gray-300 bg-gray-50 p-4">
+                  <div className="font-bold text-gray-800 mb-2">General Recovery Steps:</div>
+                  <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
+                    <li>Assess and document all damage thoroughly</li>
+                    <li>File insurance claims with documentation</li>
+                    <li>Determine timeline for repairs/replacements</li>
+                    <li>Communicate status updates to customers and stakeholders</li>
+                    <li>Restore critical systems first, then supporting systems</li>
+                    <li>Conduct lessons-learned meeting and update this plan</li>
+                    <li>Thank staff and recognize their efforts</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+
+            {/* Related Contacts for This Risk */}
+            <div className="border-2 border-gray-400 bg-gray-50 p-4">
+              <h3 className="font-bold text-gray-900 mb-2">📞 Key Contacts for {hazardName}:</h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="font-semibold">Emergency:</span> {emergencyContacts[0] ? getStringValue(emergencyContacts[0]['Phone Number'] || emergencyContacts[0].phoneNumber) : 'See contacts'}
+                </div>
+                <div>
+                  <span className="font-semibold">Plan Manager:</span> {planManagerPhone || planManagerEmail}
+                </div>
+                {insuranceContacts[0] && (
+                  <div>
+                    <span className="font-semibold">Insurance:</span> {getStringValue(insuranceContacts[0]['Phone Number'] || insuranceContacts[0].phoneNumber)}
+                  </div>
+                )}
+                {utilitiesContacts[0] && (
+                  <div>
+                    <span className="font-semibold">Utilities:</span> {getStringValue(utilitiesContacts[0]['Phone Number'] || utilitiesContacts[0].phoneNumber)}
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* DURING (RESPONSE) Section */}
-            <div className="border-4 border-red-600 bg-red-50 p-6 mb-6">
-              <h2 className="text-2xl font-black mb-4 text-red-900 flex items-center gap-2" style={{ fontSize: '1.5rem' }}>
-                <span>🚨</span> DURING (IMMEDIATE RESPONSE)
-              </h2>
-              <div className="space-y-3 bg-white p-4 border-2 border-red-400">
-                <div className="text-lg font-bold mb-3 text-red-900" style={{ fontSize: '1.125rem' }}>
-                  DO THESE NOW - IN ORDER:
-                </div>
-                
-                {responseSteps.length > 0 ? (
-                  responseSteps.map((step, idx) => (
-                    <div key={idx} className="flex items-start gap-4 mb-4">
-                      <span className="text-2xl font-black text-red-600 w-8">{idx + 1}.</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                          <span className="text-lg font-bold" style={{ fontSize: '1.125rem' }}>{step.action}</span>
-                        </div>
-                        <div className="ml-11">
-                          <div className="text-sm text-gray-600 italic mb-1" style={{ fontSize: '0.875rem' }}>
-                            From: {step.strategyName}
-                          </div>
-                          {step.doneWhen && (
-                            <div className="text-sm text-green-700">
-                              <strong>Done When:</strong> {step.doneWhen}
-                            </div>
-                          )}
-                          {step.checklist && step.checklist.length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {step.checklist.slice(0, 3).map((item: any, i: number) => (
-                                <div key={i} className="flex items-center gap-2">
-                                  <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                                  <span className="text-base" style={{ fontSize: '1rem' }}>{getStringValue(item)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <div className="text-base mt-2" style={{ fontSize: '1rem' }}>
-                            Completed by: _______________ Time: ________
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div className="flex items-start gap-4">
-                      <span className="text-2xl font-black text-red-600 w-8">1.</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                          <span className="text-lg font-bold" style={{ fontSize: '1.125rem' }}>Ensure safety of all personnel</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <span className="text-2xl font-black text-red-600 w-8">2.</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                          <span className="text-lg font-bold" style={{ fontSize: '1.125rem' }}>Contact emergency services</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-4">
-                      <span className="text-2xl font-black text-red-600 w-8">3.</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                          <span className="text-lg font-bold" style={{ fontSize: '1.125rem' }}>Secure critical assets and documents</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* AFTER (RECOVERY) Section */}
-            <div className="border-4 border-green-600 bg-green-50 p-6 mb-6">
-              <h2 className="text-2xl font-black mb-4 text-green-900 flex items-center gap-2" style={{ fontSize: '1.5rem' }}>
-                <span>🔄</span> AFTER (RECOVERY)
-              </h2>
-              <div className="space-y-4 bg-white p-4 border-2 border-green-400">
-                {recoverySteps.length > 0 ? (
-                  recoverySteps.map((step, idx) => (
-                    <div key={idx} className="mb-4">
-                      <div className="flex items-start gap-4">
-                        <input type="checkbox" className="w-7 h-7 mt-1" style={{ width: '1.75rem', height: '1.75rem' }} disabled />
-                        <div className="flex-1">
-                          <p className="text-lg font-bold mb-1" style={{ fontSize: '1.125rem' }}>
-                            {step.action}
-                          </p>
-                          <div className="text-sm text-gray-600 italic mb-2" style={{ fontSize: '0.875rem' }}>
-                            From: {step.strategyName}
-                          </div>
-                          {step.estimatedTime && (
-                            <div className="text-sm">
-                              <strong>Timeline:</strong> {step.estimatedTime}
-                            </div>
-                          )}
-                          {step.doneWhen && (
-                            <div className="text-sm text-green-700">
-                              <strong>Done When:</strong> {step.doneWhen}
-                            </div>
-                          )}
-                          {step.checklist && step.checklist.length > 0 && (
-                            <div className="mt-2 ml-4 space-y-1">
-                              {step.checklist.slice(0, 3).map((item: any, i: number) => (
-                                <div key={i} className="flex items-start gap-2">
-                                  <span className="text-green-600">▪</span>
-                                  <span className="text-sm">{getStringValue(item)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <>
-                    <div>
-                      <h3 className="text-lg font-black mb-3 text-green-900 flex items-center gap-2" style={{ fontSize: '1.125rem' }}>
-                        <span>⚡</span> IMMEDIATE (Day 1-3)
-                      </h3>
-                      <div className="space-y-2 ml-8">
-                        <div className="flex items-center gap-3">
-                          <input type="checkbox" className="w-7 h-7" style={{ width: '1.75rem', height: '1.75rem' }} disabled />
-                          <span className="text-base" style={{ fontSize: '1rem' }}>Assess damage and document with photos</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <input type="checkbox" className="w-7 h-7" style={{ width: '1.75rem', height: '1.75rem' }} disabled />
-                          <span className="text-base" style={{ fontSize: '1rem' }}>Contact insurance company</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black mb-3 text-green-900 flex items-center gap-2" style={{ fontSize: '1.125rem' }}>
-                        <span>📅</span> SHORT-TERM (Week 1-4)
-                      </h3>
-                      <div className="space-y-2 ml-8">
-                        <div className="flex items-center gap-3">
-                          <input type="checkbox" className="w-7 h-7" style={{ width: '1.75rem', height: '1.75rem' }} disabled />
-                          <span className="text-base" style={{ fontSize: '1rem' }}>Begin repairs and cleanup</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <input type="checkbox" className="w-7 h-7" style={{ width: '1.75rem', height: '1.75rem' }} disabled />
-                          <span className="text-base" style={{ fontSize: '1rem' }}>Resume critical operations</span>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Notes Section */}
-            <div className="border-4 border-gray-600 p-6">
-              <h3 className="text-xl font-black mb-3" style={{ fontSize: '1.25rem' }}>
-                📝 NOTES / LESSONS LEARNED
-              </h3>
-              <div className="border-2 border-gray-400 p-4 bg-gray-50 min-h-[150px]">
-                <div className="space-y-2 text-base text-gray-400" style={{ fontSize: '1rem' }}>
-                  <div>_________________________________________________________________</div>
-                  <div>_________________________________________________________________</div>
-                  <div>_________________________________________________________________</div>
-                  <div>_________________________________________________________________</div>
-                  <div>_________________________________________________________________</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Page Footer */}
-            <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-              <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-                <strong>Page {3 + riskIdx} of {5 + risks.length + strategies.length}</strong> | {companyName} | Risk: {hazardName}
-              </p>
             </div>
           </div>
         )
       })}
 
-      {/* BUDGET WORKSHEETS */}
-      <div className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-        <div className="border-4 border-black p-2 mb-6">
-          <h1 className="text-4xl font-black text-center text-green-600" style={{ fontSize: '2.5rem' }}>
-            💰 BUDGET PLANNING WORKSHEET
+      {/* ====================================================================== */}
+      {/* SECTION 3: IMPLEMENTATION CHECKLIST */}
+      {/* Track progress on prevention strategies */}
+      {/* ====================================================================== */}
+      <div className="p-8 page-break-after">
+        <div className="border-4 border-blue-600 p-4 mb-6">
+          <h1 className="text-4xl font-black text-blue-900">
+            ✅ IMPLEMENTATION CHECKLIST
           </h1>
+          <p className="text-lg mt-2 text-blue-700">
+            Track your progress on prevention strategies - Check off as you complete each item
+          </p>
         </div>
 
-        {/* Budget Tier Selection */}
-        <div className="border-4 border-green-600 bg-green-50 p-6 mb-6">
-          <h2 className="text-2xl font-black mb-4 text-green-900" style={{ fontSize: '1.5rem' }}>
-            SELECT YOUR BUDGET TIER
-          </h2>
-          <div className="space-y-4">
-            <div className="border-4 border-gray-400 bg-white p-4">
-              <div className="flex items-center gap-4 mb-2">
-                <input type="radio" name="budget" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                <div>
-                  <h3 className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>BUDGET TIER (60%)</h3>
-                  <p className="text-3xl font-black text-green-600 mt-2" style={{ fontSize: '2rem' }}>
-                    {currencySymbol}{formatCurrency(Math.round(totalInvestment * 0.6))}
-                  </p>
-                  <p className="text-lg mt-2" style={{ fontSize: '1.125rem' }}>Basic protection with DIY options</p>
-                </div>
-              </div>
+        {/* Budget Summary */}
+        <div className="border-2 border-gray-400 bg-blue-50 p-4 mb-6">
+          <div className="grid grid-cols-4 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-black text-blue-900">{strategies.length}</div>
+              <div className="text-sm text-gray-700">Total Strategies</div>
             </div>
-
-            <div className="border-4 border-blue-600 bg-blue-50 p-4">
-              <div className="flex items-center gap-4 mb-2">
-                <input type="radio" name="budget" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} defaultChecked disabled />
-                <div>
-                  <h3 className="text-xl font-bold text-blue-900" style={{ fontSize: '1.25rem' }}>STANDARD TIER (100%)</h3>
-                  <p className="text-3xl font-black text-blue-600 mt-2" style={{ fontSize: '2rem' }}>
-                    {currencySymbol}{formatCurrency(totalInvestment)}
-                  </p>
-                  <p className="text-lg mt-2 text-blue-800" style={{ fontSize: '1.125rem' }}>
-                    ⭐ Recommended for most businesses
-                  </p>
-                </div>
-              </div>
+            <div>
+              <div className="text-2xl font-black text-red-600">{essentialStrategies.length}</div>
+              <div className="text-sm text-gray-700">Essential</div>
             </div>
-
-            <div className="border-4 border-gray-400 bg-white p-4">
-              <div className="flex items-center gap-4 mb-2">
-                <input type="radio" name="budget" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                <div>
-                  <h3 className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>PREMIUM TIER (150%)</h3>
-                  <p className="text-3xl font-black text-green-600 mt-2" style={{ fontSize: '2rem' }}>
-                    {currencySymbol}{formatCurrency(Math.round(totalInvestment * 1.5))}
-                  </p>
-                  <p className="text-lg mt-2" style={{ fontSize: '1.125rem' }}>Comprehensive protection</p>
-                </div>
-              </div>
+            <div>
+              <div className="text-2xl font-black text-orange-600">{recommendedStrategies.length}</div>
+              <div className="text-sm text-gray-700">Recommended</div>
+            </div>
+            <div>
+              <div className="text-2xl font-black text-blue-900">{formatCurrency(totalInvestment, currencySymbol)}</div>
+              <div className="text-sm text-gray-700">Total Budget ({currencyCode})</div>
             </div>
           </div>
         </div>
 
-        {/* Expense Tracker */}
-        <div className="border-4 border-blue-600 bg-white p-6">
-          <h2 className="text-2xl font-black mb-4" style={{ fontSize: '1.5rem' }}>
-            📊 EXPENSE TRACKER
-          </h2>
-          <table className="w-full border-2 border-gray-600" style={{ fontSize: '1rem' }}>
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="border-2 border-gray-600 p-3 text-left" style={{ width: '5%' }}>✓</th>
-                <th className="border-2 border-gray-600 p-3 text-left" style={{ width: '35%' }}>ITEM / STRATEGY</th>
-                <th className="border-2 border-gray-600 p-3 text-left" style={{ width: '20%' }}>ESTIMATED</th>
-                <th className="border-2 border-gray-600 p-3 text-left" style={{ width: '20%' }}>ACTUAL</th>
-                <th className="border-2 border-gray-600 p-3 text-left" style={{ width: '20%' }}>PAID?</th>
-              </tr>
-            </thead>
-            <tbody className="text-base" style={{ fontSize: '1rem' }}>
-              {/* Show actual strategies */}
-              {strategies.slice(0, 8).map((strategy, idx) => {
-                const strategyName = getStringValue(strategy.smeTitle || strategy.name)
-                const estimatedCost = strategy.calculatedCostLocal || 0
+        {/* Essential Strategies */}
+        {essentialStrategies.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-red-600 text-white p-3 mb-3">
+              <h2 className="text-2xl font-black">⚠️ ESSENTIAL STRATEGIES - Do These First!</h2>
+            </div>
+            <div className="space-y-3">
+              {essentialStrategies.map((strategy, idx) => {
+                const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                const stratCost = strategy.calculatedCostLocal || 0
+                const stratTime = strategy.calculatedHours 
+                  ? formatHoursToDisplay(strategy.calculatedHours)
+                  : calculateStrategyTimeFromSteps(strategy.actionSteps)
+                    ? formatHoursToDisplay(calculateStrategyTimeFromSteps(strategy.actionSteps))
+                    : 'TBD'
+                const stepCount = strategy.actionSteps?.length || 0
+                
                 return (
-                  <tr key={strategy.id}>
-                    <td className="border-2 border-gray-600 p-3 text-center">
-                      <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    </td>
-                    <td className="border-2 border-gray-600 p-3">
-                      <div className="font-semibold">{strategyName}</div>
-                    </td>
-                    <td className="border-2 border-gray-600 p-3">
-                      {estimatedCost > 0 ? (
-                        <div className="font-mono">{currencySymbol}{formatCurrency(estimatedCost)}</div>
-                      ) : (
-                        <div className="border-b-2 border-gray-400">$________</div>
-                      )}
-                    </td>
-                    <td className="border-2 border-gray-600 p-3">
-                      <div className="border-b-2 border-gray-400">$________</div>
-                    </td>
-                    <td className="border-2 border-gray-600 p-3 text-center">
-                      <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    </td>
-                  </tr>
+                  <div key={idx} className="border-2 border-red-400 bg-white p-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 border-4 border-red-600 rounded flex-shrink-0"></div>
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900">{stratName}</div>
+                        <div className="text-sm text-gray-600">
+                          {stepCount} steps • {stratTime} • {formatCurrency(stratCost, currencySymbol)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )
               })}
-              {/* Add blank rows if fewer than 8 strategies */}
-              {strategies.length < 8 && [...Array(8 - strategies.length)].map((_, idx) => (
-                <tr key={`blank-${idx}`}>
-                  <td className="border-2 border-gray-600 p-3 text-center">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                  </td>
-                  <td className="border-2 border-gray-600 p-3">
-                    <div className="border-b-2 border-gray-400">_________________</div>
-                  </td>
-                  <td className="border-2 border-gray-600 p-3">
-                    <div className="border-b-2 border-gray-400">$________</div>
-                  </td>
-                  <td className="border-2 border-gray-600 p-3">
-                    <div className="border-b-2 border-gray-400">$________</div>
-                  </td>
-                  <td className="border-2 border-gray-600 p-3 text-center">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                  </td>
-                </tr>
-              ))}
-              <tr className="bg-gray-100 font-bold">
-                <td colSpan={2} className="border-2 border-gray-600 p-3 text-right text-lg" style={{ fontSize: '1.125rem' }}>
-                  TOTAL:
-                </td>
-                <td className="border-2 border-gray-600 p-3">
-                  {totalInvestment > 0 ? (
-                    <div className="font-mono text-lg" style={{ fontSize: '1.125rem' }}>
-                      {currencySymbol}{formatCurrency(totalInvestment)}
-                    </div>
-                  ) : (
-                    <div className="border-b-2 border-gray-600 text-lg" style={{ fontSize: '1.125rem' }}>$________</div>
-                  )}
-                </td>
-                <td className="border-2 border-gray-600 p-3">
-                  <div className="border-b-2 border-gray-600 text-lg" style={{ fontSize: '1.125rem' }}>$________</div>
-                </td>
-                <td className="border-2 border-gray-600 p-3"></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div className="mt-6 space-y-3 text-lg" style={{ fontSize: '1.125rem' }}>
-            <div className="flex justify-between border-b-2 border-gray-400 pb-2">
-              <strong>Remaining Budget:</strong>
-              <span className="font-mono text-xl">$______________</span>
-            </div>
-            <div className="flex justify-between border-b-2 border-gray-400 pb-2">
-              <strong>Payment Method:</strong>
-              <span className="border-b-2 border-gray-400 flex-1 ml-4">_________________</span>
-            </div>
-            <div className="flex justify-between border-b-2 border-gray-400 pb-2">
-              <strong>Receipt Location:</strong>
-              <span className="border-b-2 border-gray-400 flex-1 ml-4">_________________</span>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Page Footer */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Page {3 + risks.length} of {5 + risks.length + strategies.length}</strong> | {companyName} | Budget Planning
-          </p>
-        </div>
-      </div>
-
-      {/* PROGRESS TRACKERS */}
-      <div className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-        <div className="border-4 border-black p-2 mb-6">
-          <h1 className="text-4xl font-black text-center text-purple-600" style={{ fontSize: '2.5rem' }}>
-            📊 PROGRESS TRACKERS
-          </h1>
-        </div>
-
-        {/* Testing Schedule Checklist */}
-        <div className="border-4 border-purple-600 bg-purple-50 p-6 mb-6">
-          <h2 className="text-2xl font-black mb-4 text-purple-900" style={{ fontSize: '1.5rem' }}>
-            📅 TESTING & MAINTENANCE SCHEDULE
-          </h2>
-          <div className="bg-white p-4 border-2 border-purple-400">
+        {/* Recommended Strategies */}
+        {recommendedStrategies.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-orange-500 text-white p-3 mb-3">
+              <h2 className="text-2xl font-black">📋 RECOMMENDED STRATEGIES</h2>
+            </div>
             <div className="space-y-3">
-              {testingChecklist.length > 0 ? (
-                testingChecklist.map((test, idx) => (
-                  <div key={idx} className="border-2 border-gray-400 p-3">
-                    <div className="flex items-center gap-4 mb-2">
-                      <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                      <h3 className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>{test.testType}</h3>
-                    </div>
-                    <div className="ml-12 space-y-2 text-base" style={{ fontSize: '1rem' }}>
-                      <div>
-                        <strong>Frequency:</strong> {test.frequency || '_______________'}
-                      </div>
-                      <div>
-                        <strong>Next Test Date:</strong> {test.nextDate || '_______________'}
-                      </div>
-                      <div>
-                        <strong>Responsible:</strong> {test.responsible || '_______________'}
-                      </div>
-                      <div className="mt-2 pt-2 border-t">
-                        <strong>Completion Notes:</strong>
-                        <div className="border border-gray-300 p-2 min-h-[40px] bg-gray-50 mt-1">
-                          _________________________________________________________________
+              {recommendedStrategies.map((strategy, idx) => {
+                const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                const stratCost = strategy.calculatedCostLocal || 0
+                const stratTime = strategy.calculatedHours 
+                  ? formatHoursToDisplay(strategy.calculatedHours)
+                  : calculateStrategyTimeFromSteps(strategy.actionSteps)
+                    ? formatHoursToDisplay(calculateStrategyTimeFromSteps(strategy.actionSteps))
+                    : 'TBD'
+                const stepCount = strategy.actionSteps?.length || 0
+                
+                return (
+                  <div key={idx} className="border-2 border-orange-300 bg-white p-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 border-4 border-orange-500 rounded flex-shrink-0"></div>
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900">{stratName}</div>
+                        <div className="text-sm text-gray-600">
+                          {stepCount} steps • {stratTime} • {formatCurrency(stratCost, currencySymbol)}
                         </div>
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <>
-                  {['Quarterly Plan Review', 'Emergency Contact Verification', 'Backup System Test', 'Staff Training Exercise', 'Equipment Inspection', 'Document Backup Check'].map((testName) => (
-                    <div key={testName} className="border-2 border-gray-400 p-3">
-                      <div className="flex items-center gap-4 mb-2">
-                        <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                        <h3 className="text-xl font-bold" style={{ fontSize: '1.25rem' }}>{testName}</h3>
-                      </div>
-                      <div className="ml-12 space-y-2 text-base" style={{ fontSize: '1rem' }}>
-                        <div>
-                          <strong>Frequency:</strong> _______________
-                        </div>
-                        <div>
-                          <strong>Next Date:</strong> _______________
-                        </div>
-                        <div>
-                          <strong>Responsible:</strong> _______________
-                        </div>
-                        <div className="mt-2">
-                          <strong>Completed by:</strong> ______________ <strong>Date:</strong> __________
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Optional Strategies */}
+        {optionalStrategies.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-gray-500 text-white p-3 mb-3">
+              <h2 className="text-2xl font-black">💡 OPTIONAL ENHANCEMENTS</h2>
+            </div>
+            <div className="space-y-3">
+              {optionalStrategies.map((strategy, idx) => {
+                const stratName = getStringValue(strategy.smeTitle || strategy.name)
+                const stratCost = strategy.calculatedCostLocal || 0
+                const stratTime = strategy.calculatedHours 
+                  ? formatHoursToDisplay(strategy.calculatedHours)
+                  : calculateStrategyTimeFromSteps(strategy.actionSteps)
+                    ? formatHoursToDisplay(calculateStrategyTimeFromSteps(strategy.actionSteps))
+                    : 'TBD'
+                const stepCount = strategy.actionSteps?.length || 0
+                
+                return (
+                  <div key={idx} className="border-2 border-gray-300 bg-white p-3">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 border-4 border-gray-400 rounded flex-shrink-0"></div>
+                      <div className="flex-1">
+                        <div className="font-bold text-gray-900">{stratName}</div>
+                        <div className="text-sm text-gray-600">
+                          {stepCount} steps • {stratTime} • {formatCurrency(stratCost, currencySymbol)}
                         </div>
                       </div>
                     </div>
-                  ))}
-                </>
-              )}
+                  </div>
+                )
+              })}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Page Footer */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Page {4 + risks.length} of {5 + risks.length + strategies.length}</strong> | {companyName} | Progress Tracking
-          </p>
+        {/* Progress Tracker */}
+        <div className="border-4 border-blue-600 bg-blue-50 p-4 mt-6">
+          <h3 className="text-xl font-black text-blue-900 mb-3">📊 Track Your Progress:</h3>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 border-4 border-gray-400 rounded flex-shrink-0"></div>
+              <span>Not Started</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 border-4 border-gray-400 rounded flex-shrink-0 relative">
+                <div className="absolute inset-0 bg-yellow-400 opacity-50"></div>
+              </div>
+              <span>In Progress (shade in partially)</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 border-4 border-gray-400 rounded flex-shrink-0 relative">
+                <div className="absolute inset-1">
+                  <svg className="w-full h-full" viewBox="0 0 20 20">
+                    <path d="M3 10 L8 15 L17 4" stroke="green" strokeWidth="3" fill="none"/>
+                  </svg>
+                </div>
+              </div>
+              <span>Completed (check it off!)</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* VITAL DOCUMENTS LOCATOR */}
-      <div className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-        <div className="border-4 border-black p-2 mb-6">
-          <h1 className="text-4xl font-black text-center text-indigo-600" style={{ fontSize: '2.5rem' }}>
-            📁 VITAL DOCUMENTS LOCATOR
+      {/* ====================================================================== */}
+      {/* SECTION 4: CONTACT DIRECTORY */}
+      {/* All contacts organized by category */}
+      {/* ====================================================================== */}
+      <div className="p-8 page-break-after">
+        <div className="border-4 border-green-600 p-4 mb-6">
+          <h1 className="text-4xl font-black text-green-900">
+            📞 CONTACT DIRECTORY
           </h1>
+          <p className="text-lg mt-2 text-green-700">
+            All key contacts in one place - Keep this information current!
+          </p>
         </div>
 
-        <div className="bg-yellow-100 border-4 border-yellow-600 p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <span className="text-3xl">⚠️</span>
-            <div>
-              <h3 className="text-xl font-black text-yellow-900 mb-2" style={{ fontSize: '1.25rem' }}>
-                CRITICAL: Know Where Everything Is!
-              </h3>
-              <p className="text-lg text-yellow-800" style={{ fontSize: '1.125rem' }}>
-                In a crisis, you need to find documents FAST. Fill this out completely.
-              </p>
+        {/* Emergency Services */}
+        {emergencyContacts.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-red-600 text-white p-2 mb-2">
+              <h2 className="text-xl font-black">🚨 EMERGENCY SERVICES</h2>
+            </div>
+            <div className="border-2 border-red-300 bg-red-50">
+              <table className="w-full">
+                <thead className="bg-red-100">
+                  <tr>
+                    <th className="text-left p-2 text-sm font-bold border-b border-red-300">Service</th>
+                    <th className="text-left p-2 text-sm font-bold border-b border-red-300">Organization</th>
+                    <th className="text-left p-2 text-sm font-bold border-b border-red-300">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {emergencyContacts.map((contact: any, idx: number) => (
+                    <tr key={idx} className="border-b border-red-200">
+                      <td className="p-2 text-sm font-semibold">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || 'Emergency')}
+                      </td>
+                      <td className="p-2 text-sm">
+                        {getStringValue(contact['Organization Name'] || contact.organizationName || contact.name)}
+                      </td>
+                      <td className="p-2 text-sm font-mono font-bold">
+                        {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
+
+        {/* Staff Contacts */}
+        {staffContactsRaw.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-blue-600 text-white p-2 mb-2">
+              <h2 className="text-xl font-black">👥 STAFF CONTACTS</h2>
+            </div>
+            <div className="border-2 border-blue-300">
+              <table className="w-full text-xs">
+                <thead className="bg-blue-100">
+                  <tr>
+                    <th className="text-left p-2 font-bold border-b border-blue-300">Name</th>
+                    <th className="text-left p-2 font-bold border-b border-blue-300">Position</th>
+                    <th className="text-left p-2 font-bold border-b border-blue-300">Phone</th>
+                    <th className="text-left p-2 font-bold border-b border-blue-300">Email</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {staffContactsRaw.map((contact: any, idx: number) => (
+                    <tr key={idx} className="border-b border-blue-200">
+                      <td className="p-2 font-semibold">
+                        {getStringValue(contact.Name || contact.name)}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(contact.Position || contact.position || contact.Role || contact.role)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Mobile Phone'] || contact.Phone || contact.phone)}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(contact['Email Address'] || contact.Email || contact.email)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Utilities */}
+        {utilitiesContacts.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-yellow-600 text-white p-2 mb-2">
+              <h2 className="text-xl font-black">⚡ UTILITIES & ESSENTIAL SERVICES</h2>
+            </div>
+            <div className="border-2 border-yellow-300">
+              <table className="w-full text-xs">
+                <thead className="bg-yellow-100">
+                  <tr>
+                    <th className="text-left p-2 font-bold border-b border-yellow-300">Service</th>
+                    <th className="text-left p-2 font-bold border-b border-yellow-300">Provider</th>
+                    <th className="text-left p-2 font-bold border-b border-yellow-300">Phone</th>
+                    <th className="text-left p-2 font-bold border-b border-yellow-300">Account #</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {utilitiesContacts.map((contact: any, idx: number) => (
+                    <tr key={idx} className="border-b border-yellow-200">
+                      <td className="p-2 font-semibold">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || contact.service)}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(contact['Organization Name'] || contact.organizationName || contact.provider)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Account Number'] || contact.accountNumber || contact.account)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Suppliers */}
+        {suppliersRaw.length > 0 && (
+          <div className="mb-6">
+            <div className="bg-purple-600 text-white p-2 mb-2">
+              <h2 className="text-xl font-black">📦 KEY SUPPLIERS</h2>
+            </div>
+            <div className="border-2 border-purple-300">
+              <table className="w-full text-xs">
+                <thead className="bg-purple-100">
+                  <tr>
+                    <th className="text-left p-2 font-bold border-b border-purple-300">Supplier</th>
+                    <th className="text-left p-2 font-bold border-b border-purple-300">Contact</th>
+                    <th className="text-left p-2 font-bold border-b border-purple-300">Product/Service</th>
+                    <th className="text-left p-2 font-bold border-b border-purple-300">Phone</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {suppliersRaw.map((supplier: any, idx: number) => (
+                    <tr key={idx} className="border-b border-purple-200">
+                      <td className="p-2 font-semibold">
+                        {getStringValue(supplier.Name || supplier.name || supplier['Supplier Name'])}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(supplier['Contact Person'] || supplier.contactPerson || supplier.contact)}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(supplier.Service || supplier.service || supplier['Goods/Services Supplied'])}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(supplier.Phone || supplier.phone || supplier['Phone Number'])}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Insurance & Banking */}
+        {(insuranceContacts.length > 0 || bankingContacts.length > 0) && (
+          <div className="mb-6">
+            <div className="bg-green-600 text-white p-2 mb-2">
+              <h2 className="text-xl font-black">💼 INSURANCE & BANKING</h2>
+            </div>
+            <div className="border-2 border-green-300">
+              <table className="w-full text-xs">
+                <thead className="bg-green-100">
+                  <tr>
+                    <th className="text-left p-2 font-bold border-b border-green-300">Type</th>
+                    <th className="text-left p-2 font-bold border-b border-green-300">Company/Bank</th>
+                    <th className="text-left p-2 font-bold border-b border-green-300">Phone</th>
+                    <th className="text-left p-2 font-bold border-b border-green-300">Account/Policy #</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {insuranceContacts.map((contact: any, idx: number) => (
+                    <tr key={`ins-${idx}`} className="border-b border-green-200">
+                      <td className="p-2 font-semibold">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || 'Insurance')}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(contact['Organization Name'] || contact.organizationName || contact.company)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Account Number'] || contact.accountNumber || contact.policy)}
+                      </td>
+                    </tr>
+                  ))}
+                  {bankingContacts.map((contact: any, idx: number) => (
+                    <tr key={`bank-${idx}`} className="border-b border-green-200">
+                      <td className="p-2 font-semibold">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || 'Banking')}
+                      </td>
+                      <td className="p-2">
+                        {getStringValue(contact['Organization Name'] || contact.organizationName || contact.bank)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
+                      </td>
+                      <td className="p-2 font-mono">
+                        {getStringValue(contact['Account Number'] || contact.accountNumber || contact.account)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ====================================================================== */}
+      {/* SECTION 5: DOCUMENT LOCATOR */}
+      {/* Where to find vital records */}
+      {/* ====================================================================== */}
+      <div className="p-8 page-break-after">
+        <div className="border-4 border-orange-600 p-4 mb-6">
+          <h1 className="text-4xl font-black text-orange-900">
+            📂 DOCUMENT LOCATOR
+          </h1>
+          <p className="text-lg mt-2 text-orange-700">
+            Critical records location guide - Know where everything is stored and backed up
+          </p>
         </div>
 
-        <div className="space-y-4">
-          {recordsList.length > 0 ? (
-            recordsList.map((record, idx) => {
-              // Map icon based on record type
-              const getIconForRecordType = (type: string): string => {
-                const t = type.toLowerCase()
-                if (t.includes('license')) return '📜'
-                if (t.includes('insurance')) return '🛡️'
-                if (t.includes('deed') || t.includes('lease')) return '🏢'
-                if (t.includes('bank') || t.includes('financial')) return '🏦'
-                if (t.includes('employee') || t.includes('personnel')) return '👥'
-                if (t.includes('tax') || t.includes('revenue')) return '💰'
-                if (t.includes('customer') || t.includes('client')) return '📋'
-                if (t.includes('supplier') || t.includes('contract')) return '📝'
-                if (t.includes('password') || t.includes('access') || t.includes('it')) return '🔐'
-                if (t.includes('building') || t.includes('plan') || t.includes('utility')) return '🗺️'
-                return '📄'
-              }
+        {vitalRecords.length > 0 ? (
+          <div className="space-y-3">
+            {vitalRecords.map((record: any, idx: number) => {
+              const recordType = getStringValue(record['Record Type'] || record.recordType || record.name || 'Document')
+              const location = getStringValue(record.Location || record.location || record.storageLocation || 'Not specified')
+              const backupLocation = getStringValue(record['Backup Location'] || record.backupLocation || 'Not specified')
+              const updateFreq = getStringValue(record['Update Frequency'] || record.updateFrequency || record.backupFrequency || 'As needed')
               
               return (
-                <div key={idx} className="border-4 border-gray-600 p-4 bg-white">
-                  <div className="flex items-center gap-4 mb-3">
-                    <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                    <h3 className="text-xl font-bold flex items-center gap-2" style={{ fontSize: '1.25rem' }}>
-                      <span className="text-2xl">{getIconForRecordType(record.recordType)}</span>
-                      {record.recordType}
-                    </h3>
+                <div key={idx} className="border-2 border-orange-300 bg-white">
+                  <div className="bg-orange-100 p-2 font-bold text-gray-900 border-b border-orange-300">
+                    {recordType}
                   </div>
-                  <div className="ml-12 space-y-2 text-base" style={{ fontSize: '1rem' }}>
-                    {record.format && (
-                      <div>
-                        <strong>Format:</strong> {record.format}
-                      </div>
-                    )}
+                  <div className="p-3 grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <strong>Physical Location:</strong>
-                      <div className="border-b-2 border-gray-400 mt-1">
-                        {record.location || '___________________________________________________________________'}
-                      </div>
+                      <div className="font-semibold text-gray-700 mb-1">Primary Location:</div>
+                      <div className="text-gray-900">{location}</div>
                     </div>
                     <div>
-                      <strong>Digital Backup Location:</strong>
-                      <div className="border-b-2 border-gray-400 mt-1">
-                        {record.backup || '___________________________________________________________________'}
-                      </div>
+                      <div className="font-semibold text-gray-700 mb-1">Backup Location:</div>
+                      <div className="text-gray-900">{backupLocation}</div>
                     </div>
                     <div>
-                      <strong>Who Has Access:</strong>
-                      <div className="border-b-2 border-gray-400 mt-1">
-                        {record.responsible || '___________________________________________________________________'}
-                      </div>
+                      <div className="font-semibold text-gray-700 mb-1">Update Frequency:</div>
+                      <div className="text-gray-900">{updateFreq}</div>
                     </div>
                   </div>
                 </div>
               )
-            })
-          ) : (
-            [
-              { name: 'Business License', icon: '📜' },
-              { name: 'Insurance Policies', icon: '🛡️' },
-              { name: 'Property Deeds / Lease Agreement', icon: '🏢' },
-              { name: 'Bank Account Information', icon: '🏦' },
-              { name: 'Employee Records', icon: '👥' },
-              { name: 'Financial Records (Tax Returns)', icon: '💰' },
-              { name: 'Customer/Client Lists', icon: '📋' },
-              { name: 'Supplier Contracts', icon: '📝' },
-              { name: 'IT System Passwords & Access', icon: '🔐' },
-              { name: 'Building Plans / Utility Shutoffs', icon: '🗺️' }
-            ].map((doc, idx) => (
-              <div key={idx} className="border-4 border-gray-600 p-4 bg-white">
-                <div className="flex items-center gap-4 mb-3">
-                  <input type="checkbox" className="w-8 h-8" style={{ width: '2rem', height: '2rem' }} disabled />
-                  <h3 className="text-xl font-bold flex items-center gap-2" style={{ fontSize: '1.25rem' }}>
-                    <span className="text-2xl">{doc.icon}</span>
-                    {doc.name}
-                  </h3>
-                </div>
-                <div className="ml-12 space-y-2 text-base" style={{ fontSize: '1rem' }}>
-                  <div>
-                    <strong>Physical Location:</strong>
-                    <div className="border-b-2 border-gray-400 mt-1">
-                      ___________________________________________________________________
-                    </div>
-                  </div>
-                  <div>
-                    <strong>Digital Backup Location:</strong>
-                    <div className="border-b-2 border-gray-400 mt-1">
-                      ___________________________________________________________________
-                    </div>
-                  </div>
-                  <div>
-                    <strong>Who Has Access:</strong>
-                    <div className="border-b-2 border-gray-400 mt-1">
-                      ___________________________________________________________________
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+            })}
+          </div>
+        ) : (
+          <div className="border-2 border-gray-300 bg-gray-50 p-6 text-center">
+            <p className="text-gray-600 mb-4">
+              No vital records have been catalogued yet. Use the table below to document where your critical records are stored.
+            </p>
+            <div className="border-2 border-gray-400">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="text-left p-2 border-b border-gray-400">Record Type</th>
+                    <th className="text-left p-2 border-b border-gray-400">Primary Location</th>
+                    <th className="text-left p-2 border-b border-gray-400">Backup Location</th>
+                    <th className="text-left p-2 border-b border-gray-400">Update Frequency</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {['Insurance Policies', 'Financial Records', 'Property Documents', 'Employee Records', 'Contracts'].map((recordType, idx) => (
+                    <tr key={idx} className="border-b border-gray-300">
+                      <td className="p-2 font-semibold">{recordType}</td>
+                      <td className="p-2 bg-gray-100">_________________</td>
+                      <td className="p-2 bg-gray-100">_________________</td>
+                      <td className="p-2 bg-gray-100">_________________</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-        {/* Page Footer */}
-        <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-          <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-            <strong>Page {5 + risks.length} of {5 + risks.length + strategies.length}</strong> | {companyName} | Documents
-          </p>
+        {/* Best Practices Reminder */}
+        <div className="border-2 border-orange-400 bg-orange-50 p-4 mt-6">
+          <h3 className="font-black text-orange-900 mb-3">💡 Document Protection Best Practices:</h3>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <span className="text-orange-600">✓</span>
+              <span>Keep digital copies in secure cloud storage (not just on one computer)</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-orange-600">✓</span>
+              <span>Store physical copies in a fireproof safe or off-site location</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-orange-600">✓</span>
+              <span>Update records regularly - at least quarterly or after major changes</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-orange-600">✓</span>
+              <span>Test your backups - make sure you can actually access them when needed</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-orange-600">✓</span>
+              <span>Share backup location info with your Plan Manager and key staff</span>
+            </li>
+          </ul>
         </div>
       </div>
 
-      {/* INCIDENT LOG TEMPLATES (3 Blank Forms) */}
-      {[1, 2, 3].map((formNum) => (
-        <div key={formNum} className="p-8 page-break-after border-b-4 border-gray-900" style={{ minHeight: '11in' }}>
-          <div className="border-4 border-black p-2 mb-6">
-            <h1 className="text-4xl font-black text-center text-red-600" style={{ fontSize: '2.5rem' }}>
-              📋 INCIDENT LOG #{formNum}
-            </h1>
-          </div>
+      {/* ====================================================================== */}
+      {/* SECTION 6: INCIDENT LOG TEMPLATE */}
+      {/* Blank forms for recording emergencies */}
+      {/* ====================================================================== */}
+      <div className="p-8 page-break-after">
+        <div className="border-4 border-gray-700 p-4 mb-6">
+          <h1 className="text-4xl font-black text-gray-900">
+            📝 INCIDENT LOG
+          </h1>
+          <p className="text-lg mt-2 text-gray-700">
+            Use this form to record events during an emergency - Critical for insurance claims and lessons learned
+          </p>
+        </div>
 
-          <div className="border-4 border-red-600 bg-white p-6">
-            <div className="space-y-6 text-lg" style={{ fontSize: '1.125rem' }}>
+        {/* Incident Log Form */}
+        <div className="border-2 border-gray-400 p-4 mb-6">
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-900 mb-2">Incident Details:</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>DATE & TIME OF INCIDENT:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50">
-                  Date: _________________ Time: _________________
-                </div>
+                <label className="text-sm font-semibold text-gray-700">Incident Type:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
               </div>
-
               <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>TYPE OF INCIDENT:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50 grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Hurricane</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Flood</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Fire</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Power Outage</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Earthquake</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" className="w-6 h-6" style={{ width: '1.5rem', height: '1.5rem' }} disabled />
-                    <span>Other: _______</span>
-                  </label>
-                </div>
+                <label className="text-sm font-semibold text-gray-700">Date & Time Started:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
               </div>
-
               <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>DESCRIPTION OF WHAT HAPPENED:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50 min-h-[150px]">
-                  <div className="space-y-2 text-gray-400">
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                  </div>
-                </div>
+                <label className="text-sm font-semibold text-gray-700">Reported By:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
               </div>
-
               <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>IMMEDIATE ACTIONS TAKEN:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50 min-h-[120px]">
-                  <div className="space-y-2 text-gray-400">
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                    <div>_________________________________________________________________</div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>DAMAGE ASSESSMENT:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50">
-                  <div className="space-y-2">
-                    <div>Property Damage: □ None  □ Minor  □ Moderate  □ Severe</div>
-                    <div>Equipment Damage: □ None  □ Minor  □ Moderate  □ Severe</div>
-                    <div>Injuries: □ None  □ Yes (describe): _____________________</div>
-                    <div>Estimated Cost: $______________</div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>RECOVERY COST TRACKER:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50">
-                  <div className="space-y-2">
-                    <div>Insurance Claim Filed: □ Yes  □ No  Claim #: __________</div>
-                    <div>Total Repair Costs: $______________</div>
-                    <div>Insurance Payout: $______________</div>
-                    <div>Out of Pocket: $______________</div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <strong className="text-xl block mb-2" style={{ fontSize: '1.25rem' }}>COMPLETED BY:</strong>
-                <div className="border-2 border-gray-600 p-3 bg-gray-50">
-                  <div>Name: _______________________ Signature: _______________________</div>
-                  <div className="mt-2">Date: _______________________</div>
-                </div>
+                <label className="text-sm font-semibold text-gray-700">Plan Manager Notified:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
               </div>
             </div>
           </div>
 
-          {/* Page Footer */}
-          <div className="mt-6 pt-4 border-t-2 border-gray-400 text-center">
-            <p className="text-base text-gray-600" style={{ fontSize: '1rem' }}>
-              <strong>Page {5 + risks.length + formNum} of {5 + risks.length + strategies.length}</strong> | {companyName} | Incident Log
-            </p>
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-900 mb-2">Initial Assessment:</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-semibold text-gray-700">What happened?</label>
+                <div className="border-2 border-gray-400 min-h-[60px] mt-1 p-2"></div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Impact on operations:</label>
+                <div className="border-2 border-gray-400 min-h-[60px] mt-1 p-2"></div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Injuries or safety concerns:</label>
+                <div className="border-2 border-gray-400 min-h-[60px] mt-1 p-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-900 mb-2">Timeline of Events:</h3>
+            <div className="border-2 border-gray-400">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="text-left p-2 border-b border-gray-400 w-32">Time</th>
+                    <th className="text-left p-2 border-b border-gray-400">Action Taken / Event Observed</th>
+                    <th className="text-left p-2 border-b border-gray-400 w-40">By Whom</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((row) => (
+                    <tr key={row} className="border-b border-gray-300">
+                      <td className="p-2 h-10"></td>
+                      <td className="p-2 h-10"></td>
+                      <td className="p-2 h-10"></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-900 mb-2">Damage Assessment:</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Property/equipment damaged:</label>
+                <div className="border-2 border-gray-400 min-h-[60px] mt-1 p-2"></div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Estimated costs (if known):</label>
+                <div className="border-2 border-gray-400 h-10 mt-1 p-2"></div>
+              </div>
+              <div className="flex items-center gap-4 text-sm">
+                <label className="font-semibold text-gray-700">Photos taken?</label>
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" className="w-5 h-5" /> Yes
+                </span>
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" className="w-5 h-5" /> No
+                </span>
+                <label className="font-semibold text-gray-700 ml-4">Insurance contacted?</label>
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" className="w-5 h-5" /> Yes
+                </span>
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" className="w-5 h-5" /> No
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <h3 className="font-bold text-gray-900 mb-2">Recovery Actions:</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Immediate steps taken:</label>
+                <div className="border-2 border-gray-400 min-h-[60px] mt-1 p-2"></div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">When can operations resume?</label>
+                <div className="border-2 border-gray-400 h-10 mt-1 p-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="font-bold text-gray-900 mb-2">Incident Closed:</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Date & Time:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Closed By:</label>
+                <div className="border-b-2 border-gray-400 h-8 mt-1"></div>
+              </div>
+            </div>
           </div>
         </div>
-      ))}
 
-      {/* FINAL FOOTER */}
-      <div className="p-8 border-t-4 border-gray-900">
-        <div className="text-center space-y-4">
-          <h2 className="text-3xl font-black text-gray-900" style={{ fontSize: '2rem' }}>
-            END OF CRISIS ACTION WORKBOOK
-          </h2>
-          <p className="text-xl text-gray-700" style={{ fontSize: '1.25rem' }}>
-            {companyName}
-          </p>
-          <p className="text-lg text-gray-600" style={{ fontSize: '1.125rem' }}>
-            Last Updated: {currentDate}
-          </p>
-          <div className="mt-8 pt-6 border-t-2 border-gray-400">
-            <p className="text-base text-gray-500" style={{ fontSize: '1rem' }}>
-              UNDP x CARICHAM Business Continuity Planning Initiative
-            </p>
-            <p className="text-sm text-gray-400 mt-2" style={{ fontSize: '0.875rem' }}>
-              Supporting Caribbean businesses in building resilience
-            </p>
-          </div>
+        {/* Important Reminders */}
+        <div className="border-2 border-red-400 bg-red-50 p-4">
+          <h3 className="font-black text-red-900 mb-3">⚠️ Important Reminders:</h3>
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <span className="text-red-600 font-bold">!</span>
+              <span><strong>Take photos/videos</strong> of all damage before cleanup - essential for insurance claims</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-600 font-bold">!</span>
+              <span><strong>Keep all receipts</strong> for emergency purchases, repairs, temporary accommodations</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-600 font-bold">!</span>
+              <span><strong>Don't throw away</strong> damaged items until insurance adjuster has seen them</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-600 font-bold">!</span>
+              <span><strong>Contact insurance within 24 hours</strong> to start claims process</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-red-600 font-bold">!</span>
+              <span><strong>After incident is resolved:</strong> Schedule lessons-learned meeting and update this workbook</span>
+            </li>
+          </ul>
         </div>
       </div>
+
+      {/* ====================================================================== */}
+      {/* FINAL PAGE: NOTES & UPDATES */}
+      {/* ====================================================================== */}
+      <div className="p-8">
+        <div className="border-4 border-blue-600 p-4 mb-6">
+          <h1 className="text-4xl font-black text-blue-900">
+            📋 NOTES & UPDATES
+          </h1>
+          <p className="text-lg mt-2 text-blue-700">
+            Use this space to track changes, lessons learned, and action items
+          </p>
+        </div>
+
+        <div className="border-2 border-gray-400">
+          <table className="w-full">
+            <thead className="bg-gray-200">
+              <tr>
+                <th className="text-left p-2 border-b-2 border-gray-400 w-32">Date</th>
+                <th className="text-left p-2 border-b-2 border-gray-400">Note / Update / Action Item</th>
+                <th className="text-left p-2 border-b-2 border-gray-400 w-32">Updated By</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...Array(20)].map((_, idx) => (
+                <tr key={idx} className="border-b border-gray-300">
+                  <td className="p-2 h-12"></td>
+                  <td className="p-2 h-12"></td>
+                  <td className="p-2 h-12"></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-8 pt-4 border-t-2 border-gray-400 text-center text-sm text-gray-600">
+          <p className="mb-2">
+            <strong>{companyName}</strong> - Business Continuity Action Workbook
+          </p>
+          <p className="mb-2">
+            Plan Manager: {planManager} | Phone: {planManagerPhone || planManagerEmail}
+          </p>
+          <p className="mb-4">
+            Last Updated: {currentDate} | Next Review: Quarterly or after any incident
+          </p>
+          <p className="text-xs text-gray-500">
+            UNDP x CARICHAM Business Continuity Planning Initiative
+          </p>
+        </div>
+      </div>
+
     </div>
   )
 }
 
+export default WorkbookPreview

@@ -5,6 +5,8 @@
  * including currency conversion and item-based pricing.
  */
 
+import { calculateStrategyTimeFromSteps } from '@/utils/timeCalculation'
+
 interface CostItem {
   id: string
   itemId: string
@@ -82,6 +84,7 @@ interface StrategyCostCalculation {
     totalUSD: number
     localAmount: number
   }>
+  calculatedHours: number // Added: total implementation time in hours
 }
 
 class CostCalculationService {
@@ -319,6 +322,9 @@ class CostCalculationService {
       })
     }
 
+    // Calculate total implementation time from action steps
+    const calculatedHours = calculateStrategyTimeFromSteps(actionSteps)
+
     return {
       totalUSD,
       localCurrency: {
@@ -328,7 +334,8 @@ class CostCalculationService {
       },
       byPhase,
       itemBreakdown,
-      stepBreakdown
+      stepBreakdown,
+      calculatedHours
     }
   }
 

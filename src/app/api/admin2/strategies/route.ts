@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
           }
         },
         orderBy: [
-          { category: 'asc' },
           { name: 'asc' }
         ]
       })
@@ -85,7 +84,6 @@ export async function POST(request: NextRequest) {
         data: {
           strategyId: strategyData.strategyId || `custom_${Date.now()}`,
           name: strategyData.name,
-          category: strategyData.category || 'preparation',
           description: strategyData.description || '',
           implementationCost: strategyData.implementationCost || 'medium',
           timeToImplement: strategyData.timeToImplement || 'medium',

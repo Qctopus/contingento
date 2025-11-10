@@ -1085,6 +1085,78 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
                     </div>
                   </div>
 
+                  {/* NEW: Execution Timing */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Execution Timing
+                      <span className="text-xs text-gray-500 ml-2">
+                        (When should this action be executed?)
+                      </span>
+                    </label>
+                    
+                    <select
+                      value={step.executionTiming || ''}
+                      onChange={(e) => updateActionStep(index, 'executionTiming', e.target.value || undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select timing...</option>
+                      <option value="before_crisis">🛡️ BEFORE Crisis (Preparation/Prevention)</option>
+                      <option value="during_crisis">🚨 DURING Crisis (Immediate Response)</option>
+                      <option value="after_crisis">🔄 AFTER Crisis (Recovery/Restoration)</option>
+                    </select>
+                    
+                    {/* Helper text based on selected value */}
+                    <div className="mt-2 text-xs space-y-2">
+                      {!step.executionTiming && (
+                        <div className="text-gray-600 bg-gray-50 p-3 rounded border border-gray-200">
+                          <p className="font-medium mb-1">Choose when to execute this action:</p>
+                          <ul className="space-y-1 ml-3">
+                            <li><strong>BEFORE:</strong> Preparation - do this NOW (install equipment, train staff, create procedures)</li>
+                            <li><strong>DURING:</strong> Crisis response - do this WHEN emergency happens (activate team, evacuate, secure facility)</li>
+                            <li><strong>AFTER:</strong> Recovery - do this AFTER crisis passes (assess damage, file claims, restore operations)</li>
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {step.executionTiming === 'before_crisis' && (
+                        <div className="text-blue-700 bg-blue-50 p-3 rounded border border-blue-200">
+                          <strong>🛡️ Preparation Action</strong>
+                          <p className="mt-1">This will appear in the workbook's "BEFORE (PREPARATION)" section.</p>
+                          <p className="mt-1 text-xs">
+                            <strong>Good examples:</strong> "Install backup generator", "Train emergency response team", 
+                            "Create evacuation plan", "Stock emergency supplies"
+                          </p>
+                        </div>
+                      )}
+                      
+                      {step.executionTiming === 'during_crisis' && (
+                        <div className="text-red-700 bg-red-50 p-3 rounded border border-red-200">
+                          <strong>🚨 Crisis Response Action</strong>
+                          <p className="mt-1">This will appear in the workbook's "DURING (IMMEDIATE RESPONSE)" section.</p>
+                          <p className="mt-1 text-xs">
+                            <strong>Good examples:</strong> "Activate emergency team via group text", 
+                            "Evacuate building immediately", "Switch to backup generator", "Secure cash and vital records"
+                          </p>
+                          <p className="mt-1 text-xs font-medium">
+                            ⚠️ Write as immediate instructions for WHEN the emergency is happening (imperative voice, specific, fast).
+                          </p>
+                        </div>
+                      )}
+                      
+                      {step.executionTiming === 'after_crisis' && (
+                        <div className="text-green-700 bg-green-50 p-3 rounded border border-green-200">
+                          <strong>🔄 Recovery Action</strong>
+                          <p className="mt-1">This will appear in the workbook's "AFTER (RECOVERY)" section.</p>
+                          <p className="mt-1 text-xs">
+                            <strong>Good examples:</strong> "Photograph all damage for insurance", 
+                            "Contact insurance company to file claim", "Inspect building systems before reopening", 
+                            "Hold team debrief to document lessons learned"
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Step Title (User-Facing) */}
                   <div>
                     <MultilingualTextInput
