@@ -226,7 +226,7 @@ class CostCalculationService {
 
       itemBreakdown.push({
         itemId: item.itemId,
-        name: item.name,
+        name: this.parseMultilingualText(item.name, item.itemId),
         quantity: costItemLink.quantity,
         unitPriceUSD: price.unitPriceUSD,
         totalUSD: price.totalUSD,
@@ -340,28 +340,32 @@ class CostCalculationService {
   }
 
   /**
+   * Helper to parse multilingual text and extract English
+   */
+  private parseMultilingualText(text: string | undefined, fallback: string = ''): string {
+    if (!text) return fallback
+    
+    try {
+      const parsed = JSON.parse(text)
+      if (parsed.en) return parsed.en
+      if (typeof parsed === 'object') return fallback
+      return text
+    } catch {
+      return typeof text === 'string' ? text : fallback
+    }
+  }
+
+  /**
    * Helper to get step title from various formats
    */
   private getStepTitle(step: { title?: string; smeAction?: string; action?: string }): string {
     // Try to parse multilingual title
-    try {
-      if (step.title) {
-        const parsed = JSON.parse(step.title)
-        if (parsed.en) return parsed.en
-      }
-    } catch {
-      if (typeof step.title === 'string') return step.title
-    }
+    const title = this.parseMultilingualText(step.title)
+    if (title) return title
     
     // Fallback to smeAction or action
-    if (step.smeAction) {
-      try {
-        const parsed = JSON.parse(step.smeAction)
-        if (parsed.en) return parsed.en
-      } catch {
-        if (typeof step.smeAction === 'string') return step.smeAction
-      }
-    }
+    const smeAction = this.parseMultilingualText(step.smeAction)
+    if (smeAction) return smeAction
     
     return step.action || 'Untitled Step'
   }

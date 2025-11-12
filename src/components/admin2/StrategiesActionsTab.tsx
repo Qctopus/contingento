@@ -674,15 +674,14 @@ function StrategyDetailView({ strategy, onEdit, onBack }: StrategyDetailViewProp
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Implementation Steps</h2>
               
               <div className="space-y-4">
-                {['immediate', 'short_term', 'medium_term', 'long_term'].map(phase => {
+                {['before', 'during', 'after'].map(phase => {
                   const phaseSteps = strategy.actionSteps.filter(step => step.phase === phase)
                   if (phaseSteps.length === 0) return null
 
                   const phaseConfig = {
-                    immediate: { name: 'Immediate Actions', icon: '⚡', description: 'Right now (this week)' },
-                    short_term: { name: 'Short-term Actions', icon: '📅', description: 'Next 1-4 weeks' },
-                    medium_term: { name: 'Medium-term Actions', icon: '📊', description: 'Next 1-3 months' },
-                    long_term: { name: 'Long-term Actions', icon: '🎯', description: 'Next 3-12 months' }
+                    before: { name: 'Before Crisis', icon: '🛡️', description: 'Prevention & Preparation' },
+                    during: { name: 'During Crisis', icon: '⚠️', description: 'Crisis Response' },
+                    after: { name: 'After Crisis', icon: '✅', description: 'Recovery & Follow-up' }
                   }[phase] || { name: phase, icon: '📋', description: '' }
 
                   return (

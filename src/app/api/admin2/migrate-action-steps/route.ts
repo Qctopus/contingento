@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   strategyId: strategy.id,
                   stepId: `step_${i + 1}`,
-                  phase: step.phase || 'immediate',
+                  phase: step.phase || 'before',
                   title: step.title || `Step ${i + 1}`,
                   description: step.description || '',
                   smeAction: step.title || step.description || '',

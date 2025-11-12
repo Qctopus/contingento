@@ -80,22 +80,94 @@ export async function POST(request: NextRequest) {
     
     const newStrategy = await withDatabase(async () => {
       const prisma = getPrismaClient()
+      
+      // Prepare create data - only include fields that exist in the Prisma schema
+      const createData: any = {
+        strategyId: strategyData.strategyId || `custom_${Date.now()}`,
+        name: strategyData.name,
+        description: strategyData.description || '',
+        applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
+        applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
+        isActive: true
+      }
+      
+      // Optional fields that exist in schema
+      if (strategyData.smeTitle !== undefined) {
+        createData.smeTitle = strategyData.smeTitle
+      }
+      if (strategyData.smeSummary !== undefined) {
+        createData.smeSummary = strategyData.smeSummary
+      }
+      if (strategyData.smeDescription !== undefined) {
+        createData.smeDescription = strategyData.smeDescription
+      }
+      if (strategyData.whyImportant !== undefined) {
+        createData.whyImportant = strategyData.whyImportant
+      }
+      if (strategyData.benefitsBullets !== undefined) {
+        createData.benefitsBullets = typeof strategyData.benefitsBullets === 'string' 
+          ? strategyData.benefitsBullets 
+          : safeJsonStringify(strategyData.benefitsBullets)
+      }
+      if (strategyData.realWorldExample !== undefined) {
+        createData.realWorldExample = strategyData.realWorldExample
+      }
+      if (strategyData.selectionTier !== undefined) {
+        createData.selectionTier = strategyData.selectionTier
+      } else {
+        createData.selectionTier = 'recommended' // Default value
+      }
+      if (strategyData.requiredForRisks !== undefined) {
+        createData.requiredForRisks = typeof strategyData.requiredForRisks === 'string'
+          ? strategyData.requiredForRisks
+          : safeJsonStringify(strategyData.requiredForRisks || [])
+      }
+      if (strategyData.helpfulTips !== undefined) {
+        createData.helpfulTips = typeof strategyData.helpfulTips === 'string'
+          ? strategyData.helpfulTips
+          : safeJsonStringify(strategyData.helpfulTips || [])
+      }
+      if (strategyData.commonMistakes !== undefined) {
+        createData.commonMistakes = typeof strategyData.commonMistakes === 'string'
+          ? strategyData.commonMistakes
+          : safeJsonStringify(strategyData.commonMistakes || [])
+      }
+      if (strategyData.successMetrics !== undefined) {
+        createData.successMetrics = typeof strategyData.successMetrics === 'string'
+          ? strategyData.successMetrics
+          : safeJsonStringify(strategyData.successMetrics || [])
+      }
+      if (strategyData.lowBudgetAlternative !== undefined) {
+        createData.lowBudgetAlternative = strategyData.lowBudgetAlternative
+      }
+      
+      // Calculated costs (from frontend calculation)
+      if (typeof strategyData.calculatedCostUSD === 'number') {
+        createData.calculatedCostUSD = strategyData.calculatedCostUSD
+      }
+      if (typeof strategyData.calculatedCostLocal === 'number') {
+        createData.calculatedCostLocal = strategyData.calculatedCostLocal
+      }
+      if (strategyData.currencyCode !== undefined) {
+        createData.currencyCode = strategyData.currencyCode
+      }
+      if (strategyData.currencySymbol !== undefined) {
+        createData.currencySymbol = strategyData.currencySymbol
+      }
+      // Note: schema field is totalEstimatedHours, not estimatedTotalHours
+      if (typeof strategyData.estimatedTotalHours === 'number' || typeof strategyData.totalEstimatedHours === 'number') {
+        createData.totalEstimatedHours = strategyData.totalEstimatedHours ?? strategyData.estimatedTotalHours
+      }
+      
+      console.log('💰 Creating strategy with calculated costs:', {
+        costUSD: createData.calculatedCostUSD,
+        costLocal: createData.calculatedCostLocal,
+        currency: createData.currencyCode,
+        hours: createData.totalEstimatedHours
+      })
+      
       return await prisma.riskMitigationStrategy.create({
-        data: {
-          strategyId: strategyData.strategyId || `custom_${Date.now()}`,
-          name: strategyData.name,
-          description: strategyData.description || '',
-          implementationCost: strategyData.implementationCost || 'medium',
-          timeToImplement: strategyData.timeToImplement || 'medium',
-          effectiveness: strategyData.effectiveness || 7,
-          applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
-          applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
-          prerequisites: safeJsonStringify(strategyData.prerequisites || []),
-          maintenanceRequirement: strategyData.maintenanceRequirement || 'low',
-          roi: strategyData.roi || 3.0,
-          priority: strategyData.priority || 'medium',
-          isActive: true
-        }
+        data: createData
       })
     }, 'POST /api/admin2/strategies')
     

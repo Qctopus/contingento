@@ -298,14 +298,20 @@ export function BusinessStrategiesManager({ businessTypes, onUpdate }: BusinessS
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Implementation Action Plan</h3>
           
-          {['immediate', 'short_term', 'medium_term', 'long_term'].map(phase => {
+          {['before', 'during', 'after'].map(phase => {
             const phaseSteps = selectedStrategy.actionSteps?.filter(step => step.phase === phase) || []
             if (phaseSteps.length === 0) return null
 
+            const phaseConfig = {
+              before: { name: 'Before Crisis', icon: '🛡️' },
+              during: { name: 'During Crisis', icon: '⚠️' },
+              after: { name: 'After Crisis', icon: '✅' }
+            }[phase] || { name: phase, icon: '📋' }
+
             return (
               <div key={phase} className="mb-8 last:mb-0">
-                <h4 className="text-lg font-medium text-gray-900 mb-4 capitalize">
-                  {phase.replace('_', ' ')} Actions
+                <h4 className="text-lg font-medium text-gray-900 mb-4">
+                  {phaseConfig.icon} {phaseConfig.name}
                 </h4>
                 <div className="space-y-4">
                   {phaseSteps.map((step, index) => (

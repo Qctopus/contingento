@@ -292,3 +292,5 @@ if (require.main === module) {
     })
 }
 
+export { seedCaribbeanCountries }
+

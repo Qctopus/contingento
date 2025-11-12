@@ -119,8 +119,7 @@ export interface ActionStep {
   id: string
   stepId?: string
   strategyId?: string
-  phase: 'immediate' | 'short_term' | 'medium_term' | 'long_term'
-  executionTiming?: 'before_crisis' | 'during_crisis' | 'after_crisis' // When to execute this action
+  phase: 'before' | 'during' | 'after'
   title: string
   action?: string // Technical action description (legacy)
   description: string
@@ -138,6 +137,7 @@ export interface ActionStep {
   
   // Resources & Costs
   responsibility?: string
+  estimatedCost?: string // Cost estimate string (e.g., "$400 USD", "$0")
   resources?: string[] // Required resources
   costItems?: Array<{
     id?: string
@@ -186,7 +186,6 @@ export interface Strategy {
   id: string
   strategyId: string
   name: string // Admin-facing technical name
-  category: 'prevention' | 'preparation' | 'response' | 'recovery'
   description: string // Technical description for admin use
   
   // SME-Focused Content (benefit-driven, plain language)
@@ -199,13 +198,9 @@ export interface Strategy {
   
   // Implementation Details (enhanced)
   implementationCost: 'low' | 'medium' | 'high' | 'very_high' // Categorical estimate for quick reference
-  implementationTime?: 'hours' | 'days' | 'weeks' | 'months'
-  timeToImplement?: string // User-friendly time description
   estimatedTotalHours?: number // Sum of all action step times
   complexityLevel?: 'simple' | 'moderate' | 'advanced'
-  effectiveness: number // 1-10 scale
   roi?: number // Return on investment estimate
-  priority: 'low' | 'medium' | 'high' | 'critical'
   quickWinIndicator?: boolean // Fast + high impact = quick win
   
   // Calculated costs (computed from action step cost items)

@@ -201,7 +201,6 @@ export function transformStrategyForApi(strategy: any): any {
     prerequisites: safeJsonParse(strategy.prerequisites, []),
     
     // Backward compatibility fields
-    timeToImplement: strategy.implementationTime,
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
     
     // Guidance arrays
@@ -217,7 +216,6 @@ export function transformStrategyForApi(strategy: any): any {
       
       // Basic Info
       phase: step.phase,
-      executionTiming: step.executionTiming, // 'before_crisis' | 'during_crisis' | 'after_crisis'
       title: parseMultilingualJSON(step.title) || step.title,
       action: parseMultilingualJSON(step.description) || step.description,
       description: parseMultilingualJSON(step.description) || step.description,
@@ -307,16 +305,11 @@ export function transformTemplateToStrategy(template: any): any {
     id: template.id,
     strategyId: template.id,
     name: template.name,
-    category: template.category,
     description: template.description,
     applicableRisks: template.applicableRisks,
     implementationCost: template.cost,
     costEstimateJMD: getCostEstimateJMD(template.cost),
-    implementationTime: template.implementationTime,
-    timeToImplement: template.timeToImplement,
-    effectiveness: template.effectiveness,
     businessTypes: template.applicableBusinessTypes,
-    priority: template.priority,
     helpfulTips: template.helpfulTips || [],
     commonMistakes: template.commonMistakes || [],
     successMetrics: template.successMetrics || [],

@@ -8,17 +8,44 @@ export interface ValidationResult {
 }
 
 /**
+ * Helper to extract string value from multilingual content
+ */
+function extractStringValue(value: any): string {
+  if (!value) return ''
+  if (typeof value === 'string') {
+    // Check if it's a JSON string representing multilingual content
+    if (value.trim().startsWith('{') && value.includes('"en"')) {
+      try {
+        const parsed = JSON.parse(value)
+        if (parsed && typeof parsed === 'object' && parsed.en) {
+          return parsed.en
+        }
+      } catch {
+        // If parsing fails, return the original string
+      }
+    }
+    return value
+  }
+  // If it's an object, try to get the 'en' value
+  if (typeof value === 'object' && value !== null && value.en) {
+    return value.en
+  }
+  return ''
+}
+
+/**
  * Validate strategy data before creating or updating
  */
 export function validateStrategyData(data: any): ValidationResult {
   const errors: string[] = []
   
-  // Required fields
-  if (!data.name || typeof data.name !== 'string' || data.name.trim().length === 0) {
+  // Required fields - handle multilingual content
+  const nameValue = extractStringValue(data.name)
+  if (!nameValue || nameValue.trim().length === 0) {
     errors.push('Strategy name is required')
   }
   
-  if (data.name && data.name.length > 200) {
+  if (nameValue && nameValue.length > 200) {
     errors.push('Strategy name must be less than 200 characters')
   }
   

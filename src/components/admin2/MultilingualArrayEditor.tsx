@@ -128,9 +128,9 @@ export function MultilingualArrayEditor({
   }
 
   const hasContent = maxLength > 0
-  const enCount = parsedValue.en.filter(t => t.trim()).length
-  const esCount = parsedValue.es.filter(t => t.trim()).length
-  const frCount = parsedValue.fr.filter(t => t.trim()).length
+  const enCount = parsedValue.en.filter(t => typeof t === 'string' && t.trim()).length
+  const esCount = parsedValue.es.filter(t => typeof t === 'string' && t.trim()).length
+  const frCount = parsedValue.fr.filter(t => typeof t === 'string' && t.trim()).length
 
   return (
     <div className="mb-6">
@@ -163,9 +163,9 @@ export function MultilingualArrayEditor({
       {/* Items */}
       <div className="space-y-2">
         {Array.from({ length: maxLength }).map((_, index) => {
-          const enText = parsedValue.en[index] || ''
-          const esText = parsedValue.es[index] || ''
-          const frText = parsedValue.fr[index] || ''
+          const enText = typeof parsedValue.en[index] === 'string' ? parsedValue.en[index] : ''
+          const esText = typeof parsedValue.es[index] === 'string' ? parsedValue.es[index] : ''
+          const frText = typeof parsedValue.fr[index] === 'string' ? parsedValue.fr[index] : ''
           const isExpanded = expandedItems.has(index)
           
           const enEmpty = !enText.trim()
@@ -324,6 +324,8 @@ export function MultilingualArrayEditor({
     </div>
   )
 }
+
+
 
 
 

@@ -22,7 +22,6 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
     id: '',
     strategyId: '',
     name: '',
-    category: 'prevention',
     description: '',
     
     // SME-Focused Content (NEW)
@@ -38,11 +37,8 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
     applicableRisks: [],
     implementationCost: 'medium',
     costEstimateJMD: '',
-    implementationTime: 'weeks',
-    timeToImplement: '',
     estimatedTotalHours: undefined,
     complexityLevel: 'moderate',
-    effectiveness: 5,
     
     // Wizard Integration (NEW)
     quickWinIndicator: false,
@@ -51,7 +47,6 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
     requiredForRisks: [],
     
     businessTypes: [],
-    priority: 'medium',
     actionSteps: [],
     helpfulTips: [],
     commonMistakes: [],
@@ -167,10 +162,9 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
   ]
 
   const phases = [
-    { key: 'immediate', name: 'Immediate (0-2 weeks)' },
-    { key: 'short_term', name: 'Short Term (2-8 weeks)' },
-    { key: 'medium_term', name: 'Medium Term (2-6 months)' },
-    { key: 'long_term', name: 'Long Term (6+ months)' }
+    { key: 'before', name: '🛡️ Before Crisis (Prevention & Preparation)' },
+    { key: 'during', name: '⚠️ During Crisis (Response)' },
+    { key: 'after', name: '✅ After Crisis (Recovery)' }
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -396,23 +390,6 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
               required
             />
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Category *
-            </label>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="prevention">🛡️ Prevention</option>
-              <option value="preparation">📋 Preparation</option>
-              <option value="response">🚨 Response</option>
-              <option value="recovery">🔄 Recovery</option>
-            </select>
-          </div>
         </div>
 
         <div>
@@ -556,68 +533,20 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Implementation Time (Legacy)
-                  </label>
-                  <select
-                    value={formData.implementationTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, implementationTime: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="hours">Hours</option>
-                    <option value="days">Days</option>
-                    <option value="weeks">Weeks</option>
-                    <option value="months">Months</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complexity Level 🆕
-                  </label>
-                  <select
-                    value={formData.complexityLevel || 'moderate'}
-                    onChange={(e) => setFormData(prev => ({ ...prev, complexityLevel: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="simple">Simple</option>
-                    <option value="moderate">Moderate</option>
-                    <option value="advanced">Advanced</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Implementation difficulty</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Effectiveness (1-10)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={formData.effectiveness}
-                    onChange={(e) => setFormData(prev => ({ ...prev, effectiveness: parseInt(e.target.value) }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Priority (Legacy)
-                  </label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="critical">Critical</option>
-                  </select>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Complexity Level
+                </label>
+                <select
+                  value={formData.complexityLevel || 'moderate'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, complexityLevel: e.target.value as any }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="simple">Simple</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">Implementation difficulty</p>
               </div>
             </>
           )}

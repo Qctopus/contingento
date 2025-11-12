@@ -955,6 +955,71 @@ export async function POST(request: NextRequest) {
     
     console.log(`📚 Found ${strategiesFromDB.length} strategies matching business type and risks`)
     
+    // NEW: Calculate costs for strategies that don't have them
+    console.log('💰 Checking and calculating strategy costs...')
+    const { CostCalculationService } = await import('@/services/costCalculationService')
+    const costService = new CostCalculationService()
+    
+    const enrichedStrategies = await Promise.all(
+      strategiesFromDB.map(async (strategy: any) => {
+        // If costs are already calculated and recent, use them
+        if (
+          strategy.calculatedCostLocal !== null &&
+          strategy.calculatedCostUSD !== null &&
+          strategy.estimatedTotalHours !== null
+        ) {
+          console.log(`  ✓ ${strategy.strategyId}: Using existing costs`)
+          return strategy
+        }
+        
+        // Otherwise, calculate costs now if strategy has action steps
+        if (strategy.actionSteps && strategy.actionSteps.length > 0) {
+          try {
+            const costResult = await costService.calculateStrategyCost(
+              strategy.actionSteps.map((step: any) => ({
+                id: step.id,
+                title: step.title,
+                phase: step.phase,
+                costItems: step.itemCosts || []
+              })),
+              'US' // Always use USD as default per requirements
+            )
+            
+            // Update strategy in database with calculated costs
+            await (prisma as any).riskMitigationStrategy.update({
+              where: { id: strategy.id },
+              data: {
+                calculatedCostUSD: costResult.totalUSD,
+                calculatedCostLocal: costResult.localCurrency.amount,
+                currencyCode: costResult.localCurrency.code,
+                currencySymbol: costResult.localCurrency.symbol,
+                estimatedTotalHours: costResult.calculatedHours
+              }
+            })
+            
+            console.log(`  💰 ${strategy.strategyId}: Calculated ${costResult.localCurrency.symbol}${costResult.localCurrency.amount.toFixed(0)} (${costResult.calculatedHours}h)`)
+            
+            return {
+              ...strategy,
+              calculatedCostUSD: costResult.totalUSD,
+              calculatedCostLocal: costResult.localCurrency.amount,
+              currencyCode: costResult.localCurrency.code,
+              currencySymbol: costResult.localCurrency.symbol,
+              estimatedTotalHours: costResult.calculatedHours
+            }
+          } catch (error) {
+            console.error(`  ❌ ${strategy.strategyId}: Cost calculation failed:`, error)
+            return strategy
+          }
+        }
+        
+        console.log(`  - ${strategy.strategyId}: No action steps, costs remain $0`)
+        return strategy
+      })
+    )
+    
+    console.log('💰 Cost calculation complete\n')
+    
     // Determine SME resource constraints from business type
     const hasBudget = businessType.typicalRevenue ? 
       (businessType.typicalRevenue > 50000 ? 'high' : 
@@ -976,7 +1041,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Score each strategy
-    const scoredStrategies: ScoredStrategy[] = strategiesFromDB
+    const scoredStrategies: ScoredStrategy[] = enrichedStrategies
       .map((strategy: any) => {
         const applicableRisks = JSON.parse(strategy.applicableRisks || '[]')
         
@@ -1196,6 +1261,12 @@ export async function POST(request: NextRequest) {
       roi: strategy.roi,
       priority: strategy.priority,
       quickWinIndicator: strategy.quickWinIndicator || false,
+      
+      // NEW: Calculated Costs (auto-populated from cost calculation service)
+      calculatedCostUSD: strategy.calculatedCostUSD || 0,
+      calculatedCostLocal: strategy.calculatedCostLocal || 0,
+      currencyCode: strategy.currencyCode || 'USD',
+      currencySymbol: strategy.currencySymbol || '$',
       
       // Wizard Integration (how strategy appears in wizard)
       defaultSelected: strategy.defaultSelected || false,

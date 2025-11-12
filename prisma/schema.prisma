@@ -619,18 +619,14 @@ model RiskMitigationStrategy {
   benefitsBullets        String?  // JSON array of specific benefits user gets
   realWorldExample       String?  // Caribbean business success story with names and outcomes
   
-  // Implementation Details (enhanced with SME context)
-  implementationCost     String?  @default("medium") // 'low', 'medium', 'high', 'very_high'
-  costEstimateJMD        String?  // "Free" or "JMD 5,000-15,000" for Caribbean SMEs
-  timeToImplement        String?  @default("medium") // 'hours', 'days', 'weeks', 'months'
-  estimatedTotalHours    Int?     // Sum of all action step times (calculated or manual)
-  complexityLevel        String?  @default("moderate") // 'simple' | 'moderate' | 'advanced'
-  effectiveness          Int?     @default(7) // 1-10 scale
-  priority               String?  @default("medium") // 'low', 'medium', 'high', 'critical'
-  quickWinIndicator      Boolean  @default(false) // Fast + high impact = quick win
+  // Calculated Values (AUTO-CALCULATED from action steps - DO NOT set manually!)
+  calculatedCostUSD      Decimal? // Total cost in USD (sum of all action step costs)
+  calculatedCostLocal    Decimal? // Total cost in local currency
+  currencyCode           String?  // Local currency code (JMD, HTG, BSD, etc.)
+  currencySymbol         String?  // Local currency symbol (J$, G, B$, etc.)
+  totalEstimatedHours    Int?     // Total hours (sum of all action step estimatedMinutes / 60)
   
   // Wizard Integration (how strategy appears in wizard)
-  defaultSelected        Boolean  @default(false) // Should wizard pre-check this?
   selectionTier          String?  @default("recommended") // 'essential' | 'recommended' | 'optional'
   requiredForRisks       String?  // JSON array of risk IDs that make this mandatory
   
@@ -641,22 +637,12 @@ model RiskMitigationStrategy {
   
   // Resource-Limited SME Support
   lowBudgetAlternative   String?  // Cheaper approach description for cash-constrained SMEs
-  diyApproach            String?  // How to do it yourself without contractors
-  estimatedDIYSavings    String?  // "Save JMD 10,000 by doing X yourself"
   
-  // BCP Document Integration
-  bcpSectionMapping      String?  // Which section of final BCP doc this fills
-  bcpTemplateText        String?  // Pre-written paragraph for BCP document
-  
-  // Personalization (industry and size variants)
-  industryVariants       String?  // JSON object: {retail: "...", food: "...", tourism: "..."}
-  businessSizeGuidance   String?  // JSON object: {solo: "...", small: "...", medium: "..."}
-  
-  // Keep existing fields
+  // Applicability
   applicableRisks        String   // JSON array of risk types this strategy addresses
   applicableBusinessTypes String? // JSON array of business type categories (null = all)
-  prerequisites          String?  // JSON array of requirements
-  maintenanceRequirement String?  @default("low") // 'low', 'medium', 'high'
+  
+  // Status
   isActive               Boolean  @default(true)
   createdAt              DateTime @default(now())
   updatedAt              DateTime @updatedAt
@@ -668,7 +654,6 @@ model RiskMitigationStrategy {
 
   @@index([strategyId])
   @@index([selectionTier])
-  @@index([quickWinIndicator])
 }
 
 model ActionStep {
@@ -676,7 +661,6 @@ model ActionStep {
   strategyId        String
   stepId            String                 // e.g., 'step_1', 'step_2'
   phase             String                 @default("immediate") // 'immediate', 'short_term', 'medium_term', 'long_term'
-  executionTiming   String?                // 'before_crisis' | 'during_crisis' | 'after_crisis' - When to execute this action
   title             String
   description       String
   smeAction         String?                // Simplified action description for SMEs
@@ -728,7 +712,6 @@ model ActionStep {
   @@unique([strategyId, stepId])
   @@index([strategyId])
   @@index([phase])
-  @@index([executionTiming])
   @@index([difficultyLevel])
   @@index([isOptional])
 }

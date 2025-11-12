@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { CostItemBrowser } from './CostItemBrowser'
 import { costCalculationService } from '@/services/costCalculationService'
 import type { ActionStepItemCost } from '@/services/costCalculationService'
+import { getLocalizedText } from '@/utils/localizationUtils'
 
 interface ActionStepCostItemSelectorProps {
   actionStepId: string
@@ -205,12 +206,12 @@ export function ActionStepCostItemSelector({
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="text-xl">{categoryIcons[item.category] || '📦'}</span>
-                      <h5 className="font-medium text-gray-900">{item.name}</h5>
+                      <h5 className="font-medium text-gray-900">{getLocalizedText(item.name, 'en')}</h5>
                     </div>
                     
                     {item.description && (
                       <p className="text-sm text-gray-600 mt-1 ml-7">
-                        {item.description}
+                        {getLocalizedText(item.description, 'en')}
                       </p>
                     )}
                     
@@ -316,6 +317,8 @@ export function ActionStepCostItemSelector({
     </div>
   )
 }
+
+
 
 
 

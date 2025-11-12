@@ -8,8 +8,12 @@ import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionSte
 
 interface Strategy {
   id: string
+  strategyId?: string
   name: string
   description: string
+  
+  // Strategy Classification (NEW)
+  strategyType?: 'prevention' | 'response' | 'recovery'
   
   // SME-Focused Content
   smeTitle?: string
@@ -31,6 +35,12 @@ interface Strategy {
   effectiveness: number
   complexityLevel?: string
   quickWinIndicator?: boolean
+  
+  // Calculated Costs (auto-populated)
+  calculatedCostUSD?: number
+  calculatedCostLocal?: number
+  currencyCode?: string
+  currencySymbol?: string
   
   // Wizard integration
   applicableRisks: string[]
@@ -700,10 +710,47 @@ function StrategyCard({
             className={`mt-1 h-6 w-6 rounded border-gray-300 ${checkboxColor} focus:ring-2 focus:ring-offset-2`}
           />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h4 className="text-lg font-bold text-gray-900">
                 {displayTitle}
               </h4>
+              
+              {/* NEW: Strategy Type Badge */}
+              {(() => {
+                const typeConfig = {
+                  prevention: {
+                    icon: '🛡️',
+                    label: 'Prevention',
+                    bgColor: 'bg-blue-100',
+                    textColor: 'text-blue-800',
+                    borderColor: 'border-blue-300'
+                  },
+                  response: {
+                    icon: '⚡',
+                    label: 'Response',
+                    bgColor: 'bg-red-100',
+                    textColor: 'text-red-800',
+                    borderColor: 'border-red-300'
+                  },
+                  recovery: {
+                    icon: '🔄',
+                    label: 'Recovery',
+                    bgColor: 'bg-green-100',
+                    textColor: 'text-green-800',
+                    borderColor: 'border-green-300'
+                  }
+                }[strategy.strategyType || 'prevention']
+                
+                if (typeConfig) {
+                  return (
+                    <span className={`text-xs ${typeConfig.bgColor} ${typeConfig.textColor} border ${typeConfig.borderColor} px-2 py-0.5 rounded font-semibold`}>
+                      {typeConfig.icon} {typeConfig.label}
+                    </span>
+                  )
+                }
+                return null
+              })()}
+              
               {/* Quick Win Indicator */}
               {strategy.quickWinIndicator && (
                 <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium">

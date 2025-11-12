@@ -38,23 +38,105 @@ export async function PUT(
     const updatedStrategy = await withDatabase(async () => {
       const prisma = getPrismaClient()
       
-      // Update existing database strategy (all strategies are now in database)
+      // Prepare update data - only include fields that exist in the Prisma schema
+      const updateData: any = {
+        name: strategyData.name,
+        description: strategyData.description,
+        applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
+        applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
+        isActive: strategyData.isActive ?? true,
+        updatedAt: new Date()
+      }
+      
+      // Optional fields that exist in schema - only set if provided
+      if (strategyData.smeTitle !== undefined) {
+        updateData.smeTitle = strategyData.smeTitle
+      }
+      if (strategyData.smeSummary !== undefined) {
+        updateData.smeSummary = strategyData.smeSummary
+      }
+      if (strategyData.smeDescription !== undefined) {
+        updateData.smeDescription = strategyData.smeDescription
+      }
+      if (strategyData.whyImportant !== undefined) {
+        updateData.whyImportant = strategyData.whyImportant
+      }
+      if (strategyData.benefitsBullets !== undefined) {
+        updateData.benefitsBullets = typeof strategyData.benefitsBullets === 'string' 
+          ? strategyData.benefitsBullets 
+          : safeJsonStringify(strategyData.benefitsBullets)
+      }
+      if (strategyData.realWorldExample !== undefined) {
+        updateData.realWorldExample = strategyData.realWorldExample
+      }
+      if (strategyData.selectionTier !== undefined) {
+        updateData.selectionTier = strategyData.selectionTier
+      }
+      if (strategyData.requiredForRisks !== undefined) {
+        updateData.requiredForRisks = typeof strategyData.requiredForRisks === 'string'
+          ? strategyData.requiredForRisks
+          : safeJsonStringify(strategyData.requiredForRisks || [])
+      }
+      if (strategyData.helpfulTips !== undefined) {
+        updateData.helpfulTips = typeof strategyData.helpfulTips === 'string'
+          ? strategyData.helpfulTips
+          : safeJsonStringify(strategyData.helpfulTips || [])
+      }
+      if (strategyData.commonMistakes !== undefined) {
+        updateData.commonMistakes = typeof strategyData.commonMistakes === 'string'
+          ? strategyData.commonMistakes
+          : safeJsonStringify(strategyData.commonMistakes || [])
+      }
+      if (strategyData.successMetrics !== undefined) {
+        updateData.successMetrics = typeof strategyData.successMetrics === 'string'
+          ? strategyData.successMetrics
+          : safeJsonStringify(strategyData.successMetrics || [])
+      }
+      if (strategyData.lowBudgetAlternative !== undefined) {
+        updateData.lowBudgetAlternative = strategyData.lowBudgetAlternative
+      }
+      
+      // Calculated costs (from frontend calculation)
+      if (typeof strategyData.calculatedCostUSD === 'number') {
+        updateData.calculatedCostUSD = strategyData.calculatedCostUSD
+      }
+      if (typeof strategyData.calculatedCostLocal === 'number') {
+        updateData.calculatedCostLocal = strategyData.calculatedCostLocal
+      }
+      if (strategyData.currencyCode !== undefined) {
+        updateData.currencyCode = strategyData.currencyCode
+      }
+      if (strategyData.currencySymbol !== undefined) {
+        updateData.currencySymbol = strategyData.currencySymbol
+      }
+      // Note: schema field is totalEstimatedHours, not estimatedTotalHours
+      if (typeof strategyData.estimatedTotalHours === 'number' || typeof strategyData.totalEstimatedHours === 'number') {
+        updateData.totalEstimatedHours = strategyData.totalEstimatedHours ?? strategyData.estimatedTotalHours
+      }
+      
+      console.log('💰 Saving calculated costs:', {
+        costUSD: updateData.calculatedCostUSD,
+        costLocal: updateData.calculatedCostLocal,
+        currency: updateData.currencyCode,
+        hours: updateData.estimatedTotalHours
+      })
+      
+      // Update existing database strategy and include action steps in response
       return await prisma.riskMitigationStrategy.update({
         where: { id: params.id },
-        data: {
-          name: strategyData.name,
-          category: strategyData.category,
-          description: strategyData.description,
-          implementationCost: strategyData.implementationCost,
-          timeToImplement: strategyData.timeToImplement,
-          effectiveness: strategyData.effectiveness,
-          applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
-          applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
-          prerequisites: safeJsonStringify(strategyData.prerequisites || []),
-          maintenanceRequirement: strategyData.maintenanceRequirement,
-          priority: strategyData.priority,
-          isActive: strategyData.isActive ?? true,
-          updatedAt: new Date()
+        data: updateData,
+        include: {
+          actionSteps: {
+            where: { isActive: true },
+            include: {
+              itemCosts: {
+                include: {
+                  item: true
+                }
+              }
+            },
+            orderBy: { sortOrder: 'asc' }
+          }
         }
       })
     }, 'PUT /api/admin2/strategies/[id]')
@@ -62,7 +144,7 @@ export async function PUT(
     // Transform response using shared transformer
     const transformedStrategy = transformStrategyForApi(updatedStrategy)
     
-    console.log('🛡️ Strategy updated successfully:', transformedStrategy.name)
+    console.log('🛡️ Strategy updated successfully:', transformedStrategy.name, 'with', transformedStrategy.actionSteps?.length || 0, 'action steps')
     return createSuccessResponse(transformedStrategy)
     
   } catch (error) {

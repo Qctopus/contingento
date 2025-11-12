@@ -4,18 +4,13 @@ export interface StrategyCSV {
   id: string
   strategyId: string
   name: string
-  category: string
   description: string
   smeDescription: string
   whyImportant: string
   applicableRisks: string
   implementationCost: string
   costEstimateJMD: string
-  implementationTime: string
-  timeToImplement: string
-  effectiveness: number
   businessTypes: string
-  priority: string
   helpfulTips: string
   commonMistakes: string
   successMetrics: string
@@ -133,10 +128,9 @@ export function parseBusinessTypesFromCSV(csvText: string): any[] {
 
 export function exportStrategiesAndActionStepsToCSV(strategies: any[]): string {
   const headers = [
-    'strategyId', 'name', 'category', 'description', 
-    'applicableRisks', 'implementationCost', 'costEstimateJMD',
-    'implementationTime', 'timeToImplement', 'effectiveness', 'businessTypes',
-    'priority', 'helpfulTips', 'commonMistakes', 'successMetrics', 
+    'strategyId', 'name', 'description', 
+    'applicableRisks', 'implementationCost', 'costEstimateJMD', 'businessTypes',
+    'helpfulTips', 'commonMistakes', 'successMetrics', 
     'prerequisites', 'roi',
     'stepId', 'phase', 'action', 'timeframe',
     'responsibility', 'resources', 'cost', 'estimatedCostJMD_step', 'checklist', 'helpVideo'
@@ -150,16 +144,11 @@ export function exportStrategiesAndActionStepsToCSV(strategies: any[]): string {
         const row = [
           escapeCSV(strategy.strategyId || ''),
           escapeCSV(strategy.name || ''),
-          escapeCSV(strategy.category || ''),
           escapeCSV(strategy.description || ''),
           escapeCSV(Array.isArray(strategy.applicableRisks) ? strategy.applicableRisks.join(';') : ''),
           escapeCSV(strategy.implementationCost || ''),
           escapeCSV(strategy.costEstimateJMD || ''),
-          escapeCSV(strategy.implementationTime || ''),
-          escapeCSV(strategy.timeToImplement || ''),
-          strategy.effectiveness || 0,
           escapeCSV(Array.isArray(strategy.businessTypes) ? strategy.businessTypes.join(';') : ''),
-          escapeCSV(strategy.priority || ''),
           escapeCSV(Array.isArray(strategy.helpfulTips) ? strategy.helpfulTips.join(';') : ''),
           escapeCSV(Array.isArray(strategy.commonMistakes) ? strategy.commonMistakes.join(';') : ''),
           escapeCSV(Array.isArray(strategy.successMetrics) ? strategy.successMetrics.join(';') : ''),
@@ -183,16 +172,11 @@ export function exportStrategiesAndActionStepsToCSV(strategies: any[]): string {
       const row = [
         escapeCSV(strategy.strategyId || ''),
         escapeCSV(strategy.name || ''),
-        escapeCSV(strategy.category || ''),
         escapeCSV(strategy.description || ''),
         escapeCSV(Array.isArray(strategy.applicableRisks) ? strategy.applicableRisks.join(';') : ''),
         escapeCSV(strategy.implementationCost || ''),
         escapeCSV(strategy.costEstimateJMD || ''),
-        escapeCSV(strategy.implementationTime || ''),
-        escapeCSV(strategy.timeToImplement || ''),
-        strategy.effectiveness || 0,
         escapeCSV(Array.isArray(strategy.businessTypes) ? strategy.businessTypes.join(';') : ''),
-        escapeCSV(strategy.priority || ''),
         escapeCSV(Array.isArray(strategy.helpfulTips) ? strategy.helpfulTips.join(';') : ''),
         escapeCSV(Array.isArray(strategy.commonMistakes) ? strategy.commonMistakes.join(';') : ''),
         escapeCSV(Array.isArray(strategy.successMetrics) ? strategy.successMetrics.join(';') : ''),
@@ -209,10 +193,9 @@ export function exportStrategiesAndActionStepsToCSV(strategies: any[]): string {
 
 export function exportStrategiesToCSV(strategies: any[]): string {
   const headers = [
-    'id', 'strategyId', 'name', 'category', 'description', 'smeDescription', 
+    'id', 'strategyId', 'name', 'description', 'smeDescription', 
     'whyImportant', 'applicableRisks', 'implementationCost', 'costEstimateJMD',
-    'implementationTime', 'timeToImplement', 'effectiveness', 'businessTypes',
-    'priority', 'helpfulTips', 'commonMistakes', 'successMetrics', 
+    'businessTypes', 'helpfulTips', 'commonMistakes', 'successMetrics', 
     'prerequisites', 'roi', 'actionSteps'
   ]
 
@@ -222,18 +205,13 @@ export function exportStrategiesToCSV(strategies: any[]): string {
       escapeCSV(strategy.id || ''),
       escapeCSV(strategy.strategyId || ''),
       escapeCSV(strategy.name || ''),
-      escapeCSV(strategy.category || ''),
       escapeCSV(strategy.description || ''),
       escapeCSV(strategy.smeDescription || ''),
       escapeCSV(strategy.whyImportant || ''),
       escapeCSV(Array.isArray(strategy.applicableRisks) ? strategy.applicableRisks.join(';') : ''),
       escapeCSV(strategy.implementationCost || ''),
       escapeCSV(strategy.costEstimateJMD || ''),
-      escapeCSV(strategy.implementationTime || ''),
-      escapeCSV(strategy.timeToImplement || ''),
-      strategy.effectiveness || 0,
       escapeCSV(Array.isArray(strategy.businessTypes) ? strategy.businessTypes.join(';') : ''),
-      escapeCSV(strategy.priority || ''),
       escapeCSV(Array.isArray(strategy.helpfulTips) ? strategy.helpfulTips.join(';') : ''),
       escapeCSV(Array.isArray(strategy.commonMistakes) ? strategy.commonMistakes.join(';') : ''),
       escapeCSV(Array.isArray(strategy.successMetrics) ? strategy.successMetrics.join(';') : ''),
@@ -319,16 +297,11 @@ export function parseStrategiesAndActionStepsFromCSV(csvText: string): any[] {
         id: strategyId,
         strategyId: strategyId,
         name: rowData.name,
-        category: rowData.category,
         description: rowData.description,
         applicableRisks: rowData.applicableRisks ? rowData.applicableRisks.split(';').map((s: string) => s.trim()).filter((s: string) => s) : [],
         implementationCost: rowData.implementationCost,
         costEstimateJMD: rowData.costEstimateJMD,
-        implementationTime: rowData.implementationTime,
-        timeToImplement: rowData.timeToImplement,
-        effectiveness: parseFloat(rowData.effectiveness) || 0,
         businessTypes: rowData.businessTypes ? rowData.businessTypes.split(';').map((s: string) => s.trim()).filter((s: string) => s) : [],
-        priority: rowData.priority,
         helpfulTips: rowData.helpfulTips ? rowData.helpfulTips.split(';').map((s: string) => s.trim()).filter((s: string) => s) : [],
         commonMistakes: rowData.commonMistakes ? rowData.commonMistakes.split(';').map((s: string) => s.trim()).filter((s: string) => s) : [],
         successMetrics: rowData.successMetrics ? rowData.successMetrics.split(';').map((s: string) => s.trim()).filter((s: string) => s) : [],
@@ -373,7 +346,6 @@ export function parseStrategiesFromCSV(csvText: string): any[] {
       const value = values[index]?.trim() || ''
       
       switch (header) {
-        case 'effectiveness':
         case 'roi':
           strategy[header] = parseFloat(value) || 0
           break
@@ -397,7 +369,7 @@ export function parseStrategiesFromCSV(csvText: string): any[] {
       }
     })
 
-    if (strategy.name && strategy.category) {
+    if (strategy.name) {
       strategies.push(strategy)
     }
   }

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useAutoSave } from '@/hooks/useAutoSave'
+import { useStrategyCostCalculation } from '@/hooks/useStrategyCostCalculation'
 import { AutoSaveIndicator } from './AutoSaveIndicator'
 import { Strategy, ActionStep } from '../../types/admin'
 import { MultilingualArrayEditor } from './MultilingualArrayEditor'
 import { MultiCurrencyInput } from './MultiCurrencyInput'
 import { ActionStepCostItemSelector } from './ActionStepCostItemSelector'
-import { StrategyCostSummary } from './StrategyCostSummary'
-import { getLocalizedText } from '@/utils/localizationUtils'
+import { getLocalizedText, stringifyMultilingualContent } from '@/utils/localizationUtils'
 
 interface StrategyEditorProps {
   strategy?: Strategy | null // If editing existing strategy
@@ -25,17 +25,12 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     id: strategy?.id || '',
     strategyId: strategy?.strategyId || '',
     name: strategy?.name || '',
-    category: strategy?.category || 'prevention',
     description: strategy?.description || '',
     smeDescription: strategy?.smeDescription || strategy?.description || '',
     whyImportant: strategy?.whyImportant || `This strategy helps protect your business.`,
     applicableRisks: strategy?.applicableRisks || [],
     implementationCost: strategy?.implementationCost || 'medium',
-    implementationTime: strategy?.implementationTime || 'weeks',
-    timeToImplement: strategy?.timeToImplement || '',
-    effectiveness: strategy?.effectiveness || 5,
     businessTypes: strategy?.businessTypes || [],
-    priority: strategy?.priority || 'medium',
     actionSteps: strategy?.actionSteps || [],
     helpfulTips: strategy?.helpfulTips || [],
     commonMistakes: strategy?.commonMistakes || [],
@@ -45,6 +40,12 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
 
   const [editingStep, setEditingStep] = useState<ActionStep | null>(null)
   const [showStepEditor, setShowStepEditor] = useState(false)
+  
+  // NEW: Real-time cost calculation based on action steps
+  const costCalculation = useStrategyCostCalculation(
+    formData.actionSteps,
+    'US' // Default to USD per requirements
+  )
   
   // Language labels and flags
   const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
@@ -65,22 +66,28 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   // Update formData when strategy prop changes (when editing a different strategy)
   useEffect(() => {
     if (strategy) {
+      const actionSteps = Array.isArray(strategy.actionSteps) ? strategy.actionSteps : []
+      console.log('📋 StrategyEditor: Updating formData with strategy:', {
+        id: strategy.id,
+        name: typeof strategy.name === 'string' ? strategy.name : getLocalizedText(strategy.name, 'en'),
+        actionStepsCount: actionSteps.length,
+        actionStepsType: typeof strategy.actionSteps,
+        isArray: Array.isArray(strategy.actionSteps),
+        actionSteps: actionSteps
+      })
+      console.log('📋 StrategyEditor: Full strategy.actionSteps:', JSON.stringify(strategy.actionSteps, null, 2))
+      
       setFormData({
         id: strategy.id || '',
         strategyId: strategy.strategyId || '',
         name: strategy.name || '',
-        category: strategy.category || 'prevention',
         description: strategy.description || '',
         smeDescription: strategy.smeDescription || strategy.description || '',
         whyImportant: strategy.whyImportant || `This strategy helps protect your business.`,
         applicableRisks: strategy.applicableRisks || [],
         implementationCost: strategy.implementationCost || 'medium',
-        implementationTime: strategy.implementationTime || 'weeks',
-        timeToImplement: strategy.timeToImplement || '',
-        effectiveness: strategy.effectiveness || 5,
         businessTypes: strategy.businessTypes || [],
-        priority: strategy.priority || 'medium',
-        actionSteps: strategy.actionSteps || [],
+        actionSteps: actionSteps,
         helpfulTips: strategy.helpfulTips || [],
         commonMistakes: strategy.commonMistakes || [],
         successMetrics: strategy.successMetrics || [],
@@ -88,6 +95,27 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
       })
     }
   }, [strategy])
+  
+  // NEW: Update formData with calculated costs whenever they change
+  useEffect(() => {
+    if (!costCalculation.isCalculating) {
+      setFormData(prev => ({
+        ...prev,
+        calculatedCostUSD: costCalculation.totalUSD,
+        calculatedCostLocal: costCalculation.totalLocal,
+        currencyCode: costCalculation.currencyCode,
+        currencySymbol: costCalculation.currencySymbol,
+        estimatedTotalHours: costCalculation.calculatedHours
+      }))
+    }
+  }, [
+    costCalculation.totalUSD,
+    costCalculation.totalLocal,
+    costCalculation.currencyCode,
+    costCalculation.currencySymbol,
+    costCalculation.calculatedHours,
+    costCalculation.isCalculating
+  ])
   
   // Helper to update multilingual field
   const updateMultilingualField = (field: keyof Strategy, lang: 'en' | 'es' | 'fr', value: string) => {
@@ -99,17 +127,26 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   // Auto-save function using centralized data service
   const saveStrategy = useCallback(async (data: Strategy) => {
     try {
-      console.log('📋 StrategyEditor auto-saving via centralDataService:', data.name)
+      // Extract name string from multilingual field if needed
+      const nameString = typeof data.name === 'string' ? data.name : getLocalizedText(data.name, 'en')
+      console.log('📋 StrategyEditor auto-saving via centralDataService:', nameString)
       
       // Validate data before saving to prevent validation errors
-      if (!data.name?.trim()) {
+      if (!nameString || !nameString.trim()) {
         console.log('📋 Skipping auto-save: strategy name is empty')
         return
       }
       
-      // Map businessTypes to applicableBusinessTypes for API compatibility
+      // Convert multilingual fields to JSON strings for API compatibility
+      // The API expects multilingual fields as JSON strings, not objects
       const strategyDataForApi = {
         ...data,
+        // Convert multilingual fields to JSON strings
+        name: typeof data.name === 'string' ? data.name : stringifyMultilingualContent(data.name),
+        description: typeof data.description === 'string' ? data.description : stringifyMultilingualContent(data.description),
+        smeDescription: data.smeDescription ? (typeof data.smeDescription === 'string' ? data.smeDescription : stringifyMultilingualContent(data.smeDescription)) : '',
+        whyImportant: data.whyImportant ? (typeof data.whyImportant === 'string' ? data.whyImportant : stringifyMultilingualContent(data.whyImportant)) : '',
+        // Map businessTypes to applicableBusinessTypes for API compatibility
         applicableBusinessTypes: data.businessTypes || []
       }
       
@@ -131,19 +168,18 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   }, [onAutoSave])
 
   // Use the auto-save hook - only enable if we have a valid strategy with ID
+  // Check name properly for multilingual objects
+  const hasValidName = formData.name && (
+    typeof formData.name === 'string' 
+      ? formData.name.trim().length > 0 
+      : getLocalizedText(formData.name, 'en').trim().length > 0
+  )
   const { autoSaveStatus, forceSave } = useAutoSave({
     data: formData,
     saveFunction: saveStrategy,
     delay: 1000,
-    enabled: !!(formData.id && formData.name) // Only enable if strategy has ID and name
+    enabled: !!(formData.id && hasValidName) // Only enable if strategy has ID and name
   })
-
-  const categories = [
-    { key: 'prevention', name: 'Prevention', icon: '🛡️', description: 'Proactive measures to prevent risks' },
-    { key: 'preparation', name: 'Preparation', icon: '📋', description: 'Readiness and planning activities' },
-    { key: 'response', name: 'Response', icon: '🚨', description: 'Immediate actions when risks occur' },
-    { key: 'recovery', name: 'Recovery', icon: '🔄', description: 'Restoration and business continuity' }
-  ]
 
   // Use centralized risk types for consistency
   const riskTypes = [
@@ -173,25 +209,11 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     { key: 'all', name: 'All Business Types' }
   ]
 
-  const priorityOptions = [
-    { key: 'critical', name: 'Critical', description: 'Must do immediately', color: 'red' },
-    { key: 'high', name: 'High', description: 'Important to do soon', color: 'orange' },
-    { key: 'medium', name: 'Medium', description: 'Good to have', color: 'yellow' },
-    { key: 'low', name: 'Low', description: 'Nice to have when possible', color: 'green' }
-  ]
-
   const costOptions = [
     { key: 'low', name: 'Low Cost', jmd: 'Under JMD $10,000', description: 'Minimal investment required' },
     { key: 'medium', name: 'Medium Cost', jmd: 'JMD $10,000 - $50,000', description: 'Moderate investment' },
     { key: 'high', name: 'High Cost', jmd: 'JMD $50,000 - $200,000', description: 'Significant investment' },
     { key: 'very_high', name: 'Very High Cost', jmd: 'Over JMD $200,000', description: 'Major investment required' }
-  ]
-
-  const timeOptions = [
-    { key: 'hours', name: 'Hours', description: 'Can be done in a few hours' },
-    { key: 'days', name: 'Days', description: 'Takes a few days to complete' },
-    { key: 'weeks', name: 'Weeks', description: 'Takes several weeks' },
-    { key: 'months', name: 'Months', description: 'Long-term implementation' }
   ]
 
   // Generate strategy ID when name changes
@@ -313,7 +335,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   }
 
   const tabs = [
-    { key: 'basic', name: 'Basic Info', icon: '📋', description: 'Name, category, costs, effectiveness' },
+    { key: 'basic', name: 'Basic Info', icon: '📋', description: 'Name, costs, and risks' },
     { key: 'descriptions', name: 'Descriptions', icon: '📝', description: 'Technical and SME descriptions' },
     { key: 'actions', name: 'Action Steps', icon: '🔧', description: 'Implementation steps and timeline' },
     { key: 'guidance', name: 'Guidance', icon: '💡', description: 'Tips, mistakes, success metrics' }
@@ -353,21 +375,23 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
 
         {/* Tab Navigation */}
         <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            {tabs.map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setCurrentTab(tab.key as any)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-                  currentTab === tab.key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
+          <nav className="-mb-px flex space-x-8 justify-between items-center">
+            <div className="flex space-x-8">
+              {tabs.map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setCurrentTab(tab.key as any)}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+                    currentTab === tab.key
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="mr-2">{tab.icon}</span>
+                  {tab.name}
+                </button>
+              ))}
+            </div>
           </nav>
         </div>
       </div>
@@ -420,123 +444,6 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                   placeholder="Auto-generated from name"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50"
                 />
-              </div>
-            </div>
-
-            {/* Category and Priority */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {categories.map(category => (
-                    <button
-                      key={category.key}
-                      onClick={() => setFormData(prev => ({ ...prev, category: category.key as any }))}
-                      className={`p-3 text-left border rounded-lg transition-all ${
-                        formData.category === category.key
-                          ? 'border-blue-500 bg-blue-50 text-blue-900'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg">{category.icon}</span>
-                        <span className="font-medium">{category.name}</span>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">{category.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Priority Level *
-                </label>
-                <div className="space-y-2">
-                  {priorityOptions.map(priority => (
-                    <button
-                      key={priority.key}
-                      onClick={() => setFormData(prev => ({ ...prev, priority: priority.key as any }))}
-                      className={`w-full p-3 text-left border rounded-lg transition-all ${
-                        formData.priority === priority.key
-                          ? `border-${priority.color}-500 bg-${priority.color}-50`
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-medium">{priority.name}</div>
-                      <p className="text-xs text-gray-600">{priority.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Cost and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  💰 Total Implementation Cost
-                </label>
-                <StrategyCostSummary
-                  strategy={{
-                    id: formData.id,
-                    name: getLocalizedText(formData.name, 'en') || 'Strategy',
-                    actionSteps: formData.actionSteps
-                  }}
-                  countryCode="JM"
-                  showDetailed={false}
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  💡 Cost is automatically calculated from action step cost items. Add cost items to action steps to see the total.
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Implementation Time *
-                </label>
-                <div className="space-y-2">
-                  {timeOptions.map(time => (
-                    <button
-                      key={time.key}
-                      onClick={() => setFormData(prev => ({ ...prev, implementationTime: time.key as any }))}
-                      className={`w-full p-3 text-left border rounded-lg transition-all ${
-                        formData.implementationTime === time.key
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-medium">{time.name}</div>
-                      <p className="text-xs text-gray-600">{time.description}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Effectiveness Only (ROI removed) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Effectiveness (1-10) *
-                </label>
-                <div className="flex items-center space-x-4">
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={formData.effectiveness}
-                    onChange={(e) => setFormData(prev => ({ ...prev, effectiveness: parseInt(e.target.value) }))}
-                    className="flex-1"
-                  />
-                  <span className="text-lg font-semibold text-blue-600 w-8">{formData.effectiveness}</span>
-                </div>
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>Low</span>
-                  <span>High</span>
-                </div>
               </div>
             </div>
 
@@ -673,53 +580,11 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
               <p className="text-xs text-green-600 mt-1">Focus on business value, financial protection, and peace of mind</p>
             </div>
 
-            {/* Time Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                User-Friendly Time Description
-              </label>
-              <input
-                type="text"
-                value={formData.timeToImplement}
-                onChange={(e) => setFormData(prev => ({ ...prev, timeToImplement: e.target.value }))}
-                placeholder="e.g., 2-4 weeks"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                💡 Precise costs are calculated from action step cost items. This field is for general time guidance only.
-              </p>
-            </div>
           </div>
         )}
 
         {currentTab === 'actions' && (
           <div className="space-y-6">
-            {/* Cost Summary at the top - ALWAYS SHOW */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                <span>💰</span>
-                <span>Strategy Cost Calculation</span>
-              </h3>
-              {formData.actionSteps.length === 0 ? (
-                <div className="text-center py-4">
-                  <p className="text-gray-600 mb-2">No action steps yet</p>
-                  <p className="text-sm text-gray-500">
-                    Add action steps with cost items to see the total strategy cost
-                  </p>
-                </div>
-              ) : (
-                <StrategyCostSummary
-                  strategy={{
-                    id: formData.id,
-                    name: getLocalizedText(formData.name, 'en') || 'Strategy',
-                    actionSteps: formData.actionSteps
-                  }}
-                  countryCode="JM"
-                  showDetailed={true}
-                />
-              )}
-            </div>
-
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-semibold text-gray-900">Action Steps</h3>
               <button
@@ -730,79 +595,106 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
               </button>
             </div>
 
-            {formData.actionSteps.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <span className="text-4xl mb-4 block">📋</span>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No Action Steps Yet</h4>
-                <p className="text-gray-600 mb-4">Add implementation steps to guide SME users</p>
-                <button
-                  onClick={handleAddStep}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Add First Step
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {['before_crisis', 'during_crisis', 'after_crisis'].map(timing => {
-                  const timingSteps = formData.actionSteps.filter(step => step.executionTiming === timing)
-                  if (timingSteps.length === 0) return null
+            {(() => {
+              const actionSteps = Array.isArray(formData.actionSteps) ? formData.actionSteps : []
+              console.log('📋 StrategyEditor: Rendering action steps tab:', {
+                actionStepsCount: actionSteps.length,
+                actionSteps: actionSteps,
+                formDataActionSteps: formData.actionSteps,
+                isArray: Array.isArray(formData.actionSteps),
+                formDataId: formData.id,
+                strategyId: formData.strategyId
+              })
+              console.log('📋 StrategyEditor: Full actionSteps array:', JSON.stringify(actionSteps, null, 2))
+              
+              if (actionSteps.length === 0) {
+                return (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <span className="text-4xl mb-4 block">📋</span>
+                    <h4 className="text-lg font-medium text-gray-900 mb-2">No Action Steps Yet</h4>
+                    <p className="text-gray-600 mb-4">Add implementation steps to guide SME users</p>
+                    <button
+                      onClick={handleAddStep}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Add First Step
+                    </button>
+                  </div>
+                )
+              }
+              
+              // Group action steps by phase
+              const phaseGroups: Record<string, any[]> = {}
+              actionSteps.forEach(step => {
+                if (!step) return
+                const phase = step.phase || 'other'
+                if (!phaseGroups[phase]) {
+                  phaseGroups[phase] = []
+                }
+                phaseGroups[phase].push(step)
+              })
 
-                  const timingConfig = {
-                    before_crisis: { name: '🛡️ BEFORE Crisis (Prevention & Preparation)', icon: '🛡️', description: 'Actions to prepare and prevent crises', color: 'blue' },
-                    during_crisis: { name: '⚡ DURING Crisis (Response)', icon: '⚡', description: 'Actions to take when crisis is happening', color: 'orange' },
-                    after_crisis: { name: '🔄 AFTER Crisis (Recovery)', icon: '🔄', description: 'Actions for recovery and restoration', color: 'green' }
-                  }[timing] || { name: timing, icon: '📋', description: '', color: 'gray' }
+              // Define all possible phases with their display config
+              const allPhases = [
+                { key: 'before', name: '🛡️ Before Crisis', icon: '🛡️', color: 'blue' },
+                { key: 'during', name: '⚠️ During Crisis', icon: '⚠️', color: 'orange' },
+                { key: 'after', name: '✅ After Crisis', icon: '✅', color: 'green' },
+              ]
+
+              return (
+              <div className="space-y-3">
+                {allPhases.map(phaseConfig => {
+                  const phaseSteps = phaseGroups[phaseConfig.key] || []
+                  if (phaseSteps.length === 0) return null
 
                   const borderColor = {
-                    blue: 'border-blue-300 bg-blue-50',
+                    red: 'border-red-300 bg-red-50',
                     orange: 'border-orange-300 bg-orange-50',
+                    yellow: 'border-yellow-300 bg-yellow-50',
                     green: 'border-green-300 bg-green-50',
+                    blue: 'border-blue-300 bg-blue-50',
                     gray: 'border-gray-300 bg-gray-50'
-                  }[timingConfig.color]
+                  }[phaseConfig.color]
 
                   return (
-                    <div key={timing} className={`border-2 rounded-lg p-6 ${borderColor}`}>
-                      <div className="flex items-center space-x-3 mb-4">
-                        <span className="text-2xl">{timingConfig.icon}</span>
-                        <div>
-                          <h4 className="text-lg font-medium text-gray-900">{timingConfig.name}</h4>
-                          <p className="text-sm text-gray-700">{timingConfig.description}</p>
-                        </div>
+                    <div key={phaseConfig.key} className={`border-2 rounded-lg p-4 ${borderColor}`}>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl">{phaseConfig.icon}</span>
+                        <h4 className="text-base font-medium text-gray-900">{phaseConfig.name}</h4>
                         <div className="ml-auto text-sm font-medium text-gray-700">
-                          {timingSteps.length} step{timingSteps.length !== 1 ? 's' : ''}
+                          {phaseSteps.length} step{phaseSteps.length !== 1 ? 's' : ''}
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        {timingSteps.map((step, index) => {
+                      <div className="space-y-2">
+                        {phaseSteps.map((step) => {
                           const stepTitle = getLocalizedText(step.title || step.smeAction || step.action, 'en')
                           const stepDesc = getLocalizedText(step.description || step.smeAction || step.action, 'en')
                           
                           return (
-                          <div key={step.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                          <div key={step.id} className="bg-white rounded-lg p-3 border border-gray-200">
                             <div className="flex items-start justify-between mb-2">
-                              <h5 className="font-medium text-gray-900">
+                              <h5 className="font-medium text-gray-900 text-sm">
                                 {stepTitle}
                               </h5>
                               <div className="flex space-x-2">
                                 <button
                                   onClick={() => handleEditStep(step)}
-                                  className="text-blue-600 hover:text-blue-800 text-sm"
+                                  className="text-blue-600 hover:text-blue-800 text-xs"
                                 >
                                   Edit
                                 </button>
                                 <button
                                   onClick={() => handleDeleteStep(step.id)}
-                                  className="text-red-600 hover:text-red-800 text-sm"
+                                  className="text-red-600 hover:text-red-800 text-xs"
                                 >
                                   Delete
                                 </button>
                               </div>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
                               <div>
-                                <span className="font-medium">Timeframe:</span> {step.timeframe || 'Not set'}
+                                <span className="font-medium">Timeframe:</span> {getLocalizedText(step.timeframe, 'en') || 'Not set'}
                               </div>
                               <div>
                                 <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
@@ -814,7 +706,72 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                               </div>
                             )}
                             {stepDesc && stepDesc !== stepTitle && (
-                              <p className="text-sm text-gray-600 mt-2">{stepDesc}</p>
+                              <p className="text-xs text-gray-600 mt-2">{stepDesc}</p>
+                            )}
+                          </div>
+                        )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+                
+                {/* Display any other phases that don't match the predefined list */}
+                {Object.keys(phaseGroups).filter(phase => 
+                  !allPhases.some(p => p.key === phase) && phase !== 'other'
+                ).map(phase => {
+                  const phaseSteps = phaseGroups[phase]
+                  return (
+                    <div key={phase} className="border-2 rounded-lg p-4 border-gray-300 bg-gray-50">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl">📋</span>
+                        <h4 className="text-base font-medium text-gray-900">{phase.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h4>
+                        <div className="ml-auto text-sm font-medium text-gray-700">
+                          {phaseSteps.length} step{phaseSteps.length !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {phaseSteps.map((step) => {
+                          const stepTitle = getLocalizedText(step.title || step.smeAction || step.action, 'en')
+                          const stepDesc = getLocalizedText(step.description || step.smeAction || step.action, 'en')
+                          
+                          return (
+                          <div key={step.id} className="bg-white rounded-lg p-3 border border-gray-200">
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-medium text-gray-900 text-sm">
+                                {stepTitle}
+                              </h5>
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleEditStep(step)}
+                                  className="text-blue-600 hover:text-blue-800 text-xs"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteStep(step.id)}
+                                  className="text-red-600 hover:text-red-800 text-xs"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+                              <div>
+                                <span className="font-medium">Timeframe:</span> {getLocalizedText(step.timeframe, 'en') || 'Not set'}
+                              </div>
+                              <div>
+                                <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
+                              </div>
+                            </div>
+                            {step.costItems && step.costItems.length > 0 && (
+                              <div className="text-xs text-blue-600 mt-2">
+                                💰 {step.costItems.length} cost item{step.costItems.length !== 1 ? 's' : ''} assigned
+                              </div>
+                            )}
+                            {stepDesc && stepDesc !== stepTitle && (
+                              <p className="text-xs text-gray-600 mt-2">{stepDesc}</p>
                             )}
                           </div>
                         )
@@ -824,7 +781,8 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                   )
                 })}
               </div>
-            )}
+              )
+            })()}
           </div>
         )}
 
@@ -942,10 +900,9 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
   }
 
   const phaseOptions = [
-    { key: 'immediate', name: 'Immediate', description: 'Right now (this week)' },
-    { key: 'short_term', name: 'Short-term', description: 'Next 1-4 weeks' },
-    { key: 'medium_term', name: 'Medium-term', description: 'Next 1-3 months' },
-    { key: 'long_term', name: 'Long-term', description: 'Next 3-12 months' }
+    { key: 'before', name: '🛡️ Before', description: 'Prevention & Preparation' },
+    { key: 'during', name: '⚠️ During', description: 'Crisis Response' },
+    { key: 'after', name: '✅ After', description: 'Recovery & Follow-up' }
   ]
 
   const responsibilityOptions = [
@@ -1134,17 +1091,32 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                 <span className="text-xs font-normal text-gray-500">(e.g., equipment, materials, tools)</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                {stepData.resources.map((resource, index) => (
-                  <div key={index} className="flex items-center space-x-2 p-2 bg-gray-100 rounded">
-                    <span className="text-sm flex-1">{resource}</span>
-                    <button
-                      onClick={() => removeResource(index)}
-                      className="text-red-500 hover:text-red-700 text-xs"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                {(() => {
+                  // Parse multilingual resources array
+                  let resources: string[] = []
+                  if (typeof stepData.resources === 'string') {
+                    try {
+                      const parsed = JSON.parse(stepData.resources)
+                      resources = parsed[activeLanguage] || parsed.en || []
+                    } catch {
+                      resources = []
+                    }
+                  } else if (Array.isArray(stepData.resources)) {
+                    resources = stepData.resources
+                  }
+                  
+                  return resources.map((resource, index) => (
+                    <div key={index} className="flex items-center space-x-2 p-2 bg-gray-100 rounded">
+                      <span className="text-sm flex-1">{resource}</span>
+                      <button
+                        onClick={() => removeResource(index)}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))
+                })()}
               </div>
               <input
                 type="text"

@@ -21,9 +21,7 @@ export function ImprovedStrategiesActionsTab() {
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null)
   const [viewMode, setViewMode] = useState<ViewMode>('overview')
   const [displayMode, setDisplayMode] = useState<DisplayMode>('cards')
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedRisk, setSelectedRisk] = useState<string>('all')
-  const [selectedPriority, setSelectedPriority] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
   const [showImportModal, setShowImportModal] = useState(false)
@@ -50,8 +48,19 @@ export function ImprovedStrategiesActionsTab() {
           id: data[0].id,
           name: data[0].name,
           nameType: typeof data[0].name,
-          category: data[0].category,
-          applicableRisks: data[0].applicableRisks
+          applicableRisks: data[0].applicableRisks,
+          actionStepsCount: data[0].actionSteps?.length || 0,
+          actionSteps: data[0].actionSteps,
+          hasActionSteps: !!data[0].actionSteps && Array.isArray(data[0].actionSteps)
+        })
+        // Log action steps details for all strategies
+        data.forEach((strategy: Strategy, index: number) => {
+          const actionStepsCount = strategy.actionSteps?.length || 0
+          if (actionStepsCount > 0) {
+            console.log(`🛡️ Strategy ${index + 1} (${getLocalizedText(strategy.name, 'en')}): ${actionStepsCount} action steps`, strategy.actionSteps)
+          } else {
+            console.log(`🛡️ Strategy ${index + 1} (${getLocalizedText(strategy.name, 'en')}): NO action steps`)
+          }
         })
       }
       setStrategies(data)
@@ -156,33 +165,24 @@ export function ImprovedStrategiesActionsTab() {
 
   // Filter and search logic
   const filteredStrategies = strategies.filter(strategy => {
-    const categoryMatch = selectedCategory === 'all' || strategy.category === selectedCategory
     const riskMatch = selectedRisk === 'all' || (strategy.applicableRisks && strategy.applicableRisks.includes(selectedRisk))
-    const priorityMatch = selectedPriority === 'all' || strategy.priority === selectedPriority
     const strategyName = getLocalizedText(strategy.name, 'en')
     const strategyDesc = getLocalizedText(strategy.description, 'en')
-    const strategySme = getLocalizedText(strategy.smeDescription, 'en')
+    const strategySme = getLocalizedText(strategy.smeSummary, 'en')
     const searchMatch = searchQuery === '' || 
       strategyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       strategyDesc.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (strategySme && strategySme.toLowerCase().includes(searchQuery.toLowerCase()))
     
-    return categoryMatch && riskMatch && priorityMatch && searchMatch
+    return riskMatch && searchMatch
   })
   
   console.log('🛡️ Filtered strategies:', filteredStrategies.length, 'of', strategies.length)
 
-  const categories = ['prevention', 'preparation', 'response', 'recovery']
   const riskTypes = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 'supplyChainDisruption', 'civilUnrest']
-  const priorities = ['low', 'medium', 'high', 'critical']
 
   // Statistics
-  const criticalCount = strategies.filter(s => s.priority === 'critical').length
-  const highPriorityCount = strategies.filter(s => s.priority === 'high' || s.priority === 'critical').length
   const readyToDeployCount = strategies.filter(s => s.actionSteps && s.actionSteps.length > 0).length
-  const avgEffectiveness = strategies.length > 0 
-    ? Math.round(strategies.reduce((sum, s) => sum + s.effectiveness, 0) / strategies.length * 10) / 10 
-    : 0
   const multilingualComplete = strategies.filter(s => {
     // Check if strategy has complete multilingual data
     try {
@@ -203,7 +203,7 @@ export function ImprovedStrategiesActionsTab() {
       }
       
       const hasName = isMultilingual(s.name)
-      const hasDesc = isMultilingual(s.description) || isMultilingual(s.smeDescription)
+      const hasDesc = isMultilingual(s.description) || isMultilingual(s.smeSummary)
       return hasName && hasDesc
     } catch {
       return false
@@ -222,14 +222,6 @@ export function ImprovedStrategiesActionsTab() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       icon: '📋'
-    },
-    {
-      label: 'Critical Priority',
-      value: criticalCount,
-      change: `${highPriorityCount} high or critical`,
-      color: 'text-red-600',
-      bgColor: 'bg-red-50',
-      icon: '🚨'
     },
     {
       label: 'Multilingual',
@@ -272,6 +264,13 @@ export function ImprovedStrategiesActionsTab() {
   }
 
   if (viewMode === 'edit' && selectedStrategy) {
+    console.log('🛡️ ImprovedStrategiesActionsTab: Passing strategy to StrategyEditor:', {
+      id: selectedStrategy.id,
+      name: getLocalizedText(selectedStrategy.name, 'en'),
+      actionStepsCount: selectedStrategy.actionSteps?.length || 0,
+      actionSteps: selectedStrategy.actionSteps,
+      isArray: Array.isArray(selectedStrategy.actionSteps)
+    })
     return (
       <StrategyEditor
         strategy={selectedStrategy}
@@ -331,7 +330,7 @@ export function ImprovedStrategiesActionsTab() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-6">
             <span className="text-sm text-gray-600">
-              {strategies.length} strategies • {strategies.filter(s => s.priority === 'high' || s.priority === 'critical').length} high priority
+              {strategies.length} strategies
             </span>
           </div>
           
@@ -400,32 +399,6 @@ export function ImprovedStrategiesActionsTab() {
             </div>
 
             {/* Filter Dropdowns */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="all">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="all">All Priorities</option>
-              {priorities.map(priority => (
-                <option key={priority} value={priority}>
-                  {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                </option>
-              ))}
-            </select>
-
             <select
               value={selectedRisk}
               onChange={(e) => setSelectedRisk(e.target.value)}
@@ -548,32 +521,10 @@ interface StrategiesViewProps {
 }
 
 function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: StrategiesViewProps) {
-  const getCategoryInfo = (category: string) => {
-    const categories = {
-      prevention: { icon: '🛡️', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-      preparation: { icon: '📋', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-      response: { icon: '🚨', color: 'bg-red-100 text-red-800 border-red-200' },
-      recovery: { icon: '🔄', color: 'bg-green-100 text-green-800 border-green-200' }
-    }
-    return categories[category as keyof typeof categories] || { icon: '📋', color: 'bg-gray-100 text-gray-800 border-gray-200' }
-  }
-
-  const getPriorityInfo = (priority: string) => {
-    const priorities = {
-      critical: { icon: '🔴', color: 'bg-red-100 text-red-800 border-red-200' },
-      high: { icon: '🟠', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-      medium: { icon: '🟡', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-      low: { icon: '🟢', color: 'bg-green-100 text-green-800 border-green-200' }
-    }
-    return priorities[priority as keyof typeof priorities] || { icon: '⚪', color: 'bg-gray-100 text-gray-800 border-gray-200' }
-  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {strategies.map(strategy => {
-        const categoryInfo = getCategoryInfo(strategy.category)
-        const priorityInfo = getPriorityInfo(strategy.priority)
-        
         return (
           <div 
             key={strategy.id} 
@@ -587,32 +538,30 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
                   {getLocalizedText(strategy.name, 'en')}
                 </h3>
                 <div className="flex items-center space-x-2">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${categoryInfo.color}`}>
-                    <span className="mr-1">{categoryInfo.icon}</span>
-                    {strategy.category}
-                  </span>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${priorityInfo.color}`}>
-                    <span className="mr-1">{priorityInfo.icon}</span>
-                    {strategy.priority}
+                  {strategy.selectionTier && (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
+                      strategy.selectionTier === 'essential' ? 'bg-red-100 text-red-800 border-red-200' :
+                      strategy.selectionTier === 'recommended' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                      'bg-gray-100 text-gray-800 border-gray-200'
+                    }`}>
+                      <span className="mr-1">{
+                        strategy.selectionTier === 'essential' ? '⭐' :
+                        strategy.selectionTier === 'recommended' ? '👍' : '💡'
+                      }</span>
+                      {strategy.selectionTier}
+                    </span>
+                  )}
+                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border bg-purple-100 text-purple-800 border-purple-200">
+                    <span className="mr-1">📊</span>
+                    {strategy.actionSteps?.length || 0} steps
                   </span>
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-1 ml-2">
-                <div className="text-xs text-gray-500">
-                  {strategy.effectiveness}/10
-                </div>
-                <div className={`w-2 h-2 rounded-full ${
-                  strategy.effectiveness >= 8 ? 'bg-green-500' :
-                  strategy.effectiveness >= 6 ? 'bg-yellow-500' :
-                  'bg-gray-400'
-                }`} />
               </div>
             </div>
 
             {/* Description */}
             <p className="text-xs text-gray-600 mb-3 line-clamp-2">
-              {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
+              {getLocalizedText(strategy.smeTitle, 'en') || getLocalizedText(strategy.smeSummary || strategy.description, 'en')}
             </p>
 
             {/* Compact Metrics */}
@@ -620,13 +569,23 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
               <div className="text-center">
                 <div className="text-gray-500">Cost</div>
                 <div className="font-medium truncate">
-                  {getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost || 'See breakdown'}
+                  {(() => {
+                    const totalCost = strategy.actionSteps?.reduce((sum, step) => {
+                      const costMatch = step.estimatedCost?.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+                      return sum + (costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0);
+                    }, 0) || 0;
+                    return totalCost > 0 ? `$${totalCost.toFixed(0)}` : 'Low cost';
+                  })()}
                 </div>
               </div>
               <div className="text-center">
                 <div className="text-gray-500">Time</div>
                 <div className="font-medium truncate">
-                  {getLocalizedText(strategy.timeToImplement, 'en') || strategy.implementationTime || 'TBD'}
+                  {(() => {
+                    const totalMinutes = strategy.actionSteps?.reduce((sum, step) => sum + (step.estimatedMinutes || 0), 0) || 0;
+                    const hours = Math.ceil(totalMinutes / 60);
+                    return hours > 0 ? (hours >= 24 ? `${Math.ceil(hours/8)}d` : `${hours}h`) : 'Quick';
+                  })()}
                 </div>
               </div>
             </div>
@@ -673,25 +632,6 @@ function StrategiesCardsView({ strategies, onStrategySelect, onEditStrategy }: S
 
 // Table View
 function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: StrategiesViewProps) {
-  const getCategoryIcon = (category: string) => {
-    const icons = {
-      prevention: '🛡️',
-      preparation: '📋',
-      response: '🚨',
-      recovery: '🔄'
-    }
-    return icons[category as keyof typeof icons] || '📋'
-  }
-
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      critical: 'text-red-600',
-      high: 'text-orange-600',
-      medium: 'text-yellow-600',
-      low: 'text-green-600'
-    }
-    return colors[priority as keyof typeof colors] || 'text-gray-600'
-  }
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
@@ -703,13 +643,10 @@ function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: S
                 Strategy
               </th>
               <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
+                Tier
               </th>
               <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Priority
-              </th>
-              <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Effectiveness
+                Time
               </th>
               <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Cost
@@ -735,32 +672,38 @@ function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: S
                       {getLocalizedText(strategy.name, 'en')}
                     </div>
                     <div className="text-xs text-gray-500 truncate mt-0.5">
-                      {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
+                      {getLocalizedText(strategy.smeTitle, 'en') || getLocalizedText(strategy.smeSummary || strategy.description, 'en')}
                     </div>
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center">
-                  <span className="text-lg" title={strategy.category}>
-                    {getCategoryIcon(strategy.category)}
-                  </span>
+                  {strategy.selectionTier && (
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      strategy.selectionTier === 'essential' ? 'bg-red-100 text-red-700' :
+                      strategy.selectionTier === 'recommended' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {strategy.selectionTier}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-center">
-                  <span className={`text-sm font-medium ${getPriorityColor(strategy.priority)}`}>
-                    {strategy.priority.toUpperCase()}
-                  </span>
-                </td>
-                <td className="px-3 py-3 text-center">
-                  <div className="flex items-center justify-center space-x-1">
-                    <span className="text-sm font-medium">{strategy.effectiveness}</span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      strategy.effectiveness >= 8 ? 'bg-green-500' :
-                      strategy.effectiveness >= 6 ? 'bg-yellow-500' :
-                      'bg-gray-400'
-                    }`} />
+                  <div className="text-sm font-medium">
+                    {(() => {
+                      const totalMinutes = strategy.actionSteps?.reduce((sum, step) => sum + (step.estimatedMinutes || 0), 0) || 0;
+                      const hours = Math.ceil(totalMinutes / 60);
+                      return hours > 0 ? `${hours}h` : '-';
+                    })()}
                   </div>
                 </td>
                 <td className="px-3 py-3 text-center text-xs text-gray-600">
-                  {getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost}
+                  {(() => {
+                    const totalCost = strategy.actionSteps?.reduce((sum, step) => {
+                      const costMatch = step.estimatedCost?.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+                      return sum + (costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0);
+                    }, 0) || 0;
+                    return totalCost > 0 ? `$${totalCost.toFixed(0)}` : 'Low';
+                  })()}
                 </td>
                 <td className="px-3 py-3 text-center">
                   <span className="text-sm font-medium text-gray-900">
@@ -800,49 +743,49 @@ function StrategiesTableView({ strategies, onStrategySelect, onEditStrategy }: S
 
 // Compact List View
 function StrategiesCompactView({ strategies, onStrategySelect, onEditStrategy }: StrategiesViewProps) {
-  const getCategoryIcon = (category: string) => {
-    const icons = {
-      prevention: '🛡️',
-      preparation: '📋',
-      response: '🚨',
-      recovery: '🔄'
-    }
-    return icons[category as keyof typeof icons] || '📋'
-  }
-
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      critical: 'border-l-red-500 bg-red-50',
-      high: 'border-l-orange-500 bg-orange-50',
-      medium: 'border-l-yellow-500 bg-yellow-50',
-      low: 'border-l-green-500 bg-green-50'
-    }
-    return colors[priority as keyof typeof colors] || 'border-l-gray-500 bg-gray-50'
-  }
 
   return (
     <div className="space-y-2">
-      {strategies.map(strategy => (
+      {strategies.map(strategy => {
+        const totalCost = strategy.actionSteps?.reduce((sum, step) => {
+          const costMatch = step.estimatedCost?.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+          return sum + (costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0);
+        }, 0) || 0;
+        
+        const totalMinutes = strategy.actionSteps?.reduce((sum, step) => sum + (step.estimatedMinutes || 0), 0) || 0;
+        const hours = Math.ceil(totalMinutes / 60);
+        
+        return (
         <div 
           key={strategy.id}
-          className={`bg-white border-l-4 border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-all cursor-pointer ${getPriorityColor(strategy.priority)}`}
+          className={`bg-white border-l-4 border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-all cursor-pointer ${
+            strategy.selectionTier === 'essential' ? 'border-l-red-500 bg-red-50' :
+            strategy.selectionTier === 'recommended' ? 'border-l-blue-500 bg-blue-50' :
+            'border-l-gray-500 bg-gray-50'
+          }`}
           onClick={() => onStrategySelect(strategy)}
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <span className="text-lg flex-shrink-0">{getCategoryIcon(strategy.category)}</span>
+              <span className="text-lg flex-shrink-0">📋</span>
               
               <div className="min-w-0 flex-1">
                 <div className="flex items-center space-x-2">
                   <h3 className="text-sm font-semibold text-gray-900 truncate">
                     {getLocalizedText(strategy.name, 'en')}
                   </h3>
-                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                    {strategy.priority}
-                  </span>
+                  {strategy.selectionTier && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      strategy.selectionTier === 'essential' ? 'bg-red-100 text-red-700' :
+                      strategy.selectionTier === 'recommended' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {strategy.selectionTier}
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-gray-600 truncate mt-0.5">
-                  {getLocalizedText(strategy.smeDescription || strategy.description, 'en')}
+                  {getLocalizedText(strategy.smeTitle, 'en') || getLocalizedText(strategy.smeSummary || strategy.description, 'en')}
                 </p>
               </div>
             </div>
@@ -851,12 +794,12 @@ function StrategiesCompactView({ strategies, onStrategySelect, onEditStrategy }:
               {/* Quick Metrics */}
               <div className="hidden md:flex items-center space-x-3 text-xs text-gray-500">
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{strategy.effectiveness}/10</div>
-                  <div>Effect</div>
+                  <div className="font-medium text-gray-900">${totalCost}</div>
+                  <div>Cost</div>
                 </div>
                 <div className="text-center">
-                  <div className="font-medium text-gray-900">{strategy.applicableRisks.length}</div>
-                  <div>Risks</div>
+                  <div className="font-medium text-gray-900">{hours}h</div>
+                  <div>Time</div>
                 </div>
                 <div className="text-center">
                   <div className="font-medium text-gray-900">{strategy.actionSteps?.length || 0}</div>
@@ -888,7 +831,8 @@ function StrategiesCompactView({ strategies, onStrategySelect, onEditStrategy }:
             </div>
           </div>
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
@@ -901,27 +845,6 @@ interface ImprovedStrategyDetailViewProps {
 }
 
 function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrategyDetailViewProps) {
-  const getCategoryInfo = (category: string) => {
-    const categories = {
-      prevention: { name: 'Prevention', icon: '🛡️', color: 'blue', description: 'Prevent risks before they occur' },
-      preparation: { name: 'Preparation', icon: '📋', color: 'yellow', description: 'Prepare for potential risks' },
-      response: { name: 'Response', icon: '🚨', color: 'red', description: 'Respond when risks materialize' },
-      recovery: { name: 'Recovery', icon: '🔄', color: 'green', description: 'Recover from risk impacts' }
-    }
-    return categories[category as keyof typeof categories] || { name: category, icon: '📋', color: 'gray', description: '' }
-  }
-
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      critical: 'bg-red-100 text-red-800 border-red-200',
-      high: 'bg-orange-100 text-orange-800 border-orange-200',
-      medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-      low: 'bg-green-100 text-green-800 border-green-200'
-    }
-    return colors[priority as keyof typeof colors] || 'bg-gray-100 text-gray-800 border-gray-200'
-  }
-
-  const categoryInfo = getCategoryInfo(strategy.category)
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -940,15 +863,21 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
             </button>
             <div className="h-4 border-l border-gray-300"></div>
             <div className="flex items-center space-x-3">
-              <span className="text-xl">{categoryInfo.icon}</span>
+              <span className="text-xl">📋</span>
               <h1 className="text-xl font-bold text-gray-900">{getLocalizedText(strategy.name, 'en')}</h1>
             </div>
           </div>
           
           <div className="flex items-center space-x-3">
-            <span className={`px-3 py-1 rounded-full border font-medium text-sm ${getPriorityColor(strategy.priority)}`}>
-              {strategy.priority.charAt(0).toUpperCase() + strategy.priority.slice(1)} Priority
-            </span>
+            {strategy.selectionTier && (
+              <span className={`px-3 py-1 rounded-full border font-medium text-sm ${
+                strategy.selectionTier === 'essential' ? 'bg-red-50 border-red-300 text-red-700' :
+                strategy.selectionTier === 'recommended' ? 'bg-blue-50 border-blue-300 text-blue-700' :
+                'bg-gray-50 border-gray-300 text-gray-700'
+              }`}>
+                {strategy.selectionTier.charAt(0).toUpperCase() + strategy.selectionTier.slice(1)}
+              </span>
+            )}
             <button
               onClick={onEdit}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors text-sm"
@@ -961,8 +890,14 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
         {/* Quick Metrics Bar */}
         <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
           <div className="text-center p-2 bg-blue-50 rounded">
-            <div className="text-lg font-bold text-blue-600">{strategy.effectiveness}/10</div>
-            <div className="text-blue-700">Effectiveness</div>
+            <div className="text-lg font-bold text-blue-600">
+              {(() => {
+                const totalMinutes = strategy.actionSteps?.reduce((sum, step) => sum + (step.estimatedMinutes || 0), 0) || 0
+                const hours = Math.ceil(totalMinutes / 60)
+                return hours > 0 ? `${hours}h` : 'TBD'
+              })()}
+            </div>
+            <div className="text-blue-700">Est. Time</div>
           </div>
           <div className="text-center p-2 bg-purple-50 rounded">
             <div className="text-lg font-bold text-purple-600">{strategy.applicableRisks.length}</div>
@@ -983,11 +918,11 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Strategy Overview</h2>
             
             <div className="space-y-4">
-              {strategy.smeDescription && (
+              {strategy.smeSummary && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 mb-2">📋 For Business Owners</h3>
                   <p className="text-gray-600 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    {getLocalizedText(strategy.smeDescription, 'en')}
+                    {getLocalizedText(strategy.smeSummary, 'en')}
                   </p>
                 </div>
               )}
@@ -1011,64 +946,152 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
           </div>
 
           {/* Action Steps - Improved Layout */}
-          {strategy.actionSteps && strategy.actionSteps.length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Implementation Roadmap</h2>
-              
-              {['immediate', 'short_term', 'medium_term', 'long_term'].map(phase => {
-                const phaseSteps = strategy.actionSteps.filter(step => step.phase === phase)
-                if (phaseSteps.length === 0) return null
+          {(() => {
+            // Group action steps by phase
+            const phaseGroups: Record<string, any[]> = {
+              immediate: [],
+              short_term: [],
+              medium_term: [],
+              long_term: [],
+              other: []
+            }
+            
+            if (strategy.actionSteps && Array.isArray(strategy.actionSteps)) {
+              strategy.actionSteps.forEach(step => {
+                if (!step) return
+                const phase = step.phase || 'other'
+                if (phaseGroups[phase]) {
+                  phaseGroups[phase].push(step)
+                } else {
+                  phaseGroups.other.push(step)
+                }
+              })
+            }
+            
+            // Check if we have any steps to display
+            const hasSteps = Object.values(phaseGroups).some(steps => steps.length > 0)
+            
+            if (!hasSteps) {
+              return (
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Implementation Roadmap</h2>
+                  <div className="text-center py-8 text-gray-500">
+                    <span className="text-4xl block mb-2">📝</span>
+                    <p>No action steps defined yet</p>
+                    <button
+                      onClick={onEdit}
+                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      Add Action Steps
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+            
+            return (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Implementation Roadmap</h2>
+                
+                {['before', 'during', 'after'].map(phase => {
+                  const phaseSteps = phaseGroups[phase] || []
+                  if (phaseSteps.length === 0) return null
 
-                const phaseConfig = {
-                  immediate: { name: 'Immediate Actions', icon: '⚡', color: 'red', description: 'This week' },
-                  short_term: { name: 'Short-term Actions', icon: '📅', color: 'orange', description: '1-4 weeks' },
-                  medium_term: { name: 'Medium-term Actions', icon: '📊', color: 'yellow', description: '1-3 months' },
-                  long_term: { name: 'Long-term Actions', icon: '🎯', color: 'green', description: '3-12 months' }
-                }[phase] || { name: phase, icon: '📋', color: 'gray', description: '' }
+                  const phaseConfig = {
+                    before: { name: 'Before Crisis', icon: '🛡️', color: 'blue', description: 'Prevention & Preparation' },
+                    during: { name: 'During Crisis', icon: '⚠️', color: 'orange', description: 'Crisis Response' },
+                    after: { name: 'After Crisis', icon: '✅', color: 'green', description: 'Recovery & Follow-up' }
+                  }[phase] || { name: phase, icon: '📋', color: 'gray', description: '' }
 
-                return (
-                  <div key={phase} className={`border-l-4 border-${phaseConfig.color}-500 bg-${phaseConfig.color}-50 rounded-lg p-4 mb-4`}>
-                    <div className="flex items-center space-x-3 mb-3">
-                      <span className="text-xl">{phaseConfig.icon}</span>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{phaseConfig.name}</h3>
-                        <p className="text-sm text-gray-600">{phaseConfig.description}</p>
+                  return (
+                    <div key={phase} className={`border-l-4 border-${phaseConfig.color}-500 bg-${phaseConfig.color}-50 rounded-lg p-4 mb-4`}>
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl">{phaseConfig.icon}</span>
+                        <div>
+                          <h3 className="font-medium text-gray-900">{phaseConfig.name}</h3>
+                          <p className="text-sm text-gray-600">{phaseConfig.description}</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        {phaseSteps.map((step, index) => {
+                          // Safely get step title with multiple fallbacks
+                          const stepTitle = getLocalizedText(step.title || step.smeAction || step.description || 'Untitled Action', 'en')
+                          
+                          // Parse checklist if it's a JSON string
+                          let checklistArray = []
+                          if (step.checklist) {
+                            try {
+                              if (typeof step.checklist === 'string') {
+                                checklistArray = JSON.parse(step.checklist)
+                              } else if (Array.isArray(step.checklist)) {
+                                checklistArray = step.checklist
+                              }
+                            } catch (e) {
+                              console.warn('Failed to parse checklist:', e)
+                            }
+                          }
+                          
+                          return (
+                            <div key={step.id || index} className="bg-white rounded p-3 shadow-sm">
+                              <h4 className="font-medium text-gray-900 mb-2">
+                                {index + 1}. {stepTitle}
+                              </h4>
+                              <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
+                                <div><span className="font-medium">Timeline:</span> {getLocalizedText(step.timeframe, 'en') || `${step.estimatedMinutes || 0} min`}</div>
+                                <div><span className="font-medium">Responsible:</span> {step.responsibility || 'Owner'}</div>
+                                <div><span className="font-medium">Cost:</span> {step.estimatedCost || '$0'}</div>
+                              </div>
+                              {checklistArray.length > 0 && (
+                                <div>
+                                  <span className="text-sm font-medium text-gray-700">Checklist:</span>
+                                  <ul className="mt-1 text-sm text-gray-600 ml-4">
+                                    {checklistArray.slice(0, 3).map((item, i) => (
+                                      <li key={i} className="list-disc">{typeof item === 'string' ? item : getLocalizedText(item, 'en')}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
-
-                    <div className="space-y-3">
-                      {phaseSteps.map((step, index) => (
-                        <div key={step.id} className="bg-white rounded p-3 shadow-sm">
-                          <h4 className="font-medium text-gray-900 mb-2">
-                            {index + 1}. {getLocalizedText(step.title || step.smeAction || step.action, 'en')}
-                          </h4>
-                          <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
-                            <div><span className="font-medium">Timeline:</span> {step.timeframe}</div>
-                            <div><span className="font-medium">Responsible:</span> {step.responsibility}</div>
-                            <div><span className="font-medium">Cost:</span> {getLocalizedText(step.estimatedCostJMD || step.cost, 'en')}</div>
-                          </div>
-                          {step.checklist && step.checklist.length > 0 && (
-                            <div>
-                              <span className="text-sm font-medium text-gray-700">Checklist:</span>
-                              <ul className="mt-1 text-sm text-gray-600 ml-4">
-                                {(() => {
-                                  const checklist = getLocalizedText(step.checklist, 'en')
-                                  const checklistArray = Array.isArray(checklist) ? checklist : (typeof checklist === 'string' && checklist ? [checklist] : [])
-                                  return checklistArray.slice(0, 3).map((item, i) => (
-                                    <li key={i} className="list-disc">{item}</li>
-                                  ))
-                                })()}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                  )
+                }).filter(Boolean)}
+                
+                {/* Show steps without a valid phase */}
+                {phaseGroups.other && phaseGroups.other.length > 0 && (
+                <div className="border-l-4 border-gray-500 bg-gray-50 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <span className="text-xl">📋</span>
+                    <div>
+                      <h3 className="font-medium text-gray-900">Other Actions</h3>
+                      <p className="text-sm text-gray-600">Actions without a specified phase</p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          )}
+                  <div className="space-y-3">
+                    {phaseGroups.other.map((step, index) => {
+                      const stepTitle = getLocalizedText(step.title || step.smeAction || step.description || 'Untitled Action', 'en')
+                      return (
+                        <div key={step.id || index} className="bg-white rounded p-3 shadow-sm">
+                          <h4 className="font-medium text-gray-900 mb-2">
+                            {index + 1}. {stepTitle}
+                          </h4>
+                          <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
+                            <div><span className="font-medium">Timeline:</span> {getLocalizedText(step.timeframe, 'en') || `${step.estimatedMinutes || 0} min`}</div>
+                            <div><span className="font-medium">Responsible:</span> {step.responsibility || 'Owner'}</div>
+                            <div><span className="font-medium">Cost:</span> {step.estimatedCost || '$0'}</div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              </div>
+            )
+          })()}
         </div>
 
         {/* Sidebar */}
@@ -1079,21 +1102,38 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
             
             <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-sm font-medium text-gray-700">Category:</span>
-                <span className="text-sm text-gray-900 flex items-center">
-                  <span className="mr-1">{categoryInfo.icon}</span>
-                  {categoryInfo.name}
+                <span className="text-sm font-medium text-gray-700">Selection Tier:</span>
+                <span className={`text-sm px-2 py-1 rounded ${
+                  strategy.selectionTier === 'essential' ? 'bg-red-100 text-red-700' :
+                  strategy.selectionTier === 'recommended' ? 'bg-blue-100 text-blue-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {strategy.selectionTier || 'optional'}
                 </span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Implementation Cost:</span>
-                <span className="text-sm text-gray-900">{getLocalizedText(strategy.costEstimateJMD, 'en') || strategy.implementationCost || 'See breakdown'}</span>
+                <span className="text-sm text-gray-900">
+                  {(() => {
+                    const totalCost = strategy.actionSteps?.reduce((sum, step) => {
+                      const costMatch = step.estimatedCost?.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+                      return sum + (costMatch ? parseFloat(costMatch[1].replace(/,/g, '')) : 0);
+                    }, 0) || 0;
+                    return totalCost > 0 ? `$${totalCost.toFixed(0)} USD` : 'Low cost';
+                  })()}
+                </span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-gray-700">Time to Implement:</span>
-                <span className="text-sm text-gray-900">{getLocalizedText(strategy.timeToImplement, 'en') || strategy.implementationTime || 'TBD'}</span>
+                <span className="text-sm text-gray-900">
+                  {(() => {
+                    const totalMinutes = strategy.actionSteps?.reduce((sum, step) => sum + (step.estimatedMinutes || 0), 0) || 0;
+                    const hours = Math.ceil(totalMinutes / 60);
+                    return hours > 0 ? (hours >= 24 ? `${Math.ceil(hours/8)} days` : `${hours} hours`) : 'Quick';
+                  })()}
+                </span>
               </div>
 
               <div>
@@ -1143,7 +1183,9 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                     </h3>
                     <ul className="text-sm text-green-800 space-y-1">
                       {strategy.helpfulTips.slice(0, 2).map((tip, index) => (
-                        <li key={index} className="text-xs">{tip}</li>
+                        <li key={index} className="text-xs">
+                          {typeof tip === 'string' ? tip : getLocalizedText(tip, 'en')}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -1156,7 +1198,9 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                     </h3>
                     <ul className="text-sm text-red-800 space-y-1">
                       {strategy.commonMistakes.slice(0, 2).map((mistake, index) => (
-                        <li key={index} className="text-xs">{mistake}</li>
+                        <li key={index} className="text-xs">
+                          {typeof mistake === 'string' ? mistake : getLocalizedText(mistake, 'en')}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -1169,7 +1213,9 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                     </h3>
                     <ul className="text-sm text-purple-800 space-y-1">
                       {strategy.successMetrics.slice(0, 2).map((metric, index) => (
-                        <li key={index} className="text-xs">{metric}</li>
+                        <li key={index} className="text-xs">
+                          {typeof metric === 'string' ? metric : getLocalizedText(metric, 'en')}
+                        </li>
                       ))}
                     </ul>
                   </div>
