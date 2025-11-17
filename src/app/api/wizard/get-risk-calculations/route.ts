@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getLocalizedText } from '@/utils/localizationUtils'
+import type { Locale } from '@/i18n/config'
 
 // Risk level mappings
 const FREQUENCY_TO_LIKELIHOOD: Record<string, string> = {
@@ -56,7 +58,8 @@ function calculateRiskLevel(likelihood: string, severity: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { hazardIds, businessTypeId, countryCode, parish, nearCoast, urbanArea } = body
+    const { hazardIds, businessTypeId, countryCode, parish, nearCoast, urbanArea, locale } = body
+    const userLocale: Locale = locale || 'en'
 
     if (!hazardIds || !Array.isArray(hazardIds) || !businessTypeId) {
       return NextResponse.json(
@@ -325,7 +328,8 @@ export async function POST(request: NextRequest) {
       const calculatedRiskLevel = calculateRiskLevel(baseLikelihood, baseSeverity)
 
       // Build reasoning
-      let reasoning = `Based on ${businessType.name} vulnerability data`
+      const localizedBusinessTypeName = getLocalizedText(businessType.name, userLocale)
+      let reasoning = `Based on ${localizedBusinessTypeName} vulnerability data`
       if (locationModifier) {
         reasoning += `, ${locationModifier}`
       }

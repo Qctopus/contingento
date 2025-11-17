@@ -1465,7 +1465,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                                 </div>
                                 <div className="font-semibold text-gray-900 text-sm">
                                   {getLocalizedText(strategy.timeToImplement || strategy.implementationTime, locale as Locale) || 'To be determined'}
-                                  {strategy.estimatedTotalHours && ` (${strategy.estimatedTotalHours}h)`}
+                                  {strategy.totalEstimatedHours && ` (${strategy.totalEstimatedHours}h)`}
                                 </div>
                               </div>
                               <div className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200">

@@ -718,23 +718,80 @@ export default function RiskCalculatorTab() {
                 {(recommendedStrategies || []).length > 0 ? (
                     <div className="space-y-4">
                     {(recommendedStrategies || []).map((strategy: any) => {
-                      const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, 'en')
-                      const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, 'en')
+                      const displayTitle = strategy.smeTitle || strategy.name 
+                        ? getLocalizedText(strategy.smeTitle || strategy.name, 'en') 
+                        : 'Untitled Strategy'
+                      const displaySummary = (strategy.smeSummary || strategy.smeDescription || strategy.description)
+                        ? getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, 'en')
+                        : ''
                       
-                      // Parse multilingual arrays
+                      // Helper to extract string from multilingual object or string
+                      const extractString = (value: any): string => {
+                        if (!value) return ''
+                        if (typeof value === 'string') return value
+                        if (typeof value === 'object' && value !== null) {
+                          // If it's a multilingual object, extract the English value
+                          if (value.en) return value.en
+                          if (value.es) return value.es
+                          if (value.fr) return value.fr
+                          // If it's an array, join it
+                          if (Array.isArray(value)) return value.map(extractString).join(', ')
+                          // Otherwise, try to stringify
+                          return String(value)
+                        }
+                        return String(value)
+                      }
+                      
+                      // Parse array fields (stored as JSON strings in DB)
                       const getBenefits = () => {
-                        const benefits = getLocalizedText(strategy.benefitsBullets, 'en')
-                        return Array.isArray(benefits) ? benefits : (typeof benefits === 'string' && benefits ? [benefits] : [])
+                        if (!strategy.benefitsBullets) return []
+                        let items: any[] = []
+                        if (Array.isArray(strategy.benefitsBullets)) {
+                          items = strategy.benefitsBullets
+                        } else if (typeof strategy.benefitsBullets === 'string') {
+                          try {
+                            const parsed = JSON.parse(strategy.benefitsBullets)
+                            items = Array.isArray(parsed) ? parsed : []
+                          } catch {
+                            return []
+                          }
+                        }
+                        // Extract strings from multilingual objects
+                        return items.map(extractString).filter(Boolean)
                       }
                       
                       const getTips = () => {
-                        const tips = getLocalizedText(strategy.helpfulTips, 'en')
-                        return Array.isArray(tips) ? tips : (typeof tips === 'string' && tips ? [tips] : [])
+                        if (!strategy.helpfulTips) return []
+                        let items: any[] = []
+                        if (Array.isArray(strategy.helpfulTips)) {
+                          items = strategy.helpfulTips
+                        } else if (typeof strategy.helpfulTips === 'string') {
+                          try {
+                            const parsed = JSON.parse(strategy.helpfulTips)
+                            items = Array.isArray(parsed) ? parsed : []
+                          } catch {
+                            return []
+                          }
+                        }
+                        // Extract strings from multilingual objects
+                        return items.map(extractString).filter(Boolean)
                       }
                       
                       const getMistakes = () => {
-                        const mistakes = getLocalizedText(strategy.commonMistakes, 'en')
-                        return Array.isArray(mistakes) ? mistakes : (typeof mistakes === 'string' && mistakes ? [mistakes] : [])
+                        if (!strategy.commonMistakes) return []
+                        let items: any[] = []
+                        if (Array.isArray(strategy.commonMistakes)) {
+                          items = strategy.commonMistakes
+                        } else if (typeof strategy.commonMistakes === 'string') {
+                          try {
+                            const parsed = JSON.parse(strategy.commonMistakes)
+                            items = Array.isArray(parsed) ? parsed : []
+                          } catch {
+                            return []
+                          }
+                        }
+                        // Extract strings from multilingual objects
+                        return items.map(extractString).filter(Boolean)
                       }
                       
                       return (
@@ -757,12 +814,16 @@ export default function RiskCalculatorTab() {
                               <div className="bg-white px-3 py-1 rounded-full">
                                 <span className="text-gray-500">⏱️</span>{' '}
                                 <span className="font-medium">
-                                  {strategy.estimatedTotalHours ? `~${strategy.estimatedTotalHours}h` : (strategy.timeToImplement || strategy.implementationTime)}
+                                  {strategy.totalEstimatedHours ? `~${strategy.totalEstimatedHours}h` : (strategy.timeToImplement || strategy.implementationTime)}
                                 </span>
                               </div>
                               <div className="bg-white px-3 py-1 rounded-full">
                                 <span className="text-gray-500">💰</span>{' '}
-                                <span className="font-medium">{getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, 'en')}</span>
+                                <span className="font-medium">
+                                  {strategy.costEstimateJMD || strategy.implementationCost 
+                                    ? getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, 'en')
+                                    : 'N/A'}
+                                </span>
                               </div>
                               <div className="bg-white px-3 py-1 rounded-full">
                                 <span className="text-gray-500">⭐</span>{' '}
@@ -812,7 +873,9 @@ export default function RiskCalculatorTab() {
                                 <h5 className="font-bold text-green-900 mb-2 flex items-center">
                                   <span className="mr-2">💚</span> Real Success Story
                                 </h5>
-                                <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, 'en')}</p>
+                                <p className="text-sm text-green-800">
+                                  {strategy.realWorldExample ? getLocalizedText(strategy.realWorldExample, 'en') : ''}
+                                </p>
                               </div>
                             )}
                             
@@ -820,9 +883,13 @@ export default function RiskCalculatorTab() {
                             {strategy.lowBudgetAlternative && (
                               <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
                                 <h5 className="font-bold text-yellow-900 mb-2">💰 Low Budget Alternative</h5>
-                                <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, 'en')}</p>
+                                <p className="text-sm text-yellow-800">
+                                  {strategy.lowBudgetAlternative ? getLocalizedText(strategy.lowBudgetAlternative, 'en') : ''}
+                                </p>
                                 {strategy.estimatedDIYSavings && (
-                                  <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, 'en')}</p>
+                                  <p className="text-xs text-yellow-700 mt-1 italic">
+                                    {getLocalizedText(strategy.estimatedDIYSavings, 'en')}
+                                  </p>
                                 )}
                               </div>
                             )}
@@ -831,7 +898,9 @@ export default function RiskCalculatorTab() {
                             {strategy.diyApproach && (
                               <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
                                 <h5 className="font-bold text-blue-900 mb-2">🔧 DIY Approach</h5>
-                                <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, 'en')}</p>
+                                <p className="text-sm text-blue-800">
+                                  {strategy.diyApproach ? getLocalizedText(strategy.diyApproach, 'en') : ''}
+                                </p>
                               </div>
                             )}
 
@@ -874,7 +943,7 @@ export default function RiskCalculatorTab() {
                                     <div key={step.id} className="bg-white rounded p-3 border border-gray-200">
                                       <div className="flex items-start justify-between mb-2">
                                         <p className="font-medium text-gray-900">
-                                          Step {index + 1}: {getLocalizedText(step.title || step.smeAction, 'en')}
+                                          Step {index + 1}: {(step.title || step.smeAction) ? getLocalizedText(step.title || step.smeAction, 'en') : 'Untitled Step'}
                                         </p>
                                         {step.difficultyLevel && (
                                           <span className={`text-xs px-2 py-0.5 rounded ${
@@ -890,28 +959,32 @@ export default function RiskCalculatorTab() {
                                       {step.whyThisStepMatters && (
                                         <div className="mb-2 pl-3 border-l-2 border-blue-300">
                                           <p className="text-xs text-blue-700 font-medium">Why this matters:</p>
-                                          <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, 'en')}</p>
+                                          <p className="text-xs text-blue-600">
+                                            {step.whyThisStepMatters ? getLocalizedText(step.whyThisStepMatters, 'en') : ''}
+                                          </p>
                                         </div>
                                       )}
                                       
-                                      <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, 'en')}</p>
+                                      <p className="text-sm text-gray-600 mb-2">
+                                        {(step.description || step.smeAction) ? getLocalizedText(step.description || step.smeAction, 'en') : ''}
+                                      </p>
                                       
                                       <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                                         {step.estimatedMinutes && (
                                           <span>⏱️ ~{step.estimatedMinutes} min</span>
                                         )}
                                         {!step.estimatedMinutes && step.timeframe && (
-                                          <span>⏱️ {step.timeframe}</span>
+                                          <span>⏱️ {getLocalizedText(step.timeframe, 'en')}</span>
                                         )}
                                         {step.estimatedCostJMD && (
-                                          <span>💰 {getLocalizedText(step.estimatedCostJMD, 'en')}</span>
+                                          <span>💰 {step.estimatedCostJMD ? getLocalizedText(step.estimatedCostJMD, 'en') : 'N/A'}</span>
                                         )}
                                       </div>
                                       
                                       {step.howToKnowItsDone && (
                                         <div className="mt-2 pt-2 border-t border-gray-100">
                                           <p className="text-xs text-gray-600">
-                                            <span className="font-medium">✓ Done when:</span> {getLocalizedText(step.howToKnowItsDone, 'en')}
+                                            <span className="font-medium">✓ Done when:</span> {step.howToKnowItsDone ? getLocalizedText(step.howToKnowItsDone, 'en') : ''}
                                           </p>
                                         </div>
                                       )}
@@ -919,7 +992,7 @@ export default function RiskCalculatorTab() {
                                       {step.freeAlternative && (
                                         <div className="mt-2 bg-green-50 rounded p-2">
                                           <p className="text-xs text-green-700">
-                                            <span className="font-medium">💸 Free option:</span> {getLocalizedText(step.freeAlternative, 'en')}
+                                            <span className="font-medium">💸 Free option:</span> {step.freeAlternative ? getLocalizedText(step.freeAlternative, 'en') : ''}
                                           </p>
                                         </div>
                                       )}
@@ -933,7 +1006,9 @@ export default function RiskCalculatorTab() {
                             {!strategy.benefitsBullets && strategy.whyImportant && (
                               <div className="bg-blue-50 rounded p-3">
                                 <h5 className="font-bold text-blue-900 mb-1">✨ What You'll Get</h5>
-                                <p className="text-sm text-blue-800">{getLocalizedText(strategy.whyImportant, 'en')}</p>
+                                <p className="text-sm text-blue-800">
+                                  {strategy.whyImportant ? getLocalizedText(strategy.whyImportant, 'en') : ''}
+                                </p>
                               </div>
                             )}
                           </div>

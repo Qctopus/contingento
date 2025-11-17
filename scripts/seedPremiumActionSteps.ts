@@ -13,100 +13,12 @@ const prisma = new PrismaClient()
 const PREMIUM_ACTION_STEPS = [
   // ============================================================================
   // HURRICANE COMPREHENSIVE PROTECTION - Action Steps
+  // NOTE: "Before" phase steps are handled by comprehensive-strategy-seed.ts
+  // This file only includes "during" and "after" phase steps to avoid duplicates
   // ============================================================================
   {
     strategyId: 'hurricane_comprehensive',
-    stepId: 'hurricane_comp_before_1',
-    phase: 'before',
-    executionTiming: 'before_crisis',
-    sortOrder: 1,
-    title: JSON.stringify({
-      en: 'Install Hurricane Shutters or Board-Up System',
-      es: 'Instalar Contraventanas o Sistema de Tablas',
-      fr: 'Installer Volets Ouragan ou Système de Planches'
-    }),
-    description: JSON.stringify({
-      en: 'Install permanent hurricane shutters OR prepare plywood board-up system for all windows and glass doors. Measure, cut, label each piece, store with mounting hardware.',
-      es: 'Instalar contraventanas permanentes O preparar sistema de tablas de madera contrachapada para todas las ventanas y puertas de vidrio. Medir, cortar, etiquetar cada pieza, almacenar con herrajes de montaje.',
-      fr: 'Installer volets ouragan permanents OU préparer système de planches contreplaqué pour toutes fenêtres et portes vitrées. Mesurer, couper, étiqueter chaque pièce, stocker avec quincaillerie de montage.'
-    }),
-    estimatedMinutes: 480,
-    estimatedCost: '$400 USD',
-    resources: JSON.stringify([
-      { en: 'Hurricane shutters OR 3/4" marine plywood', es: 'Contraventanas O madera contrachapada marina 3/4"', fr: 'Volets ouragan OU contreplaqué marine 3/4"' },
-      { en: 'Measuring tape, saw, drill', es: 'Cinta métrica, sierra, taladro', fr: 'Mètre ruban, scie, perceuse' },
-      { en: 'Mounting hardware (bolts/anchors)', es: 'Herrajes de montaje (pernos/anclajes)', fr: 'Quincaillerie montage (boulons/ancrages)' },
-      { en: 'Waterproof marker for labeling', es: 'Marcador impermeable para etiquetar', fr: 'Marqueur imperméable pour étiquetage' }
-    ]),
-    howToKnowItsDone: JSON.stringify({
-      en: 'All windows/doors covered, shutters roll smoothly OR plywood pieces cut, labeled, hardware ready',
-      es: 'Todas ventanas/puertas cubiertas, contraventanas ruedan suavemente O piezas de madera cortadas, etiquetadas, herrajes listos',
-      fr: 'Toutes fenêtres/portes couvertes, volets roulent facilement OU pièces contreplaqué coupées, étiquetées, quincaillerie prête'
-    }),
-    exampleOutput: 'Photos of installed shutters or labeled plywood system with storage location',
-    responsibility: 'Owner or Maintenance Manager'
-  },
-  {
-    strategyId: 'hurricane_comprehensive',
-    phase: 'before',
-    sortOrder: 2,
-    title: JSON.stringify({
-      en: 'Document All Property and Inventory',
-      es: 'Documentar Toda Propiedad e Inventario',
-      fr: 'Documenter Tous Biens et Stocks'
-    }),
-    description: JSON.stringify({
-      en: 'Take comprehensive photos and video of entire property, all equipment, and full inventory. Include serial numbers, receipts, and value estimates. Upload to cloud storage.',
-      es: 'Tomar fotos y video completos de toda la propiedad, todo el equipo y el inventario completo. Incluir números de serie, recibos y estimaciones de valor. Subir a almacenamiento en la nube.',
-      fr: 'Prendre photos et vidéo complètes de toute propriété, tout équipement et stocks complets. Inclure numéros de série, reçus et estimations de valeur. Téléverser vers stockage cloud.'
-    }),
-    estimatedMinutes: 180,
-    estimatedCostUSD: 0,
-    requiredResources: JSON.stringify([
-      { en: 'Smartphone or camera', es: 'Teléfono inteligente o cámara', fr: 'Smartphone ou appareil photo' },
-      { en: 'Free cloud storage (Google Drive, Dropbox)', es: 'Almacenamiento en nube gratuito (Google Drive, Dropbox)', fr: 'Stockage cloud gratuit (Google Drive, Dropbox)' },
-      { en: 'Inventory list or spreadsheet', es: 'Lista de inventario u hoja de cálculo', fr: 'Liste inventaire ou feuille de calcul' }
-    ]),
-    verificationCriteria: JSON.stringify({
-      en: 'Complete photo/video documentation uploaded to cloud, accessible from any device',
-      es: 'Documentación completa de fotos/video subida a la nube, accesible desde cualquier dispositivo',
-      fr: 'Documentation complète photos/vidéo téléversée vers cloud, accessible depuis tout appareil'
-    }),
-    documentationRequired: 'Confirmation email from cloud storage with uploaded files',
-    responsibleRole: 'Owner or Manager'
-  },
-  {
-    strategyId: 'hurricane_comprehensive',
-    phase: 'before',
-    sortOrder: 3,
-    title: JSON.stringify({
-      en: 'Elevate Inventory and Critical Equipment',
-      es: 'Elevar Inventario y Equipo Crítico',
-      fr: 'Élever Stocks et Équipement Critique'
-    }),
-    description: JSON.stringify({
-      en: 'Move all inventory, electronics, and important documents to highest possible location. Use concrete blocks and shelving to raise items 12+ inches above floor. Focus on highest-value items first.',
-      es: 'Mover todo inventario, electrónica y documentos importantes a la ubicación más alta posible. Usar bloques de concreto y estanterías para elevar artículos 12+ pulgadas sobre el piso. Enfocarse primero en artículos de mayor valor.',
-      fr: 'Déplacer tous stocks, électronique et documents importants vers emplacement le plus élevé possible. Utiliser blocs béton et étagères pour élever articles 30+ cm au-dessus sol. Se concentrer d\'abord sur articles de plus grande valeur.'
-    }),
-    estimatedMinutes: 240,
-    estimatedCostUSD: 100,
-    requiredResources: JSON.stringify([
-      { en: 'Concrete blocks or plastic risers', es: 'Bloques de concreto o elevadores de plástico', fr: 'Blocs béton ou rehausseurs plastique' },
-      { en: 'Plastic sheeting or tarps', es: 'Láminas de plástico o lonas', fr: 'Bâches plastique ou toiles' },
-      { en: 'Waterproof containers for documents', es: 'Contenedores impermeables para documentos', fr: 'Conteneurs étanches pour documents' },
-      { en: 'Staff to help move items', es: 'Personal para ayudar a mover artículos', fr: 'Personnel pour aider à déplacer articles' }
-    ]),
-    verificationCriteria: JSON.stringify({
-      en: 'All inventory elevated 12+ inches, critical items highest, electronics protected with plastic sheeting',
-      es: 'Todo inventario elevado 12+ pulgadas, artículos críticos más arriba, electrónica protegida con láminas de plástico',
-      fr: 'Tous stocks élevés 30+ cm, articles critiques en haut, électronique protégée avec bâches plastique'
-    }),
-    documentationRequired: 'Photos showing elevated inventory and protected equipment',
-    responsibleRole: 'All Staff (coordinated by Manager)'
-  },
-  {
-    strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_04_staff_safety',
     phase: 'during',
     sortOrder: 4,
     title: JSON.stringify({
@@ -136,6 +48,7 @@ const PREMIUM_ACTION_STEPS = [
   },
   {
     strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_05_monitor',
     phase: 'during',
     sortOrder: 5,
     title: JSON.stringify({
@@ -165,6 +78,7 @@ const PREMIUM_ACTION_STEPS = [
   },
   {
     strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_06_safety_assessment',
     phase: 'after',
     sortOrder: 6,
     title: JSON.stringify({
@@ -195,6 +109,7 @@ const PREMIUM_ACTION_STEPS = [
   },
   {
     strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_07_insurance',
     phase: 'after',
     sortOrder: 7,
     title: JSON.stringify({
@@ -225,6 +140,7 @@ const PREMIUM_ACTION_STEPS = [
   },
   {
     strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_08_cleanup',
     phase: 'after',
     sortOrder: 8,
     title: JSON.stringify({
@@ -255,6 +171,7 @@ const PREMIUM_ACTION_STEPS = [
   },
   {
     strategyId: 'hurricane_comprehensive',
+    stepId: 'hurricane_step_09_reopening',
     phase: 'after',
     sortOrder: 9,
     title: JSON.stringify({

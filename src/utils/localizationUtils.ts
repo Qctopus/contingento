@@ -55,9 +55,27 @@ export function getLocalizedText(
     }
     
     // Fall back to any available language
-    const availableValue = Object.values(content).find(value => value && value.trim())
+    const availableValue = Object.values(content).find(value => {
+      if (!value) return false
+      // Handle string values
+      if (typeof value === 'string') {
+        return value.trim().length > 0
+      }
+      // Handle arrays and other types - convert to string if possible
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
+      return true
+    })
     if (availableValue) {
-      return availableValue
+      // Convert to string if it's not already
+      if (typeof availableValue === 'string') {
+        return availableValue
+      }
+      if (Array.isArray(availableValue)) {
+        return JSON.stringify(availableValue)
+      }
+      return String(availableValue)
     }
   }
   
@@ -235,4 +253,77 @@ export function stringifyMultilingualContent(content: MultilingualContent | null
   }
   
   return JSON.stringify(content)
+}
+
+/**
+ * Extract localized array from multilingual array content
+ * Handles format: {"en":["item1","item2"],"es":["..."],"fr":["..."]}
+ * Returns array of strings for the requested locale
+ */
+export function getLocalizedArray(
+  content: string | any[] | { en?: any[]; es?: any[]; fr?: any[] } | null | undefined,
+  locale: Locale,
+  fallbackLocale: Locale = 'en'
+): string[] {
+  if (!content) return []
+  
+  let parsed: any = null
+  
+  // If content is a string, try to parse as JSON
+  if (typeof content === 'string') {
+    try {
+      parsed = JSON.parse(content)
+    } catch (e) {
+      // If parsing fails, return empty array
+      return []
+    }
+  } else {
+    parsed = content
+  }
+  
+  // If it's already an array, return it (assuming it's already localized)
+  if (Array.isArray(parsed)) {
+    // Ensure each item is a string
+    return parsed.map((item: any) => {
+      if (typeof item === 'string') return item
+      if (typeof item === 'object' && item !== null) {
+        // If it's a multilingual object, extract text for current locale
+        return item[locale] || item[fallbackLocale] || item.en || String(item)
+      }
+      return String(item)
+    }).filter((item: string) => item && item.trim().length > 0)
+  }
+  
+  // If it's an object with language keys
+  if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+    // Try to get array for requested locale
+    let array: any[] = []
+    
+    if (parsed[locale] && Array.isArray(parsed[locale])) {
+      array = parsed[locale]
+    } else if (parsed[fallbackLocale] && Array.isArray(parsed[fallbackLocale])) {
+      array = parsed[fallbackLocale]
+    } else if (parsed.en && Array.isArray(parsed.en)) {
+      array = parsed.en
+    } else {
+      // Try to find any array value
+      const values = Object.values(parsed)
+      const foundArray = values.find((v: any) => Array.isArray(v))
+      if (foundArray) {
+        array = foundArray
+      }
+    }
+    
+    // Ensure each item is a string
+    return array.map((item: any) => {
+      if (typeof item === 'string') return item
+      if (typeof item === 'object' && item !== null) {
+        // If it's a multilingual object, extract text for current locale
+        return item[locale] || item[fallbackLocale] || item.en || String(item)
+      }
+      return String(item)
+    }).filter((item: string) => item && item.trim().length > 0)
+  }
+  
+  return []
 }

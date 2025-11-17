@@ -76,7 +76,7 @@ export function getHighPriorityRisks(formData: WizardFormData, maxRisks?: number
   const risks = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
   
   const highPriorityRisks = risks
-    .filter((r: any) => r.isSelected !== false)
+    .filter((r: any) => r.isSelected === true) // Only explicitly ticked risks
     .map((r: any) => ({
       hazardId: r.hazardId || r.id,
       hazardName: r.hazard || r.hazardName || r['Hazard Name'],
@@ -85,7 +85,7 @@ export function getHighPriorityRisks(formData: WizardFormData, maxRisks?: number
       riskScore: parseFloat(r.riskScore || r['Risk Score'] || r['risk_score'] || 0),
       riskLevel: r.riskLevel || r['Risk Level'] || getRiskLevel(parseFloat(r.riskScore || r['Risk Score'] || 0)),
       reasoning: r.reasoning || r.Reasoning || r.notes || '',
-      isSelected: r.isSelected !== false
+      isSelected: r.isSelected === true
     }))
     .filter(r => r.riskScore >= 6.0) // HIGH and EXTREME only (6.0+)
     .sort((a, b) => b.riskScore - a.riskScore) // Highest first
@@ -101,7 +101,7 @@ export function getAllSelectedRisks(formData: WizardFormData): RiskData[] {
   const risks = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
   
   return risks
-    .filter((r: any) => r.isSelected !== false)
+    .filter((r: any) => r.isSelected === true) // Only explicitly ticked risks
     .map((r: any) => ({
       hazardId: r.hazardId || r.id,
       hazardName: r.hazard || r.hazardName || r['Hazard Name'],
@@ -110,7 +110,7 @@ export function getAllSelectedRisks(formData: WizardFormData): RiskData[] {
       riskScore: parseFloat(r.riskScore || r['Risk Score'] || r['risk_score'] || 0),
       riskLevel: r.riskLevel || r['Risk Level'] || getRiskLevel(parseFloat(r.riskScore || r['Risk Score'] || 0)),
       reasoning: r.reasoning || r.Reasoning || r.notes || '',
-      isSelected: r.isSelected !== false
+      isSelected: r.isSelected === true
     }))
     .sort((a, b) => b.riskScore - a.riskScore)
 }

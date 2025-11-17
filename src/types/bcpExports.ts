@@ -294,7 +294,7 @@ export interface FormalRiskAssessment {
     impact: string
     riskLevel: string
     riskScore: number
-    mitigationStatus: string
+    mitigationStatus?: string // Optional - removed because no user input for planned/addressed status
   }[]
   
   // Business impact without preparation
@@ -360,7 +360,7 @@ export interface FormalStrategyItem {
     investmentRequired: string
     setupTime: string
     effectiveness: number
-    status: string
+    status?: string // Optional - removed because no user input for planned/addressed status
     responsiblePerson: string
   }
   keyActions: {

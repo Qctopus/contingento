@@ -342,6 +342,7 @@ export function AdminStrategyCards({
         onStrategyToggle={handleStrategyIdToggle}
         onContinue={handleContinue}
         countryCode={locationData?.countryCode || 'JM'}
+        validHazards={preFillData?.hazards}
       />
     )
   }

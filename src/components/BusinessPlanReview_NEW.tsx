@@ -3,7 +3,7 @@ import { useLocale } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy, ActionStep } from '../types/admin'
 import type { Locale } from '../i18n/config'
-import { getLocalizedText } from '../utils/localizationUtils'
+import { getLocalizedText, getLocalizedArray } from '../utils/localizationUtils'
 
 // SVG icon components
 const ClockIcon = ({ className }: { className?: string }) => (
@@ -267,18 +267,47 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                   const riskLevel = risk.riskLevel || risk['Risk Level'] || 'Medium'
                   const riskScore = risk.riskScore || risk['Risk Score'] || 5
                   const hazardId = risk.hazardId || risk.hazard
-                  const reasoning = getLocalizedText(risk.reasoning, locale)
+                  let reasoning = getLocalizedText(risk.reasoning, locale)
+                  
+                  // Clean up any JSON objects in the reasoning text
+                  if (typeof reasoning === 'string' && reasoning.includes('"en":')) {
+                    reasoning = reasoning.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
+                      try {
+                        const parsed = JSON.parse(match)
+                        return parsed.en || parsed.es || parsed.fr || match
+                      } catch {
+                        const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
+                        return enMatch ? enMatch[1] : match
+                      }
+                    })
+                  }
+                  
                   const colors = getRiskLevelBadgeColor(riskLevel)
 
-                  // Find strategies that address this risk AND were selected by user
-                  const applicableStrategies = selectedStrategies.filter((strategy: Strategy) => {
-                    return strategy.applicableRisks?.includes(hazardId) ||
-                           strategy.applicableRisks?.includes(risk.hazard)
+                  // NEW CROSS-REFERENCE LOGIC:
+                  // Primary strategies: Show under their first applicable risk (considered "primary")
+                  // Cross-references: Show links for strategies that apply to this risk but are shown elsewhere
+                  const primaryStrategies = selectedStrategies.filter((strategy: Strategy) => {
+                    const applicableRisks = strategy.applicableRisks || []
+                    const primaryRisk = applicableRisks[0] // First risk is considered primary
+                    return (primaryRisk === hazardId || primaryRisk === risk.hazard) &&
+                           applicableRisks.includes(hazardId) || applicableRisks.includes(risk.hazard)
                   })
 
+                  // Cross-reference strategies: Apply to this risk but shown under different primary risk
+                  const crossReferenceStrategies = selectedStrategies.filter((strategy: Strategy) => {
+                    const applicableRisks = strategy.applicableRisks || []
+                    const primaryRisk = applicableRisks[0] // First risk is considered primary
+                    return (primaryRisk !== hazardId && primaryRisk !== risk.hazard) &&
+                           (applicableRisks.includes(hazardId) || applicableRisks.includes(risk.hazard))
+                  })
+
+                  // Combine for total count but separate display logic
+                  const allApplicableStrategies = [...primaryStrategies, ...crossReferenceStrategies]
+
                   // Calculate total investment for this risk
-                  const totalInvestment = applicableStrategies.length > 0
-                    ? `JMD ${applicableStrategies.length * 50000}-${applicableStrategies.length * 100000}`
+                  const totalInvestment = allApplicableStrategies.length > 0
+                    ? `JMD ${allApplicableStrategies.length * 50000}-${allApplicableStrategies.length * 100000}`
                     : 'To be determined'
 
                   return (
@@ -344,7 +373,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                           YOUR PROTECTION PLAN
                         </h4>
 
-                        {applicableStrategies.length === 0 ? (
+                        {allApplicableStrategies.length === 0 ? (
                           <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-r-lg p-4">
                             <p className="text-yellow-800">
                               <span className="font-semibold">No strategies selected yet.</span> Go back and select protection strategies for this risk in the wizard.
@@ -353,14 +382,44 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                         ) : (
                           <>
                             <p className="text-gray-700 mb-6">
-                              We recommend {applicableStrategies.length} {applicableStrategies.length === 1 ? 'strategy' : 'strategies'} to protect against this risk:
+                              We recommend {allApplicableStrategies.length} {allApplicableStrategies.length === 1 ? 'strategy' : 'strategies'} to protect against this risk:
                             </p>
 
-                            {/* Each Strategy */}
-                            {applicableStrategies.map((strategy: Strategy, stratIndex: number) => {
+                            {/* Primary Strategies - Full Display */}
+                            {primaryStrategies.length > 0 && (
+                              <div className="mb-8">
+                                <h5 className="text-lg font-semibold text-green-800 mb-4 flex items-center">
+                                  <span className="w-6 h-6 bg-green-600 text-white rounded-full flex items-center justify-center mr-2 text-sm">✓</span>
+                                  Primary Protection Strategies
+                                </h5>
+                                {primaryStrategies.map((strategy: Strategy, stratIndex: number) => {
+                                  const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
+                                  const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale)
+                                  const benefits = getLocalizedArray(strategy.benefitsBullets, locale)
+                                  const realWorldExample = getLocalizedText(strategy.realWorldExample, locale)
+                                  const lowBudgetAlt = getLocalizedText(strategy.lowBudgetAlternative, locale)
+                                  const diyApproach = getLocalizedText(strategy.diyApproach, locale)
+                                  const estimatedSavings = getLocalizedText(strategy.estimatedDIYSavings, locale)
+                                  const costEstimate = calculateStrategyCost(strategy, locale)
+                                  const timeEstimate = getLocalizedText(strategy.timeToImplement || strategy.implementationTime, locale) || 'To be determined'
+
+                                  // Get action steps for this strategy
+                                  const allSteps = strategy.actionSteps || []
+                                  const stepsByPhase = groupStepsByPhase(allSteps)
+                                  const resources = aggregateResources(allSteps)
+
+                                  return (
+                                    <div key={stratIndex} className="mb-6 border-2 border-green-200 rounded-lg overflow-hidden print:break-inside-avoid">
+                                      {/* Strategy Header */}
+                                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-5 border-b-2">
+                                        <div className="flex items-start justify-between mb-3">
+                                          <h5 className="text-lg font-bold text-gray-900 flex items-center flex-1">
+                                            <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                                              {stratIndex + 1}
+                                            </span>
                               const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
                               const strategySummary = getLocalizedText(strategy.smeSummary || strategy.description, locale)
-                              const benefits = getLocalizedText(strategy.benefitsBullets, locale) || []
+                              const benefits = getLocalizedArray(strategy.benefitsBullets, locale)
                               const realWorldExample = getLocalizedText(strategy.realWorldExample, locale)
                               const lowBudgetAlt = getLocalizedText(strategy.lowBudgetAlternative, locale)
                               const diyApproach = getLocalizedText(strategy.diyApproach, locale)
@@ -395,7 +454,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
                                   <div className="p-5 space-y-4">
                                     {/* Benefits */}
-                                    {Array.isArray(benefits) && benefits.length > 0 && (
+                                    {benefits.length > 0 && (
                                       <div className="bg-blue-50 rounded-lg p-4">
                                         <h6 className="font-semibold text-blue-900 mb-2">What You Get:</h6>
                                         <ul className="space-y-1">
@@ -572,12 +631,46 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                               )
                             })}
 
+                            {/* Cross-Reference Strategies - Link Display */}
+                            {crossReferenceStrategies.length > 0 && (
+                              <div className="mb-8">
+                                <h5 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                                  <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-sm">🔗</span>
+                                  Additional Protection Strategies
+                                </h5>
+                                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                  <p className="text-blue-800 mb-3">
+                                    These strategies also help protect against this risk but are primarily shown under other risk sections:
+                                  </p>
+                                  <div className="space-y-2">
+                                    {crossReferenceStrategies.map((strategy: Strategy, refIndex: number) => {
+                                      const strategyTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
+                                      const primaryRisk = (strategy.applicableRisks || [])[0]
+                                      const primaryRiskName = primaryRisk ? primaryRisk.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()) : 'Other Risk'
+
+                                      return (
+                                        <div key={refIndex} className="flex items-center justify-between bg-white p-3 rounded border border-blue-200">
+                                          <div className="flex items-center">
+                                            <span className="text-blue-600 mr-3">🔗</span>
+                                            <span className="font-medium text-gray-900">{strategyTitle}</span>
+                                          </div>
+                                          <div className="text-sm text-blue-700">
+                                            Primary: <span className="font-semibold">{primaryRiskName}</span>
+                                          </div>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {/* Total Investment for This Risk */}
                             <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-5">
                               <h6 className="font-bold text-gray-900 mb-2">💰 TOTAL INVESTMENT TO ADDRESS THIS RISK</h6>
                               <p className="text-2xl font-bold text-purple-700 mb-2">{totalInvestment}</p>
                               <p className="text-sm text-gray-700">
-                                This is the total cost to implement all {applicableStrategies.length} {applicableStrategies.length === 1 ? 'strategy' : 'strategies'} for protecting against {hazardName.toLowerCase()}.
+                                This is the total cost to implement all {allApplicableStrategies.length} {allApplicableStrategies.length === 1 ? 'strategy' : 'strategies'} for protecting against {hazardName.toLowerCase()}.
                               </p>
                             </div>
                           </>
@@ -837,6 +930,8 @@ const TestingMaintenanceSection: React.FC<{ formData: any }> = ({ formData }) =>
     </div>
   )
 }
+
+
 
 
 

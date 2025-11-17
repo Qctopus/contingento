@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { getLocalizedText } from '@/utils/localizationUtils'
+import { getLocalizedText, getLocalizedArray } from '@/utils/localizationUtils'
 import { costCalculationService } from '@/services/costCalculationService'
 import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
 
@@ -31,7 +31,7 @@ interface Strategy {
   costEstimateJMD?: string
   timeToImplement?: string
   implementationTime: string
-  estimatedTotalHours?: number
+  totalEstimatedHours?: number
   effectiveness: number
   complexityLevel?: string
   quickWinIndicator?: boolean
@@ -96,6 +96,7 @@ interface StrategySelectionStepProps {
   onStrategyToggle: (strategyId: string) => void
   onContinue: () => void
   countryCode?: string
+  validHazards?: Array<{ hazardId: string; hazardName: string }> // User's selected/available risks
 }
 
 export default function StrategySelectionStep({
@@ -103,7 +104,8 @@ export default function StrategySelectionStep({
   selectedStrategies,
   onStrategyToggle,
   onContinue,
-  countryCode = 'JM'
+  countryCode = 'JM',
+  validHazards
 }: StrategySelectionStepProps) {
   const locale = useLocale() as 'en' | 'es' | 'fr'
   const t = useTranslations()
@@ -169,20 +171,26 @@ export default function StrategySelectionStep({
   
   // Helper to translate risk names (camelCase to snake_case)
   const translateRisk = (riskName: string) => {
+    if (!riskName) return 'Unknown Risk'
+    
     // Convert camelCase to snake_case
     const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
     
-    // Try to get translation
-    const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
-    const translation = t(translationKey as any)
-    
-    // Check if translation was found (it returns the key if not found)
-    if (translation && !translation.includes('steps.riskAssessment')) {
-      return translation
+    // Try to get translation with error handling
+    try {
+      const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
+      const translation = t(translationKey as any)
+      
+      // Check if translation was found (it returns the key if not found)
+      if (translation && !translation.includes('steps.riskAssessment') && !translation.includes('MISSING_MESSAGE')) {
+        return translation
+      }
+    } catch (error) {
+      // Translation key doesn't exist, use fallback
     }
     
     // Fallback: return formatted risk name
-    return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim()
+    return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim()
   }
   
   // Helper to translate complexity/difficulty levels
@@ -259,10 +267,75 @@ export default function StrategySelectionStep({
     return reasoning
   }
 
-  // Group strategies by tier
-  const essential = strategies.filter(s => s.priorityTier === 'essential')
-  const recommended = strategies.filter(s => s.priorityTier === 'recommended')
-  const optional = strategies.filter(s => s.priorityTier === 'optional')
+  // Group strategies by risk with primary/cross-reference logic
+  const strategiesByRisk = strategies.reduce((acc, strategy) => {
+    if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) {
+      // Strategies with no applicable risks go in a general section
+      if (!acc['general']) acc['general'] = []
+      acc['general'].push({
+        ...strategy,
+        relationshipType: 'general' as const
+      })
+      return acc
+    }
+
+    // For each applicable risk, determine if this strategy is primary or cross-reference
+    strategy.applicableRisks.forEach((risk: string, index: number) => {
+      if (!acc[risk]) acc[risk] = []
+
+      const isPrimary = index === 0 // First risk is primary
+      acc[risk].push({
+        ...strategy,
+        relationshipType: isPrimary ? 'primary' as const : 'crossReference' as const
+      })
+    })
+
+    return acc
+  }, {} as Record<string, Array<Strategy & { relationshipType: 'primary' | 'crossReference' | 'general' }>>)
+
+  // Filter to only include risks that the user has selected/assessed
+  const validRiskIds = new Set(
+    validHazards ? validHazards.map(h => h.hazardId) : []
+  )
+
+  // Remove risks that user hasn't selected from strategiesByRisk
+  Object.keys(strategiesByRisk).forEach(risk => {
+    if (!validRiskIds.has(risk)) {
+      delete strategiesByRisk[risk]
+    }
+  })
+
+  // Sort risk groups by priority (essential strategies first, then others)
+  const sortedRiskGroups = Object.entries(strategiesByRisk)
+    .map(([risk, riskStrategies]) => ({
+      risk,
+      strategies: riskStrategies.sort((a, b) => {
+        // Sort by relationship type first (primary before cross-reference)
+        if (a.relationshipType !== b.relationshipType) {
+          if (a.relationshipType === 'primary') return -1
+          if (b.relationshipType === 'primary') return 1
+          if (a.relationshipType === 'crossReference') return -1
+          if (b.relationshipType === 'crossReference') return 1
+        }
+        // Then by priority tier
+        const tierOrder = { essential: 0, recommended: 1, optional: 2 }
+        const aTier = tierOrder[a.priorityTier as keyof typeof tierOrder] ?? 3
+        const bTier = tierOrder[b.priorityTier as keyof typeof tierOrder] ?? 3
+        if (aTier !== bTier) return aTier - bTier
+        // Finally by name
+        return (a.name || '').localeCompare(b.name || '')
+      }),
+      hasPrimaryStrategies: riskStrategies.some(s => s.relationshipType === 'primary'),
+      primaryCount: riskStrategies.filter(s => s.relationshipType === 'primary').length,
+      crossReferenceCount: riskStrategies.filter(s => s.relationshipType === 'crossReference').length
+    }))
+    .sort((a, b) => {
+      // Sort by whether it has primary strategies first
+      if (a.hasPrimaryStrategies && !b.hasPrimaryStrategies) return -1
+      if (!a.hasPrimaryStrategies && b.hasPrimaryStrategies) return 1
+      // Then by risk name
+      return translateRisk(a.risk).localeCompare(translateRisk(b.risk))
+    })
 
   // Helper to translate time strings
   const translateTime = (timeStr: string) => {
@@ -358,116 +431,62 @@ export default function StrategySelectionStep({
           {/* LEFT COLUMN: Strategy Cards (2/3 width on desktop) */}
           <div className="flex-1 lg:w-2/3 space-y-6">{/* Strategy sections will go here */}
 
-            {/* ESSENTIAL STRATEGIES */}
-            {essential.length > 0 && (
-              <div className="space-y-4">
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4">
-            <h3 className="text-lg font-bold text-red-900 mb-1">
-              🔴 {t('steps.strategySelection.essentialTitle')}
-            </h3>
-            <p className="text-sm text-red-800">
-              {t('steps.strategySelection.essentialDescription')}
-            </p>
-          </div>
+            {/* RISK-BASED STRATEGY SECTIONS */}
+            {sortedRiskGroups.map(({ risk, strategies: riskStrategies, primaryCount, crossReferenceCount }) => {
+              if (risk === 'general' && riskStrategies.length === 0) return null
 
-          {essential.map(strategy => (
-            <StrategyCard
-              key={strategy.id}
-              strategy={strategy}
-              isSelected={selectedStrategies.includes(strategy.id)}
-              isExpanded={expandedStrategy === strategy.id}
-              onToggle={() => handleToggle(strategy.id, 'essential')}
-              onExpand={() => setExpandedStrategy(
-                expandedStrategy === strategy.id ? null : strategy.id
-              )}
-              tierColor="red"
-              t={t}
-              locale={locale}
-              translateRisk={translateRisk}
-              translateLevel={translateLevel}
-              translateReasoning={translateReasoning}
-              translateTime={translateTime}
-              strategyCosts={strategyCosts}
-              currencyInfo={currencyInfo}
-              countryCode={countryCode}
-            />
-          ))}
-        </div>
-      )}
+              return (
+                <div key={risk} className="space-y-4">
+                  <div className="bg-blue-50 border-l-4 border-blue-500 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-bold text-blue-900 mb-1">
+                          🛡️ {translateRisk(risk)}
+                        </h3>
+                        <p className="text-sm text-blue-800">
+                          {risk === 'general'
+                            ? 'General strategies that apply to all business risks'
+                            : `Strategies for ${translateRisk(risk).toLowerCase()} protection`
+                          }
+                        </p>
+                      </div>
+                      <div className="text-right text-xs text-blue-700">
+                        {primaryCount > 0 && <div>🎯 {primaryCount} Primary</div>}
+                        {crossReferenceCount > 0 && <div>🔗 {crossReferenceCount} Related</div>}
+                      </div>
+                    </div>
+                  </div>
 
-            {/* RECOMMENDED STRATEGIES */}
-            {recommended.length > 0 && (
-              <div className="space-y-4">
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded-lg p-4">
-            <h3 className="text-lg font-bold text-yellow-900 mb-1">
-              🟡 {t('steps.strategySelection.recommendedTitle')}
-            </h3>
-            <p className="text-sm text-yellow-800">
-              {t('steps.strategySelection.recommendedDescription')}
-            </p>
-          </div>
-
-          {recommended.map(strategy => (
-            <StrategyCard
-              key={strategy.id}
-              strategy={strategy}
-              isSelected={selectedStrategies.includes(strategy.id)}
-              isExpanded={expandedStrategy === strategy.id}
-              onToggle={() => handleToggle(strategy.id, 'recommended')}
-              onExpand={() => setExpandedStrategy(
-                expandedStrategy === strategy.id ? null : strategy.id
-              )}
-              tierColor="yellow"
-              t={t}
-              locale={locale}
-              translateRisk={translateRisk}
-              translateLevel={translateLevel}
-              translateReasoning={translateReasoning}
-              translateTime={translateTime}
-              strategyCosts={strategyCosts}
-              currencyInfo={currencyInfo}
-              countryCode={countryCode}
-            />
-              ))}
-              </div>
-            )}
-
-            {/* OPTIONAL STRATEGIES */}
-            {optional.length > 0 && (
-              <div className="space-y-4">
-          <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4">
-            <h3 className="text-lg font-bold text-green-900 mb-1">
-              🟢 {t('steps.strategySelection.optionalTitle')}
-            </h3>
-            <p className="text-sm text-green-800">
-              {t('steps.strategySelection.optionalDescription')}
-            </p>
-          </div>
-
-          {optional.map(strategy => (
-            <StrategyCard
-              key={strategy.id}
-              strategy={strategy}
-              isSelected={selectedStrategies.includes(strategy.id)}
-              isExpanded={expandedStrategy === strategy.id}
-              onToggle={() => handleToggle(strategy.id, 'optional')}
-              onExpand={() => setExpandedStrategy(
-                expandedStrategy === strategy.id ? null : strategy.id
-              )}
-              tierColor="green"
-              t={t}
-              locale={locale}
-              translateRisk={translateRisk}
-              translateLevel={translateLevel}
-              translateReasoning={translateReasoning}
-              translateTime={translateTime}
-              strategyCosts={strategyCosts}
-              currencyInfo={currencyInfo}
-              countryCode={countryCode}
-            />
-              ))}
-              </div>
-            )}
+                  {riskStrategies.map(strategy => (
+                    <StrategyCard
+                      key={`${strategy.id}-${risk}`}
+                      strategy={strategy}
+                      isSelected={selectedStrategies.includes(strategy.id)}
+                      isExpanded={expandedStrategy === strategy.id}
+                      onToggle={() => handleToggle(strategy.id, strategy.priorityTier || 'optional')}
+                      onExpand={() => setExpandedStrategy(
+                        expandedStrategy === strategy.id ? null : strategy.id
+                      )}
+                      tierColor={
+                        strategy.priorityTier === 'essential' ? 'red' :
+                        strategy.priorityTier === 'recommended' ? 'yellow' : 'green'
+                      }
+                      t={t}
+                      locale={locale}
+                      translateRisk={translateRisk}
+                      translateLevel={translateLevel}
+                      translateReasoning={translateReasoning}
+                      translateTime={translateTime}
+                      strategyCosts={strategyCosts}
+                      currencyInfo={currencyInfo}
+                      countryCode={countryCode}
+                      relationshipType={strategy.relationshipType}
+                      validHazards={validHazards}
+                    />
+                  ))}
+                </div>
+              )
+            })}
           </div>
 
           {/* RIGHT COLUMN: Summary Panel (1/3 width on desktop, sticky) */}
@@ -479,21 +498,25 @@ export default function StrategySelectionStep({
         
         <div className="space-y-2 text-sm mb-4">
           <div className="flex justify-between">
-            <span className="text-gray-600">✅ {t('steps.strategySelection.essentialStrategies')}</span>
+            <span className="text-gray-600">🎯 Primary Strategies</span>
             <span className="font-medium">
-              {essential.filter(s => selectedStrategies.includes(s.id)).length} / {essential.length}
+              {sortedRiskGroups.reduce((sum, group) =>
+                sum + group.strategies.filter(s => s.relationshipType === 'primary' && selectedStrategies.includes(s.id)).length, 0
+              )} / {sortedRiskGroups.reduce((sum, group) => sum + group.primaryCount, 0)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">✅ {t('steps.strategySelection.recommendedStrategies')}</span>
+            <span className="text-gray-600">🔗 Cross-Reference Strategies</span>
             <span className="font-medium">
-              {recommended.filter(s => selectedStrategies.includes(s.id)).length} / {recommended.length}
+              {sortedRiskGroups.reduce((sum, group) =>
+                sum + group.strategies.filter(s => s.relationshipType === 'crossReference' && selectedStrategies.includes(s.id)).length, 0
+              )} / {sortedRiskGroups.reduce((sum, group) => sum + group.crossReferenceCount, 0)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-600">⬜ {t('steps.strategySelection.optionalStrategies')}</span>
+            <span className="text-gray-600">🛡️ Risk Categories Covered</span>
             <span className="font-medium">
-              {optional.filter(s => selectedStrategies.includes(s.id)).length} / {optional.length}
+              {sortedRiskGroups.filter(group => group.strategies.some(s => selectedStrategies.includes(s.id))).length} / {sortedRiskGroups.length}
             </span>
           </div>
         </div>
@@ -559,7 +582,7 @@ export default function StrategySelectionStep({
                     <div className="text-xs text-gray-600">Action Steps</div>
                     <div className="text-2xl font-bold text-blue-600">
                       {selectedStrategies.reduce((sum, id) => {
-                        const strategy = [...essential, ...recommended, ...optional].find(s => s.id === id)
+                        const strategy = strategies.find(s => s.id === id)
                         return sum + (strategy?.actionSteps?.length || 0)
                       }, 0)}
                     </div>
@@ -612,11 +635,11 @@ export default function StrategySelectionStep({
 }
 
 // Strategy Card Component
-function StrategyCard({ 
-  strategy, 
-  isSelected, 
-  isExpanded, 
-  onToggle, 
+function StrategyCard({
+  strategy,
+  isSelected,
+  isExpanded,
+  onToggle,
   onExpand,
   tierColor,
   t,
@@ -627,7 +650,9 @@ function StrategyCard({
   translateTime,
   strategyCosts,
   currencyInfo,
-  countryCode
+  countryCode,
+  relationshipType,
+  validHazards
 }: any) {
   const borderColor = {
     red: 'border-red-200',
@@ -715,8 +740,13 @@ function StrategyCard({
                 {displayTitle}
               </h4>
               
-              {/* NEW: Strategy Type Badge */}
+              {/* NEW: Strategy Type Badge - Only show if strategyType is explicitly set */}
               {(() => {
+                // Only show badge if strategyType is explicitly set in backend
+                if (!strategy.strategyType) {
+                  return null
+                }
+                
                 const typeConfig = {
                   prevention: {
                     icon: '🛡️',
@@ -739,7 +769,7 @@ function StrategyCard({
                     textColor: 'text-green-800',
                     borderColor: 'border-green-300'
                   }
-                }[strategy.strategyType || 'prevention']
+                }[strategy.strategyType]
                 
                 if (typeConfig) {
                   return (
@@ -783,8 +813,8 @@ function StrategyCard({
             
             {/* NEW: Benefits Bullets - Key Benefits */}
             {(() => {
-              const benefits = getLocalizedText(strategy.benefitsBullets, locale)
-              const benefitsArray = Array.isArray(benefits) ? benefits : (typeof benefits === 'string' && benefits ? [benefits] : [])
+              const benefitsArray = getLocalizedArray(strategy.benefitsBullets, locale)
+              
               return benefitsArray.length > 0 && (
                 <div className="mb-3">
                   <p className="text-sm font-medium text-gray-700 mb-1">✅ {t('steps.strategySelection.whatYouGetLabel')}</p>
@@ -800,15 +830,46 @@ function StrategyCard({
               )
             })()}
 
-            {/* Risk Coverage */}
+            {/* Applicable Risks */}
             <div className="mb-3">
               <p className="text-xs font-medium text-gray-500 mb-1">📊 {t('steps.strategySelection.protectsAgainstLabel')}</p>
               <div className="flex flex-wrap gap-1">
-                {strategy.applicableRisks.slice(0, 4).map((risk: string) => (
-                  <span key={risk} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">
-                    {translateRisk(risk)}
-                  </span>
-                ))}
+                {(() => {
+                  // Only show risks that actually exist in validHazards
+                  const validRisks = strategy.applicableRisks?.filter((risk: string) => {
+                    return validHazards?.some(h => 
+                      h.hazardId === risk || 
+                      h.hazardId === risk.replace(/_/g, '') || // handle snake_case vs camelCase
+                      h.hazardId.replace(/_/g, '') === risk.replace(/_/g, '')
+                    )
+                  }) || []
+                  
+                  if (validRisks.length === 0) {
+                    return (
+                      <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                        General protection
+                      </span>
+                    )
+                  }
+                  
+                  return validRisks.map((risk: string) => {
+                    // Find the matching valid hazard to get the proper name
+                    const hazard = validHazards?.find(h => 
+                      h.hazardId === risk || 
+                      h.hazardId === risk.replace(/_/g, '') ||
+                      h.hazardId.replace(/_/g, '') === risk.replace(/_/g, '')
+                    )
+                    
+                    return (
+                      <span 
+                        key={risk}
+                        className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-800 border border-blue-200"
+                      >
+                        {hazard?.hazardName || translateRisk(risk)}
+                      </span>
+                    )
+                  })
+                })()}
               </div>
             </div>
 
@@ -911,7 +972,7 @@ function StrategyCard({
                         <span>⏱️ ~{step.estimatedMinutes} min</span>
                       )}
                       {!step.estimatedMinutes && step.timeframe && (
-                        <span>⏱️ {translateTime(step.timeframe)}</span>
+                        <span>⏱️ {translateTime(getLocalizedText(step.timeframe, locale))}</span>
                       )}
                       {stepCosts[step.id] && stepCosts[step.id].amount !== undefined ? (
                         <span>💰 {stepCosts[step.id].symbol}{stepCosts[step.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>

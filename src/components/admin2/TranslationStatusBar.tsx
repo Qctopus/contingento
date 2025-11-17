@@ -298,3 +298,8 @@ export function TranslationStatusBar({ strategy, onShowDetails }: TranslationSta
 
 
 
+
+
+
+
+

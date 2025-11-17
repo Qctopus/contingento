@@ -39,6 +39,21 @@ export function AdminUnitRiskMatrix({ adminUnits, onEditUnit }: AdminUnitRiskMat
   const getRiskLevel = (unit: AdminUnitWithRisk, riskKey: string): number => {
     if (!unit.adminUnitRisk) return 0
     
+    // First, try to get from JSON profile (supports all risk types including dynamic ones)
+    try {
+      const profile = JSON.parse(unit.adminUnitRisk.riskProfileJson || '{}')
+      if (profile[riskKey]?.level !== undefined) {
+        return profile[riskKey].level
+      }
+      // Also check for "flooding" key if looking for "flood"
+      if (riskKey === 'flood' && profile.flooding?.level !== undefined) {
+        return profile.flooding.level
+      }
+    } catch {
+      // Continue to fallback
+    }
+    
+    // Fallback to direct fields for core risks (backward compatibility)
     const riskMap: Record<string, keyof typeof unit.adminUnitRisk> = {
       hurricane: 'hurricaneLevel',
       flood: 'floodLevel',
@@ -53,13 +68,7 @@ export function AdminUnitRiskMatrix({ adminUnits, onEditUnit }: AdminUnitRiskMat
       return unit.adminUnitRisk[field] as number
     }
     
-    // Try to get from JSON profile for dynamic risk types
-    try {
-      const profile = JSON.parse(unit.adminUnitRisk.riskProfileJson || '{}')
-      return profile[riskKey]?.level || 0
-    } catch {
-      return 0
-    }
+    return 0
   }
 
   const getAverageRisk = (unit: AdminUnitWithRisk): number => {

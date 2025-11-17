@@ -198,7 +198,7 @@ export interface Strategy {
   
   // Implementation Details (enhanced)
   implementationCost: 'low' | 'medium' | 'high' | 'very_high' // Categorical estimate for quick reference
-  estimatedTotalHours?: number // Sum of all action step times
+  totalEstimatedHours?: number // Sum of all action step times
   complexityLevel?: 'simple' | 'moderate' | 'advanced'
   roi?: number // Return on investment estimate
   quickWinIndicator?: boolean // Fast + high impact = quick win

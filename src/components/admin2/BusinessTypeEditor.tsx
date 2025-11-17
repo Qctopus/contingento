@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { AutoSaveIndicator } from './AutoSaveIndicator'
 import { BusinessType } from '../../types/admin'
@@ -19,6 +19,13 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
   const [editedBusinessType, setEditedBusinessType] = useState<BusinessType>(businessType)
   const [activeTab, setActiveTab] = useState<'basic' | 'examples' | 'risks'>('basic')
   const [activeLanguage, setActiveLanguage] = useState<Language>('en')
+
+  // Sync state when businessType prop changes
+  useEffect(() => {
+    if (businessType) {
+      setEditedBusinessType(businessType)
+    }
+  }, [businessType])
 
   // Include ALL risk types
   const riskTypes = [
@@ -68,14 +75,35 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
 
   // Helper to parse multilingual JSON
   const parseMultilingual = (value: any): Record<Language, string> => {
+    if (!value) return { en: '', es: '', fr: '' }
+    
+    // If it's already an object (multilingual)
+    if (typeof value === 'object' && value !== null) {
+      return {
+        en: value.en || '',
+        es: value.es || '',
+        fr: value.fr || ''
+      }
+    }
+    
+    // If it's a string, try to parse as JSON
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value)
+        const parsed = JSON.parse(value)
+        if (typeof parsed === 'object' && parsed !== null) {
+          return {
+            en: parsed.en || '',
+            es: parsed.es || '',
+            fr: parsed.fr || ''
+          }
+        }
+        return { en: value, es: '', fr: '' }
       } catch {
         return { en: value, es: '', fr: '' }
       }
     }
-    return value || { en: '', es: '', fr: '' }
+    
+    return { en: '', es: '', fr: '' }
   }
 
   // Helper to parse array of multilingual objects
@@ -212,7 +240,9 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
       <div className="p-6 border-b border-gray-200">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Edit Business Type: {editedBusinessType.name}</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Edit Business Type: {parseMultilingual(editedBusinessType.name).en || editedBusinessType.businessTypeId}
+            </h2>
             <AutoSaveIndicator autoSaveStatus={autoSaveStatus} className="mt-2" />
           </div>
           <div className="flex space-x-3">

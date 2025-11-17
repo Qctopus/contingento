@@ -957,13 +957,29 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
             }
             
             if (strategy.actionSteps && Array.isArray(strategy.actionSteps)) {
+              // Use a Set to track step IDs we've already added to prevent duplicates
+              const addedStepIds = new Set<string>()
+              
               strategy.actionSteps.forEach(step => {
-                if (!step) return
+                if (!step || !step.id) return
+                
+                // Skip if we've already added this step
+                if (addedStepIds.has(step.id)) {
+                  return
+                }
+                
                 const phase = step.phase || 'other'
-                if (phaseGroups[phase]) {
+                
+                // Only add to phase group if it's a valid phase, otherwise add to 'other'
+                if (['before', 'during', 'after'].includes(phase)) {
+                  if (!phaseGroups[phase]) {
+                    phaseGroups[phase] = []
+                  }
                   phaseGroups[phase].push(step)
+                  addedStepIds.add(step.id)
                 } else {
                   phaseGroups.other.push(step)
+                  addedStepIds.add(step.id)
                 }
               })
             }
@@ -1039,7 +1055,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                               </h4>
                               <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
                                 <div><span className="font-medium">Timeline:</span> {getLocalizedText(step.timeframe, 'en') || `${step.estimatedMinutes || 0} min`}</div>
-                                <div><span className="font-medium">Responsible:</span> {step.responsibility || 'Owner'}</div>
+                                <div><span className="font-medium">Responsible:</span> {String(getLocalizedText(step.responsibility, 'en') || 'Owner')}</div>
                                 <div><span className="font-medium">Cost:</span> {step.estimatedCost || '$0'}</div>
                               </div>
                               {checklistArray.length > 0 && (
@@ -1080,7 +1096,7 @@ function ImprovedStrategyDetailView({ strategy, onEdit, onBack }: ImprovedStrate
                           </h4>
                           <div className="grid grid-cols-3 gap-3 text-sm text-gray-600 mb-2">
                             <div><span className="font-medium">Timeline:</span> {getLocalizedText(step.timeframe, 'en') || `${step.estimatedMinutes || 0} min`}</div>
-                            <div><span className="font-medium">Responsible:</span> {step.responsibility || 'Owner'}</div>
+                            <div><span className="font-medium">Responsible:</span> {getLocalizedText(step.responsibility, 'en') || 'Owner'}</div>
                             <div><span className="font-medium">Cost:</span> {step.estimatedCost || '$0'}</div>
                           </div>
                         </div>

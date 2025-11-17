@@ -13,9 +13,10 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get locale from query parameters
+    // Get locale and raw flag from query parameters
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get('locale') as Locale || 'en'
+    const raw = searchParams.get('raw') === 'true' // If raw=true, skip localization
 
     const businessTypes = await withDatabase(async () => {
       const prisma = getPrismaClient()
@@ -34,10 +35,12 @@ export async function GET(request: NextRequest) {
     // Transform database data to match frontend expectations
     let transformedBusinessTypes = businessTypes.map(transformBusinessTypeForApi)
     
-    // Always localize the content (works for all locales including 'en')
-    transformedBusinessTypes = transformedBusinessTypes.map(bt => localizeBusinessType(bt, locale))
+    // Only localize if not requesting raw data (for editing, we need full multilingual objects)
+    if (!raw) {
+      transformedBusinessTypes = transformedBusinessTypes.map(bt => localizeBusinessType(bt, locale))
+    }
     
-    console.log(`🏢 Business Types GET API: Successfully fetched ${businessTypes.length} business types (locale: ${locale})`)
+    console.log(`🏢 Business Types GET API: Successfully fetched ${businessTypes.length} business types (locale: ${locale}, raw: ${raw})`)
     return createSuccessResponse(transformedBusinessTypes)
     
   } catch (error) {

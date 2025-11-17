@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { LocationData } from '../data/types'
 import { centralDataService } from '../services/centralDataService'
+import { getLocalizedText } from '../utils/localizationUtils'
 import type { BusinessType, Parish, Country, AdminUnit } from '../types/admin'
 import type { Locale } from '../i18n/config'
 
@@ -207,6 +208,14 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
       console.log('🗑️ Cleared old prefill data - generating fresh with multipliers...')
       
       // Call the prepare-prefill-data API with business characteristics
+      // Filter out UI-only tracking keys (like _selectedIndex) before submission
+      const cleanedCharacteristics = Object.keys(businessCharacteristics).reduce((acc, key) => {
+        if (!key.endsWith('_selectedIndex')) {
+          acc[key] = businessCharacteristics[key]
+        }
+        return acc
+      }, {} as Record<string, any>)
+      
       const response = await fetch('/api/wizard/prepare-prefill-data', {
         method: 'POST',
         headers: {
@@ -215,13 +224,15 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
         body: JSON.stringify({
           businessTypeId: selectedIndustry,
           location: location,
-          businessCharacteristics: businessCharacteristics,
+          businessCharacteristics: cleanedCharacteristics,
           locale: locale
         })
       })
 
       if (!response.ok) {
-        throw new Error(`Failed to prepare pre-fill data: ${response.status}`)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('❌ API Error Response:', errorData)
+        throw new Error(`Failed to prepare pre-fill data: ${response.status} - ${errorData.details || errorData.error || 'Unknown error'}`)
       }
 
       const preFillData = await response.json()
@@ -349,36 +360,51 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 {multipliers
                   .filter(m => m.isActive) // Only show active multipliers
                   .map((multiplier, index) => {
-                  const question = (() => {
-                    try {
-                      const parsed = JSON.parse(multiplier.wizardQuestion)
-                      return parsed[locale] || parsed['en'] || multiplier.name
-                    } catch {
-                      return multiplier.name
+                  // Parse multilingual fields (API now returns parsed JSON, but handle both cases)
+                  const parseMultilingualField = (field: any): any => {
+                    if (!field) return null
+                    if (typeof field === 'object') return field // Already parsed by API
+                    if (typeof field === 'string') {
+                      try {
+                        return JSON.parse(field)
+                      } catch {
+                        return field
+                      }
                     }
-                  })()
+                    return field
+                  }
                   
-                  const helpText = (() => {
-                    try {
-                      if (multiplier.wizardHelpText) {
-                        const parsed = JSON.parse(multiplier.wizardHelpText)
-                        return parsed[locale] || parsed['en']
-                      }
-                    } catch {}
-                    return null
-                  })()
+                  const wizardQuestionObj = parseMultilingualField(multiplier.wizardQuestion)
+                  const question = wizardQuestionObj?.[locale] || wizardQuestionObj?.['en'] || multiplier.name
                   
-                  const answerOptions = (() => {
-                    try {
-                      if (multiplier.wizardAnswerOptions) {
-                        return JSON.parse(multiplier.wizardAnswerOptions)
-                      }
-                    } catch {}
-                    return null
-                  })()
+                  const wizardHelpTextObj = parseMultilingualField(multiplier.wizardHelpText)
+                  const helpText = wizardHelpTextObj?.[locale] || wizardHelpTextObj?.['en'] || null
+                  
+                  // Answer options should be an array (already parsed by API, but handle both cases)
+                  const answerOptions = Array.isArray(multiplier.wizardAnswerOptions) 
+                    ? multiplier.wizardAnswerOptions 
+                    : parseMultilingualField(multiplier.wizardAnswerOptions)
 
                   const charType = multiplier.characteristicType
                   const currentValue = businessCharacteristics[charType]
+                  const selectedIndexKey = `${charType}_selectedIndex`
+                  let selectedIndex = businessCharacteristics[selectedIndexKey]
+                  
+                  // Initialize selectedIndex if we have a currentValue but no selectedIndex
+                  // This handles cases where data was loaded from localStorage or API
+                  if (selectedIndex === undefined && currentValue !== undefined && currentValue !== false && answerOptions && answerOptions.length > 0) {
+                    // Find the first option that matches the currentValue
+                    const matchingIndex = answerOptions.findIndex((opt: any) => opt.value === currentValue)
+                    if (matchingIndex !== -1) {
+                      // Set the selectedIndex to match the currentValue
+                      selectedIndex = matchingIndex
+                      // Update state to persist this
+                      setBusinessCharacteristics(prev => ({
+                        ...prev,
+                        [selectedIndexKey]: matchingIndex
+                      }))
+                    }
+                  }
                   
                   return (
                     <div key={multiplier.id} className={`${index < multipliers.length - 1 ? 'pb-6 border-b border-gray-200' : ''}`}>
@@ -405,56 +431,132 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                       {multiplier.conditionType === 'boolean' ? (
                         <div className="ml-11 space-y-2">
                           {answerOptions && answerOptions.length > 0 ? (
-                            // Use provided answer options
-                            answerOptions.map((option: any) => {
-                              const label = typeof option.label === 'object' 
-                                ? (option.label[locale] || option.label['en']) 
-                                : option.label
-                              const isSelected = currentValue === option.value
-                              
-                              return (
-                                <label 
-                                  key={String(option.value)} 
-                                  className={`
-                                    group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
-                                    ${isSelected 
-                                      ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
-                                      : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                                    }
-                                  `}
-                                >
-                                  <div className="flex items-center h-5">
-                    <input
-                      type="radio"
-                                      name={charType}
-                                      checked={isSelected}
-                                      onChange={() => setBusinessCharacteristics(prev => ({ 
-                                        ...prev, 
-                                        [charType]: option.value 
-                                      }))}
-                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                    />
-                    </div>
-                                  <div className="ml-4 flex-1">
-                                    <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                                      {label}
-                    </div>
-                                    {option.description && (
-                                      <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
-                                        {option.description}
-                    </div>
+                            <>
+                              {/* Render answer options */}
+                              {answerOptions.map((option: any, optionIndex: number) => {
+                                const label = typeof option.label === 'object' 
+                                  ? (option.label[locale] || option.label['en']) 
+                                  : option.label
+                                
+                                // Track which specific option index is selected (needed when multiple options have same value)
+                                // Use the selectedIndex from the parent scope (already initialized if needed)
+                                const isSelected = selectedIndex === optionIndex
+                                
+                                // Use a unique key combining multiplier ID and option index to avoid duplicates
+                                const uniqueKey = `${multiplier.id}-option-${optionIndex}`
+                                
+                                return (
+                                  <label 
+                                    key={uniqueKey}
+                                    className={`
+                                      group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                      ${isSelected 
+                                        ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                        : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                      }
+                                    `}
+                                  >
+                                    <div className="flex items-center h-5">
+                                      <input
+                                        type="radio"
+                                        name={charType}
+                                        checked={isSelected}
+                                        onChange={() => {
+                                          // Always update both the value and the selected index
+                                          setBusinessCharacteristics(prev => ({ 
+                                            ...prev, 
+                                            [charType]: option.value,
+                                            [selectedIndexKey]: optionIndex
+                                          }))
+                                        }}
+                                        className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                    <div className="ml-4 flex-1">
+                                      <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                        {label}
+                                      </div>
+                                      {option.description && (
+                                        <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                                          {option.description}
+                                        </div>
+                                      )}
+                                    </div>
+                                    {isSelected && (
+                                      <div className="ml-2">
+                                        <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
                                     )}
-                </div>
-                                  {isSelected && (
-                                    <div className="ml-2">
-                                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                      </svg>
-              </div>
-                                  )}
-                </label>
-                              )
-                            })
+                                  </label>
+                                )
+                              })}
+                              
+                              {/* Only show "None of the above" for questions where it makes sense:
+                                  - 3+ answer options (not simple Yes/No)
+                                  - None of the options explicitly represents "none" or "not applicable" */}
+                              {(() => {
+                                if (!answerOptions || answerOptions.length < 3) {
+                                  // Don't show for simple Yes/No questions
+                                  return null
+                                }
+                                
+                                // Check if any option already represents "none" or "not applicable"
+                                const hasNoneOption = answerOptions.some((opt: any) => {
+                                  const label = typeof opt.label === 'object' 
+                                    ? (opt.label[locale] || opt.label['en'] || '') 
+                                    : String(opt.label || '')
+                                  const lowerLabel = label.toLowerCase()
+                                  return lowerLabel.includes('none') || 
+                                         lowerLabel.includes('not applicable') ||
+                                         lowerLabel.includes("doesn't apply") ||
+                                         lowerLabel.includes('not relevant')
+                                })
+                                
+                                if (hasNoneOption) {
+                                  // Already has a "none" option, don't add another
+                                  return null
+                                }
+                                
+                                // Use the selectedIndex from the parent scope (already initialized if needed)
+                                const isNoneSelected = selectedIndex === undefined && (currentValue === false || currentValue === undefined)
+                                
+                                return (
+                                  <label 
+                                    className={`group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200 ${
+                                      isNoneSelected 
+                                        ? 'bg-gray-50 border-2 border-gray-400 shadow-sm' 
+                                        : 'bg-white border-2 border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                                    }`}
+                                  >
+                                    <div className="flex items-center h-5">
+                                      <input
+                                        type="radio"
+                                        name={charType}
+                                        checked={isNoneSelected}
+                                        onChange={() => {
+                                          setBusinessCharacteristics(prev => ({ 
+                                            ...prev, 
+                                            [charType]: false,
+                                            [selectedIndexKey]: undefined
+                                          }))
+                                        }}
+                                        className="h-5 w-5 text-gray-600 border-gray-300 focus:ring-gray-500"
+                                      />
+                                    </div>
+                                    <div className="ml-4 flex-1">
+                                      <div className="font-semibold text-gray-700">
+                                        None of the above
+                                      </div>
+                                      <div className="text-sm mt-1 text-gray-600">
+                                        Clear selection
+                                      </div>
+                                    </div>
+                                  </label>
+                                )
+                              })()}
+                            </>
                           ) : (
                             // Default Yes/No for boolean
                             <>
@@ -519,15 +621,35 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                         // Threshold/Range questions - show as cards with radio selection (like boolean)
                         <div className="ml-11 space-y-2">
                           {answerOptions && answerOptions.length > 0 ? (
-                            answerOptions.map((option: any) => {
+                            answerOptions.map((option: any, optionIndex: number) => {
                               const label = typeof option.label === 'object' 
                                 ? (option.label[locale] || option.label['en']) 
                                 : option.label
                               const isSelected = currentValue === option.value
                               
+                              // Use a unique key combining multiplier ID and option index to avoid duplicates
+                              const uniqueKey = `${multiplier.id}-option-${optionIndex}`
+                              
+                              // Handle toggle behavior: if clicking the same option that's already selected, deselect it
+                              const handleChange = () => {
+                                if (isSelected && currentValue === option.value) {
+                                  // Toggle off: set to false or undefined
+                                  setBusinessCharacteristics(prev => ({ 
+                                    ...prev, 
+                                    [charType]: false 
+                                  }))
+                                } else {
+                                  // Select this option
+                                  setBusinessCharacteristics(prev => ({ 
+                                    ...prev, 
+                                    [charType]: option.value 
+                                  }))
+                                }
+                              }
+                              
                               return (
                                 <label 
-                                  key={String(option.value)} 
+                                  key={uniqueKey}
                                   className={`
                                     group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
                                     ${isSelected 
@@ -541,10 +663,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                                       type="radio"
                                       name={charType}
                                       checked={isSelected}
-                                      onChange={() => setBusinessCharacteristics(prev => ({ 
-                                        ...prev, 
-                                        [charType]: option.value 
-                                      }))}
+                                      onChange={handleChange}
                                       className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
                                     />
                     </div>
@@ -663,7 +782,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                       }`}
                     >
                       <div className="font-medium text-gray-900 mb-1">
-                        {businessType.name}
+                        {getLocalizedText(businessType.name, locale)}
                       </div>
                       {businessType.description && (
                         <div className="text-sm text-gray-600 mb-2 line-clamp-1">

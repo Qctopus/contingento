@@ -36,10 +36,10 @@ export async function POST(req: Request) {
     
     const riskMatrix = planData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
     
-    // Get only HIGH and EXTREME risks that user selected
+    // Get only HIGH and EXTREME risks that user explicitly selected (ticked)
     const highPriorityRisks = riskMatrix
       .filter((r: any) => {
-        const isSelected = r.isSelected !== false // undefined or true = selected
+        const isSelected = r.isSelected === true // Only explicitly ticked risks
         const riskScore = parseFloat(r.riskScore || r['Risk Score'] || 0)
         const isHighPriority = riskScore >= 6.0 // HIGH = 6.0-7.9, EXTREME = 8.0+
         return isSelected && isHighPriority

@@ -173,7 +173,7 @@ export function transformStrategyForApi(strategy: any): any {
     
     // Implementation Details (enhanced)
     costEstimateJMD: strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost), // Use DB value if available, otherwise compute
-    estimatedTotalHours: strategy.estimatedTotalHours,
+    totalEstimatedHours: strategy.totalEstimatedHours,
     complexityLevel: strategy.complexityLevel || 'moderate',
     
     // Wizard Integration (NEW)
@@ -225,14 +225,14 @@ export function transformStrategyForApi(strategy: any): any {
       // SME Context (NEW)
       whyThisStepMatters: parseMultilingualJSON(step.whyThisStepMatters) || step.whyThisStepMatters,
       whatHappensIfSkipped: parseMultilingualJSON(step.whatHappensIfSkipped) || step.whatHappensIfSkipped,
-      
+
       // Timing & Difficulty (NEW)
-      timeframe: step.timeframe,
+      timeframe: parseMultilingualJSON(step.timeframe) || step.timeframe,
       estimatedMinutes: step.estimatedMinutes,
       difficultyLevel: step.difficultyLevel || 'medium',
-      
+
       // Resources & Costs
-      responsibility: step.responsibility,
+      responsibility: parseMultilingualJSON(step.responsibility) || step.responsibility,
       cost: step.estimatedCost,
       estimatedCostJMD: step.estimatedCostJMD,
       resources: safeJsonParse(step.resources, []),

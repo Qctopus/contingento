@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { generateDynamicPreFillData } from '@/services/dynamicPreFillService'
-import { getLocalizedText } from '@/utils/localizationUtils'
+import { getLocalizedText, localizeBusinessType } from '@/utils/localizationUtils'
 import { applyMultipliers, convertSimplifiedInputs, convertLegacyCharacteristics } from '@/services/multiplierService'
 import type { Locale } from '@/i18n/config'
 
@@ -85,6 +85,91 @@ async function calculateFinalRiskScore(
 }
 
 /**
+ * Generates user-friendly location risk description
+ */
+function getLocationRiskDescription(likelihood: number, locationName: string, locale: Locale): string {
+  const t = (key: string) => getTranslation(key, locale)
+  
+  if (likelihood >= 8) {
+    return `${locationName} has a very high risk of this hazard occurring (${likelihood}/10). This area experiences frequent and severe events.`
+  } else if (likelihood >= 6) {
+    return `${locationName} has a high risk of this hazard (${likelihood}/10). This area is prone to regular occurrences.`
+  } else if (likelihood >= 4) {
+    return `${locationName} has a moderate risk of this hazard (${likelihood}/10). While not constant, events do occur in this area.`
+  } else if (likelihood >= 2) {
+    return `${locationName} has a lower risk of this hazard (${likelihood}/10), but it's still possible.`
+  } else {
+    return `${locationName} has minimal risk of this hazard (${likelihood}/10).`
+  }
+}
+
+/**
+ * Generates user-friendly business vulnerability description
+ */
+function getBusinessVulnerabilityDescription(
+  vulnerability: any,
+  businessTypeName: string,
+  severity: number,
+  locale: Locale
+): string {
+  const t = (key: string) => getTranslation(key, locale)
+  
+  // Ensure businessTypeName is properly parsed if it's a JSON string
+  let parsedBusinessTypeName = businessTypeName
+  if (typeof businessTypeName === 'string' && businessTypeName.includes('"en":')) {
+    try {
+      const parsed = JSON.parse(businessTypeName)
+      if (typeof parsed === 'object' && parsed !== null) {
+        parsedBusinessTypeName = parsed[locale] || parsed.en || parsed.es || parsed.fr || businessTypeName
+      }
+    } catch (e) {
+      // If parsing fails, try to extract English value with regex
+      const enMatch = businessTypeName.match(/"en"\s*:\s*"([^"]+)"/)
+      if (enMatch) {
+        parsedBusinessTypeName = enMatch[1]
+      }
+    }
+  }
+  
+  // Use reasoning from database if available
+  if (vulnerability.reasoning && vulnerability.reasoning.trim()) {
+    return `${parsedBusinessTypeName} businesses are particularly vulnerable: ${vulnerability.reasoning}`
+  }
+  
+  // Otherwise generate based on severity
+  let impactDescription = ''
+  if (severity >= 8) {
+    impactDescription = `This hazard would cause severe disruption to ${parsedBusinessTypeName} operations, potentially halting business for extended periods.`
+  } else if (severity >= 6) {
+    impactDescription = `This hazard significantly impacts ${parsedBusinessTypeName} businesses, affecting operations, customers, and revenue.`
+  } else if (severity >= 4) {
+    impactDescription = `This hazard can moderately affect ${parsedBusinessTypeName} operations, requiring preparation to minimize impact.`
+  } else {
+    impactDescription = `This hazard has some impact on ${parsedBusinessTypeName} businesses, though less severe than other risks.`
+  }
+  
+  // Add business impact areas if available
+  if (vulnerability.businessImpactAreas) {
+    try {
+      const impactAreas = typeof vulnerability.businessImpactAreas === 'string' 
+        ? JSON.parse(vulnerability.businessImpactAreas)
+        : vulnerability.businessImpactAreas
+      
+      if (Array.isArray(impactAreas) && impactAreas.length > 0) {
+        const areasList = impactAreas.map((area: string) => 
+          area.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+        ).join(', ')
+        impactDescription += ` Key areas affected: ${areasList}.`
+      }
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+  
+  return impactDescription
+}
+
+/**
  * Determines risk tier and pre-selection status based on final score
  * @param finalScore - The final calculated risk score
  * @param hasLocationData - Whether location data exists for this risk
@@ -149,9 +234,18 @@ function shouldPreSelectRisk(
 }
 
 export async function POST(request: NextRequest) {
+  let body: any = null
+  let businessTypeId: string | undefined
+  let location: any = null
+  let businessCharacteristics: any = null
+  let locale: Locale = 'en'
+  
   try {
-    const body = await request.json()
-    const { businessTypeId, location, businessCharacteristics, locale = 'en' } = body
+    body = await request.json()
+    businessTypeId = body.businessTypeId
+    location = body.location
+    businessCharacteristics = body.businessCharacteristics
+    locale = body.locale || 'en'
 
     if (!businessTypeId || !location) {
       return NextResponse.json(
@@ -159,6 +253,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    
+    // Ensure businessCharacteristics is an object (default to empty object if null/undefined)
+    if (!businessCharacteristics || typeof businessCharacteristics !== 'object') {
+      console.log('⚠️ businessCharacteristics is missing or invalid, using empty object')
+      businessCharacteristics = {}
+    }
+    
+    console.log('📋 Received businessCharacteristics keys:', Object.keys(businessCharacteristics))
+    console.log('📋 Sample businessCharacteristics values:', Object.keys(businessCharacteristics).slice(0, 5).reduce((acc, key) => {
+      acc[key] = businessCharacteristics[key]
+      return acc
+    }, {} as Record<string, any>))
     
     // Check if we have multiplier-based inputs (numeric/boolean from RiskMultiplier wizard questions)
     // Multiplier questions return values in the correct format: numbers (95, 50, 10) and booleans (true, false)
@@ -195,10 +301,7 @@ export async function POST(request: NextRequest) {
         // Additional fields (set defaults if not provided)
         local_customer_share: businessCharacteristics.local_customer_share || 50,
         export_share: businessCharacteristics.export_share || 5,
-        water_dependency: businessCharacteristics.water_dependency || 30,
-        significant_inventory: businessCharacteristics.significant_inventory !== undefined 
-          ? businessCharacteristics.significant_inventory 
-          : !businessCharacteristics.just_in_time_inventory
+        water_dependency: businessCharacteristics.water_dependency || 30
       }
     } else {
       // LEGACY: Old slider-based or simplified inputs
@@ -235,16 +338,24 @@ export async function POST(request: NextRequest) {
     console.log('🎯 Final business characteristics for multipliers:', userChars)
 
     // Get business type with all related data
-    const businessType = await (prisma as any).businessType.findUnique({
-      where: { businessTypeId },
-      include: {
-        riskVulnerabilities: true
-      }
-    })
+    console.log('🔍 Looking up business type:', businessTypeId)
+    let businessType
+    try {
+      businessType = await (prisma as any).businessType.findUnique({
+        where: { businessTypeId },
+        include: {
+          riskVulnerabilities: true
+        }
+      })
+      console.log('📊 Business type lookup result:', businessType ? `Found: ${businessType.name || businessType.businessTypeId}` : 'NOT FOUND')
+    } catch (dbError) {
+      console.error('❌ Database error looking up business type:', dbError)
+      throw new Error(`Database error: ${dbError instanceof Error ? dbError.message : String(dbError)}`)
+    }
 
     if (!businessType) {
       return NextResponse.json(
-        { error: 'Business type not found' },
+        { error: `Business type not found: ${businessTypeId}` },
         { status: 404 }
       )
     }
@@ -314,8 +425,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Build comprehensive pre-fill data package
-    const localizedName = getLocalizedText(businessType.name, locale as Locale)
-    const localizedDescription = getLocalizedText(businessType.description, locale as Locale)
+    const localizedBusinessType = localizeBusinessType(businessType, locale as Locale)
+    const localizedName = localizedBusinessType.name
+    const localizedDescription = localizedBusinessType.description
     
     const preFillData: any = {
       industry: {
@@ -562,10 +674,13 @@ export async function POST(request: NextRequest) {
               source: 'available',
               initialTier: 3, // Always tier 3 for not applicable
               initialRiskScore: 0,
-              reasoning: `This risk is not significant in ${parishName || 'this location'} (parish risk level: ${locationRiskLevel || 0}/10). You can manually add it if you believe it applies to your specific situation.`,
+              reasoning: (() => {
+                const locationDesc = getLocationRiskDescription(locationRiskLevel || 0, parishName || location.country || 'this location', locale as Locale)
+                return `📍 ${locationDesc}\n\n💡 You can manually add this risk if you believe it applies to your specific situation.`
+              })(),
               dataSource: {
                 locationRisk: `Parish Data: ${locationRiskLevel || 0}/10 (not significant)`,
-                businessImpact: `Business Type: ${businessType.name}`,
+                businessImpact: `Business Type: ${localizedName}`,
                 status: 'Available for manual selection'
               }
             })
@@ -605,10 +720,21 @@ export async function POST(request: NextRequest) {
             userLabel: riskCategory.userLabel,
             initialTier: riskCategory.tier, // Store initial tier
             initialRiskScore: Math.round(finalScore * 10) / 10, // Store initial score
-            reasoning: `📍 Location risk: ${locationRiskLevel}/10 in ${parishName}\n🏢 Business impact: ${vulnerability.impactSeverity || 5}/10 for ${businessType.name}\n⚖️ Final risk score: ${finalScore.toFixed(1)}/10 - below threshold (${RISK_THRESHOLDS.RECOMMENDED}) for pre-selection\n💡 This risk exists in your area but has lower overall impact on your business type. You can manually select it if you believe it's relevant to your specific situation.`,
+            reasoning: (() => {
+              const reasoningParts: string[] = []
+              const locationDesc = getLocationRiskDescription(locationRiskLevel, parishName || location.country || 'your location', locale as Locale)
+              reasoningParts.push(`📍 ${locationDesc}`)
+              
+              const businessDesc = getBusinessVulnerabilityDescription(vulnerability, localizedName, Math.round(vulnerability.impactSeverity || 5), locale as Locale)
+              reasoningParts.push(`🏢 ${businessDesc}`)
+              
+              reasoningParts.push(`💡 This risk exists in your area but has lower overall impact on your business type. You can manually select it if you believe it's relevant to your specific situation.`)
+              
+              return reasoningParts.join('\n\n')
+            })(),
             dataSource: {
               locationRisk: `${parishName}: ${locationRiskLevel}/10`,
-              businessImpact: `${businessType.name}: ${vulnerability.impactSeverity || 5}/10`,
+              businessImpact: `${localizedName}: ${vulnerability.impactSeverity || 5}/10`,
               finalScore: `${finalScore.toFixed(1)}/10`,
               status: 'Available for manual selection',
               tier: `Tier ${riskCategory.tier}: ${riskCategory.category}`
@@ -650,27 +776,43 @@ export async function POST(request: NextRequest) {
         // Determine risk level from final score using helper function
         const riskLevel = determineRiskLevel(finalScore)
         
-        // Build detailed calculation explanation
-        const calculationSteps = []
+        // Build user-friendly explanation for SME owners
         const t = (key: string) => getTranslation(key, locale as Locale)
-        calculationSteps.push(`${tierEmoji} ${tierLabel}: ${t('common.riskRequiresAttention')}`)
-        calculationSteps.push(`📍 ${t('common.locationRiskLabel')}: ${likelihood}/10 (${location.parish || location.country} - ${t('common.fromAdminData')})`)
-        calculationSteps.push(`🏢 ${t('common.businessImpactLabel')}: ${severity}/10 (${businessType.name} - ${t('common.fromAdminData')})`)
-        calculationSteps.push(`🧮 ${t('common.baseScoreLabel')}: (${likelihood} × 0.6) + (${businessVulnerability} × 0.4) = ${baseScore.toFixed(1)}/10`)
+        const reasoningParts: string[] = []
         
-        if (appliedMultipliers.length > 0) {
-          calculationSteps.push(`⚡ ${t('common.multipliersApplied')}:`)
-          multiplierResult.appliedMultipliers.forEach(m => {
-            calculationSteps.push(`   • ${m.name} ×${m.factor} - ${m.reasoning}`)
-          })
-          calculationSteps.push(`📊 ${t('common.finalScoreLabel')}: ${baseScore.toFixed(1)} × multipliers = ${finalScore.toFixed(1)}/10`)
-        } else {
-          calculationSteps.push(`📊 ${t('common.finalScoreLabel')}: ${finalScore.toFixed(1)}/10 (${t('common.noMultipliersApplied')})`)
+        // 1. Location risk explanation
+        const locationRiskDescription = getLocationRiskDescription(likelihood, parishName || location.country || 'your location', locale as Locale)
+        reasoningParts.push(`📍 ${locationRiskDescription}`)
+        
+        // 2. Business vulnerability explanation
+        const businessVulnDescription = getBusinessVulnerabilityDescription(
+          vulnerability,
+          localizedName,
+          severity,
+          locale as Locale
+        )
+        reasoningParts.push(`🏢 ${businessVulnDescription}`)
+        
+        // 3. Multiplier explanations (if any)
+        if (multiplierResult.appliedMultipliers.length > 0) {
+          const multiplierDescriptions = multiplierResult.appliedMultipliers
+            .map(m => {
+              // Use multiplier reasoning if available and meaningful, otherwise use name
+              if (m.reasoning && m.reasoning.trim() && m.reasoning.length > 10) {
+                return m.reasoning
+              }
+              return `${m.name} increases your risk`
+            })
+            .filter(desc => desc && desc.trim())
+          
+          if (multiplierDescriptions.length > 0) {
+            reasoningParts.push(`⚡ ${t('common.additionalFactors')}: ${multiplierDescriptions.join('. ')}`)
+          }
         }
         
-        // Add tier explanation
-        const tierExplanation = riskCategory.tier === 1 ? t('common.criticalPriorityForPlan') : t('common.importantForStrategy')
-        calculationSteps.push(`✅ ${tierLabel}: Score ${finalScore.toFixed(1)}/10 - ${tierExplanation}`)
+        // Combine into a single user-friendly explanation
+        // Only include if we have meaningful content (at least location + business)
+        const reasoning = reasoningParts.length >= 2 ? reasoningParts.join('\n\n') : ''
         
         riskAssessmentMatrix.push({
           hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
@@ -690,11 +832,11 @@ export async function POST(request: NextRequest) {
           initialRiskScore: Math.round(finalScore * 10) / 10, // Store initial score for reference
           baseScore: Math.round(baseScore * 10) / 10,
           appliedMultipliers: appliedMultipliers.join(', '),
-          reasoning: calculationSteps.join('\n'),
+          reasoning: reasoning, // User-friendly explanation
           // Additional transparency fields
           dataSource: {
             locationRisk: `Admin Data (${parishName || location.country})`,
-            businessImpact: `Admin Business Type Data (${businessType.name})`,
+            businessImpact: `Admin Business Type Data (${localizedName})`,
             multipliers: `Admin Multiplier Rules (${multiplierResult.appliedMultipliers.length} applied)`,
             userInputs: `Coastal: ${location.nearCoast ? 'Yes' : 'No'}, Urban: ${location.urbanArea ? 'Yes' : 'No'}`,
             tier: `Tier ${riskCategory.tier}: ${riskCategory.category}`
@@ -816,7 +958,21 @@ export async function POST(request: NextRequest) {
             userLabel: riskCategory.userLabel,
             initialTier: riskCategory.tier, // Store initial tier
             initialRiskScore: Math.round(riskScore * 10) / 10, // Store initial score
-            reasoning: `📍 This risk is significant in ${parishName} (risk level: ${adminRiskItem.level}/10).\n🏢 No specific business type vulnerability data available - using moderate impact assumption.\n💡 ${adminRiskItem.notes || 'Consider how this risk might affect your specific operations.'}`,
+            reasoning: (() => {
+              const reasoningParts: string[] = []
+              const locationDesc = getLocationRiskDescription(adminRiskItem.level, parishName || location.country || 'your location', locale as Locale)
+              reasoningParts.push(`📍 ${locationDesc}`)
+              
+              reasoningParts.push(`🏢 No specific business type vulnerability data available - using moderate impact assumption.`)
+              
+              if (adminRiskItem.notes && adminRiskItem.notes.trim()) {
+                reasoningParts.push(`💡 ${adminRiskItem.notes}`)
+              } else {
+                reasoningParts.push(`💡 Consider how this risk might affect your specific operations.`)
+              }
+              
+              return reasoningParts.join('\n\n')
+            })(),
             dataSource: {
               locationRisk: `Admin Unit Data: ${adminRiskItem.level}/10`,
               businessImpact: 'General business impact (no specific data)',
@@ -901,6 +1057,10 @@ export async function POST(request: NextRequest) {
     // Build risk-aware strategy recommendations for Caribbean SMEs
     // Based on: risk severity, impact potential, and SME feasibility
     
+    // Get ALL user's pre-selected risks (for strategy matching) - define here so it's available in the map function
+    const allUserRisks = riskAssessmentMatrix.filter((r: any) => r.isPreSelected)
+    console.log(`👤 User has ${allUserRisks.length} pre-selected risks:`, allUserRisks.map((r: any) => `${r.hazardId} (${r.riskScore.toFixed(1)})`).join(', '))
+    
     // Get high-priority risks for focused strategy recommendations
     const highPriorityRisks = riskAssessmentMatrix
       .filter((r: any) => r.riskScore >= 4 && r.isPreSelected) // Include medium+ risks
@@ -916,28 +1076,35 @@ export async function POST(request: NextRequest) {
     // Get all relevant risk types (including medium priority)
     const allRelevantRisks = Array.from(identifiedRiskTypes)
     
-    // Get strategies from database matching identified risks and business type
-    const strategiesFromDB = await (prisma as any).riskMitigationStrategy.findMany({
+    // CRITICAL: Also include all user's pre-selected risk IDs in normalized formats
+    const userRiskIds = allUserRisks.map((r: any) => {
+      if (!r.hazardId) return null
+      const normalized = r.hazardId.toLowerCase().replace(/[_-]/g, '')
+      const camelCase = r.hazardId.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
+      const snakeCase = r.hazardId.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+      return { original: r.hazardId, normalized, camelCase, snakeCase }
+    }).filter(Boolean)
+    
+    const allRiskVariants = new Set<string>()
+    userRiskIds.forEach((r: any) => {
+      allRiskVariants.add(r.original)
+      allRiskVariants.add(r.normalized)
+      allRiskVariants.add(r.camelCase)
+      allRiskVariants.add(r.snakeCase)
+    })
+    allRelevantRisks.forEach(rt => {
+      allRiskVariants.add(rt)
+      allRiskVariants.add(rt.toLowerCase().replace(/[_-]/g, ''))
+      allRiskVariants.add(rt.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase()))
+      allRiskVariants.add(rt.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, ''))
+    })
+    
+    console.log(`🔍 Searching for strategies with risk variants:`, Array.from(allRiskVariants).slice(0, 10).join(', '))
+    
+    // Get ALL active strategies first (we'll filter in memory for better JSON array matching)
+    const allStrategies = await (prisma as any).riskMitigationStrategy.findMany({
       where: {
-        AND: [
-          { isActive: true },
-          {
-            OR: allRelevantRisks.map(riskType => ({
-              applicableRisks: {
-                contains: riskType
-              }
-            }))
-          },
-          {
-            OR: [
-              { applicableBusinessTypes: { contains: businessTypeId } },
-              { applicableBusinessTypes: { contains: businessType.category } },
-              { applicableBusinessTypes: { contains: 'all' } },
-              { applicableBusinessTypes: null },
-              { applicableBusinessTypes: '' }
-            ]
-          }
-        ]
+        isActive: true
       },
       include: {
         actionSteps: {
@@ -953,12 +1120,60 @@ export async function POST(request: NextRequest) {
       }
     })
     
-    console.log(`📚 Found ${strategiesFromDB.length} strategies matching business type and risks`)
+    console.log(`📚 Found ${allStrategies.length} total active strategies`)
+    
+    // SIMPLE APPROACH: Use admin-configured risk-strategy relationships
+    // Get strategies linked to ANY user's selected risks (manual OR pre-ticked)
+    const linkedStrategyIds = new Set<string>()
+
+    allUserRisks.forEach((risk: any) => {
+      // Include risks that are selected (manual OR pre-ticked by system)
+      const isSelected = risk.isSelected !== false // Default to selected if not explicitly false
+      const riskScore = risk.riskScore || 0
+      const isHighRisk = riskScore >= 5.0
+
+      if (isSelected || isHighRisk) {
+        const userRiskId = risk.hazardId
+
+        // Find strategies that have this risk in their applicableRisks (admin-configured)
+        allStrategies.forEach((strategy: any) => {
+          try {
+            const strategyRisks = JSON.parse(strategy.applicableRisks || '[]')
+            if (strategyRisks.includes(userRiskId)) {
+              linkedStrategyIds.add(strategy.strategyId)
+            }
+          } catch (e) {
+            // Skip strategies with invalid applicableRisks
+          }
+        })
+      }
+    })
+
+    // Filter to only the directly linked strategies (admin-configured relationships)
+    const strategiesFromDB = allStrategies.filter((strategy: any) =>
+      linkedStrategyIds.has(strategy.strategyId)
+    )
+    
+    console.log(`✅ Found ${linkedStrategyIds.size} strategies directly linked to user's selected risks`)
+    console.log(`📋 Linked strategies:`, Array.from(linkedStrategyIds).join(', '))
+    console.log(`📋 User's selected risks:`, allUserRisks.filter((r: any) => r.isSelected !== false || (r.riskScore || 0) >= 5.0).map((r: any) => `${r.hazardId} (${r.isSelected !== false ? 'selected' : 'high-risk'})`).join(', '))
+    console.log(`📋 Sample strategy details:`, strategiesFromDB.slice(0, 5).map((s: any) => {
+      try {
+        const appRisks = JSON.parse(s.applicableRisks || '[]')
+        return {
+          id: s.strategyId,
+          name: typeof s.name === 'string' ? s.name.substring(0, 50) : 'N/A',
+          applicableRisks: appRisks,
+          applicableBusinessTypes: JSON.parse(s.applicableBusinessTypes || '[]')
+        }
+      } catch (e) {
+        return { id: s.strategyId, error: 'Failed to parse' }
+      }
+    }))
     
     // NEW: Calculate costs for strategies that don't have them
     console.log('💰 Checking and calculating strategy costs...')
-    const { CostCalculationService } = await import('@/services/costCalculationService')
-    const costService = new CostCalculationService()
+    const { costCalculationService } = await import('@/services/costCalculationService')
     
     const enrichedStrategies = await Promise.all(
       strategiesFromDB.map(async (strategy: any) => {
@@ -966,7 +1181,7 @@ export async function POST(request: NextRequest) {
         if (
           strategy.calculatedCostLocal !== null &&
           strategy.calculatedCostUSD !== null &&
-          strategy.estimatedTotalHours !== null
+          strategy.totalEstimatedHours !== null
         ) {
           console.log(`  ✓ ${strategy.strategyId}: Using existing costs`)
           return strategy
@@ -975,7 +1190,7 @@ export async function POST(request: NextRequest) {
         // Otherwise, calculate costs now if strategy has action steps
         if (strategy.actionSteps && strategy.actionSteps.length > 0) {
           try {
-            const costResult = await costService.calculateStrategyCost(
+            const costResult = await costCalculationService.calculateStrategyCost(
               strategy.actionSteps.map((step: any) => ({
                 id: step.id,
                 title: step.title,
@@ -993,7 +1208,7 @@ export async function POST(request: NextRequest) {
                 calculatedCostLocal: costResult.localCurrency.amount,
                 currencyCode: costResult.localCurrency.code,
                 currencySymbol: costResult.localCurrency.symbol,
-                estimatedTotalHours: costResult.calculatedHours
+                totalEstimatedHours: costResult.calculatedHours
               }
             })
             
@@ -1005,7 +1220,7 @@ export async function POST(request: NextRequest) {
               calculatedCostLocal: costResult.localCurrency.amount,
               currencyCode: costResult.localCurrency.code,
               currencySymbol: costResult.localCurrency.symbol,
-              estimatedTotalHours: costResult.calculatedHours
+              totalEstimatedHours: costResult.calculatedHours
             }
           } catch (error) {
             console.error(`  ❌ ${strategy.strategyId}: Cost calculation failed:`, error)
@@ -1045,13 +1260,60 @@ export async function POST(request: NextRequest) {
       .map((strategy: any) => {
         const applicableRisks = JSON.parse(strategy.applicableRisks || '[]')
         
-        // Get matching risks from user's selected risks
-        const matchingRisks = highPriorityRisks.filter((risk: any) => 
-          applicableRisks.includes(risk.type)
-        )
+        // Normalize risk types for matching (handle camelCase, snake_case, etc.)
+        const normalizeRiskType = (riskType: string | null | undefined): string => {
+          if (!riskType || typeof riskType !== 'string') return ''
+          return riskType.toLowerCase().replace(/[_-]/g, '')
+        }
         
-        // Skip if strategy doesn't match any selected risks
-        if (matchingRisks.length === 0) return null
+        // Get matching risks from ALL identified risks (not just highPriorityRisks)
+        // This ensures strategies aren't filtered out if they match any of the user's risks
+        // NOTE: allUserRisks is defined at the top level (line 934), reuse it here
+        const matchingRisks = allUserRisks.filter((risk: any) => {
+          if (!risk.hazardId) return false
+          const normalizedRiskType = normalizeRiskType(risk.hazardId)
+          
+          // Also create camelCase and snake_case versions for matching
+          const camelCaseHazardId = risk.hazardId.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
+          const snakeCaseHazardId = risk.hazardId.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+          
+          return applicableRisks.some((appRisk: string) => {
+            if (!appRisk) return false
+            const normalizedAppRisk = normalizeRiskType(appRisk)
+            
+            // Try multiple matching strategies
+            return normalizeRiskType(appRisk) === normalizedRiskType ||
+              risk.hazardId === appRisk ||
+              camelCaseHazardId === appRisk ||
+              snakeCaseHazardId === appRisk ||
+              (typeof risk.hazardId === 'string' && typeof appRisk === 'string' && risk.hazardId.toLowerCase() === appRisk.toLowerCase()) ||
+              normalizedAppRisk === normalizedRiskType
+          })
+        })
+        
+        // Also check against highPriorityRisks for scoring purposes
+        const highPriorityMatchingRisks = highPriorityRisks.filter((risk: any) => {
+          if (!risk.type) return false
+          const normalizedRiskType = normalizeRiskType(risk.type)
+          return applicableRisks.some((appRisk: string) => {
+            if (!appRisk) return false
+            return normalizeRiskType(appRisk) === normalizedRiskType ||
+              risk.type === appRisk ||
+              (typeof risk.type === 'string' && typeof appRisk === 'string' && risk.type.toLowerCase() === appRisk.toLowerCase())
+          })
+        })
+        
+        // Skip if strategy doesn't match ANY of the user's selected risks
+        if (matchingRisks.length === 0) {
+          console.log(`  ⏭️  Skipping ${strategy.strategyId} (${(typeof strategy.name === 'string' ? strategy.name : JSON.stringify(strategy.name))?.substring(0, 50)}): No matching risks`)
+          console.log(`      Strategy applicableRisks: [${applicableRisks.join(', ')}]`)
+          console.log(`      User's hazardIds: [${allUserRisks.map((r: any) => r.hazardId).join(', ')}]`)
+          console.log(`      Strategy applicableBusinessTypes: [${JSON.parse(strategy.applicableBusinessTypes || '[]').join(', ')}]`)
+          console.log(`      User's businessTypeId: ${businessTypeId}, category: ${businessType.category}`)
+          return null
+        }
+        
+        console.log(`  ✓ ${strategy.strategyId}: Matches ${matchingRisks.length} risk(s): ${matchingRisks.map((r: any) => `${r.hazardId} (${r.riskScore?.toFixed(1)})`).join(', ')}`)
         
         // 1. RELEVANCE SCORE (40% weight) - Does it address SELECTED risks?
         let relevanceScore = 0
@@ -1061,19 +1323,20 @@ export async function POST(request: NextRequest) {
           // High (6-7.9): 25 points per risk
           // Medium (4-5.9): 15 points per risk
           // Low (<4): 5 points per risk
-          const points = risk.score >= 8 ? 40 : 
-                         risk.score >= 6 ? 25 : 
-                         risk.score >= 4 ? 15 : 5
+          const points = risk.riskScore >= 8 ? 40 : 
+                         risk.riskScore >= 6 ? 25 : 
+                         risk.riskScore >= 4 ? 15 : 5
           relevanceScore += points
         })
         const normalizedRelevance = Math.min(relevanceScore, 100)
         
         // 2. IMPACT SCORE (35% weight) - How much risk reduction?
         const risksAddressed = matchingRisks.length
+        const totalUserRisks = allUserRisks.length || 1 // Avoid division by zero
         const multiRiskBonus = risksAddressed > 1 ? 15 : 0
         const impactScore = (
           (strategy.effectiveness / 10) * 50 +  // Base effectiveness (0-50)
-          (risksAddressed / highPriorityRisks.length) * 35 + // Coverage (0-35)
+          (risksAddressed / totalUserRisks) * 35 + // Coverage (0-35) - use all user risks, not just high priority
           multiRiskBonus // Bonus for multi-risk coverage
         )
         
@@ -1115,9 +1378,9 @@ export async function POST(request: NextRequest) {
           feasibilityScore -= 15 // Extra penalty for advanced without staff
         }
         
-        // NEW: Consider estimatedTotalHours - penalize time-intensive strategies for small SMEs
-        if (strategy.estimatedTotalHours) {
-          if (strategy.estimatedTotalHours > 20 && !hasStaff) {
+        // NEW: Consider totalEstimatedHours - penalize time-intensive strategies for small SMEs
+        if (strategy.totalEstimatedHours) {
+          if (strategy.totalEstimatedHours > 20 && !hasStaff) {
             feasibilityScore -= 10 // Too time-intensive for solo operators
           }
         }
@@ -1142,9 +1405,15 @@ export async function POST(request: NextRequest) {
         
         // NEW: Check if strategy has requiredForRisks that match user's selected risks
         const requiredForRisks = strategy.requiredForRisks ? JSON.parse(strategy.requiredForRisks) : []
-        const isRequiredForUserRisks = requiredForRisks.some((riskId: string) => 
-          matchingRisks.some((r: any) => r.type === riskId)
-        )
+        const isRequiredForUserRisks = Array.isArray(requiredForRisks) && requiredForRisks.some((riskId: string) => {
+          if (!riskId) return false
+          return matchingRisks.some((r: any) => {
+            if (!r.hazardId) return false
+            const normalizedRiskId = normalizeRiskType(riskId)
+            const normalizedHazardId = normalizeRiskType(r.hazardId)
+            return normalizedRiskId === normalizedHazardId || r.hazardId === riskId
+          })
+        })
         
         // NEW: Use database selectionTier if explicitly set
         if (strategy.selectionTier) {
@@ -1158,7 +1427,7 @@ export async function POST(request: NextRequest) {
         }
         // ESSENTIAL: High relevance + addresses critical/high risks
         else if (normalizedRelevance >= 60 && 
-            matchingRisks.some((r: any) => r.score >= 6)) {
+            matchingRisks.some((r: any) => r.riskScore >= 6)) {
           priorityTier = 'essential'
         }
         // RECOMMENDED: Good score + addresses important risks
@@ -1172,22 +1441,24 @@ export async function POST(request: NextRequest) {
         
         // 6. GENERATE SME-FRIENDLY REASONING
         let reasoning = ''
-        const criticalRisks = matchingRisks.filter((r: any) => r.score >= 8)
-        const highRisks = matchingRisks.filter((r: any) => r.score >= 6 && r.score < 8)
+        const criticalRisks = matchingRisks.filter((r: any) => r.riskScore >= 8)
+        const highRisks = matchingRisks.filter((r: any) => r.riskScore >= 6 && r.riskScore < 8)
         
-        const formatRiskName = (riskId: string) => 
-          riskId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        const formatRiskName = (riskId: string | null | undefined) => {
+          if (!riskId || typeof riskId !== 'string') return 'Unknown Risk'
+          return riskId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+        }
         
         if (priorityTier === 'essential' && criticalRisks.length > 0) {
-          reasoning = `This is essential because you have critical ${criticalRisks.map((r: any) => formatRiskName(r.type)).join(' and ')} risk. This strategy directly reduces that danger.`
+          reasoning = `This is essential because you have critical ${criticalRisks.map((r: any) => formatRiskName(r.hazardId || r.type)).join(' and ')} risk. This strategy directly reduces that danger.`
         } else if (priorityTier === 'essential' && matchingRisks.length > 1) {
           reasoning = `This protects you against ${matchingRisks.length} of your high-priority risks in one go, making it very efficient.`
         } else if (priorityTier === 'recommended') {
-          reasoning = `We recommend this because it addresses your ${matchingRisks.map((r: any) => formatRiskName(r.type)).join(' and ')} risk${matchingRisks.length > 1 ? 's' : ''} with proven effectiveness.`
+          reasoning = `We recommend this because it addresses your ${matchingRisks.map((r: any) => formatRiskName(r.hazardId || r.type)).join(' and ')} risk${matchingRisks.length > 1 ? 's' : ''} with proven effectiveness.`
         } else if (feasibilityScore < 50) {
           reasoning = `This would help, but may be challenging due to cost or time requirements. Consider it if you have the resources.`
         } else {
-          reasoning = `This adds extra protection for your ${matchingRisks.map((r: any) => formatRiskName(r.type)).join(' and ')} risk${matchingRisks.length > 1 ? 's' : ''}.`
+          reasoning = `This adds extra protection for your ${matchingRisks.map((r: any) => formatRiskName(r.hazardId || r.type)).join(' and ')} risk${matchingRisks.length > 1 ? 's' : ''}.`
         }
         
         return {
@@ -1255,7 +1526,7 @@ export async function POST(request: NextRequest) {
       costEstimateJMD: strategy.costEstimateJMD,
       timeToImplement: strategy.timeToImplement,
       implementationTime: strategy.implementationTime,
-      estimatedTotalHours: strategy.estimatedTotalHours,
+      totalEstimatedHours: strategy.totalEstimatedHours,
       complexityLevel: strategy.complexityLevel || 'moderate',
       effectiveness: strategy.effectiveness,
       roi: strategy.roi,
@@ -1383,9 +1654,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(preFillData)
 
   } catch (error) {
-    console.error('Error preparing pre-fill data:', error)
+    console.error('❌ Error preparing pre-fill data:', error)
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      body: body ? { businessTypeId, location: location ? { ...location, parish: location.parish?.substring(0, 50) } : null } : 'No body'
+    })
     return NextResponse.json(
-      { error: 'Failed to prepare pre-fill data' },
+      { 
+        error: 'Failed to prepare pre-fill data',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }

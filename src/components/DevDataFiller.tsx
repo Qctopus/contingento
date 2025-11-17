@@ -16,30 +16,39 @@ export function DevDataFiller() {
     return null
   }
 
-  const fillWithSampleData = () => {
+  const fillWithSampleData = async () => {
     setIsLoading(true)
     setMessage(null)
 
     try {
-      // Load and execute the FIXED complete plan fill script with correct field names
-      fetch('/fill-complete-plan-FIXED.js')
-        .then(response => response.text())
-        .then(scriptText => {
-          // Execute the script
-          eval(scriptText)
-          setMessage('✅ Complete plan loaded! Refreshing...')
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        })
-        .catch(error => {
-          console.error('Error loading sample data:', error)
-          setMessage('❌ Error loading sample data')
-          setIsLoading(false)
-        })
+      // Load and execute the random wizard fill script
+      const script = await fetch('/fill-wizard-random.js')
+      if (!script.ok) {
+        throw new Error(`Failed to load script: ${script.status}`)
+      }
+      const scriptText = await script.text()
+      
+      // Wrap in try-catch to handle async errors
+      try {
+        // Execute the script - it's an async IIFE that will handle its own errors
+        eval(scriptText)
+        // Give it a moment to start, then check for errors
+        setTimeout(() => {
+          // If we're still here after 3 seconds and no reload happened, something went wrong
+          if (!document.hidden) {
+            setMessage('✅ Random data loaded! Refreshing...')
+          }
+        }, 500)
+      } catch (evalError) {
+        console.error('Error executing script:', evalError)
+        const errorMessage = evalError instanceof Error ? evalError.message : 'Unknown error'
+        setMessage(`❌ Error: ${errorMessage}`)
+        setIsLoading(false)
+      }
     } catch (error) {
-      console.error('Error:', error)
-      setMessage('❌ Error loading sample data')
+      console.error('Error loading sample data:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load script'
+      setMessage(`❌ Error: ${errorMessage}`)
       setIsLoading(false)
     }
   }
@@ -61,7 +70,7 @@ export function DevDataFiller() {
         disabled={isLoading}
         className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium"
       >
-        {isLoading ? 'Loading...' : '🎯 Fill with Sample Data'}
+        {isLoading ? 'Loading...' : '🎲 Fill with Random Data'}
       </button>
       
       <button

@@ -391,13 +391,13 @@ function generateRiskAssessment(
   checkPageBreak(doc, state, 60, '')
   addSubsectionHeader(doc, state, '2.3 Risk Summary Table')
 
-  const summaryHeaders = ['Risk', 'Likelihood', 'Impact', 'Risk Level', 'Status']
+  const summaryHeaders = ['Risk', 'Likelihood', 'Impact', 'Risk Level']
   const summaryData = riskAssessment.allRisksSummary.map(r => [
     r.hazard,
     r.likelihood,
     r.impact,
-    r.riskLevel,
-    r.mitigationStatus
+    r.riskLevel
+    // Removed mitigationStatus column - no user input for planned/addressed status
   ])
 
   addDataTable(doc, state, summaryHeaders, summaryData)
@@ -562,7 +562,7 @@ function generateContinuityStrategies(
         `Investment Required: ${strategy.implementation.investmentRequired}`,
         `Setup Time: ${strategy.implementation.setupTime}`,
         `Effectiveness: ${strategy.implementation.effectiveness}/10`,
-        `Status: ${strategy.implementation.status}`,
+        // Removed Status field - no user input for planned/addressed status
         `Responsible Person: ${strategy.implementation.responsiblePerson}`
       ]
 

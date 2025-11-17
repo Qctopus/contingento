@@ -21,11 +21,24 @@ export async function GET(request: NextRequest) {
     
     console.log(`📊 Retrieved ${multipliers.length} risk multipliers`)
     
+    // Helper function to safely parse JSON fields
+    const parseJsonField = (value: string | null | undefined): any => {
+      if (!value) return null
+      try {
+        return JSON.parse(value)
+      } catch {
+        return value
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       multipliers: multipliers.map(m => ({
         ...m,
-        applicableHazards: JSON.parse(m.applicableHazards)
+        applicableHazards: parseJsonField(m.applicableHazards) || [],
+        wizardQuestion: parseJsonField(m.wizardQuestion),
+        wizardAnswerOptions: parseJsonField(m.wizardAnswerOptions),
+        wizardHelpText: parseJsonField(m.wizardHelpText)
       }))
     })
   } catch (error) {
@@ -65,31 +78,64 @@ export async function POST(request: NextRequest) {
       )
     }
     
+    // Convert JSON fields to strings if they're objects/arrays
+    const data: any = {
+      name,
+      description,
+      characteristicType,
+      conditionType,
+      thresholdValue,
+      minValue,
+      maxValue,
+      multiplierFactor,
+      applicableHazards: JSON.stringify(applicableHazards),
+      priority: priority || 0,
+      reasoning,
+      isActive,
+      createdBy
+    }
+    
+    // Handle multilingual fields
+    if (body.wizardQuestion) {
+      data.wizardQuestion = typeof body.wizardQuestion === 'object' 
+        ? JSON.stringify(body.wizardQuestion) 
+        : body.wizardQuestion
+    }
+    if (body.wizardAnswerOptions) {
+      data.wizardAnswerOptions = (Array.isArray(body.wizardAnswerOptions) || typeof body.wizardAnswerOptions === 'object')
+        ? JSON.stringify(body.wizardAnswerOptions)
+        : body.wizardAnswerOptions
+    }
+    if (body.wizardHelpText) {
+      data.wizardHelpText = typeof body.wizardHelpText === 'object'
+        ? JSON.stringify(body.wizardHelpText)
+        : body.wizardHelpText
+    }
+    
     const multiplier = await prisma.riskMultiplier.create({
-      data: {
-        name,
-        description,
-        characteristicType,
-        conditionType,
-        thresholdValue,
-        minValue,
-        maxValue,
-        multiplierFactor,
-        applicableHazards: JSON.stringify(applicableHazards),
-        priority: priority || 0,
-        reasoning,
-        isActive,
-        createdBy
-      }
+      data
     })
     
     console.log(`✅ Created multiplier: ${name}`)
+    
+    // Helper function to safely parse JSON fields
+    const parseJsonField = (value: string | null | undefined): any => {
+      if (!value) return null
+      try {
+        return JSON.parse(value)
+      } catch {
+        return value
+      }
+    }
     
     return NextResponse.json({
       success: true,
       multiplier: {
         ...multiplier,
-        applicableHazards: JSON.parse(multiplier.applicableHazards)
+        applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
+        wizardQuestion: parseJsonField(multiplier.wizardQuestion),
+        wizardAnswerOptions: parseJsonField(multiplier.wizardAnswerOptions),
+        wizardHelpText: parseJsonField(multiplier.wizardHelpText)
       }
     })
   } catch (error) {
@@ -114,9 +160,18 @@ export async function PATCH(request: NextRequest) {
       )
     }
     
-    // Convert applicableHazards to JSON string if it's an array
+    // Convert JSON fields to strings if they're objects/arrays
     if (updates.applicableHazards && Array.isArray(updates.applicableHazards)) {
       updates.applicableHazards = JSON.stringify(updates.applicableHazards)
+    }
+    if (updates.wizardQuestion && typeof updates.wizardQuestion === 'object') {
+      updates.wizardQuestion = JSON.stringify(updates.wizardQuestion)
+    }
+    if (updates.wizardAnswerOptions && (Array.isArray(updates.wizardAnswerOptions) || typeof updates.wizardAnswerOptions === 'object')) {
+      updates.wizardAnswerOptions = JSON.stringify(updates.wizardAnswerOptions)
+    }
+    if (updates.wizardHelpText && typeof updates.wizardHelpText === 'object') {
+      updates.wizardHelpText = JSON.stringify(updates.wizardHelpText)
     }
     
     const multiplier = await prisma.riskMultiplier.update({
@@ -126,11 +181,24 @@ export async function PATCH(request: NextRequest) {
     
     console.log(`✅ Updated multiplier: ${multiplier.name}`)
     
+    // Helper function to safely parse JSON fields
+    const parseJsonField = (value: string | null | undefined): any => {
+      if (!value) return null
+      try {
+        return JSON.parse(value)
+      } catch {
+        return value
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       multiplier: {
         ...multiplier,
-        applicableHazards: JSON.parse(multiplier.applicableHazards)
+        applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
+        wizardQuestion: parseJsonField(multiplier.wizardQuestion),
+        wizardAnswerOptions: parseJsonField(multiplier.wizardAnswerOptions),
+        wizardHelpText: parseJsonField(multiplier.wizardHelpText)
       }
     })
   } catch (error) {

@@ -6,20 +6,26 @@
 
 import React from 'react'
 import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
+import { getLocalizedText } from '@/utils/localizationUtils'
+import type { Locale } from '@/i18n/config'
 
 interface FormalBCPPreviewProps {
   formData: any
   strategies: any[]
   risks: any[]
   countryCode?: string  // Optional: country code for currency detection
+  locale?: Locale  // Optional: locale for multilingual content ('en', 'es', 'fr')
 }
 
 export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   formData,
   strategies,
   risks,
-  countryCode: propCountryCode
+  countryCode: propCountryCode,
+  locale: propLocale
 }) => {
+  // Determine locale - default to 'en' if not provided
+  const currentLocale: Locale = (propLocale || 'en') as Locale
   // ============================================================================
   // ENHANCED DEBUGGING - Track complete data flow
   // ============================================================================
@@ -57,7 +63,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   )
   
   // Enhanced helper to safely extract string from multilingual or simple field
-  const getStringValue = (value: any, locale: string = 'en'): string => {
+  const getStringValue = (value: any, locale: string = currentLocale): string => {
     if (!value) return ''
     
     // Handle simple strings
@@ -303,7 +309,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   })
   
   const riskMatrix = riskMatrixRaw
-    .filter((r: any) => r.isSelected !== false) // CRITICAL: Only show user-selected risks
+    .filter((r: any) => r.isSelected === true) // CRITICAL: Only show explicitly ticked risks
     .map((r: any) => {
       // FIX: Extract impact - try multiple field names including Severity
       let impactText = getStringValue(r.impact || r.Impact || r.severity || r.Severity || '')
@@ -317,10 +323,27 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         else impactText = 'Minor (1-2)'
       }
       
+      // Extract hazard name - try multiple field names
+      const hazardNameRaw = r.hazardName || r.Hazard || r.hazard || r.name || ''
+      const hazardName = hazardNameRaw ? getStringValue(hazardNameRaw) : 'Unnamed Risk'
+      
+      // If still showing as JSON, try to parse it
+      let finalHazardName = hazardName
+      if (hazardName.includes('{') && hazardName.includes('"en":')) {
+        try {
+          const parsed = JSON.parse(hazardName)
+          finalHazardName = getStringValue(parsed)
+        } catch {
+          // If parsing fails, try to extract from the string
+          const match = hazardName.match(/"en"\s*:\s*"([^"]+)"/)
+          if (match) finalHazardName = match[1]
+        }
+      }
+      
       return {
         hazardId: r.hazardId || r.id,
-        hazardName: getStringValue(r.hazardName || r.Hazard || 'Unnamed Risk'),
-        Hazard: getStringValue(r.hazardName || r.Hazard || 'Unnamed Risk'), // Keep for backward compatibility
+        hazardName: finalHazardName,
+        Hazard: finalHazardName, // Keep for backward compatibility
         likelihood: getStringValue(r.likelihood || r.Likelihood || 'Not assessed'),
         Likelihood: getStringValue(r.likelihood || r.Likelihood || 'Not assessed'),
         impact: impactText || 'Not assessed',
@@ -370,6 +393,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   }
 
   // Get high-priority risks (HIGH or EXTREME only) for Section 2
+  // CRITICAL: Only include risks that are explicitly ticked (already filtered in riskMatrix)
   const highPriorityRisks = riskMatrix.filter((r: any) => {
     const level = (r.riskLevel || r['Risk Level'] || '').toLowerCase()
     return level.includes('high') || level.includes('extreme')
@@ -388,7 +412,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   
   // Get ALL selected risks that have strategies (for Section 3)
   // ENHANCED: Now handles camelCase ↔ snake_case conversion
+  // CRITICAL: Only include risks that are explicitly ticked (isSelected === true) AND have strategies
   const risksWithStrategies = riskMatrix.filter((r: any) => {
+    // Only include explicitly ticked risks
+    if (r.isSelected !== true) return false
+    
     const hazardName = r.hazardName || r.Hazard || ''
     const hazardId = r.hazardId || hazardName
     
@@ -445,21 +473,30 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     let total = 0
     strategies.forEach(s => {
       // FIRST: Use calculated cost from wizard (already in local currency)
-      if (s.calculatedCostLocal && s.calculatedCostLocal > 0) {
-        total += s.calculatedCostLocal
+      const calculatedCost = s.calculatedCostLocal
+      if (calculatedCost && typeof calculatedCost === 'number' && calculatedCost > 0 && calculatedCost < 1e15) {
+        // Sanity check: cost should be reasonable (less than 1 quadrillion)
+        total += calculatedCost
       } else {
         // FALLBACK: Parse legacy cost string
         const costStr = s.implementationCost || s.cost || ''
         const parsedCost = parseCostString(costStr)
         
-        if (parsedCost > 0) {
+        if (parsedCost > 0 && parsedCost < 1e15) {
           total += parsedCost
-        } else if (s.costEstimateJMD && typeof s.costEstimateJMD === 'number') {
+        } else if (s.costEstimateJMD && typeof s.costEstimateJMD === 'number' && s.costEstimateJMD < 1e15) {
           // Last resort: legacy cost estimate
           total += s.costEstimateJMD
         }
       }
     })
+    
+    // Final sanity check
+    if (total > 1e15 || isNaN(total) || !isFinite(total)) {
+      console.warn('[FormalBCPPreview] Invalid total investment calculated:', total)
+      return 0
+    }
+    
     return total
   }
   
@@ -494,10 +531,14 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   
   // Build contact display string
   const planManagerPhone = formData.PLAN_INFORMATION?.['Phone'] || 
+                           formData.PLAN_INFORMATION?.['Phone Number'] ||
+                           managerContact?.['Phone Number'] ||
                            managerContact?.Phone || 
                            managerContact?.phone || 
                            ''
   const planManagerEmail = formData.PLAN_INFORMATION?.['Email'] || 
+                           formData.PLAN_INFORMATION?.['Email Address'] ||
+                           managerContact?.['Email Address'] ||
                            managerContact?.Email || 
                            managerContact?.email || 
                            ''
@@ -573,9 +614,20 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   const trainingPrograms = formData.TESTING_AND_MAINTENANCE?.['Training Schedule'] || 
                           formData.TESTING?.['Training Schedule'] || 
                           formData.TESTING?.['Training Programs'] || []
-  const improvements = formData.TESTING_AND_MAINTENANCE?.['Improvement Tracking'] || 
-                      formData.TESTING?.['Improvement Tracking'] || 
-                      formData.TESTING?.['Improvements Needed'] || []
+  // Get improvements and deduplicate by issue text
+  const improvementsRaw = formData.TESTING_AND_MAINTENANCE?.['Improvement Tracking'] || 
+                          formData.TESTING?.['Improvement Tracking'] || 
+                          formData.TESTING?.['Improvements Needed'] || []
+  
+  // Deduplicate improvements by comparing issue text
+  const improvements = Array.isArray(improvementsRaw) ? improvementsRaw.filter((item: any, index: number, self: any[]) => {
+    const issueText = getStringValue(item['Issue Identified'] || item.issueIdentified || item.area || item.title || '')
+    if (!issueText) return false // Filter out items without issue text
+    return index === self.findIndex((other: any) => {
+      const otherIssueText = getStringValue(other['Issue Identified'] || other.issueIdentified || other.area || other.title || '')
+      return issueText && issueText === otherIssueText
+    })
+  }) : []
   
   // ============================================================================
   // COMPREHENSIVE DATA AVAILABILITY CHECK - Debug logging
@@ -694,97 +746,162 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   
   console.groupEnd()
   
+  // UNDP Color Scheme
+  const undpColors = {
+    blue: {
+      100: '#B5D5F5',
+      200: '#94C4F5',
+      300: '#6BABEB',
+      400: '#4F95DD',
+      500: '#3288CE',
+      600: '#0468B1',
+      700: '#1F5A95',
+    },
+    gray: {
+      100: '#FAFAFA',
+      200: '#F7F7F7',
+      300: '#EDEFF0',
+      400: '#D4D6D8',
+      500: '#A9B1B7',
+      600: '#55606E',
+      700: '#232E3D',
+    },
+    accent: {
+      yellow: '#FFEB00',
+      darkYellow: '#FBC412',
+      red: '#EE402D',
+      darkRed: '#D12800',
+      green: '#6DE354',
+      darkGreen: '#59BA47',
+      azure: '#60D4F2',
+      darkAzure: '#00C1FF',
+    }
+  }
+
   return (
-    <div className="bg-white border-2 border-slate-300 shadow-lg rounded-lg overflow-hidden">
-      {/* Professional Header - UNDP Style */}
-      <div className="bg-gradient-to-r from-slate-700 to-slate-800 text-white px-10 py-8 border-b-4 border-green-600">
-        <div className="text-center">
-          <div className="text-xs uppercase tracking-wider mb-2 opacity-90">Formal Business Continuity Plan</div>
-          <h1 className="text-3xl font-bold mb-2">{companyName}</h1>
-          <div className="text-sm opacity-90">
-            {parish && <span>{parish}, </span>}
-            {country}
-          </div>
-          <div className="mt-4 pt-4 border-t border-slate-600 text-xs">
-            Plan Version: 1.0 • Prepared: {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+    <div className="bg-white shadow-xl overflow-hidden" style={{ border: `1px solid ${undpColors.gray[300]}` }}>
+      {/* UNDP Professional Header */}
+      <div className="relative" style={{ backgroundColor: undpColors.blue[600] }}>
+        {/* UNDP Blue Bar */}
+        <div className="h-1.5" style={{ backgroundColor: undpColors.blue[700] }}></div>
+        
+        {/* Header Content */}
+        <div className="px-8 py-4">
+          <div className="flex items-center justify-between gap-6">
+            {/* Left: UNDP Logo and Title */}
+            <div className="flex items-center gap-4 flex-1">
+              <img 
+                src="/undp-logo.png" 
+                alt="UNDP Logo" 
+                className="h-10 w-auto"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
+              <div className="flex-1">
+                <div className="text-xs uppercase tracking-wider mb-0.5" style={{ color: undpColors.blue[200] }}>
+                  Formal Business Continuity Plan
+                </div>
+                <h1 className="text-xl font-bold text-white leading-tight">{companyName}</h1>
+                <div className="text-sm mt-0.5" style={{ color: undpColors.blue[200] }}>
+                  {parish && <span>{parish}, </span>}
+                  {country}
+                </div>
+              </div>
+            </div>
+            
+            {/* Right: Document Info */}
+            <div className="text-right text-white text-sm">
+              <div style={{ color: undpColors.blue[200] }}>
+                Version 1.0 • {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
       
-      {/* UNDP Certification Footer */}
-      <div className="bg-slate-100 px-8 py-3 text-center border-b border-slate-300">
-        <div className="text-xs text-slate-600">
-          Prepared with technical support from: <span className="font-semibold">UNDP Caribbean | CARICHAM Business Support Program</span>
+      {/* UNDP Certification Bar */}
+      <div className="px-8 py-2 text-center" style={{ backgroundColor: undpColors.gray[100], borderBottom: `1px solid ${undpColors.gray[300]}` }}>
+        <div className="text-xs" style={{ color: undpColors.gray[600] }}>
+          Prepared with technical support from: <span className="font-semibold" style={{ color: undpColors.blue[600] }}>UNDP Caribbean | CARICHAM Business Support Program</span>
         </div>
       </div>
 
-      {/* Document Body */}
-      <div className="px-6 py-5 space-y-5">
+      {/* Document Body - Smart Spacing */}
+      <div className="px-8 py-5 space-y-5">
         
         {/* SECTION 1: BUSINESS OVERVIEW */}
         <section>
-          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
-            <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">1</div>
-            <h2 className="text-xl font-bold text-slate-900">Business Overview</h2>
+          <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
+            <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>1</div>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Business Overview</h2>
           </div>
           
-          {/* Business Information Table - Compact 2-Column Grid Layout */}
+          {/* Business Information - Efficient 3-Column Grid */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">1.1 Business Information</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 border border-slate-300 rounded">
-              <div className="border-b lg:border-b lg:border-r border-slate-300 bg-slate-50 px-3 py-1.5">
-                <span className="text-xs font-semibold text-slate-600">Business Name</span>
-                <div className="text-sm text-slate-900 mt-0.5">{companyName}</div>
-              </div>
-              <div className="border-b lg:border-b border-slate-300 bg-slate-50 px-3 py-1.5">
-                <span className="text-xs font-semibold text-slate-600">Business Type</span>
-                <div className="text-sm text-slate-900 mt-0.5">{businessType}</div>
-              </div>
-              <div className={`${yearsInOperation || totalPeople || annualRevenue ? "border-b lg:border-b lg:border-r" : "lg:border-r"} border-slate-300 bg-slate-50 px-3 py-1.5`}>
-                <span className="text-xs font-semibold text-slate-600">Physical Address</span>
-                <div className="text-sm text-slate-900 mt-0.5">{businessAddress || 'Not specified'}</div>
-              </div>
-              {yearsInOperation && (
-                <div className={`${totalPeople || annualRevenue ? "border-b lg:border-b" : ""} border-slate-300 bg-slate-50 px-3 py-1.5`}>
-                  <span className="text-xs font-semibold text-slate-600">Years in Operation</span>
-                  <div className="text-sm text-slate-900 mt-0.5">{yearsInOperation}</div>
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>1.1 Business Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2.5">
+                <div>
+                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Business Name</div>
+                  <div className="text-sm" style={{ color: undpColors.gray[700] }}>{companyName}</div>
                 </div>
-              )}
-              {totalPeople && (
-                <div className={`${annualRevenue ? "border-b lg:border-b lg:border-r" : "lg:border-r"} border-slate-300 bg-slate-50 px-3 py-1.5`}>
-                  <span className="text-xs font-semibold text-slate-600">Total People in Business</span>
-                  <div className="text-sm text-slate-900 mt-0.5">{totalPeople}</div>
+                {businessAddress && (
+                  <div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Physical Address</div>
+                    <div className="text-sm" style={{ color: undpColors.gray[700] }}>{businessAddress}</div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2.5">
+                <div>
+                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Business Type</div>
+                  <div className="text-sm" style={{ color: undpColors.gray[700] }}>{businessType}</div>
                 </div>
-              )}
-              {annualRevenue && (
-                <div className="bg-slate-50 px-3 py-1.5">
-                  <span className="text-xs font-semibold text-slate-600">Approximate Annual Revenue</span>
-                  <div className="text-sm text-slate-900 mt-0.5">{formatRevenue(annualRevenue)}</div>
-                </div>
-              )}
+                {yearsInOperation && (
+                  <div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Years in Operation</div>
+                    <div className="text-sm" style={{ color: undpColors.gray[700] }}>{yearsInOperation}</div>
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2.5">
+                {totalPeople && (
+                  <div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Total People</div>
+                    <div className="text-sm" style={{ color: undpColors.gray[700] }}>{totalPeople}</div>
+                  </div>
+                )}
+                {annualRevenue && (
+                  <div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Annual Revenue</div>
+                    <div className="text-sm" style={{ color: undpColors.gray[700] }}>{formatRevenue(annualRevenue)}</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
-          {/* Business Purpose */}
-          {businessPurpose && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.2 Business Purpose</h3>
-              <p className="text-sm text-slate-700 leading-normal">{businessPurpose}</p>
-            </div>
-          )}
-          
-          {/* Key Strengths */}
-          {competitiveAdvantages.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.3 Key Strengths</h3>
-              <ul className="list-none space-y-0.5">
-                {competitiveAdvantages.slice(0, 3).map((adv, idx) => (
-                  <li key={idx} className="text-sm text-slate-700 flex items-start">
-                    <span className="text-green-600 mr-2">✓</span>
-                    <span>{adv}</span>
-                  </li>
-                ))}
-              </ul>
+          {/* Business Purpose & Key Strengths - Side by Side */}
+          {(businessPurpose || competitiveAdvantages.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {businessPurpose && (
+                <div>
+                  <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.2 Business Purpose</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: undpColors.gray[600] }}>{businessPurpose}</p>
+                </div>
+              )}
+              {competitiveAdvantages.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.3 Key Strengths</h3>
+                  <ul className="list-none space-y-1">
+                    {competitiveAdvantages.slice(0, 3).map((adv, idx) => (
+                      <li key={idx} className="text-sm flex items-start" style={{ color: undpColors.gray[700] }}>
+                        <span className="mr-2 font-bold" style={{ color: undpColors.accent.darkGreen }}>•</span>
+                        <span>{adv}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
           
@@ -910,54 +1027,48 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 2: RISK ASSESSMENT */}
         <section>
-          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
-            <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">2</div>
-            <h2 className="text-xl font-bold text-slate-900">Risk Assessment</h2>
+          <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
+            <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>2</div>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Risk Assessment</h2>
           </div>
           
           {/* Overview Summary */}
-          <div className="mb-4">
-            <p className="text-sm text-slate-700 leading-normal">
-              We have identified and assessed <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations. 
-              Below is our complete risk analysis with mitigation status.
+          <div className="mb-3">
+            <p className="text-sm leading-relaxed" style={{ color: undpColors.gray[700] }}>
+              We have identified and assessed <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations.
             </p>
           </div>
           
-          {/* Risk Severity Legend */}
+          {/* Risk Severity Legend - Inline */}
           <div className="mb-4">
-            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-              <div className="text-xs font-semibold text-slate-700 mb-2">Risk Severity Levels:</div>
-              <div className="flex flex-wrap gap-3 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 bg-red-700 rounded"></div>
-                  <span className="font-semibold">EXTREME</span>
-                  <span className="text-slate-600">(Score ≥8.0)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 bg-orange-600 rounded"></div>
-                  <span className="font-semibold">HIGH</span>
-                  <span className="text-slate-600">(Score 6.0-7.9)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-                  <span className="font-semibold">MEDIUM</span>
-                  <span className="text-slate-600">(Score 4.0-5.9)</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 bg-green-600 rounded"></div>
-                  <span className="font-semibold">LOW</span>
-                  <span className="text-slate-600">(Score &lt;4.0)</span>
-                </div>
+            <div className="px-3 py-2 rounded inline-flex flex-wrap gap-4 text-xs" style={{ backgroundColor: undpColors.gray[100], border: `1px solid ${undpColors.gray[300]}` }}>
+              <span className="font-semibold" style={{ color: undpColors.gray[700] }}>Severity Levels:</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkRed }}></div>
+                <span style={{ color: undpColors.gray[600] }}>EXTREME (≥8.0)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.red }}></div>
+                <span style={{ color: undpColors.gray[600] }}>HIGH (6.0-7.9)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkYellow }}></div>
+                <span style={{ color: undpColors.gray[600] }}>MEDIUM (4.0-5.9)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkGreen }}></div>
+                <span style={{ color: undpColors.gray[600] }}>LOW (&lt;4.0)</span>
               </div>
             </div>
           </div>
           
-          {/* Unified Risk Cards - Organized by Severity */}
+          {/* Unified Risk Cards - Optimized Layout */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-3">2.1 Identified Risks & Mitigation Status</h3>
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>2.1 Identified Risks & Mitigation Status</h3>
             
-            {/* Sort risks by score (highest first) */}
+            {/* Sort risks by score (highest first) - Show ALL ticked risks */}
             {(() => {
+              // riskMatrix already filtered to only ticked risks (isSelected === true)
               const sortedRisks = [...riskMatrix].sort((a, b) => {
                 const scoreA = a.riskScore || a['Risk Score'] || 0
                 const scoreB = b.riskScore || b['Risk Score'] || 0
@@ -979,83 +1090,91 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     
                     const likelihood = risk.likelihood || risk.Likelihood || 'Not assessed'
                     const impact = risk.impact || risk.Impact || 'Not assessed'
-                    const reasoning = risk.reasoning || ''
+                    // Clean reasoning - remove JSON objects and extract readable text
+                    let reasoning = risk.reasoning || ''
+                    if (reasoning && typeof reasoning === 'string') {
+                      // Remove JSON-like objects from reasoning
+                      reasoning = reasoning.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
+                        try {
+                          const parsed = JSON.parse(match)
+                          return parsed.en || parsed.es || parsed.fr || match
+                        } catch {
+                          // Extract English value if JSON parsing fails
+                          const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
+                          return enMatch ? enMatch[1] : match
+                        }
+                      })
+                      // Clean up any remaining JSON artifacts
+                      reasoning = reasoning.replace(/\{[^}]*\}/g, '').trim()
+                    }
+                    reasoning = getStringValue(reasoning)
                     
                     const hasStrategies = strategies.some(s => 
                       s.applicableRisks?.includes(risk.hazardId)
                     )
                     
-                    // Color coding by severity
+                    // Color coding by severity using UNDP accent colors
                     const colorClasses = {
                       'EXTREME': {
-                        bg: 'bg-red-50',
-                        border: 'border-red-300',
-                        badge: 'bg-red-700 text-white',
-                        text: 'text-red-900'
+                        bg: undpColors.accent.lightRed + '20',
+                        border: undpColors.accent.darkRed,
+                        badge: undpColors.accent.darkRed,
+                        text: undpColors.gray[700]
                       },
                       'HIGH': {
-                        bg: 'bg-orange-50',
-                        border: 'border-orange-300',
-                        badge: 'bg-orange-600 text-white',
-                        text: 'text-orange-900'
+                        bg: undpColors.accent.lightRed + '15',
+                        border: undpColors.accent.red,
+                        badge: undpColors.accent.red,
+                        text: undpColors.gray[700]
                       },
                       'MEDIUM': {
-                        bg: 'bg-yellow-50',
-                        border: 'border-yellow-300',
-                        badge: 'bg-yellow-500 text-white',
-                        text: 'text-yellow-900'
+                        bg: undpColors.accent.yellow + '20',
+                        border: undpColors.accent.darkYellow,
+                        badge: undpColors.accent.darkYellow,
+                        text: undpColors.gray[700]
                       },
                       'LOW': {
-                        bg: 'bg-green-50',
-                        border: 'border-green-300',
-                        badge: 'bg-green-600 text-white',
-                        text: 'text-green-900'
+                        bg: undpColors.accent.lightGreen + '20',
+                        border: undpColors.accent.darkGreen,
+                        badge: undpColors.accent.darkGreen,
+                        text: undpColors.gray[700]
                       }
                     }
                     
                     const colors = colorClasses[riskLevel as keyof typeof colorClasses] || colorClasses['MEDIUM']
                     
                     return (
-                      <div key={idx} className={`border ${colors.border} ${colors.bg} rounded-lg overflow-hidden`}>
+                      <div key={idx} className="rounded overflow-hidden mb-3" style={{ border: `1px solid ${colors.border}`, backgroundColor: colors.bg }}>
                         <div className="p-3">
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${colors.badge}`}>
+                          {/* Header Row - Risk Name, Score, and Metrics Side by Side */}
+                          <div className="flex items-start justify-between gap-4 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="text-xs font-bold px-2 py-0.5 rounded text-white whitespace-nowrap" style={{ backgroundColor: colors.badge }}>
                                   {riskLevel}
                                 </span>
-                                <h4 className={`font-bold text-sm ${colors.text}`}>{riskName}</h4>
+                                <h4 className="font-bold text-sm leading-tight" style={{ color: colors.text }}>{riskName}</h4>
                               </div>
                               {reasoning && (
-                                <p className="text-xs text-slate-700 leading-relaxed">{reasoning}</p>
+                                <p className="text-xs leading-relaxed mt-1" style={{ color: undpColors.gray[600] }}>{reasoning}</p>
                               )}
                             </div>
-                            <div className="text-right">
-                              <div className="text-xs text-slate-600">Risk Score</div>
-                              <div className={`text-2xl font-bold ${colors.text}`}>{riskScore.toFixed(1)}</div>
-                              <div className="text-xs text-slate-500">out of 10</div>
-                            </div>
-                          </div>
-                          
-                          <div className="grid grid-cols-3 gap-3 mt-3 pt-3 border-t border-slate-200">
-                            <div>
-                              <div className="text-xs text-slate-600 font-semibold">Likelihood:</div>
-                              <div className="text-xs text-slate-900">{likelihood}</div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-slate-600 font-semibold">Impact:</div>
-                              <div className="text-xs text-slate-900">{impact}</div>
-                            </div>
-                            <div>
-                              <div className="text-xs text-slate-600 font-semibold">Status:</div>
-                              <div>
-                                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                                  hasStrategies 
-                                    ? 'bg-green-100 text-green-800 border border-green-300' 
-                                    : 'bg-slate-100 text-slate-700 border border-slate-300'
-                                }`}>
-                                  {hasStrategies ? '✓ Addressed' : 'Planned'}
-                                </span>
+                            {/* Score and Metrics - Right Side */}
+                            <div className="flex-shrink-0 flex items-start gap-4">
+                              {/* Score */}
+                              <div className="text-center">
+                                <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>Risk Score</div>
+                                <div className="text-2xl font-bold leading-none" style={{ color: colors.badge }}>{riskScore.toFixed(1)}</div>
+                                <div className="text-xs" style={{ color: undpColors.gray[500] }}>out of 10</div>
+                              </div>
+                              {/* Metrics */}
+                              <div className="text-right border-l pl-4" style={{ borderColor: undpColors.gray[300] }}>
+                                <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Metrics</div>
+                                <div className="space-y-1 text-xs" style={{ color: undpColors.gray[700] }}>
+                                  <div><span className="font-semibold">Likelihood:</span> {likelihood}</div>
+                                  <div><span className="font-semibold">Impact:</span> {impact}</div>
+                                  {/* Removed Planned/Addressed status - no user input for this */}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1071,16 +1190,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
         {/* SECTION 3: CONTINUITY STRATEGIES */}
         <section>
-          <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
-            <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">3</div>
-            <h2 className="text-xl font-bold text-slate-900">Continuity Strategies</h2>
+          <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
+            <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>3</div>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Continuity Strategies</h2>
           </div>
           
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">3.1 Investment Summary ({currencyInfo.code})</h3>
-            <div className="bg-green-50 border-2 border-green-600 rounded-lg p-3">
-              <p className="text-sm text-slate-700 mb-2">
-                We are investing <strong className="text-green-800 text-lg">{formatCurrency(totalInvestment, currencyInfo)}</strong> in business continuity measures 
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>3.1 Investment Summary ({currencyInfo.code})</h3>
+            <div className="rounded-lg p-4" style={{ backgroundColor: undpColors.accent.lightGreen + '30', border: `2px solid ${undpColors.accent.darkGreen}` }}>
+              <p className="text-sm mb-2 leading-relaxed" style={{ color: undpColors.gray[700] }}>
+                We are investing <strong className="text-lg" style={{ color: undpColors.accent.darkGreen }}>{formatCurrency(totalInvestment, currencyInfo)}</strong> in business continuity measures 
                 to protect our operations, assets, and ability to serve customers during disruptions.
               </p>
               {(() => {
@@ -1092,27 +1211,43 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 }
                 
                 strategies.forEach(s => {
-                  const cost = s.calculatedCostLocal || parseCostString(s.implementationCost || '')
+                  // Use calculatedCostLocal (should be in correct currency already)
+                  let cost = s.calculatedCostLocal || 0
+                  
+                  // Sanity check - filter out invalid costs
+                  if (!cost || cost < 0 || cost > 1e15 || isNaN(cost) || !isFinite(cost)) {
+                    // Try fallback
+                    cost = parseCostString(s.implementationCost || '')
+                    if (!cost || cost < 0 || cost > 1e15 || isNaN(cost) || !isFinite(cost)) {
+                      return // Skip this strategy if cost is invalid
+                    }
+                  }
                   
                   // Log for debugging
                   const strategyName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
                   console.log(`[Preview] Strategy "${strategyName}" → cost: ${cost}`)
                   
-                  // Categorize by executionTiming of action steps
-                  // Count costs based on when steps are executed
-                  const hasBeforeSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'before_crisis')
-                  const hasDuringSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'during_crisis')
-                  const hasAfterSteps = (s.actionSteps || []).some((step: any) => step.executionTiming === 'after_crisis')
+                  // Categorize by phase of action steps (not executionTiming)
+                  // Use step.phase field which is 'before', 'during', or 'after'
+                  const beforeSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'before')
+                  const duringSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'during')
+                  const afterSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'after')
                   
-                  // Distribute cost proportionally based on phases covered
-                  const phaseCount = (hasBeforeSteps ? 1 : 0) + (hasDuringSteps ? 1 : 0) + (hasAfterSteps ? 1 : 0)
-                  if (phaseCount > 0) {
-                    const costPerPhase = cost / phaseCount
-                    if (hasBeforeSteps) categoryInvestment.prevention += costPerPhase
-                    if (hasDuringSteps) categoryInvestment.response += costPerPhase
-                    if (hasAfterSteps) categoryInvestment.recovery += costPerPhase
+                  const totalSteps = beforeSteps.length + duringSteps.length + afterSteps.length
+                  
+                  if (totalSteps > 0) {
+                    // Distribute cost proportionally based on number of steps in each phase
+                    if (beforeSteps.length > 0) {
+                      categoryInvestment.prevention += (cost * beforeSteps.length) / totalSteps
+                    }
+                    if (duringSteps.length > 0) {
+                      categoryInvestment.response += (cost * duringSteps.length) / totalSteps
+                    }
+                    if (afterSteps.length > 0) {
+                      categoryInvestment.recovery += (cost * afterSteps.length) / totalSteps
+                    }
                   } else {
-                    // No timing info - default to prevention
+                    // No phase info - default to prevention
                     categoryInvestment.prevention += cost
                   }
                 })
@@ -1148,8 +1283,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           
           {/* ALL Selected Strategies - Organized by Priority */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">3.2 Our Preparation Strategies</h3>
-            <p className="text-xs text-slate-600 mb-3">
+            <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>3.2 Our Preparation Strategies</h3>
+            <p className="text-xs mb-3 leading-relaxed" style={{ color: undpColors.gray[600] }}>
               These {strategies.length} strategies were selected based on your business needs, location risks, and operational requirements.
             </p>
             
@@ -1176,23 +1311,25 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   })
                   
                   if (matchingRisk) {
-                    return matchingRisk.hazardName || matchingRisk.Hazard
+                    const name = matchingRisk.hazardName || matchingRisk.Hazard || ''
+                    // Ensure we return a clean string, not JSON
+                    return getStringValue(name)
                   }
                   
                   // Fallback: Format the risk ID nicely
                   return riskId.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
-                }).filter(Boolean)
+                }).filter(Boolean).filter(name => name && name !== 'Unnamed Risk' && !name.includes('{"en"'))
                 
-                // PRIORITY: Use calculated cost from wizard (already in correct currency)
-                const costAmount = strategyCost
+                // PRIORITY: Use calculated cost from wizard
+                // NOTE: calculatedCostLocal should already be in the user's selected currency
+                // But we need to ensure consistency - always use currencyInfo
+                let costAmount = strategyCost
                 
-                // CRITICAL FIX: Always use detected currency (currencyInfo) as the source of truth
-                const useCurrency = (strategy.calculatedCostLocal > 0 && strategy.currencySymbol) 
-                  ? { symbol: strategy.currencySymbol, code: strategy.currencyCode }
-                  : currencyInfo
-                
-                const costDisplay = costAmount > 0
-                  ? `${useCurrency.symbol}${Math.round(costAmount).toLocaleString()}`
+                // If strategy has currency info that doesn't match, we might need to convert
+                // But for now, trust that calculatedCostLocal is already in the correct currency
+                // Just ensure we use the consistent currency symbol
+                const costDisplay = costAmount > 0 && costAmount < 1e15
+                  ? `${currencyInfo.symbol}${Math.round(costAmount).toLocaleString()}`
                   : 'Cost TBD'
                 
                 // Extract timeline/timeframe - Calculate from action steps
@@ -1209,9 +1346,9 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   console.log(`[Preview] Strategy "${stratName}": ${calculatedHours}h from ${strategy.actionSteps?.length || 0} steps → "${formatted}"`)
                   
                   // Fallback only if no action steps at all
-                  if (calculatedHours === 0 && strategy.estimatedTotalHours) {
-                    console.warn(`[Preview] No action steps for "${stratName}", using fallback estimatedTotalHours: ${strategy.estimatedTotalHours}h`)
-                    return formatHoursToDisplay(strategy.estimatedTotalHours)
+                  if (calculatedHours === 0 && strategy.totalEstimatedHours) {
+                    console.warn(`[Preview] No action steps for "${stratName}", using fallback totalEstimatedHours: ${strategy.totalEstimatedHours}h`)
+                    return formatHoursToDisplay(strategy.totalEstimatedHours)
                   }
                   
                   return formatted
@@ -1222,9 +1359,6 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 // Debug log for each strategy
                 console.log(`[Preview] Strategy "${stratName}": ${costDisplay} | Timeline: ${timeline}`)
                 
-                // Extract effectiveness rating
-                const effectiveness = strategy.effectiveness || 0
-                
                 // Get priority badge
                 const priorityTier = strategy.priorityTier || strategy.selectionTier || 'recommended'
                 const priorityBadge = priorityTier === 'essential' 
@@ -1234,31 +1368,31 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   : { label: 'OPTIONAL', color: 'bg-green-100 text-green-800' }
                 
                 return (
-                  <div key={stratIdx} className="border border-slate-300 rounded overflow-hidden bg-white">
+                  <div key={stratIdx} className="rounded overflow-hidden bg-white shadow-sm" style={{ border: `1px solid ${undpColors.gray[300]}` }}>
                     {/* Strategy Header */}
-                    <div className="bg-slate-100 px-3 py-2 border-b border-slate-300">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="bg-slate-700 text-white px-1.5 py-0.5 rounded text-xs font-bold">
+                    <div className="px-4 py-2.5 border-b" style={{ backgroundColor: undpColors.gray[100], borderColor: undpColors.gray[300] }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="text-white px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: undpColors.blue[600] }}>
                               #{stratIdx + 1}
                             </span>
-                            <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${priorityBadge.color}`}>
+                            <span className="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: priorityBadge.bgColor, color: priorityBadge.textColor }}>
                               {priorityBadge.label}
                             </span>
                             {strategy.quickWinIndicator && (
-                              <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs font-bold">
+                              <span className="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: undpColors.accent.lightGreen + '40', color: undpColors.accent.darkGreen }}>
                                 ⚡ QUICK WIN
                               </span>
                             )}
                           </div>
-                          <h4 className="font-bold text-sm text-slate-900">
+                          <h4 className="font-bold text-sm leading-tight" style={{ color: undpColors.gray[700] }}>
                             {getStringValue(strategy.smeTitle || strategy.name || strategy.title)}
                           </h4>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xs text-slate-600">Investment</div>
-                          <div className="font-bold text-base text-green-700">{costDisplay}</div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>Investment</div>
+                          <div className="font-bold text-base leading-tight" style={{ color: undpColors.accent.darkGreen }}>{costDisplay}</div>
                         </div>
                       </div>
                     </div>
@@ -1267,61 +1401,146 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     <div className="p-3">
                       {/* Description */}
                       {(strategy.smeSummary || strategy.description) && (
-                        <p className="text-xs text-slate-700 mb-2 leading-normal">
+                        <p className="text-xs mb-2.5 leading-relaxed" style={{ color: undpColors.gray[700] }}>
                           {getStringValue(strategy.smeSummary || strategy.description)}
                         </p>
                       )}
                       
-                      {/* Quick Stats Grid */}
-                      <div className="grid grid-cols-3 gap-2 mb-2 bg-slate-50 p-2 rounded">
+                      {/* Quick Stats & Protects - Side by Side */}
+                      <div className="grid grid-cols-2 gap-3 mb-2.5">
                         <div>
-                          <div className="text-xs text-slate-600 mb-0.5">Timeline</div>
-                          <div className="font-semibold text-xs text-slate-900">{timeline}</div>
+                          <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>Timeline</div>
+                          <div className="text-xs font-semibold" style={{ color: undpColors.gray[700] }}>{timeline}</div>
                         </div>
-                        <div>
-                          <div className="text-xs text-slate-600 mb-0.5">Effectiveness</div>
-                          <div className="font-semibold text-xs text-slate-900">
-                            {effectiveness > 0 ? `${effectiveness}/10` : 'N/A'}
+                        {protectsAgainstNames.length > 0 && (
+                          <div>
+                            <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>Protects Against</div>
+                            <div className="flex flex-wrap gap-1">
+                              {protectsAgainstNames.slice(0, 3).map((riskName: string, idx: number) => (
+                                <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] leading-tight" style={{ backgroundColor: undpColors.blue[100], color: undpColors.blue[700] }}>
+                                  {riskName}
+                                </span>
+                              ))}
+                              {protectsAgainstNames.length > 3 && (
+                                <span className="text-[10px] italic" style={{ color: undpColors.gray[500] }}>+{protectsAgainstNames.length - 3}</span>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <div className="text-xs text-slate-600 mb-0.5">Complexity</div>
-                          <div className="font-semibold text-xs text-slate-900 capitalize">
-                            {strategy.complexityLevel || 'Moderate'}
-                          </div>
-                        </div>
+                        )}
                       </div>
                       
-                      {/* Protects Against */}
-                      {protectsAgainstNames.length > 0 && (
-                        <div className="mb-2">
-                          <div className="text-xs font-semibold text-slate-700 mb-1">🛡️ Protects Against:</div>
-                          <div className="flex flex-wrap gap-1">
-                            {protectsAgainstNames.map((riskName: string, idx: number) => (
-                              <span key={idx} className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
-                                {riskName}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      {/* Cost Items - What You Need to Purchase */}
+                      {(() => {
+                        // Collect all cost items from all action steps
+                        const itemMap = new Map<string, { name: string; quantity: number; unit: string; category: string }>()
+                        
+                        strategy.actionSteps?.forEach((step: any) => {
+                          if (step.costItems && Array.isArray(step.costItems)) {
+                            step.costItems.forEach((costItem: any) => {
+                              // Get item name from multilingual database field
+                              // Cost items should always have multilingual names in the database (JSON format)
+                              let itemName = 'Unknown Item'
+                              
+                              // Priority 1: Full item object with multilingual name (from transformers)
+                              if (costItem.item?.name) {
+                                itemName = getLocalizedText(costItem.item.name, currentLocale)
+                              }
+                              // Priority 2: costItem nested object (from API prepare-prefill-data)
+                              else if (costItem.costItem?.name) {
+                                itemName = getLocalizedText(costItem.costItem.name, currentLocale)
+                              }
+                              // Priority 3: Direct name field
+                              else if (costItem.name) {
+                                itemName = getLocalizedText(costItem.name, currentLocale)
+                              }
+                              // If we still don't have a name, log a warning (should not happen if DB is properly populated)
+                              else if (costItem.itemId) {
+                                console.warn(`[FormalBCPPreview] Cost item ${costItem.itemId} missing multilingual name in database. Please add multilingual name to this cost item.`)
+                                // Only use itemId as last resort - this indicates missing data in DB
+                                itemName = costItem.itemId
+                              }
+                              
+                              // Ensure we have a valid name (not empty or just whitespace)
+                              if (!itemName || itemName.trim().length === 0) {
+                                console.warn(`[FormalBCPPreview] Cost item ${costItem.itemId} has empty name for locale ${currentLocale}`)
+                                itemName = costItem.itemId || 'Unknown Item'
+                              }
+                              
+                              const quantity = costItem.quantity || 1
+                              const unit = costItem.item?.unit || costItem.costItem?.unit || costItem.unit || ''
+                              const category = costItem.item?.category || costItem.costItem?.category || costItem.category || 'supplies'
+                              
+                              // Aggregate by item name (handle multilingual)
+                              const key = itemName.toLowerCase()
+                              if (itemMap.has(key)) {
+                                const existing = itemMap.get(key)!
+                                existing.quantity += quantity
+                              } else {
+                                itemMap.set(key, { name: itemName, quantity, unit, category })
+                              }
+                            })
+                          }
+                        })
+                        
+                        const uniqueItems = Array.from(itemMap.values())
+                        
+                        if (uniqueItems.length > 0) {
+                          return (
+                            <div className="mb-2.5 mt-2.5 pt-2.5 border-t" style={{ borderColor: undpColors.gray[300] }}>
+                              <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>Items to Purchase:</div>
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                {uniqueItems.map((item, itemIdx) => (
+                                  <div key={itemIdx} className="text-xs leading-relaxed" style={{ color: undpColors.gray[700] }}>
+                                    {item.quantity > 1 && <span className="font-semibold">{item.quantity}x </span>}
+                                    {item.name}
+                                    {item.unit && <span className="text-xs" style={{ color: undpColors.gray[500] }}> ({item.unit})</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        }
+                        return null
+                      })()}
                       
-                      {/* Action Steps */}
+                      {/* Key Actions */}
                       {strategy.actionSteps && strategy.actionSteps.length > 0 && (
-                        <div>
-                          <div className="text-xs font-semibold text-slate-700 mb-1">📋 Key Actions:</div>
+                        <div className="mt-2.5 pt-2.5 border-t" style={{ borderColor: undpColors.gray[300] }}>
+                          <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>Key Actions:</div>
                           <div className="space-y-1">
-                            {strategy.actionSteps.map((step: any, stepIdx: number) => {
+                            {strategy.actionSteps.slice(0, 6).map((step: any, stepIdx: number) => {
                               const actionText = getStringValue(step.smeAction || step.action || step.title || '')
-                              const timeframe = step.timeframe ? ` (${step.timeframe})` : ''
+                              // Parse timeframe - handle multilingual objects
+                              let timeframeStr = ''
+                              if (step.timeframe) {
+                                const timeframeParsed = getStringValue(step.timeframe)
+                                if (timeframeParsed && !timeframeParsed.includes('{')) {
+                                  timeframeStr = ` (${timeframeParsed})`
+                                } else if (timeframeParsed && timeframeParsed.includes('"en"')) {
+                                  try {
+                                    const tfObj = JSON.parse(timeframeParsed)
+                                    timeframeStr = ` (${getStringValue(tfObj)})`
+                                  } catch {
+                                    const match = timeframeParsed.match(/"en"\s*:\s*"([^"]+)"/)
+                                    timeframeStr = match ? ` (${match[1]})` : ''
+                                  }
+                                } else if (timeframeParsed) {
+                                  timeframeStr = ` (${timeframeParsed})`
+                                }
+                              }
                               
                               return (
-                                <div key={stepIdx} className="flex gap-1.5 text-xs text-slate-700">
-                                  <span className="text-green-600 font-bold flex-shrink-0">→</span>
-                                  <span>{actionText}{timeframe}</span>
+                                <div key={stepIdx} className="flex gap-1.5 text-xs leading-relaxed" style={{ color: undpColors.gray[700] }}>
+                                  <span className="font-bold flex-shrink-0" style={{ color: undpColors.blue[600] }}>→</span>
+                                  <span>{actionText}{timeframeStr}</span>
                                 </div>
                               )
                             })}
+                            {strategy.actionSteps.length > 6 && (
+                              <div className="text-xs italic pt-0.5" style={{ color: undpColors.gray[500] }}>
+                                +{strategy.actionSteps.length - 6} more actions
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

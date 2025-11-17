@@ -154,9 +154,8 @@ export async function POST(request: NextRequest) {
       if (strategyData.currencySymbol !== undefined) {
         createData.currencySymbol = strategyData.currencySymbol
       }
-      // Note: schema field is totalEstimatedHours, not estimatedTotalHours
-      if (typeof strategyData.estimatedTotalHours === 'number' || typeof strategyData.totalEstimatedHours === 'number') {
-        createData.totalEstimatedHours = strategyData.totalEstimatedHours ?? strategyData.estimatedTotalHours
+      if (typeof strategyData.totalEstimatedHours === 'number') {
+        createData.totalEstimatedHours = strategyData.totalEstimatedHours
       }
       
       console.log('💰 Creating strategy with calculated costs:', {

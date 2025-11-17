@@ -66,10 +66,31 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
   
   const getStringValue = (value: any): string => {
     if (!value) return ''
-    if (typeof value === 'string') return value
-    if (typeof value === 'object' && (value.en || value.es || value.fr)) {
-      return value.en || value.es || value.fr || ''
+    
+    // If it's a string, check if it's a JSON string that needs parsing
+    if (typeof value === 'string') {
+      // Try to parse as JSON if it looks like multilingual content
+      if (value.startsWith('{') && (value.includes('"en":') || value.includes('"es":') || value.includes('"fr":'))) {
+        try {
+          const parsed = JSON.parse(value)
+          // If parsed successfully, extract English (or first available language)
+          if (typeof parsed === 'object' && parsed !== null) {
+            return parsed.en || parsed.es || parsed.fr || ''
+          }
+        } catch {
+          // If parsing fails, return original string
+        }
+      }
+      return value
     }
+    
+    // If it's already an object with language keys
+    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      if (value.en || value.es || value.fr) {
+        return value.en || value.es || value.fr || ''
+      }
+    }
+    
     return String(value)
   }
   
@@ -105,23 +126,32 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
   const companyName = getStringValue(formData.PLAN_INFORMATION?.['Company Name'] || formData.BUSINESS_OVERVIEW?.['Company Name'] || 'Your Business')
   const businessAddress = getStringValue(formData.PLAN_INFORMATION?.['Business Address'] || formData.BUSINESS_OVERVIEW?.['Business Address'] || '')
   const planManager = getStringValue(formData.PLAN_INFORMATION?.['Plan Manager'] || 'Not specified')
-  const planManagerPhone = getStringValue(formData.PLAN_INFORMATION?.['Phone'] || '')
-  const planManagerEmail = getStringValue(formData.PLAN_INFORMATION?.['Email'] || '')
+  const planManagerPhone = getStringValue(formData.PLAN_INFORMATION?.['Phone'] || 
+                                          formData.PLAN_INFORMATION?.['Manager Contact'] ||
+                                          formData.PLAN_INFORMATION?.['Phone Number'] || '')
+  const planManagerEmail = getStringValue(formData.PLAN_INFORMATION?.['Email'] || 
+                                         formData.PLAN_INFORMATION?.['Manager Email'] || '')
+  const alternateManager = getStringValue(formData.PLAN_INFORMATION?.['Alternate Manager'] || '')
+  const alternateContact = getStringValue(formData.PLAN_INFORMATION?.['Alternate Contact'] || '')
   const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   
   // Currency information
   const currencySymbol = strategies[0]?.currencySymbol || '$'
   const currencyCode = strategies[0]?.currencyCode || 'USD'
   
-  // Risk data
-  const riskMatrix = riskSummary?.['Risk Assessment Matrix'] || 
+  // Risk data - Only include risks that have been ticked (isSelected === true)
+  const riskMatrix = riskSummary?.['Risk Assessment Matrix'] ||
                      riskSummary?.['Hazard Applicability Assessment'] ||
                      riskSummary?.risks ||
+                     formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] ||
                      []
-  
-  const risks = Array.isArray(riskMatrix) ? riskMatrix.filter((r: any) => 
-    r && (r.hazard || r.Hazard || r.riskType)
-  ) : []
+
+  const risks = Array.isArray(riskMatrix) ? riskMatrix.filter((r: any) => {
+    // Include risks that are selected (isSelected !== false), following dataTransformers.ts pattern
+    if (r.isSelected === false) return false
+    // Must have hazard information
+    return r && (r.hazard || r.Hazard || r.hazardName || r.riskType)
+  }) : []
   
   // Sort risks by severity (highest first)
   const sortedRisks = [...risks].sort((a, b) => {
@@ -167,6 +197,28 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
   const vitalRecords = formData.VITAL_RECORDS?.['Vital Records Inventory'] || 
                       formData.VITAL_RECORDS?.['Records Inventory'] || []
   
+  // Essential Functions - extract from various possible structures
+  const essentialFunctionsRaw = formData.ESSENTIAL_FUNCTIONS?.['Functions'] || 
+                                formData.ESSENTIAL_FUNCTIONS?.['Business Functions'] ||
+                                formData.ESSENTIAL_FUNCTIONS || []
+  
+  const essentialFunctions = Array.isArray(essentialFunctionsRaw) 
+    ? essentialFunctionsRaw.map((fn: any) => ({
+        name: getStringValue(fn.name || fn.functionName || fn.function || fn['Business Function'] || 'Function'),
+        description: getStringValue(fn.description || fn.Description || ''),
+        priority: fn.priority || fn['Priority Level'] || 'medium',
+        maxDowntime: fn.maxDowntime || fn['Maximum Acceptable Downtime'] || 'TBD',
+        resources: fn.resources || fn['Critical Resources Needed'] || ''
+      }))
+    : []
+  
+  // Business details
+  const businessInfo = formData.BUSINESS_OVERVIEW || {}
+  const businessPurpose = getStringValue(businessInfo['Business Purpose'] || '')
+  const productsServices = getStringValue(businessInfo['Products and Services'] || businessInfo['Key Products/Services'] || '')
+  const operatingHours = getStringValue(businessInfo['Operating Hours'] || '')
+  const totalEmployees = businessInfo['Total People in Business'] || businessInfo['Number of Employees'] || ''
+  
   // Helper to parse applicableRisks (can be string or array)
   const parseApplicableRisks = (risks: any): string[] => {
     if (!risks) return []
@@ -182,9 +234,115 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
     return []
   }
   
-  // Organize strategies by type
-  // All strategies are now organized by their action steps' executionTiming
-  // (before_crisis, during_crisis, after_crisis)
+  // Helper to safely parse JSON fields (resources, checklist, etc.)
+  const safeParseJson = (value: any): any[] => {
+    if (!value) return []
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        // Handle multilingual objects
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          if (parsed.en) {
+            // It's a multilingual object, extract the English value
+            return [parsed.en]
+          }
+          // If it's an object with array values (like {en: [...], es: [...]})
+          if (parsed.en && Array.isArray(parsed.en)) {
+            return parsed.en
+          }
+        }
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        // If parsing fails, try to extract from multilingual format
+        if (value.includes('"en"')) {
+          try {
+            const match = value.match(/"en"\s*:\s*\[(.*?)\]/)
+            if (match) {
+              return JSON.parse(`[${match[1]}]`)
+            }
+          } catch {}
+        }
+        return []
+      }
+    }
+    return []
+  }
+  
+  // Helper function to determine if step is before/during/after (used throughout)
+  const getStepTiming = (step: any): 'before' | 'during' | 'after' | null => {
+    // Check executionTiming first (primary field)
+    if (step.executionTiming === 'before_crisis') return 'before'
+    if (step.executionTiming === 'during_crisis') return 'during'
+    if (step.executionTiming === 'after_crisis') return 'after'
+    
+    // Fallback to phase field - handle both old and new phase values
+    const phase = (step.phase || '').toLowerCase()
+    if (phase === 'before' || phase === 'immediate' || phase === 'short_term' || phase === 'prevention') return 'before'
+    if (phase === 'during' || phase === 'medium_term' || phase === 'response') return 'during'
+    if (phase === 'after' || phase === 'long_term' || phase === 'recovery') return 'after'
+    
+    // Check timeframe field for keywords (e.g., "Before emergency" = before)
+    const timeframe = getStringValue(step.timeframe || '').toLowerCase()
+    if (timeframe.includes('before') || timeframe.includes('preparation') || timeframe.includes('prevent')) return 'before'
+    if (timeframe.includes('during') || timeframe.includes('emergency') || timeframe.includes('crisis') || timeframe.includes('storm')) return 'during'
+    if (timeframe.includes('after') || timeframe.includes('recover') || timeframe.includes('restore') || timeframe.includes('all-clear')) return 'after'
+    
+    // Additional fallback: check step content for keywords
+    const stepText = ((step.smeAction || step.title || step.description || '') + ' ' + (step.whyThisStepMatters || '')).toLowerCase()
+    if (stepText.includes('during') || stepText.includes('emergency') || stepText.includes('crisis') || stepText.includes('evacuate') || stepText.includes('activate')) {
+      return 'during'
+    }
+    if (stepText.includes('after') || stepText.includes('recover') || stepText.includes('restore') || stepText.includes('assess damage')) {
+      return 'after'
+    }
+    
+    // Default to before (preparation)
+    return 'before'
+  }
+  
+  // Categorize strategies by type (risk-specific vs generic)
+  // Generic strategies: have 'all_hazards' in applicableRisks or empty applicableRisks
+  const genericStrategies = strategies.filter(s => {
+    const applicableRisks = parseApplicableRisks(s.applicableRisks)
+    const isGeneric = applicableRisks.length === 0 || applicableRisks.includes('all_hazards')
+    
+    // Debug logging
+    if (isGeneric) {
+      console.log('[WorkbookPreview] Generic strategy found:', {
+        name: getStringValue(s.smeTitle || s.name),
+        applicableRisksRaw: s.applicableRisks,
+        applicableRisksParsed: applicableRisks
+      })
+    }
+    
+    return isGeneric
+  })
+  
+  // Risk-specific strategies: apply to specific risks (not all_hazards)
+  const riskSpecificStrategies = strategies.filter(s => {
+    const applicableRisks = parseApplicableRisks(s.applicableRisks)
+    const isRiskSpecific = applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+    
+    // Debug logging
+    if (isRiskSpecific) {
+      console.log('[WorkbookPreview] Risk-specific strategy found:', {
+        name: getStringValue(s.smeTitle || s.name),
+        applicableRisksRaw: s.applicableRisks,
+        applicableRisksParsed: applicableRisks
+      })
+    }
+    
+    return isRiskSpecific
+  })
+  
+  console.log('[WorkbookPreview] Strategy categorization:', {
+    total: strategies.length,
+    generic: genericStrategies.length,
+    riskSpecific: riskSpecificStrategies.length,
+    genericNames: genericStrategies.map(s => getStringValue(s.smeTitle || s.name)),
+    riskSpecificNames: riskSpecificStrategies.map(s => getStringValue(s.smeTitle || s.name))
+  })
   
   // Essential vs Optional strategies
   const essentialStrategies = strategies.filter(s => s.priorityLevel === 'essential')
@@ -262,8 +420,14 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             )}
             <div className="flex justify-between border-b-2 border-red-200 pb-2">
               <span className="font-bold">Plan Manager ({planManager}):</span>
-              <span className="font-mono">{planManagerPhone || '___-___-____'}</span>
+              <span className="font-mono">{planManagerPhone || planManagerEmail || '___-___-____'}</span>
             </div>
+            {alternateManager && alternateManager !== 'N/A' && alternateContact && (
+              <div className="flex justify-between border-b-2 border-red-200 pb-2">
+                <span className="font-bold">Alternate Manager ({alternateManager}):</span>
+                <span className="font-mono">{alternateContact}</span>
+              </div>
+            )}
           </div>
           <div className="mt-6 p-4 bg-yellow-100 border-2 border-yellow-600 rounded">
             <p className="text-xl font-bold text-center text-yellow-900">
@@ -342,6 +506,55 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
           </p>
         </div>
 
+        {/* Business Critical Information Box */}
+        {(businessPurpose || productsServices || essentialFunctions.length > 0) && (
+          <div className="border-4 border-blue-500 bg-blue-50 p-4 mb-6">
+            <h2 className="text-2xl font-black text-blue-900 mb-3">🏢 OUR BUSINESS</h2>
+            {businessPurpose && (
+              <div className="mb-2">
+                <span className="font-bold text-blue-900">Purpose: </span>
+                <span className="text-blue-800">{businessPurpose}</span>
+              </div>
+            )}
+            {productsServices && (
+              <div className="mb-2">
+                <span className="font-bold text-blue-900">What We Do: </span>
+                <span className="text-blue-800">{productsServices}</span>
+              </div>
+            )}
+            {operatingHours && (
+              <div className="mb-2">
+                <span className="font-bold text-blue-900">Operating Hours: </span>
+                <span className="text-blue-800">{operatingHours}</span>
+              </div>
+            )}
+            {totalEmployees && (
+              <div className="mb-2">
+                <span className="font-bold text-blue-900">Team Size: </span>
+                <span className="text-blue-800">{totalEmployees} people</span>
+              </div>
+            )}
+            {essentialFunctions.length > 0 && (
+              <div className="mt-3 pt-3 border-t-2 border-blue-300">
+                <div className="font-bold text-blue-900 mb-2">Critical Operations (Must Restore First):</div>
+                <ul className="space-y-1 text-sm text-blue-800">
+                  {essentialFunctions.slice(0, 5).map((fn: any, idx: number) => (
+                    <li key={idx} className="flex items-start gap-2">
+                      <span className="text-blue-600 font-bold">{idx + 1}.</span>
+                      <div>
+                        <span className="font-semibold">{fn.name}</span>
+                        {fn.maxDowntime && fn.maxDowntime !== 'TBD' && (
+                          <span className="ml-2 text-xs text-blue-600">(Restore within: {fn.maxDowntime})</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="space-y-4">
           {/* Step 1: Ensure Safety */}
           <div className="border-4 border-red-500 bg-red-50 p-4">
@@ -398,7 +611,9 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             <ul className="space-y-2 text-lg ml-16">
               <li className="flex items-start gap-2">
                 <span className="text-yellow-600">▶</span>
-                <span>Notify Plan Manager: <strong>{planManager} - {planManagerPhone || planManagerEmail}</strong></span>
+                <span>Notify Plan Manager: <strong>{planManager} - {planManagerPhone || planManagerEmail}</strong>
+                {alternateManager && alternateManager !== 'N/A' && alternateContact && ` (Backup: ${alternateManager} - ${alternateContact})`}
+                </span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-yellow-600">▶</span>
@@ -462,54 +677,501 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
       </div>
 
       {/* ====================================================================== */}
-      {/* SECTION 2: RISK-SPECIFIC ACTION PLANS */}
+      {/* SECTION 2: GENERAL RISK MITIGATION & PREVENTION STRATEGIES */}
+      {/* Complete generic strategies (all phases) - shown once */}
+      {/* ====================================================================== */}
+      {genericStrategies.length > 0 ? (
+        <div className="p-8 page-break-after">
+          <div className="border-4 border-green-600 p-4 mb-6">
+            <h1 className="text-4xl font-black text-green-900 mb-2">
+              🛡️ GENERAL RISK MITIGATION & PREVENTION
+            </h1>
+            <p className="text-lg text-gray-700">
+              These strategies protect your business from ALL types of emergencies. Complete these once, and they'll help you prepare for, respond to, and recover from any risk.
+            </p>
+          </div>
+
+          {genericStrategies.map((strategy, sIdx) => {
+            const stratName = getStringValue(strategy.smeTitle || strategy.name)
+            const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
+            const stratCost = strategy.calculatedCostLocal || 0
+            const stratTime = strategy.calculatedHours 
+              ? formatHoursToDisplay(strategy.calculatedHours)
+              : calculateStrategyTimeFromSteps(strategy.actionSteps) 
+                ? formatHoursToDisplay(calculateStrategyTimeFromSteps(strategy.actionSteps))
+                : 'TBD'
+            const isEssential = strategy.priorityLevel === 'essential'
+            
+            // Group steps by phase
+            const beforeSteps = strategy.actionSteps?.filter((step: any) => getStepTiming(step) === 'before') || []
+            const duringSteps = strategy.actionSteps?.filter((step: any) => getStepTiming(step) === 'during') || []
+            const afterSteps = strategy.actionSteps?.filter((step: any) => getStepTiming(step) === 'after') || []
+            
+            return (
+              <div key={sIdx} className="border-4 border-green-500 bg-green-50 p-6 mb-6 page-break-after">
+                <div className="flex justify-between items-start mb-3">
+                  <h2 className="text-2xl font-black text-green-900">
+                    {isEssential && <span className="text-red-600">⚠️ ESSENTIAL: </span>}
+                    {stratName}
+                  </h2>
+                  <div className="text-right text-sm ml-4">
+                    <div className="font-bold text-green-900">{formatCurrency(stratCost, currencySymbol)}</div>
+                    <div className="text-gray-600">{stratTime}</div>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mb-4">{stratDesc}</p>
+                
+                {/* BEFORE: Prevention & Preparation */}
+                {beforeSteps.length > 0 && (
+                  <div className="mb-6">
+                    <div className="bg-blue-600 text-white p-3 mb-3">
+                      <h3 className="text-xl font-black">🛡️ BEFORE: Prevention & Preparation</h3>
+                      <p className="text-sm mt-1">Do these things NOW to reduce risk and prepare for potential impact</p>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <ol className="space-y-3">
+                        {beforeSteps.map((step: any, stepIdx: number) => {
+                          const stepText = getStringValue(step.smeAction || step.title || step.description)
+                          const stepTime = getStringValue(step.timeframe)
+                          const whyMatters = getStringValue(step.whyThisStepMatters)
+                          const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                          const responsibility = getStringValue(step.responsibility)
+                          const howToKnowDone = getStringValue(step.howToKnowItsDone)
+                          const freeAlternative = getStringValue(step.freeAlternative)
+                          const lowTechOption = getStringValue(step.lowTechOption)
+                          const exampleOutput = getStringValue(step.exampleOutput)
+                          const resources = safeParseJson(step.resources)
+                          const commonMistakes = safeParseJson(step.commonMistakesForStep)
+                          
+                          return (
+                            <li key={stepIdx} className="mb-4">
+                              {/* Action Step Card */}
+                              <div className="border border-gray-300 rounded-lg bg-white shadow-sm">
+                                {/* Header */}
+                                <div className="bg-blue-50 border-b border-gray-200 px-4 py-3">
+                                  <div className="flex items-start gap-3">
+                                    <span className="bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                                      {stepIdx + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-gray-900 text-base leading-tight">{stepText}</div>
+                                      <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-600">
+                                        {stepTime && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">⏱️</span> {stepTime}
+                                          </span>
+                                        )}
+                                        {responsibility && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">👤</span> {responsibility}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="px-4 py-3 space-y-3">
+                                  {/* Why This Matters */}
+                                  {whyMatters && (
+                                    <div className="bg-blue-50 border-l-4 border-blue-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-blue-600 font-bold text-sm">💡 WHY:</span>
+                                        <div className="text-sm text-gray-800 leading-relaxed">{whyMatters}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* What Happens If Skipped */}
+                                  {whatHappensIfSkipped && (
+                                    <div className="bg-red-50 border-l-4 border-red-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-red-600 font-bold text-sm">⚠️ IF SKIPPED:</span>
+                                        <div className="text-sm text-red-800 leading-relaxed">{whatHappensIfSkipped}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* How to Know It's Done */}
+                                  {howToKnowDone && (
+                                    <div className="bg-green-50 border-l-4 border-green-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-green-600 font-bold text-sm">✓ DONE WHEN:</span>
+                                        <div className="text-sm text-green-800 leading-relaxed">{howToKnowDone}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Example */}
+                                  {exampleOutput && (
+                                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-gray-600 font-bold text-sm">📄 EXAMPLE:</span>
+                                        <div className="text-sm text-gray-700 italic leading-relaxed">{exampleOutput}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Alternatives */}
+                                  {(freeAlternative || lowTechOption) && (
+                                    <div className="border-t border-gray-200 pt-3">
+                                      <div className="text-xs font-semibold text-gray-700 mb-2">💰 ALTERNATIVES:</div>
+                                      <div className="space-y-2">
+                                        {freeAlternative && (
+                                          <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border-l-2 border-yellow-300">
+                                            <strong>Free/Low-Cost:</strong> {freeAlternative}
+                                          </div>
+                                        )}
+                                        {lowTechOption && (
+                                          <div className="text-xs text-gray-600 bg-purple-50 p-2 rounded border-l-2 border-purple-300">
+                                            <strong>Low-Tech:</strong> {lowTechOption}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    </div>
+                  </div>
+                )}
+                
+                {/* DURING: Emergency Response */}
+                {duringSteps.length > 0 && (
+                  <div className="mb-6">
+                    <div className="bg-red-600 text-white p-3 mb-3">
+                      <h3 className="text-xl font-black">🚨 DURING: Emergency Response</h3>
+                      <p className="text-sm mt-1">Follow these steps when this emergency is happening NOW</p>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <ol className="space-y-3">
+                        {duringSteps.map((step: any, stepIdx: number) => {
+                          const stepText = getStringValue(step.smeAction || step.title || step.description)
+                          const stepTime = getStringValue(step.timeframe)
+                          const whyMatters = getStringValue(step.whyThisStepMatters)
+                          const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                          const responsibility = getStringValue(step.responsibility)
+                          const howToKnowDone = getStringValue(step.howToKnowItsDone)
+                          const freeAlternative = getStringValue(step.freeAlternative)
+                          const lowTechOption = getStringValue(step.lowTechOption)
+                          const exampleOutput = getStringValue(step.exampleOutput)
+
+                          return (
+                            <li key={stepIdx} className="mb-4">
+                              {/* Action Step Card */}
+                              <div className="border border-gray-300 rounded-lg bg-white shadow-sm">
+                                {/* Header */}
+                                <div className="bg-red-50 border-b border-gray-200 px-4 py-3">
+                                  <div className="flex items-start gap-3">
+                                    <span className="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                                      {stepIdx + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-gray-900 text-base leading-tight">{stepText}</div>
+                                      <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-600">
+                                        {stepTime && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">⏱️</span> {stepTime}
+                                          </span>
+                                        )}
+                                        {responsibility && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">👤</span> {responsibility}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="px-4 py-3 space-y-3">
+                                  {/* Why This Matters */}
+                                  {whyMatters && (
+                                    <div className="bg-red-50 border-l-4 border-red-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-red-600 font-bold text-sm">💡 WHY:</span>
+                                        <div className="text-sm text-gray-800 leading-relaxed">{whyMatters}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* What Happens If Skipped */}
+                                  {whatHappensIfSkipped && (
+                                    <div className="bg-orange-50 border-l-4 border-orange-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-orange-600 font-bold text-sm">⚠️ IF SKIPPED:</span>
+                                        <div className="text-sm text-orange-800 leading-relaxed">{whatHappensIfSkipped}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* How to Know It's Done */}
+                                  {howToKnowDone && (
+                                    <div className="bg-green-50 border-l-4 border-green-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-green-600 font-bold text-sm">✓ DONE WHEN:</span>
+                                        <div className="text-sm text-green-800 leading-relaxed">{howToKnowDone}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Example */}
+                                  {exampleOutput && (
+                                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-gray-600 font-bold text-sm">📄 EXAMPLE:</span>
+                                        <div className="text-sm text-gray-700 italic leading-relaxed">{exampleOutput}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Alternatives */}
+                                  {(freeAlternative || lowTechOption) && (
+                                    <div className="border-t border-gray-200 pt-3">
+                                      <div className="text-xs font-semibold text-gray-700 mb-2">💰 ALTERNATIVES:</div>
+                                      <div className="space-y-2">
+                                        {freeAlternative && (
+                                          <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border-l-2 border-yellow-300">
+                                            <strong>Free/Low-Cost:</strong> {freeAlternative}
+                                          </div>
+                                        )}
+                                        {lowTechOption && (
+                                          <div className="text-xs text-gray-600 bg-purple-50 p-2 rounded border-l-2 border-purple-300">
+                                            <strong>Low-Tech:</strong> {lowTechOption}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    </div>
+                  </div>
+                )}
+                
+                {/* AFTER: Recovery & Return */}
+                {afterSteps.length > 0 && (
+                  <div className="mb-6">
+                    <div className="bg-green-600 text-white p-3 mb-3">
+                      <h3 className="text-xl font-black">🔄 AFTER: Recovery & Return</h3>
+                      <p className="text-sm mt-1">Steps to restore operations and get back to business</p>
+                    </div>
+                    
+                    <div className="ml-4">
+                      <ol className="space-y-3">
+                        {afterSteps.map((step: any, stepIdx: number) => {
+                          const stepText = getStringValue(step.smeAction || step.title || step.description)
+                          const stepTime = getStringValue(step.timeframe)
+                          const whyMatters = getStringValue(step.whyThisStepMatters)
+                          const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                          const responsibility = getStringValue(step.responsibility)
+                          const howToKnowDone = getStringValue(step.howToKnowItsDone)
+                          const freeAlternative = getStringValue(step.freeAlternative)
+                          const lowTechOption = getStringValue(step.lowTechOption)
+                          const exampleOutput = getStringValue(step.exampleOutput)
+
+                          return (
+                            <li key={stepIdx} className="mb-4">
+                              {/* Action Step Card */}
+                              <div className="border border-gray-300 rounded-lg bg-white shadow-sm">
+                                {/* Header */}
+                                <div className="bg-green-50 border-b border-gray-200 px-4 py-3">
+                                  <div className="flex items-start gap-3">
+                                    <span className="bg-green-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">
+                                      {stepIdx + 1}
+                                    </span>
+                                    <div className="flex-1">
+                                      <div className="font-bold text-gray-900 text-base leading-tight">{stepText}</div>
+                                      <div className="flex flex-wrap gap-4 mt-2 text-xs text-gray-600">
+                                        {stepTime && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">⏱️</span> {stepTime}
+                                          </span>
+                                        )}
+                                        {responsibility && (
+                                          <span className="flex items-center gap-1">
+                                            <span className="text-sm">👤</span> {responsibility}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="px-4 py-3 space-y-3">
+                                  {/* Why This Matters */}
+                                  {whyMatters && (
+                                    <div className="bg-green-50 border-l-4 border-green-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-green-600 font-bold text-sm">💡 WHY:</span>
+                                        <div className="text-sm text-gray-800 leading-relaxed">{whyMatters}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* What Happens If Skipped */}
+                                  {whatHappensIfSkipped && (
+                                    <div className="bg-red-50 border-l-4 border-red-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-red-600 font-bold text-sm">⚠️ IF SKIPPED:</span>
+                                        <div className="text-sm text-red-800 leading-relaxed">{whatHappensIfSkipped}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* How to Know It's Done */}
+                                  {howToKnowDone && (
+                                    <div className="bg-green-50 border-l-4 border-green-400 pl-3 py-2">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-green-600 font-bold text-sm">✓ DONE WHEN:</span>
+                                        <div className="text-sm text-green-800 leading-relaxed">{howToKnowDone}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Example */}
+                                  {exampleOutput && (
+                                    <div className="bg-gray-50 border border-gray-200 rounded p-3">
+                                      <div className="flex items-start gap-2">
+                                        <span className="text-gray-600 font-bold text-sm">📄 EXAMPLE:</span>
+                                        <div className="text-sm text-gray-700 italic leading-relaxed">{exampleOutput}</div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Alternatives */}
+                                  {(freeAlternative || lowTechOption) && (
+                                    <div className="border-t border-gray-200 pt-3">
+                                      <div className="text-xs font-semibold text-gray-700 mb-2">💰 ALTERNATIVES:</div>
+                                      <div className="space-y-2">
+                                        {freeAlternative && (
+                                          <div className="text-xs text-gray-600 bg-yellow-50 p-2 rounded border-l-2 border-yellow-300">
+                                            <strong>Free/Low-Cost:</strong> {freeAlternative}
+                                          </div>
+                                        )}
+                                        {lowTechOption && (
+                                          <div className="text-xs text-gray-600 bg-purple-50 p-2 rounded border-l-2 border-purple-300">
+                                            <strong>Low-Tech:</strong> {lowTechOption}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
+
+      {/* ====================================================================== */}
+      {/* SECTION 3: RISK-SPECIFIC ACTION PLANS */}
       {/* For each risk: BEFORE (prevention), DURING (response), AFTER (recovery) */}
       {/* ====================================================================== */}
-      {sortedRisks.map((risk: any, riskIdx: number) => {
-        const hazardId = risk.hazardId || risk.id
-        const hazardName = getStringValue(risk.hazard || risk.Hazard || 'Risk')
-        const riskScore = risk.riskScore || risk['Risk Score'] || 0
-        const likelihood = risk.likelihood || risk.Likelihood || 'Unknown'
-        const impact = risk.impact || risk.Impact || 'Unknown'
-        const vulnerability = getStringValue(risk.vulnerability || risk.Vulnerability || '')
-        const emoji = getRiskEmoji(hazardName)
-        const severityBadge = getRiskSeverityBadge(riskScore)
-        
-        // Find strategies that apply to this risk
-        // Check both risk-specific AND generic strategies
-        const matchingStrategies = [...riskSpecificStrategies, ...genericStrategies].filter(s => {
-          const applicableRisks = parseApplicableRisks(s.applicableRisks)
-          return applicableRisks.some((riskId: string) => {
-            // Normalize for comparison
-            const riskIdNorm = (riskId || '').toString().toLowerCase().replace(/_/g, ' ').trim()
-            const hazardIdNorm = (hazardId || '').toString().toLowerCase().replace(/_/g, ' ').trim()
-            const hazardNameNorm = (hazardName || '').toString().toLowerCase().trim()
-            
-            // Match by ID or by name (with normalization)
-            return riskId === hazardId || 
-                   riskId === hazardName ||
-                   riskIdNorm === hazardIdNorm ||
-                   riskIdNorm === hazardNameNorm ||
-                   hazardNameNorm.includes(riskIdNorm) ||
-                   riskIdNorm.includes(hazardNameNorm)
+      {(() => {
+        return sortedRisks.map((risk: any, riskIdx: number) => {
+          // Reset seen strategies for each risk (allow strategies to show under multiple risks)
+          const seenStrategyIds = new Set<string>()
+          const hazardId = risk.hazardId || risk.id
+          const hazardName = getStringValue(risk.hazard || risk.Hazard || 'Risk')
+          const riskScore = risk.riskScore || risk['Risk Score'] || 0
+          const likelihood = risk.likelihood || risk.Likelihood || 'Unknown'
+          const impact = risk.impact || risk.Impact || 'Unknown'
+          const vulnerability = getStringValue(risk.vulnerability || risk.Vulnerability || '')
+          const emoji = getRiskEmoji(hazardName)
+          const severityBadge = getRiskSeverityBadge(riskScore)
+          
+          // Helper function to normalize risk identifiers for matching
+          const normalizeRiskIdentifier = (id: string): string => {
+            if (!id) return ''
+            return id.toString()
+              // Convert camelCase to snake_case (PowerOutage → power_outage)
+              .replace(/([a-z])([A-Z])/g, '$1_$2')
+              .toLowerCase()
+              .replace(/[_\s-]+/g, '_')
+              .replace(/[^a-z0-9_]/g, '')
+              .replace(/_+/g, '_') // collapse multiple underscores
+              .replace(/^_|_$/g, '') // remove leading/trailing underscores
+              .trim()
+          }
+          
+          // SIMPLE APPROACH: Use admin-configured risk-strategy relationships
+          const matchingStrategies = riskSpecificStrategies.filter(s => {
+            // Check if this strategy's applicableRisks includes the current hazard
+            const applicableRisks = parseApplicableRisks(s.applicableRisks)
+            const strategyId = s.id || s.strategyId || ''
+
+            // Skip if already shown or no applicable risks configured
+            if (seenStrategyIds.has(strategyId) || applicableRisks.length === 0) return false
+
+            // Check if strategy applies to this specific risk (admin-configured)
+            const matchesThisRisk = applicableRisks.some((riskId: string) =>
+              riskId === hazardId || riskId === hazardName?.toLowerCase().replace(/\s+/g, '_')
+            )
+
+            if (matchesThisRisk) {
+              seenStrategyIds.add(strategyId)
+              return true
+            }
+
+            return false
           })
-        })
         
-        // Extract steps by execution timing from matching strategies
-        const beforeStrategies = matchingStrategies.map(s => ({
-          ...s,
-          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'before_crisis') || []
-        })).filter(s => s.actionSteps.length > 0)
+        // Extract steps by execution timing from matching strategies (using getStepTiming defined above)
+        // CRITICAL: Ensure we only include risk-specific strategies (exclude generic ones)
+        const beforeStrategies = matchingStrategies
+          .filter(s => {
+            const applicableRisks = parseApplicableRisks(s.applicableRisks)
+            return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+          })
+          .map(s => ({
+            ...s,
+            actionSteps: s.actionSteps?.filter((step: any) => getStepTiming(step) === 'before') || []
+          }))
+          .filter(s => s.actionSteps.length > 0)
         
-        const duringStrategies = matchingStrategies.map(s => ({
-          ...s,
-          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'during_crisis') || []
-        })).filter(s => s.actionSteps.length > 0)
+        const duringStrategies = matchingStrategies
+          .filter(s => {
+            const applicableRisks = parseApplicableRisks(s.applicableRisks)
+            return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+          })
+          .map(s => ({
+            ...s,
+            actionSteps: s.actionSteps?.filter((step: any) => getStepTiming(step) === 'during') || []
+          }))
+          .filter(s => s.actionSteps.length > 0)
         
-        const afterStrategies = matchingStrategies.map(s => ({
-          ...s,
-          actionSteps: s.actionSteps?.filter((step: any) => step.executionTiming === 'after_crisis') || []
-        })).filter(s => s.actionSteps.length > 0)
+        const afterStrategies = matchingStrategies
+          .filter(s => {
+            const applicableRisks = parseApplicableRisks(s.applicableRisks)
+            return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+          })
+          .map(s => ({
+            ...s,
+            actionSteps: s.actionSteps?.filter((step: any) => getStepTiming(step) === 'after') || []
+          }))
+          .filter(s => s.actionSteps.length > 0)
         
         return (
           <div key={riskIdx} className="p-8 page-break-after">
@@ -525,7 +1187,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
               </div>
               <div className="grid grid-cols-3 gap-4 text-base mt-4 border-t-2 border-gray-300 pt-4">
                 <div>
-                  <span className="font-bold text-gray-700">Risk Score:</span> {riskScore}/25
+                  <span className="font-bold text-gray-700">Risk Score:</span> {typeof riskScore === 'number' ? riskScore.toFixed(1) : riskScore}/10
                 </div>
                 <div>
                   <span className="font-bold text-gray-700">Likelihood:</span> {likelihood}
@@ -550,7 +1212,13 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
               
               {beforeStrategies.length > 0 ? (
                 <div className="space-y-4">
-                  {beforeStrategies.map((strategy, sIdx) => {
+                  {beforeStrategies
+                    .filter(strategy => {
+                      // CRITICAL: Exclude generic strategies from risk-specific sections
+                      const applicableRisks = parseApplicableRisks(strategy.applicableRisks)
+                      return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+                    })
+                    .map((strategy, sIdx) => {
                     const stratName = getStringValue(strategy.smeTitle || strategy.name)
                     const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
                     const stratCost = strategy.calculatedCostLocal || 0
@@ -579,24 +1247,102 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (
                           <div className="ml-4">
                             <div className="font-bold text-sm text-gray-800 mb-2">Action Steps:</div>
-                            <ol className="space-y-2">
+                            <ol className="space-y-3">
                               {strategy.actionSteps
-                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                                 .map((step, stepIdx) => {
                                   const stepText = getStringValue(step.smeAction || step.title || step.description)
-                                  const stepTime = step.timeframe
+                                  const stepTime = getStringValue(step.timeframe)
+                                  const whyMatters = getStringValue(step.whyThisStepMatters)
+                                  const resources = safeParseJson(step.resources)
+                                  const checklist = safeParseJson(step.checklist)
+                                  const commonMistakes = safeParseJson(step.commonMistakesForStep)
+                                  const howToKnowDone = getStringValue(step.howToKnowItsDone)
+                                  const responsibility = getStringValue(step.responsibility)
+                                  const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                                  const freeAlternative = getStringValue(step.freeAlternative)
+                                  const lowTechOption = getStringValue(step.lowTechOption)
+                                  const exampleOutput = getStringValue(step.exampleOutput)
+                                  
                                   return (
-                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
-                                      <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        {stepIdx + 1}
-                                      </span>
-                                      <div className="flex-1">
-                                        <span>{stepText}</span>
-                                        {stepTime && (
-                                          <span className="ml-2 text-gray-600 italic">({stepTime})</span>
-                                        )}
+                                    <li key={stepIdx} className="border-l-4 border-blue-400 pl-3 pb-2">
+                                      <div className="flex items-start gap-2 mb-1">
+                                        <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                          {stepIdx + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                          <div className="font-semibold text-gray-900">{stepText}</div>
+                                          {stepTime && (
+                                            <div className="text-xs text-gray-600 mt-0.5">
+                                              ⏱️ {stepTime}
+                                              {responsibility && ` • Responsible: ${responsibility}`}
+                                            </div>
+                                          )}
+                                          {whyMatters && (
+                                            <div className="text-xs text-blue-700 mt-1 italic">
+                                              💡 Why: {whyMatters}
+                                            </div>
+                                          )}
+                                          {whatHappensIfSkipped && (
+                                            <div className="text-xs text-orange-700 mt-1">
+                                              ⚠️ If skipped: {whatHappensIfSkipped}
+                                            </div>
+                                          )}
+                                          {howToKnowDone && (
+                                            <div className="text-xs text-green-700 mt-1">
+                                              ✓ Done when: {howToKnowDone}
+                                            </div>
+                                          )}
+                                          {exampleOutput && (
+                                            <div className="text-xs text-gray-600 mt-1 italic">
+                                              📄 Example: {exampleOutput}
+                                            </div>
+                                          )}
+                                          {resources.length > 0 && (
+                                            <div className="text-xs text-gray-600 mt-1">
+                                              📦 Resources needed: {resources.map((r: any) => getStringValue(r)).join(', ')}
+                                            </div>
+                                          )}
+                                          {checklist.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-gray-700 mb-1">Checklist:</div>
+                                              <ul className="space-y-0.5">
+                                                {checklist.map((item: any, cIdx: number) => (
+                                                  <li key={cIdx} className="text-xs text-gray-600 flex items-start gap-1">
+                                                    <span className="text-gray-400">□</span>
+                                                    <span>{getStringValue(item)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {commonMistakes.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-red-700 mb-1">⚠️ Avoid:</div>
+                                              <ul className="space-y-0.5">
+                                                {commonMistakes.map((mistake: any, mIdx: number) => (
+                                                  <li key={mIdx} className="text-xs text-red-600">
+                                                    • {getStringValue(mistake)}
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {freeAlternative && (
+                                            <div className="mt-2 ml-4 p-2 bg-green-50 border-l-2 border-green-400">
+                                              <div className="text-xs font-semibold text-green-700 mb-1">💰 Free/Low-Cost Option:</div>
+                                              <div className="text-xs text-green-800">{freeAlternative}</div>
+                                            </div>
+                                          )}
+                                          {lowTechOption && (
+                                            <div className="mt-2 ml-4 p-2 bg-blue-50 border-l-2 border-blue-400">
+                                              <div className="text-xs font-semibold text-blue-700 mb-1">🔧 Low-Tech Option:</div>
+                                              <div className="text-xs text-blue-800">{lowTechOption}</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <span className="flex-shrink-0 w-6 h-6 border-2 border-gray-400 rounded mt-1"></span>
                                       </div>
-                                      <span className="flex-shrink-0 w-6 h-6 border-2 border-gray-400 rounded"></span>
                                     </li>
                                   )
                                 })}
@@ -624,7 +1370,13 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
               
               {duringStrategies.length > 0 ? (
                 <div className="space-y-4">
-                  {duringStrategies.map((strategy, sIdx) => {
+                  {duringStrategies
+                    .filter(strategy => {
+                      // CRITICAL: Exclude generic strategies from risk-specific sections
+                      const applicableRisks = parseApplicableRisks(strategy.applicableRisks)
+                      return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+                    })
+                    .map((strategy, sIdx) => {
                     const stratName = getStringValue(strategy.smeTitle || strategy.name)
                     const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
                     
@@ -636,17 +1388,69 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                         {/* Action Steps */}
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (
                           <div className="ml-4">
-                            <ol className="space-y-2">
+                            <ol className="space-y-3">
                               {strategy.actionSteps
-                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                                 .map((step, stepIdx) => {
                                   const stepText = getStringValue(step.smeAction || step.title || step.description)
+                                  const stepTime = getStringValue(step.timeframe)
+                                  const whyMatters = getStringValue(step.whyThisStepMatters)
+                                  const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                                  const resources = safeParseJson(step.resources)
+                                  const checklist = safeParseJson(step.checklist)
+                                  const commonMistakes = safeParseJson(step.commonMistakesForStep)
+                                  const responsibility = getStringValue(step.responsibility)
+                                  
                                   return (
-                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
-                                      <span className="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        {stepIdx + 1}
-                                      </span>
-                                      <span className="flex-1">{stepText}</span>
+                                    <li key={stepIdx} className="border-l-4 border-red-400 pl-3 pb-2">
+                                      <div className="flex items-start gap-2 mb-1">
+                                        <span className="bg-red-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                          {stepIdx + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                          <div className="font-semibold text-gray-900">{stepText}</div>
+                                          {stepTime && (
+                                            <div className="text-xs text-gray-600 mt-0.5">
+                                              ⏱️ {stepTime}
+                                              {responsibility && ` • Responsible: ${responsibility}`}
+                                            </div>
+                                          )}
+                                          {whyMatters && (
+                                            <div className="text-xs text-red-700 mt-1 italic">💡 {whyMatters}</div>
+                                          )}
+                                          {whatHappensIfSkipped && (
+                                            <div className="text-xs text-orange-700 mt-1">⚠️ If skipped: {whatHappensIfSkipped}</div>
+                                          )}
+                                          {resources.length > 0 && (
+                                            <div className="text-xs text-gray-600 mt-1">
+                                              📦 Need: {resources.map((r: any) => getStringValue(r)).join(', ')}
+                                            </div>
+                                          )}
+                                          {checklist.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-gray-700 mb-1">Checklist:</div>
+                                              <ul className="space-y-0.5">
+                                                {checklist.map((item: any, cIdx: number) => (
+                                                  <li key={cIdx} className="text-xs text-gray-600 flex items-start gap-1">
+                                                    <span className="text-gray-400">□</span>
+                                                    <span>{getStringValue(item)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {commonMistakes.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-red-700 mb-1">⚠️ Avoid:</div>
+                                              <ul className="space-y-0.5">
+                                                {commonMistakes.map((mistake: any, mIdx: number) => (
+                                                  <li key={mIdx} className="text-xs text-red-600">• {getStringValue(mistake)}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
                                     </li>
                                   )
                                 })}
@@ -663,7 +1467,9 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                   <ol className="space-y-2 text-sm text-gray-700 list-decimal list-inside">
                     <li>Ensure all staff and visitors are safe - evacuate if necessary</li>
                     <li>Contact emergency services if needed: {emergencyContacts[0] ? getStringValue(emergencyContacts[0]['Phone Number'] || emergencyContacts[0].phoneNumber) : '911'}</li>
-                    <li>Alert Plan Manager: {planManager} - {planManagerPhone}</li>
+                    <li>Alert Plan Manager: {planManager} - {planManagerPhone || planManagerEmail}
+                    {alternateManager && alternateManager !== 'N/A' && alternateContact && ` (Backup: ${alternateManager})`}
+                    </li>
                     <li>Communicate with staff using contact list</li>
                     <li>Document the situation (photos, notes, timeline)</li>
                     <li>Contact insurance provider as soon as safe to do so</li>
@@ -682,7 +1488,13 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
               
               {afterStrategies.length > 0 ? (
                 <div className="space-y-4">
-                  {afterStrategies.map((strategy, sIdx) => {
+                  {afterStrategies
+                    .filter(strategy => {
+                      // CRITICAL: Exclude generic strategies from risk-specific sections
+                      const applicableRisks = parseApplicableRisks(strategy.applicableRisks)
+                      return applicableRisks.length > 0 && !applicableRisks.includes('all_hazards')
+                    })
+                    .map((strategy, sIdx) => {
                     const stratName = getStringValue(strategy.smeTitle || strategy.name)
                     const stratDesc = getStringValue(strategy.smeSummary || strategy.description)
                     const stratCost = strategy.calculatedCostLocal || 0
@@ -702,22 +1514,90 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                         {/* Action Steps */}
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (
                           <div className="ml-4">
-                            <ol className="space-y-2">
+                            <ol className="space-y-3">
                               {strategy.actionSteps
-                                .sort((a, b) => a.sortOrder - b.sortOrder)
+                                .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
                                 .map((step, stepIdx) => {
                                   const stepText = getStringValue(step.smeAction || step.title || step.description)
-                                  const stepTime = step.timeframe
+                                  const stepTime = getStringValue(step.timeframe)
+                                  const whyMatters = getStringValue(step.whyThisStepMatters)
+                                  const whatHappensIfSkipped = getStringValue(step.whatHappensIfSkipped)
+                                  const resources = safeParseJson(step.resources)
+                                  const checklist = safeParseJson(step.checklist)
+                                  const commonMistakes = safeParseJson(step.commonMistakesForStep)
+                                  const howToKnowDone = getStringValue(step.howToKnowItsDone)
+                                  const responsibility = getStringValue(step.responsibility)
+                                  const exampleOutput = getStringValue(step.exampleOutput)
+                                  const freeAlternative = getStringValue(step.freeAlternative)
+                                  const lowTechOption = getStringValue(step.lowTechOption)
+                                  
                                   return (
-                                    <li key={stepIdx} className="flex items-start gap-2 text-sm">
-                                      <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
-                                        {stepIdx + 1}
-                                      </span>
-                                      <div className="flex-1">
-                                        <span>{stepText}</span>
-                                        {stepTime && (
-                                          <span className="ml-2 text-gray-600 italic">({stepTime})</span>
-                                        )}
+                                    <li key={stepIdx} className="border-l-4 border-green-400 pl-3 pb-2">
+                                      <div className="flex items-start gap-2 mb-1">
+                                        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold">
+                                          {stepIdx + 1}
+                                        </span>
+                                        <div className="flex-1">
+                                          <div className="font-semibold text-gray-900">{stepText}</div>
+                                          {stepTime && (
+                                            <div className="text-xs text-gray-600 mt-0.5">
+                                              ⏱️ {stepTime}
+                                              {responsibility && ` • Responsible: ${responsibility}`}
+                                            </div>
+                                          )}
+                                          {whyMatters && (
+                                            <div className="text-xs text-green-700 mt-1 italic">💡 {whyMatters}</div>
+                                          )}
+                                          {whatHappensIfSkipped && (
+                                            <div className="text-xs text-orange-700 mt-1">⚠️ If skipped: {whatHappensIfSkipped}</div>
+                                          )}
+                                          {howToKnowDone && (
+                                            <div className="text-xs text-green-700 mt-1">✓ {howToKnowDone}</div>
+                                          )}
+                                          {exampleOutput && (
+                                            <div className="text-xs text-gray-600 mt-1 italic">📄 Example: {exampleOutput}</div>
+                                          )}
+                                          {resources.length > 0 && (
+                                            <div className="text-xs text-gray-600 mt-1">
+                                              📦 Need: {resources.map((r: any) => getStringValue(r)).join(', ')}
+                                            </div>
+                                          )}
+                                          {checklist.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-gray-700 mb-1">Checklist:</div>
+                                              <ul className="space-y-0.5">
+                                                {checklist.map((item: any, cIdx: number) => (
+                                                  <li key={cIdx} className="text-xs text-gray-600 flex items-start gap-1">
+                                                    <span className="text-gray-400">□</span>
+                                                    <span>{getStringValue(item)}</span>
+                                                  </li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {commonMistakes.length > 0 && (
+                                            <div className="mt-2 ml-4">
+                                              <div className="text-xs font-semibold text-red-700 mb-1">⚠️ Avoid:</div>
+                                              <ul className="space-y-0.5">
+                                                {commonMistakes.map((mistake: any, mIdx: number) => (
+                                                  <li key={mIdx} className="text-xs text-red-600">• {getStringValue(mistake)}</li>
+                                                ))}
+                                              </ul>
+                                            </div>
+                                          )}
+                                          {freeAlternative && (
+                                            <div className="mt-2 ml-4 p-2 bg-green-50 border-l-2 border-green-400">
+                                              <div className="text-xs font-semibold text-green-700 mb-1">💰 Free/Low-Cost Option:</div>
+                                              <div className="text-xs text-green-800">{freeAlternative}</div>
+                                            </div>
+                                          )}
+                                          {lowTechOption && (
+                                            <div className="mt-2 ml-4 p-2 bg-blue-50 border-l-2 border-blue-400">
+                                              <div className="text-xs font-semibold text-blue-700 mb-1">🔧 Low-Tech Option:</div>
+                                              <div className="text-xs text-blue-800">{lowTechOption}</div>
+                                            </div>
+                                          )}
+                                        </div>
                                       </div>
                                     </li>
                                   )
@@ -754,6 +1634,11 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                 </div>
                 <div>
                   <span className="font-semibold">Plan Manager:</span> {planManagerPhone || planManagerEmail}
+                  {alternateManager && alternateManager !== 'N/A' && alternateContact && (
+                    <div className="mt-0.5 text-xs">
+                      <span className="font-semibold">Alternate:</span> {alternateContact}
+                    </div>
+                  )}
                 </div>
                 {insuranceContacts[0] && (
                   <div>
@@ -769,10 +1654,77 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             </div>
           </div>
         )
-      })}
+        })
+      })()}
 
       {/* ====================================================================== */}
-      {/* SECTION 3: IMPLEMENTATION CHECKLIST */}
+      {/* SECTION 4: ESSENTIAL FUNCTIONS RECOVERY PRIORITIES */}
+      {/* Critical operations that must be restored first */}
+      {/* ====================================================================== */}
+      {essentialFunctions.length > 0 && (
+        <div className="p-8 page-break-after">
+          <div className="border-4 border-purple-600 p-4 mb-6">
+            <h1 className="text-4xl font-black text-purple-900">
+              ⚡ ESSENTIAL FUNCTIONS RECOVERY PLAN
+            </h1>
+            <p className="text-lg mt-2 text-purple-700">
+              These are our most critical operations - Restore these FIRST after any disruption
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {essentialFunctions.map((fn: any, idx: number) => {
+              const priorityColor = fn.priority === 'critical' ? 'bg-red-100 border-red-400' :
+                                   fn.priority === 'high' ? 'bg-orange-100 border-orange-400' :
+                                   'bg-yellow-100 border-yellow-400'
+              const priorityLabel = fn.priority === 'critical' ? '🔴 CRITICAL' :
+                                   fn.priority === 'high' ? '🟠 HIGH' :
+                                   '🟡 MEDIUM'
+              
+              return (
+                <div key={idx} className={`border-4 ${priorityColor} p-4`}>
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-2xl font-black">{idx + 1}.</span>
+                        <h3 className="text-xl font-black text-gray-900">{fn.name}</h3>
+                        <span className="text-sm font-bold px-2 py-1 rounded bg-white">{priorityLabel}</span>
+                      </div>
+                      {fn.description && (
+                        <p className="text-sm text-gray-700 mt-1">{fn.description}</p>
+                      )}
+                    </div>
+                    {fn.maxDowntime && fn.maxDowntime !== 'TBD' && (
+                      <div className="ml-4 text-right">
+                        <div className="text-xs font-semibold text-gray-600">Max Downtime</div>
+                        <div className="text-lg font-black text-red-600">{fn.maxDowntime}</div>
+                      </div>
+                    )}
+                  </div>
+                  {fn.resources && (
+                    <div className="mt-3 pt-3 border-t-2 border-gray-300">
+                      <div className="text-xs font-semibold text-gray-700 mb-1">Critical Resources Needed:</div>
+                      <div className="text-sm text-gray-800">{fn.resources}</div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-6 border-2 border-purple-300 bg-purple-50 p-4">
+            <h3 className="font-black text-purple-900 mb-2">📋 Recovery Priority Guide:</h3>
+            <ul className="space-y-1 text-sm text-purple-800">
+              <li><strong>🔴 CRITICAL:</strong> Restore immediately (0-2 hours) - Business cannot operate without these</li>
+              <li><strong>🟠 HIGH:</strong> Restore within 4-8 hours - Significant impact if delayed</li>
+              <li><strong>🟡 MEDIUM:</strong> Restore within 24-48 hours - Important but not immediately critical</li>
+            </ul>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================== */}
+      {/* SECTION 4: IMPLEMENTATION CHECKLIST */}
       {/* Track progress on prevention strategies */}
       {/* ====================================================================== */}
       <div className="p-8 page-break-after">
@@ -941,7 +1893,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
       </div>
 
       {/* ====================================================================== */}
-      {/* SECTION 4: CONTACT DIRECTORY */}
+      {/* SECTION 5: CONTACT DIRECTORY */}
       {/* All contacts organized by category */}
       {/* ====================================================================== */}
       <div className="p-8 page-break-after">
@@ -1163,7 +2115,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
       </div>
 
       {/* ====================================================================== */}
-      {/* SECTION 5: DOCUMENT LOCATOR */}
+      {/* SECTION 6: DOCUMENT LOCATOR */}
       {/* Where to find vital records */}
       {/* ====================================================================== */}
       <div className="p-8 page-break-after">
@@ -1266,7 +2218,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
       </div>
 
       {/* ====================================================================== */}
-      {/* SECTION 6: INCIDENT LOG TEMPLATE */}
+      {/* SECTION 7: INCIDENT LOG TEMPLATE */}
       {/* Blank forms for recording emergencies */}
       {/* ====================================================================== */}
       <div className="p-8 page-break-after">

@@ -181,35 +181,49 @@ function generateRiskAssessment(
   allRisks: any[],
   strategies: StrategyData[]
 ): FormalBCPData['riskAssessment'] {
-  // Generate major risks detail
-  const majorRisks = highPriorityRisks.map(risk => ({
-    hazardName: risk.hazardName,
-    riskScore: risk.riskScore,
-    riskLevel: risk.riskLevel,
-    likelihood: risk.likelihood,
-    potentialImpact: risk.impact,
-    vulnerability: simplifyForFormalDocument(risk.reasoning || 'This risk could significantly impact our business operations.'),
-    potentialLoss: estimatePotentialLoss(risk, planData)
-  }))
+  // Generate major risks detail - include ALL ticked high-priority risks (regardless of strategies)
+  const majorRisks = highPriorityRisks
+    .filter(risk => {
+      // Only include risks that have been explicitly ticked (isSelected === true)
+      return risk.isSelected === true
+    })
+    .map(risk => ({
+      hazardName: risk.hazardName,
+      riskScore: risk.riskScore,
+      riskLevel: risk.riskLevel,
+      likelihood: risk.likelihood,
+      potentialImpact: risk.impact,
+      vulnerability: simplifyForFormalDocument(risk.reasoning || 'This risk could significantly impact our business operations.'),
+      potentialLoss: estimatePotentialLoss(risk, planData)
+    }))
   
-  // Generate all risks summary table
-  const allRisksSummary = allRisks.map(risk => ({
-    hazard: risk.hazardName,
-    likelihood: risk.likelihood,
-    impact: risk.impact,
-    riskLevel: risk.riskLevel,
-    riskScore: risk.riskScore,
-    mitigationStatus: getMitigationStatus(risk.hazardId, strategies, planData)
-  }))
+  // Generate all risks summary table - include ALL ticked risks (regardless of strategies)
+  const allRisksSummary = allRisks
+    .filter(risk => {
+      // Only include risks that have been explicitly ticked (isSelected === true)
+      return risk.isSelected === true
+    })
+    .map(risk => ({
+      hazard: risk.hazardName,
+      likelihood: risk.likelihood,
+      impact: risk.impact,
+      riskLevel: risk.riskLevel,
+      riskScore: risk.riskScore
+      // Removed mitigationStatus - no user input for planned/addressed status
+    }))
   
   // Calculate potential business impact
   const businessInfo = planData.BUSINESS_OVERVIEW || {}
   const revenueValue = businessInfo['Approximate Annual Revenue'] || 'under_1m'
-  const potentialImpact = calculatePotentialImpact(revenueValue, highPriorityRisks.length, planData)
+  
+  // Count ALL ticked risks (not just ones with strategies)
+  const allTickedRisks = allRisks.filter(risk => risk.isSelected === true)
+  
+  const potentialImpact = calculatePotentialImpact(revenueValue, majorRisks.length, planData)
   
   return {
-    totalRisksIdentified: allRisks.length,
-    highPriorityRisksCount: highPriorityRisks.length,
+    totalRisksIdentified: allTickedRisks.length,
+    highPriorityRisksCount: majorRisks.length, // All high priority risks that are ticked
     majorRisks,
     allRisksSummary,
     potentialImpact
@@ -313,38 +327,20 @@ function generateContinuityStrategies(
   console.log('[Transformer] Investment breakdown:', investmentBreakdown)
   
   // ============================================================================
-  // Group strategies by risk - USE ALL USER-SELECTED STRATEGIES (NOT JUST HIGH PRIORITY)
+  // Group strategies by risk - ONLY RISKS THAT HAVE BEEN TICKED AND HAVE STRATEGIES
   // ============================================================================
   
-  // Get ALL risks that have at least one strategy (not just high priority)
-  const risksWithStrategies = highPriorityRisks.filter(risk => {
+  // Get ALL risks that have been explicitly ticked (isSelected === true) AND have strategies
+  const allRisksForDisplay = allRisks.filter(risk => {
+    // Only include risks that have been explicitly ticked
+    if (risk.isSelected !== true) return false
+    
+    // Only include risks that have at least one strategy
     return strategies.some(s => (s.applicableRisks || []).includes(risk.hazardId))
   })
   
-  // If user selected strategies for non-high-priority risks, include those too
-  const allRisksInPlan = planData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
-  const additionalRisks = allRisksInPlan.filter(risk => {
-    const isHighPriority = highPriorityRisks.some(hr => hr.hazardId === risk.hazardId)
-    if (isHighPriority) return false // Already included
-    
-    // Include if has strategies
-    return strategies.some(s => (s.applicableRisks || []).includes(risk.hazardId))
-  }).map(risk => ({
-    hazardId: risk.hazardId,
-    hazardName: risk.hazardName || risk.Hazard,
-    riskScore: parseFloat(risk.riskScore || risk['Risk Score'] || 0),
-    riskLevel: risk.riskLevel || risk['Risk Level'],
-    likelihood: risk.likelihood || risk.Likelihood,
-    impact: risk.impact || risk.Impact,
-    reasoning: risk.reasoning
-  }))
-  
-  const allRisksForDisplay = [...risksWithStrategies, ...additionalRisks]
-  
   console.log('[Transformer] Risks with strategies:')
-  console.log(`  - High priority risks with strategies: ${risksWithStrategies.length}`)
-  console.log(`  - Additional (non-high priority) risks with strategies: ${additionalRisks.length}`)
-  console.log(`  - TOTAL risks to display: ${allRisksForDisplay.length}`)
+  console.log(`  - TOTAL risks to display (ticked and have strategies): ${allRisksForDisplay.length}`)
   allRisksForDisplay.forEach((r, idx) => {
     const count = strategies.filter(s => (s.applicableRisks || []).includes(r.hazardId)).length
     console.log(`    ${idx + 1}. ${r.hazardName} (${r.riskLevel}): ${count} strategies`)
@@ -399,7 +395,7 @@ function generateContinuityStrategies(
           investmentRequired: costDisplay,
           setupTime: strategy.timeToImplement || strategy.implementationTime || 'Varies',
           effectiveness: strategy.effectiveness || 7,
-          status: 'Planned',
+          // Removed status field - no user input for planned/addressed status
           responsiblePerson: planData.PLAN_INFORMATION?.['Plan Manager'] || 'Business Owner'
         },
         keyActions: actions, // ALL actions

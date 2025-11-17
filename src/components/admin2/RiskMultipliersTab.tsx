@@ -49,6 +49,21 @@ export default function RiskMultipliersTab() {
     fetchMultipliers()
   }, [])
 
+  // Scroll to form when editing starts
+  useEffect(() => {
+    if (editingId && showForm) {
+      const scrollToForm = () => {
+        const formElement = document.getElementById('multiplier-form')
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }
+      }
+      // Delay to ensure form is rendered
+      const timeoutId = setTimeout(scrollToForm, 200)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [editingId, showForm])
+
   const fetchMultipliers = async () => {
     try {
       setLoading(true)
@@ -106,11 +121,36 @@ export default function RiskMultipliersTab() {
       hazards = []
     }
     
+    // Parse multilingual fields
+    let wizardQuestion: any = undefined
+    let wizardAnswerOptions: any = undefined
+    let wizardHelpText: any = undefined
+    
+    try {
+      if (multiplier.wizardQuestion) {
+        wizardQuestion = typeof multiplier.wizardQuestion === 'string' 
+          ? JSON.parse(multiplier.wizardQuestion)
+          : multiplier.wizardQuestion
+      }
+      if (multiplier.wizardAnswerOptions) {
+        wizardAnswerOptions = typeof multiplier.wizardAnswerOptions === 'string'
+          ? JSON.parse(multiplier.wizardAnswerOptions)
+          : multiplier.wizardAnswerOptions
+      }
+      if (multiplier.wizardHelpText) {
+        wizardHelpText = typeof multiplier.wizardHelpText === 'string'
+          ? JSON.parse(multiplier.wizardHelpText)
+          : multiplier.wizardHelpText
+      }
+    } catch (error) {
+      console.error('Error parsing multilingual fields:', error)
+    }
+    
     setFormData({
       name: multiplier.name,
       description: multiplier.description,
       characteristicType: multiplier.characteristicType,
-      conditionType: multiplier.conditionType,
+      conditionType: multiplier.conditionType as 'boolean' | 'threshold' | 'range',
       thresholdValue: multiplier.thresholdValue || undefined,
       minValue: multiplier.minValue || undefined,
       maxValue: multiplier.maxValue || undefined,
@@ -118,12 +158,29 @@ export default function RiskMultipliersTab() {
       applicableHazards: hazards,
       priority: multiplier.priority,
       reasoning: multiplier.reasoning || undefined,
-      wizardQuestion: multiplier.wizardQuestion || undefined,
-      wizardAnswerOptions: multiplier.wizardAnswerOptions || undefined,
-      wizardHelpText: multiplier.wizardHelpText || undefined,
+      wizardQuestion: wizardQuestion ? JSON.stringify(wizardQuestion) : undefined,
+      wizardAnswerOptions: wizardAnswerOptions ? JSON.stringify(wizardAnswerOptions) : undefined,
+      wizardHelpText: wizardHelpText ? JSON.stringify(wizardHelpText) : undefined,
       isActive: multiplier.isActive
     })
+    
+    // Ensure form is shown
     setShowForm(true)
+    
+    // Scroll to form after render - use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        const formElement = document.getElementById('multiplier-form')
+        if (formElement) {
+          formElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          // Also focus the first input for better UX
+          const firstInput = formElement.querySelector('input') as HTMLInputElement
+          if (firstInput) {
+            firstInput.focus()
+          }
+        }
+      }, 150)
+    })
   }
 
   const handleDelete = async (id: string) => {
@@ -299,7 +356,7 @@ export default function RiskMultipliersTab() {
 
       {/* Form */}
       {showForm && (
-        <div className="bg-white border-2 border-blue-300 rounded-lg p-6 shadow-md">
+        <div id="multiplier-form" className="bg-white border-2 border-blue-300 rounded-lg p-6 shadow-md">
           <h3 className="text-lg font-semibold mb-4">
             {editingId ? 'Edit Multiplier' : 'Create New Multiplier'}
           </h3>

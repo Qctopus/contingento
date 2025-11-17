@@ -17,7 +17,7 @@ import type { WizardFormData, StrategyData } from '../../../types/bcpExports'
 
 export async function POST(req: Request) {
   try {
-    const { planData, localCurrency = 'JMD', exchangeRate = 150 } = await req.json()
+    const { planData, localCurrency = 'JMD', exchangeRate = 150, locale = 'en' } = await req.json()
 
     if (!planData) {
       return NextResponse.json(
@@ -86,7 +86,8 @@ export async function POST(req: Request) {
       planData as WizardFormData,
       strategies,
       localCurrency,
-      exchangeRate
+      exchangeRate,
+      locale
     )
 
     // Generate PDF
@@ -155,6 +156,9 @@ function estimateCostFromString(cost: string): number {
   }
   return costMap[cost?.toLowerCase()] || 1000
 }
+
+
+
 
 
 

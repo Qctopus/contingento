@@ -32,6 +32,8 @@ import type {
   WorkbookAppendices,
   ChecklistItem
 } from '../types/bcpExports'
+import { getLocalizedText, getLocalizedArray } from './localizationUtils'
+import type { Locale } from '../i18n/config'
 
 // ============================================================================
 // BANK-READY DOCUMENT TRANSFORMATION
@@ -357,9 +359,51 @@ export function transformToWorkbookFormat(
   wizardData: WizardFormData,
   strategies: StrategyData[] = [],
   localCurrency: string = 'JMD',
-  exchangeRate: number = 150
+  exchangeRate: number = 150,
+  locale: Locale = 'en'
 ): WorkbookBCPData {
   const risks = getRisksFromWizard(wizardData)
+  
+  // Separate generic strategies from risk-specific ones
+  // Generic strategies: applicable to all risks or have 'all_hazards' in applicableRisks
+  const genericStrategies = strategies.filter(s => {
+    const applicableRisks = s.applicableRisks || []
+    return applicableRisks.length === 0 || 
+           applicableRisks.includes('all_hazards')
+  })
+  
+  // Risk-specific strategies: apply to specific risks (not all_hazards)
+  const riskSpecificStrategies = strategies.filter(s => {
+    const applicableRisks = s.applicableRisks || []
+    return applicableRisks.length > 0 && 
+           !applicableRisks.includes('all_hazards')
+  })
+  
+  // Create implementation guides: generic first, then risk-specific (avoid duplicates)
+  const implementationGuides: ImplementationGuide[] = []
+  const seenStrategyIds = new Set<string>()
+  
+  // Add generic strategies once
+  genericStrategies.forEach(s => {
+    const id = s.id || s.strategyId
+    if (!seenStrategyIds.has(id)) {
+      seenStrategyIds.add(id)
+    }
+  })
+  implementationGuides.push(...createImplementationGuides(genericStrategies, localCurrency, exchangeRate, locale))
+  
+  // Add risk-specific strategies once (even if they apply to multiple risks)
+  // Use the first applicable risk as the primary risk for grouping
+  const riskSpecificUnique = riskSpecificStrategies.filter(s => {
+    const id = s.id || s.strategyId
+    if (seenStrategyIds.has(id)) return false
+    seenStrategyIds.add(id)
+    return true
+  })
+  
+  if (riskSpecificUnique.length > 0) {
+    implementationGuides.push(...createImplementationGuides(riskSpecificUnique, localCurrency, exchangeRate, locale))
+  }
   
   return {
     coverPage: {
@@ -372,7 +416,7 @@ export function transformToWorkbookFormat(
     
     quickStartGuide: createQuickStartGuide(wizardData, strategies, localCurrency, exchangeRate),
     riskProfiles: createRiskProfiles(wizardData, strategies, localCurrency, exchangeRate),
-    implementationGuides: createImplementationGuides(strategies, localCurrency, exchangeRate),
+    implementationGuides,
     contactLists: createContactLists(wizardData),
     trackers: createProgressTrackers(),
     workbookAppendices: createWorkbookAppendices(localCurrency)
@@ -457,19 +501,60 @@ function createRiskProfiles(
 function createImplementationGuides(
   strategies: StrategyData[],
   localCurrency: string,
-  exchangeRate: number
+  exchangeRate: number,
+  locale: Locale = 'en'
 ): ImplementationGuide[] {
   return strategies.map(strategy => {
     const actionSteps = strategy.actionSteps || []
     
-    // Group steps by phase
-    const beforeSteps = actionSteps.filter(s => s.phase === 'immediate' || s.phase === 'short_term')
-    const duringSteps = actionSteps.filter(s => s.phase === 'medium_term')
-    const afterSteps = actionSteps.filter(s => s.phase === 'long_term')
+    // Parse multilingual strategy fields
+    const strategyName = getLocalizedText(strategy.smeTitle || strategy.name, locale)
+    const strategyPurpose = getLocalizedText(strategy.smeSummary || strategy.description, locale) || ''
+    const benefits = getLocalizedArray(strategy.benefitsBullets, locale) || [
+      'Reduces business disruption',
+      'Protects your assets and reputation',
+      'Gives peace of mind'
+    ]
+    
+    // Group steps by phase - handle both old and new phase values
+    // Also check timeframe field for phase hints
+    const beforeSteps = actionSteps.filter(s => {
+      const phase = (s.phase || '').toLowerCase()
+      const timeframe = getLocalizedText(s.timeframe, locale).toLowerCase()
+      return phase === 'before' || 
+             phase === 'immediate' || 
+             phase === 'short_term' ||
+             phase === 'prevention' ||
+             timeframe.includes('before') ||
+             timeframe.includes('preparation') ||
+             timeframe.includes('prevent')
+    })
+    const duringSteps = actionSteps.filter(s => {
+      const phase = (s.phase || '').toLowerCase()
+      const timeframe = getLocalizedText(s.timeframe, locale).toLowerCase()
+      return phase === 'during' || 
+             phase === 'medium_term' ||
+             phase === 'response' ||
+             timeframe.includes('during') ||
+             timeframe.includes('emergency') ||
+             timeframe.includes('crisis') ||
+             timeframe.includes('storm')
+    })
+    const afterSteps = actionSteps.filter(s => {
+      const phase = (s.phase || '').toLowerCase()
+      const timeframe = getLocalizedText(s.timeframe, locale).toLowerCase()
+      return phase === 'after' || 
+             phase === 'long_term' ||
+             phase === 'recovery' ||
+             timeframe.includes('after') ||
+             timeframe.includes('recover') ||
+             timeframe.includes('restore') ||
+             timeframe.includes('all-clear')
+    })
     
     return {
-      strategyName: strategy.smeTitle || strategy.name,
-      strategyPurpose: strategy.smeSummary || strategy.description || '',
+      strategyName,
+      strategyPurpose,
       
       costBreakdown: {
         budget: Math.round((strategy.calculatedCostLocal || strategy.calculatedCostUSD || 0) * 0.6),
@@ -478,19 +563,15 @@ function createImplementationGuides(
         currency: localCurrency
       },
       
-      benefits: strategy.benefitsBullets || [
-        'Reduces business disruption',
-        'Protects your assets and reputation',
-        'Gives peace of mind'
-      ],
+      benefits,
       
-      timeInvestment: strategy.implementationTime || 'Varies',
+      timeInvestment: getLocalizedText(strategy.implementationTime, locale) || 'Varies',
       prerequisites: extractPrerequisites(strategy),
       
-      beforePhase: createActionPhase('Before (Preparation)', beforeSteps),
-      duringPhase: createActionPhase('During (Event Response)', duringSteps),
-      afterPhase: createActionPhase('After (Recovery)', afterSteps),
-      ongoingPhase: createOngoingPhase(strategy),
+      beforePhase: createActionPhase('Before (Preparation)', beforeSteps, locale),
+      duringPhase: createActionPhase('During (Event Response)', duringSteps, locale),
+      afterPhase: createActionPhase('After (Recovery)', afterSteps, locale),
+      ongoingPhase: createOngoingPhase(strategy, locale),
       
       budgetWorksheet: {
         tierSelected: '',
@@ -511,38 +592,48 @@ function createImplementationGuides(
   })
 }
 
-function createActionPhase(title: string, steps: any[]): ActionPhase {
+function createActionPhase(title: string, steps: any[], locale: Locale = 'en'): ActionPhase {
   return {
     title,
     description: getPhaseDescription(title),
     timeframe: getPhaseTimeframe(title),
-    steps: steps.map((step, index) => createDetailedActionStep(step, index + 1))
+    steps: steps.map((step, index) => createDetailedActionStep(step, index + 1, locale))
   }
 }
 
-function createDetailedActionStep(step: any, stepNumber: number): DetailedActionStep {
+function createDetailedActionStep(step: any, stepNumber: number, locale: Locale = 'en'): DetailedActionStep {
+  // Parse multilingual strings
+  const action = getLocalizedText(step.smeAction || step.title || step.description, locale)
+  const timeframe = getLocalizedText(step.timeframe, locale) || `${step.estimatedMinutes || 60} minutes`
+  const why = getLocalizedText(step.whyThisStepMatters, locale) || 'Essential for business continuity'
+  const doneWhen = getLocalizedText(step.howToKnowItsDone, locale) || 'Step completed successfully'
+  const freeAlternative = getLocalizedText(step.freeAlternative, locale)
+  const lowTechOption = getLocalizedText(step.lowTechOption, locale)
+  
+  // Parse multilingual arrays
+  const resources = getLocalizedArray(step.resources, locale) || []
+  const commonMistakes = getLocalizedArray(step.commonMistakesForStep, locale) || []
+  
   return {
     stepNumber,
-    action: step.smeAction || step.title || step.description,
-    estimatedTime: step.timeframe || `${step.estimatedMinutes || 60} minutes`,
-    
-    why: step.whyThisStepMatters || 'Essential for business continuity',
-    resources: parseJsonArray(step.resources) || [],
-    doneWhen: step.howToKnowItsDone || 'Step completed successfully',
-    commonMistakes: parseJsonArray(step.commonMistakesForStep) || [],
-    
+    action,
+    estimatedTime: timeframe,
+    why,
+    resources,
+    doneWhen,
+    commonMistakes,
     completed: false,
-    
-    freeAlternative: step.freeAlternative,
-    lowTechOption: step.lowTechOption
+    freeAlternative: freeAlternative || undefined,
+    lowTechOption: lowTechOption || undefined
   }
 }
 
-function createOngoingPhase(strategy: StrategyData): OngoingMaintenancePhase {
+function createOngoingPhase(strategy: StrategyData, locale: Locale = 'en'): OngoingMaintenancePhase {
+  const strategyName = getLocalizedText(strategy.smeTitle || strategy.name, locale)
   return {
     monthly: [
       {
-        task: `Review ${strategy.smeTitle || strategy.name} effectiveness`,
+        task: `Review ${strategyName} effectiveness`,
         estimatedTime: '30 minutes',
         priority: 'medium',
         completed: false
@@ -550,7 +641,7 @@ function createOngoingPhase(strategy: StrategyData): OngoingMaintenancePhase {
     ],
     quarterly: [
       {
-        task: `Test ${strategy.smeTitle || strategy.name} procedures`,
+        task: `Test ${strategyName} procedures`,
         estimatedTime: '2 hours',
         priority: 'high',
         completed: false
@@ -558,7 +649,7 @@ function createOngoingPhase(strategy: StrategyData): OngoingMaintenancePhase {
     ],
     annually: [
       {
-        task: `Update ${strategy.smeTitle || strategy.name} based on lessons learned`,
+        task: `Update ${strategyName} based on lessons learned`,
         estimatedTime: '4 hours',
         priority: 'high',
         completed: false

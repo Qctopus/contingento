@@ -125,6 +125,13 @@
     "howRiskCalculated": "Cómo se Calculó Este Riesgo",
     "notSignificantInLocation": "No es significativo en {location}. Agregue si se aplica a su situación específica.",
     "basedOnParishData": "Basado en datos de riesgo parroquial para {parish}",
+    "preFilledFromLocation": "Pre-llenado desde su ubicación",
+    "basedOnYourLocation": "Basado en su ubicación: {location}",
+    "preFilled": "Pre-llenado",
+    "preFilledForYou": "Este valor se calculó automáticamente según su ubicación comercial y tipo",
+    "personalizedForYourBusiness": "Personalizado para su negocio",
+    "yourRiskLevel": "Su Nivel de Riesgo",
+    "additionalFactors": "Factores adicionales que aumentan su riesgo",
     "basedOnAdminData": "Basado en datos administrativos",
     "likelihoodRanges": {
       "rare": "Raro",
@@ -656,7 +663,14 @@
         "communication_failure": "Falla de comunicación/teléfono",
         "equipment_failure": "Falla/avería de equipo",
         "business_disruption": "Interrupción general del negocio",
-        "pandemic_disease": "Enfermedad pandémica"
+        "pandemic_disease": "Enfermedad pandémica",
+        "hardware_failure": "Falla de hardware",
+        "electrical_hazard": "Riesgo eléctrico",
+        "cooking_accident": "Accidente de cocina",
+        "ransomware": "Ransomware",
+        "data_loss": "Pérdida de datos",
+        "internet_cyber_attacks": "Ataques de Internet/Cibernéticos",
+        "equipment_failure_breakdown": "Falla/avería de equipo"
       },
       "inputs": {
         "potentialHazards": {

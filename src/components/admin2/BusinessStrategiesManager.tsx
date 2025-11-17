@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { StrategyForm } from './StrategyForm'
 import { Strategy, ActionStep } from '../../types/admin'
+import { getLocalizedText } from '@/utils/localizationUtils'
 
 interface BusinessStrategiesManagerProps {
   businessTypes: any[]
@@ -317,12 +318,12 @@ export function BusinessStrategiesManager({ businessTypes, onUpdate }: BusinessS
                   {phaseSteps.map((step, index) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
-                        <h5 className="font-medium text-gray-900">{step.action}</h5>
-                        <span className="text-sm text-gray-500">{step.timeframe}</span>
+                        <h5 className="font-medium text-gray-900">{String(getLocalizedText(step.action, 'en'))}</h5>
+                        <span className="text-sm text-gray-500">{getLocalizedText(step.timeframe, 'en')}</span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                         <div>
-                          <span className="font-medium">Responsibility:</span> {step.responsibility}
+                          <span className="font-medium">Responsibility:</span> {String(getLocalizedText(step.responsibility, 'en'))}
                         </div>
                         <div>
                           <span className="font-medium">Resources:</span> {step.resources.join(', ')}

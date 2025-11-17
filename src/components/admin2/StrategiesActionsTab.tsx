@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { StrategyEditor } from './StrategyEditor'
 import { BulkUploadModal } from './BulkUploadModal'
 import { Strategy, ActionStep } from '../../types/admin'
+import { getLocalizedText } from '@/utils/localizationUtils'
 import { 
   exportStrategiesToCSV, 
   exportActionStepsToCSV, 
@@ -698,11 +699,11 @@ function StrategyDetailView({ strategy, onEdit, onBack }: StrategyDetailViewProp
                         {phaseSteps.map((step, index) => (
                           <div key={step.id} className="bg-gray-50 rounded p-3">
                             <h4 className="font-medium text-gray-900 mb-2">
-                              Step {index + 1}: {step.smeAction || step.action}
+                              Step {index + 1}: {String(getLocalizedText(step.smeAction || step.action, 'en'))}
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
-                              <div><span className="font-medium">Time:</span> {step.timeframe}</div>
-                              <div><span className="font-medium">Who:</span> {step.responsibility}</div>
+                              <div><span className="font-medium">Time:</span> {getLocalizedText(step.timeframe, 'en')}</div>
+                              <div><span className="font-medium">Who:</span> {String(getLocalizedText(step.responsibility, 'en'))}</div>
                               <div><span className="font-medium">Cost:</span> {step.estimatedCostJMD || step.cost}</div>
                             </div>
                             {step.checklist && step.checklist.length > 0 && (

@@ -109,16 +109,15 @@ export async function PUT(
       if (strategyData.currencySymbol !== undefined) {
         updateData.currencySymbol = strategyData.currencySymbol
       }
-      // Note: schema field is totalEstimatedHours, not estimatedTotalHours
-      if (typeof strategyData.estimatedTotalHours === 'number' || typeof strategyData.totalEstimatedHours === 'number') {
-        updateData.totalEstimatedHours = strategyData.totalEstimatedHours ?? strategyData.estimatedTotalHours
+      if (typeof strategyData.totalEstimatedHours === 'number') {
+        updateData.totalEstimatedHours = strategyData.totalEstimatedHours
       }
       
       console.log('💰 Saving calculated costs:', {
         costUSD: updateData.calculatedCostUSD,
         costLocal: updateData.calculatedCostLocal,
         currency: updateData.currencyCode,
-        hours: updateData.estimatedTotalHours
+        hours: updateData.totalEstimatedHours
       })
       
       // Update existing database strategy and include action steps in response

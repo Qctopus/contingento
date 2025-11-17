@@ -22,7 +22,21 @@ export async function applyMultipliers(
 
     // Filter multipliers applicable to this hazard
     for (const multiplier of allMultipliers) {
-      const applicableHazards = JSON.parse(multiplier.applicableHazards)
+      // Handle both JSON string and already-parsed array
+      let applicableHazards: string[]
+      if (typeof multiplier.applicableHazards === 'string') {
+        try {
+          applicableHazards = JSON.parse(multiplier.applicableHazards)
+        } catch (e) {
+          console.error(`⚠️ Failed to parse applicableHazards for multiplier ${multiplier.id}:`, e)
+          continue
+        }
+      } else if (Array.isArray(multiplier.applicableHazards)) {
+        applicableHazards = multiplier.applicableHazards
+      } else {
+        console.error(`⚠️ Invalid applicableHazards format for multiplier ${multiplier.id}`)
+        continue
+      }
       
       // Normalize both hazard types for comparison (handle camelCase vs snake_case)
       const normalizedHazardType = hazardType.replace(/_/g, '').toLowerCase()
@@ -192,7 +206,6 @@ export function convertSimplifiedInputs(answers: {
     // Physical assets
     physical_asset_intensive: answers.expensiveEquipment || false,
     own_building: false,
-    significant_inventory: !answers.minimalInventory
   }
 }
 
@@ -235,7 +248,6 @@ export function convertLegacyCharacteristics(legacy: {
     // Physical
     physical_asset_intensive: (legacy.physicalAssetIntensity || 5) >= 7,
     own_building: false,
-    significant_inventory: (legacy.physicalAssetIntensity || 5) >= 5
   }
 }
 

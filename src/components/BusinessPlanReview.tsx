@@ -3,7 +3,7 @@ import { useLocale } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy, ActionStep } from '../types/admin'
 import type { Locale } from '../i18n/config'
-import { getLocalizedText } from '../utils/localizationUtils'
+import { getLocalizedText, getLocalizedArray } from '../utils/localizationUtils'
 import { FormalBCPPreview } from './previews/FormalBCPPreview'
 import { WorkbookPreview } from './previews/WorkbookPreview'
 
@@ -23,9 +23,25 @@ interface BusinessPlanReviewProps {
  */
 const safeRender = (value: any, locale: Locale = 'en'): string => {
   if (value === null || value === undefined) return ''
-  if (typeof value === 'string') return value
   if (typeof value === 'number') return String(value)
   if (typeof value === 'boolean') return String(value)
+  
+  if (typeof value === 'string') {
+    // Clean up any JSON objects in the string
+    if (value.includes('"en":')) {
+      let cleaned = value.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
+        try {
+          const parsed = JSON.parse(match)
+          return parsed[locale] || parsed.en || parsed.es || parsed.fr || match
+        } catch {
+          const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
+          return enMatch ? enMatch[1] : match
+        }
+      })
+      return cleaned
+    }
+    return value
+  }
   
   if (typeof value === 'object' && !Array.isArray(value)) {
     if (value.en || value.es || value.fr) {
@@ -206,7 +222,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
 
   // Get selected strategies (ONLY strategies user selected in wizard)
   const selectedStrategiesRaw = formData.STRATEGIES?.['Business Continuity Strategies'] || []
-  
+
   // DEBUG: Check if strategies are being loaded from formData
   console.log('[BusinessPlanReview] ========================================')
   console.log('[BusinessPlanReview] Loading strategies from formData.STRATEGIES')
@@ -286,22 +302,54 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   
   // Add calculated costs to strategies
   const [selectedStrategies, setSelectedStrategies] = useState(selectedStrategiesRaw)
-  
+
   useEffect(() => {
-    async function enrichStrategiesWithCosts() {
+    async function loadAndEnrichStrategies() {
       if (!selectedStrategiesRaw || selectedStrategiesRaw.length === 0) {
         setSelectedStrategies([])
         return
       }
-      
+
+      // Load all strategies from database to get complete data
+      const { centralDataService } = await import('../services/centralDataService')
+      const allDbStrategies = await centralDataService.getStrategies()
+
+      // Match selected strategies with database strategies
+      const matchedStrategies = selectedStrategiesRaw.map((selectedStrat: any) => {
+        // Try to match by ID first, then by name
+        const dbMatch = allDbStrategies.find(dbStrat =>
+          dbStrat.id === selectedStrat.id ||
+          dbStrat.strategyId === selectedStrat.strategyId ||
+          dbStrat.name === selectedStrat.name ||
+          dbStrat.smeTitle === selectedStrat.name
+        )
+
+        if (dbMatch) {
+          // Merge selected strategy data with database data
+          return {
+            ...dbMatch,
+            ...selectedStrat, // Selected strategy data takes precedence for things like calculated costs
+          }
+        } else {
+          console.warn(`[BusinessPlanReview] Could not find database match for selected strategy:`, selectedStrat.name || selectedStrat.id)
+          return selectedStrat // Fallback to selected strategy data only
+        }
+      })
+
+      console.log('[BusinessPlanReview] Matched strategies with database:', {
+        selectedCount: selectedStrategiesRaw.length,
+        matchedCount: matchedStrategies.filter(s => s.id).length,
+        matchedNames: matchedStrategies.map(s => s.name || s.smeTitle)
+      })
+
       // Import cost calculation service
       const { costCalculationService } = await import('../services/costCalculationService')
-      
+
       const enrichedStrategies = await Promise.all(
-        selectedStrategiesRaw.map(async (strategy: any) => {
+        matchedStrategies.map(async (strategy: any) => {
           // Skip if already has calculated cost
           if (strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0) {
-            console.log(`[BusinessPlanReview] Strategy "${strategy.name}" already has cost:`, strategy.calculatedCostLocal, strategy.currencySymbol)
+            console.log(`[BusinessPlanReview] Strategy "${strategy.name || strategy.smeTitle}" already has cost:`, strategy.calculatedCostLocal, strategy.currencySymbol)
             return strategy
           }
           
@@ -357,7 +405,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
       setSelectedStrategies(enrichedStrategies)
     }
     
-    enrichStrategiesWithCosts()
+    loadAndEnrichStrategies()
   }, [selectedStrategiesRaw, countryCode])
 
   // ONLY show risks that have at least 1 strategy selected
@@ -597,6 +645,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               strategies={selectedStrategies}
               risks={selectedRisks}
               countryCode={countryCode}
+              locale={locale}
             />
           </>
         ) : (
@@ -948,21 +997,24 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                               </p>
 
                               {/* Benefits */}
-                              {strategy.benefitsBullets && strategy.benefitsBullets.length > 0 && (
-                                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                  <h6 className="font-bold text-green-900 mb-2 flex items-center gap-2">
-                                    <span>✅</span> Key Benefits
-                                  </h6>
-                                  <ul className="space-y-1">
-                                    {strategy.benefitsBullets.slice(0, 3).map((benefit, i) => (
-                                      <li key={i} className="text-sm text-green-800 flex items-start gap-2">
-                                        <span className="text-green-600 mt-0.5">•</span>
-                                        <span>{simplifyForSmallBusiness(safeRender(benefit, locale))}</span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
+                              {(() => {
+                                const benefitsArray = getLocalizedArray(strategy.benefitsBullets, locale)
+                                return benefitsArray.length > 0 && (
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                    <h6 className="font-bold text-green-900 mb-2 flex items-center gap-2">
+                                      <span>✅</span> Key Benefits
+                                    </h6>
+                                    <ul className="space-y-1">
+                                      {benefitsArray.slice(0, 3).map((benefit, i) => (
+                                        <li key={i} className="text-sm text-green-800 flex items-start gap-2">
+                                          <span className="text-green-600 mt-0.5">•</span>
+                                          <span>{simplifyForSmallBusiness(benefit)}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )
+                              })()}
 
                               {/* Real-World Example */}
                               {strategy.realWorldExample && (

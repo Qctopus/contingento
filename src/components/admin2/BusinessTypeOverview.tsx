@@ -23,13 +23,28 @@ export function BusinessTypeOverview({ businessTypes, onBusinessTypeSelect, onRe
     return Math.round(avgVulnerability)
   }
   
-  const getDisplayName = (name: string): string => {
-    try {
-      const parsed = JSON.parse(name)
-      return parsed.en || parsed.fr || parsed.es || name
-    } catch {
-      return name
+  const getDisplayName = (name: string | any): string => {
+    if (!name) return ''
+    
+    // If it's already an object (multilingual)
+    if (typeof name === 'object' && name !== null) {
+      return name.en || name.fr || name.es || ''
     }
+    
+    // If it's a string, try to parse as JSON
+    if (typeof name === 'string') {
+      try {
+        const parsed = JSON.parse(name)
+        if (typeof parsed === 'object' && parsed !== null) {
+          return parsed.en || parsed.fr || parsed.es || name
+        }
+        return name
+      } catch {
+        return name
+      }
+    }
+    
+    return String(name)
   }
 
   return (

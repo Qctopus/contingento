@@ -254,6 +254,21 @@ export function AdminUnitManagement() {
   const getRiskLevel = (unit: AdminUnitWithRisk, riskKey: string): number => {
     if (!unit.adminUnitRisk) return 0
     
+    // First, try to get from JSON profile (supports all risk types including dynamic ones)
+    try {
+      const profile = JSON.parse(unit.adminUnitRisk.riskProfileJson || '{}')
+      if (profile[riskKey]?.level !== undefined) {
+        return profile[riskKey].level
+      }
+      // Also check for "flooding" key if looking for "flood"
+      if (riskKey === 'flood' && profile.flooding?.level !== undefined) {
+        return profile.flooding.level
+      }
+    } catch {
+      // Continue to fallback
+    }
+    
+    // Fallback to direct fields for core risks (backward compatibility)
     const riskMap: Record<string, keyof typeof unit.adminUnitRisk> = {
       hurricane: 'hurricaneLevel',
       flood: 'floodLevel',
@@ -272,8 +287,8 @@ export function AdminUnitManagement() {
   }
 
   const getMaxRiskLevel = (unit: AdminUnitWithRisk): number => {
-    const coreRisks = ['hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage']
-    const levels = coreRisks.map(risk => getRiskLevel(unit, risk))
+    // Get all risk levels from all risk types
+    const levels = RISK_TYPES.map(risk => getRiskLevel(unit, risk.key))
     return Math.max(...levels, 0)
   }
 
@@ -339,7 +354,7 @@ export function AdminUnitManagement() {
               <option value="">Choose a country...</option>
               {countries.map(country => (
                 <option key={country.id} value={country.id}>
-                  {country.name} ({country.code}) - {adminUnits.filter(u => u.countryId === country.id).length} units
+                  {country.name} ({country.code}) - {country._count?.adminUnits || 0} units
                 </option>
               ))}
             </select>

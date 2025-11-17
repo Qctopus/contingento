@@ -47,7 +47,6 @@ export interface BusinessCharacteristics {
   // Physical facts (boolean)
   physical_asset_intensive: boolean // Significant machinery/equipment value
   own_building: boolean             // Owns business premises
-  significant_inventory: boolean    // Maintains large inventory
 }
 
 export interface AppliedMultiplier {
@@ -186,13 +185,6 @@ export const CHARACTERISTIC_TYPES = [
     inputType: 'boolean',
     wizardQuestion: 'Property: Do you own your business premises?',
     wizardAnswers: 'Yes/No'
-  },
-  { 
-    value: 'significant_inventory', 
-    label: 'Significant Inventory', 
-    inputType: 'boolean',
-    wizardQuestion: 'Inventory: Do you maintain significant inventory?',
-    wizardAnswers: 'Yes if NOT minimal inventory'
   },
 ] as const
 

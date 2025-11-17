@@ -230,7 +230,7 @@ export function SimplifiedRiskAssessment({
           isSelected: shouldBeSelected, // Use backend pre-selection logic
           // CRITICAL FIX: Always mark as calculated if we have backend data with baseScore
           isCalculated: !!(riskMatrixEntry?.baseScore !== undefined), 
-          reasoning: riskMatrixEntry?.reasoning || `Based on ${businessData?.industryType || 'business type'} in ${locationData?.parish || 'your location'}`,
+          reasoning: riskMatrixEntry?.reasoning || '', // Only use backend reasoning, no generic fallback
           // CRITICAL: Pass through initial tier and score from backend
           initialTier: riskMatrixEntry?.initialTier || riskMatrixEntry?.riskTier || 
                        (prefilledRiskScore >= 7.0 ? 1 : prefilledRiskScore >= 5.0 ? 2 : 3),
@@ -263,7 +263,6 @@ export function SimplifiedRiskAssessment({
         const location = preFillData?.location || locationData
         
         if (!businessTypeId) {
-          console.warn('No business type ID available for admin calculations')
           setHasAdminData(false)
           setLoading(false)
           return
@@ -275,7 +274,8 @@ export function SimplifiedRiskAssessment({
           countryCode: location?.countryCode,
           parish: location?.parish,
           nearCoast: location?.nearCoast || false,
-          urbanArea: location?.urbanArea || false
+          urbanArea: location?.urbanArea || false,
+          locale
         }
 
         const response = await fetch('/api/wizard/get-risk-calculations', {
@@ -320,7 +320,6 @@ export function SimplifiedRiskAssessment({
           setConfidenceLevels(newConfidenceLevels)
         }
       } catch (error) {
-        console.error('Error fetching admin data:', error)
         setError('Failed to load smart risk calculations')
       } finally {
         setLoading(false)
@@ -602,16 +601,11 @@ export function SimplifiedRiskAssessment({
                       </div>
                       {!isAvailable && risk.riskScore > 0 && (
                         <div className="text-sm text-gray-600 mb-1">
-                          {t('riskScoreLabel')}: <span className={`font-bold transition-colors duration-300 ${
+                          <span className={`font-bold transition-colors duration-300 ${
                             currentTier === 1 ? 'text-red-700' :
                             currentTier === 2 ? 'text-orange-700' :
                             'text-gray-700'
-                          }`}>{risk.riskScore?.toFixed(1)}/10</span>
-                          {risk.reasoning && (
-                            <span className="ml-2 text-gray-500">
-                              ({t('likelihood')}: {risk.likelihood}/10, {t('impact')}: {risk.severity}/10)
-                            </span>
-                          )}
+                          }`}>{risk.riskScore?.toFixed(1)}/10</span> {t('riskScoreLabel')}
                         </div>
                       )}
                   {isAvailable && (
@@ -623,19 +617,27 @@ export function SimplifiedRiskAssessment({
                     
                 <div className="flex flex-col items-end space-y-2">
                   {risk.isCalculated && !isAvailable && (
-                    <span className="px-2 py-1 text-xs rounded-md bg-blue-100 text-blue-700 border border-blue-200" title={t('basedOnAdminData')}>
-                      📊 {t('autoCalculated')}
+                    <span className="px-2 py-1 text-xs rounded-md bg-green-100 text-green-700 border border-green-200" title={t('preFilledForYou')}>
+                      ✨ {t('preFilled')}
                         </span>
                       )}
                     </div>
                   </div>
                   
-                  {/* Reasoning preview - collapsed by default */}
-                  {risk.reasoning && !isAvailable && risk.isSelected && (
-                    <div className="mt-2 text-xs text-gray-600 bg-white bg-opacity-60 rounded p-2 border border-gray-200">
-                      💡 <span className="font-medium">{t('whyRiskMatters')}:</span> {risk.reasoning.split('\n')[0]}
-                    </div>
-                  )}
+                  {/* Simple reasoning preview - only if meaningful */}
+                  {risk.reasoning && !isAvailable && risk.isSelected && !risk.isCalculated && (() => {
+                    const isGeneric = risk.reasoning.includes('risk requires your attention') || 
+                                     risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
+                                     risk.reasoning.length < 50
+                    
+                    if (isGeneric) return null
+                    
+                    return (
+                      <div className="mt-2 text-xs text-gray-600 bg-white bg-opacity-60 rounded p-2 border border-gray-200">
+                        💡 <span className="font-medium">{t('whyRiskMatters')}:</span> {risk.reasoning.split('\n')[0]}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             </div>
@@ -643,25 +645,57 @@ export function SimplifiedRiskAssessment({
         {/* Assessment Section - Only show when selected */}
             {risk.isSelected && (
               <div className="border-t bg-gray-50 p-4">
-            {risk.isCalculated && risk.reasoning && !isAvailable && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="text-xs text-blue-900 space-y-1">
-                      <strong>📊 {t('howRiskCalculated')}:</strong>
-                  {risk.reasoning.split('\n').map((line: string, idx: number) => (
-                        <div key={idx} className={line.startsWith('   ') ? 'ml-4 text-blue-800' : 'font-medium'}>
-                          {line}
+            {risk.isCalculated && risk.reasoning && !isAvailable && (() => {
+                  // Only show if reasoning is meaningful (not generic fallback text)
+                  const isGeneric = risk.reasoning.includes('risk requires your attention') || 
+                                   risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
+                                   risk.reasoning.length < 50
+                  
+                  if (isGeneric) return null
+                  
+                  // Clean up any JSON objects in the reasoning text
+                  let cleanedReasoning = risk.reasoning
+                  if (typeof cleanedReasoning === 'string') {
+                    // Remove JSON-like objects and extract the localized text
+                    cleanedReasoning = cleanedReasoning.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
+                      try {
+                        const parsed = JSON.parse(match)
+                        return parsed.en || parsed.es || parsed.fr || match
+                      } catch {
+                        // Extract English value if JSON parsing fails
+                        const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
+                        return enMatch ? enMatch[1] : match
+                      }
+                    })
+                  }
+                  
+                  // Split reasoning into parts and display nicely
+                  const reasoningLines = cleanedReasoning.split('\n').filter(line => line.trim())
+                  
+                  return (
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="text-sm text-blue-900">
+                        <strong>💡 {t('whyRiskMatters')}:</strong>
+                        <div className="mt-2 space-y-2">
+                          {reasoningLines.map((line, idx) => (
+                            <p key={idx} className="text-blue-800">
+                              {line}
+                            </p>
+                          ))}
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
             
                 <div className="grid md:grid-cols-2 gap-6">
                   {/* Likelihood */}
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       {t('likelihoodOccurrence')}
-                      <span className="ml-2 text-xs font-normal text-gray-500">({t('fromLocationData')})</span>
+                      {risk.isCalculated && (
+                        <span className="ml-2 text-xs font-normal text-gray-500">✨ {t('preFilledFromLocation')}</span>
+                      )}
                     </label>
                     <div className="bg-blue-50 p-3 rounded-lg mb-2">
                       <input
@@ -681,9 +715,9 @@ export function SimplifiedRiskAssessment({
                         <span>9-10: {t('likelihoodRanges.certain')}</span>
                       </div>
                     </div>
-                {risk.isCalculated && !isAvailable && (
-                      <p className="text-xs text-blue-600 italic">
-                    📍 {t('basedOnParishData', { parish: locationData?.parish || '' })}
+                {risk.isCalculated && !isAvailable && locationData?.parish && (
+                      <p className="text-xs text-blue-600 mt-1">
+                    ✨ {t('basedOnYourLocation', { location: locationData.parish })}
                       </p>
                     )}
                   </div>
@@ -692,7 +726,6 @@ export function SimplifiedRiskAssessment({
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       {t('impactSeverity')}
-                      <span className="ml-2 text-xs font-normal text-gray-500">({t('businessImpact')})</span>
                     </label>
                     <div className="bg-orange-50 p-3 rounded-lg mb-2">
                       <input
@@ -711,45 +744,24 @@ export function SimplifiedRiskAssessment({
                         <span>9-10: {t('severityRanges.severe')}</span>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 italic">
-                      🏢 {t('howBadlyAffect')}
-                    </p>
                   </div>
                 </div>
 
                 {/* Risk Level Display */}
             {(risk.likelihood || 0) > 0 && (risk.severity || 0) > 0 && (
-                  <div className="mt-4 p-3 bg-white border border-gray-200 rounded-lg">
+                  <div className="mt-4 p-4 bg-white border-2 border-gray-300 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900 mb-1">{t('calculatedRiskScore')}</div>
-                        <div className="text-xs text-gray-600 space-y-0.5">
-                      {risk.isCalculated && risk.baseScore !== undefined ? (
-                        // Show full calculation with multipliers if available from backend
-                        <>
-                          <div>Base: (Likelihood {risk.likelihood}/10 × 0.6) + (Impact {risk.severity}/10 × 0.4) = {risk.baseScore.toFixed(1)}</div>
-                          {risk.appliedMultipliers && risk.appliedMultipliers.length > 0 && (
-                            <div className="text-blue-700 font-medium">
-                              Multipliers: {risk.appliedMultipliers}
-                            </div>
-                          )}
-                          <div className="font-semibold text-gray-800">
-                            Final Score: {risk.riskScore.toFixed(1)}/10
-                          </div>
-                        </>
-                      ) : (
-                        // Simple calculation if no backend multipliers
-                        <div>
-                          Likelihood ({risk.likelihood || 1}/10) × Impact ({risk.severity || 1}/10) = Score {risk.riskScore?.toFixed(1) || calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').score}
+                        <div className="text-sm font-medium text-gray-700 mb-2">{t('yourRiskLevel')}</div>
+                        <div className="text-xs text-gray-600">
+                          {t('riskScoreLabel')}: <span className="font-semibold text-gray-800">{risk.riskScore?.toFixed(1) || calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').score}/10</span>
                         </div>
-                      )}
+                      </div>
+                      <div className={`px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap ${calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').color}`}>
+                        {calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').level}
+                      </div>
                     </div>
                   </div>
-                  <div className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap ${calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').color}`}>
-                    {calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').level}
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         )}
@@ -780,7 +792,7 @@ export function SimplifiedRiskAssessment({
               <svg className="w-4 h-4 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-blue-100 text-sm">{t('smartAnalysisActive')}</span>
+              <span className="text-blue-100 text-sm">{t('personalizedForYourBusiness')}</span>
             </div>
           </div>
         )}

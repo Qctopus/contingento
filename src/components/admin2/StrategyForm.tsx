@@ -37,7 +37,7 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
     applicableRisks: [],
     implementationCost: 'medium',
     costEstimateJMD: '',
-    estimatedTotalHours: undefined,
+    totalEstimatedHours: undefined,
     complexityLevel: 'moderate',
     
     // Wizard Integration (NEW)
@@ -524,8 +524,8 @@ export function StrategyForm({ strategy, onSave, onCancel, isEditing, onAutoSave
                   </label>
                   <input
                     type="number"
-                    value={formData.estimatedTotalHours || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, estimatedTotalHours: parseInt(e.target.value) || undefined }))}
+                    value={formData.totalEstimatedHours || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, totalEstimatedHours: parseInt(e.target.value) || undefined }))}
                     placeholder="e.g., 8"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />

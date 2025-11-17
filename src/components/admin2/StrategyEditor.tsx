@@ -105,7 +105,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
         calculatedCostLocal: costCalculation.totalLocal,
         currencyCode: costCalculation.currencyCode,
         currencySymbol: costCalculation.currencySymbol,
-        estimatedTotalHours: costCalculation.calculatedHours
+        totalEstimatedHours: costCalculation.calculatedHours
       }))
     }
   }, [
@@ -623,22 +623,31 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                 )
               }
               
-              // Group action steps by phase
+              // Group action steps by phase (prevent duplicates)
               const phaseGroups: Record<string, any[]> = {}
+              const addedStepIds = new Set<string>()
+              
               actionSteps.forEach(step => {
-                if (!step) return
+                if (!step || !step.id) return
+                
+                // Skip if we've already added this step
+                if (addedStepIds.has(step.id)) {
+                  return
+                }
+                
                 const phase = step.phase || 'other'
                 if (!phaseGroups[phase]) {
                   phaseGroups[phase] = []
                 }
                 phaseGroups[phase].push(step)
+                addedStepIds.add(step.id)
               })
 
               // Define all possible phases with their display config
               const allPhases = [
-                { key: 'before', name: '🛡️ Before Crisis', icon: '🛡️', color: 'blue' },
-                { key: 'during', name: '⚠️ During Crisis', icon: '⚠️', color: 'orange' },
-                { key: 'after', name: '✅ After Crisis', icon: '✅', color: 'green' },
+                { key: 'before', name: 'Before Crisis', icon: '🛡️', color: 'blue' },
+                { key: 'during', name: 'During Crisis', icon: '⚠️', color: 'orange' },
+                { key: 'after', name: 'After Crisis', icon: '✅', color: 'green' },
               ]
 
               return (
@@ -697,7 +706,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                                 <span className="font-medium">Timeframe:</span> {getLocalizedText(step.timeframe, 'en') || 'Not set'}
                               </div>
                               <div>
-                                <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
+                                <span className="font-medium">Responsibility:</span> {String(getLocalizedText(step.responsibility, 'en') || 'Not set')}
                               </div>
                             </div>
                             {step.costItems && step.costItems.length > 0 && (
@@ -762,7 +771,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                                 <span className="font-medium">Timeframe:</span> {getLocalizedText(step.timeframe, 'en') || 'Not set'}
                               </div>
                               <div>
-                                <span className="font-medium">Responsibility:</span> {step.responsibility || 'Not set'}
+                                <span className="font-medium">Responsibility:</span> {String(getLocalizedText(step.responsibility, 'en') || 'Not set')}
                               </div>
                             </div>
                             {step.costItems && step.costItems.length > 0 && (
@@ -873,7 +882,27 @@ interface ActionStepEditorProps {
 }
 
 function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
-  const [stepData, setStepData] = useState<ActionStep>(step)
+  // Ensure checklist and resources are properly initialized as arrays
+  const ensureArray = (value: any): string[] => {
+    if (Array.isArray(value)) return value
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        return Array.isArray(parsed) ? parsed : []
+      } catch {
+        return []
+      }
+    }
+    return value || []
+  }
+
+  const initialStepData: ActionStep = {
+    ...step,
+    checklist: ensureArray(step.checklist),
+    resources: ensureArray(step.resources)
+  }
+
+  const [stepData, setStepData] = useState<ActionStep>(initialStepData)
   const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
 
   // Language labels and flags
@@ -1049,30 +1078,28 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Timeframe *
+                  Timeframe ({languageLabels[activeLanguage]}) *
                 </label>
                 <input
                   type="text"
-                  value={stepData.timeframe}
-                  onChange={(e) => setStepData(prev => ({ ...prev, timeframe: e.target.value }))}
-                  placeholder="e.g., 2-3 days"
+                  value={parseMultilingual(stepData.timeframe)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualStepField('timeframe', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'e.g., 2-3 days' : activeLanguage === 'es' ? 'ej., 2-3 días' : 'ex., 2-3 jours'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Responsibility *
+                  Responsibility ({languageLabels[activeLanguage]}) *
                 </label>
-                <select
-                  value={stepData.responsibility}
-                  onChange={(e) => setStepData(prev => ({ ...prev, responsibility: e.target.value }))}
+                <input
+                  type="text"
+                  value={parseMultilingual(stepData.responsibility)[activeLanguage] || ''}
+                  onChange={(e) => updateMultilingualStepField('responsibility', activeLanguage, e.target.value)}
+                  placeholder={activeLanguage === 'en' ? 'e.g., Business Owner' : activeLanguage === 'es' ? 'ej., Propietario del Negocio' : 'ex., Propriétaire de l\'Entreprise'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  {responsibilityOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                />
               </div>
             </div>
 
@@ -1092,7 +1119,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
                 {(() => {
-                  // Parse multilingual resources array
+                  // Parse multilingual resources array with safety checks
                   let resources: string[] = []
                   if (typeof stepData.resources === 'string') {
                     try {
@@ -1103,9 +1130,11 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                     }
                   } else if (Array.isArray(stepData.resources)) {
                     resources = stepData.resources
+                  } else {
+                    resources = stepData.resources || []
                   }
-                  
-                  return resources.map((resource, index) => (
+
+                  return (Array.isArray(resources) ? resources : []).map((resource, index) => (
                     <div key={index} className="flex items-center space-x-2 p-2 bg-gray-100 rounded">
                       <span className="text-sm flex-1">{resource}</span>
                       <button
@@ -1141,7 +1170,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                 <span className="text-xs font-normal text-gray-500">(Simple step-by-step instructions)</span>
               </label>
               <div className="space-y-2 mb-2">
-                {(stepData.checklist || []).map((item, index) => (
+                {(Array.isArray(stepData.checklist) ? stepData.checklist : []).map((item, index) => (
                   <div key={index} className="flex items-start space-x-2 p-2 bg-green-50 rounded">
                     <span className="text-green-600 mt-1">•</span>
                     <span className="text-sm text-green-800 flex-1">{item}</span>

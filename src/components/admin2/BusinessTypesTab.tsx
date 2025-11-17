@@ -20,7 +20,8 @@ export function BusinessTypesTab() {
   const loadBusinessTypes = async () => {
     try {
       setIsLoading(true)
-      const response = await fetch('/api/admin2/business-types')
+      // Load without locale to get full multilingual objects for editing
+      const response = await fetch('/api/admin2/business-types?raw=true')
       if (!response.ok) throw new Error('Failed to load business types')
       
       const result = await response.json()
