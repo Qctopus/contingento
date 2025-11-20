@@ -195,7 +195,8 @@ export function SimplifiedRiskAssessment({
         }
 
         // Determine if this risk should be selected
-        // PRIORITY: User's previous choice > Backend pre-selection > Default rules
+        // CRITICAL: Only use backend pre-selection flag - NO auto-selection fallbacks!
+        // PRIORITY: User's previous choice > Backend pre-selection flag > NOTHING (default false)
         let shouldBeSelected = false
         
         // NEVER pre-select risks marked as 'not_applicable' (level=0 from parish)
@@ -207,15 +208,16 @@ export function SimplifiedRiskAssessment({
           // User has EXPLICITLY set isSelected - preserve their choice
           shouldBeSelected = existingData.isSelected
         } else {
-          // No explicit user choice - use backend pre-selection logic
+          // No explicit user choice - ONLY use backend pre-selection flag
+          // NO FALLBACKS - user must manually select if backend doesn't pre-select
           if (isNotApplicable) {
             shouldBeSelected = false
-          } else if (riskMatrixEntry?.isPreSelected !== undefined) {
-            // Use backend's pre-selection logic (respects parish data)
-            shouldBeSelected = riskMatrixEntry.isPreSelected
+          } else if (riskMatrixEntry?.isPreSelected === true) {
+            // ONLY select if backend explicitly sets isPreSelected = true
+            shouldBeSelected = true
           } else {
-            // Fallback: auto-select high/very_high risks
-            shouldBeSelected = hazard.riskLevel === 'high' || hazard.riskLevel === 'very_high'
+            // Default: NOT selected - user must manually select
+            shouldBeSelected = false
           }
         }
 
@@ -227,7 +229,8 @@ export function SimplifiedRiskAssessment({
           riskLevel: prefilledRiskLevel,
           riskScore: prefilledRiskScore,
           planningMeasures: existingData?.planningMeasures || '',
-          isSelected: shouldBeSelected, // Use backend pre-selection logic
+          isSelected: shouldBeSelected, // Use backend pre-selection logic OR user's previous choice
+          isPreSelected: riskMatrixEntry?.isPreSelected || hazard.isPreSelected || false, // CRITICAL: Preserve backend auto-selection flag
           // CRITICAL FIX: Always mark as calculated if we have backend data with baseScore
           isCalculated: !!(riskMatrixEntry?.baseScore !== undefined), 
           reasoning: riskMatrixEntry?.reasoning || '', // Only use backend reasoning, no generic fallback

@@ -35,6 +35,7 @@ interface StructuredInputProps {
   severityOptions?: Option[]
   dependsOn?: string
   stepData?: any // Current step's data to access dependencies
+  allFormData?: any // All form data to access other steps (e.g., RISK_ASSESSMENT)
   preFillData?: any // Industry and location pre-fill data
   onComplete: (value: any) => void
   initialValue?: any
@@ -57,6 +58,7 @@ export function StructuredInput({
   severityOptions,
   dependsOn,
   stepData,
+  allFormData,
   preFillData,
   onComplete,
   initialValue,
@@ -998,6 +1000,23 @@ export function StructuredInput({
   if (type === 'special_strategy_cards') {
     const { locationData, businessData } = getContextualData()
     
+    // Get selected risks from RISK_ASSESSMENT step data
+    // The risk assessment matrix contains risks with isSelected flag
+    // Try multiple sources: allFormData (full form), stepData (current step), initialValue
+    const riskAssessmentData = allFormData?.RISK_ASSESSMENT || 
+                                stepData?.RISK_ASSESSMENT || 
+                                initialValue?.RISK_ASSESSMENT ||
+                                null
+    
+    const riskMatrix = riskAssessmentData?.['Risk Assessment Matrix'] || 
+                       riskAssessmentData?.['riskAssessmentMatrix'] ||
+                       riskAssessmentData ||
+                       []
+    
+    const riskData = riskMatrix && Array.isArray(riskMatrix) && riskMatrix.length > 0
+      ? { 'Risk Assessment Matrix': riskMatrix }
+      : null
+    
     return (
       <AdminStrategyCards
         initialValue={initialValue}
@@ -1006,6 +1025,7 @@ export function StructuredInput({
         businessData={businessData}
         locationData={locationData}
         preFillData={preFillData}
+        riskData={riskData}
       />
     )
   }

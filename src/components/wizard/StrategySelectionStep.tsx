@@ -292,18 +292,105 @@ export default function StrategySelectionStep({
 
     return acc
   }, {} as Record<string, Array<Strategy & { relationshipType: 'primary' | 'crossReference' | 'general' }>>)
+  
+  // Debug: Log all risk groups before filtering
+  console.log(`[StrategySelectionStep] Risk groups before filtering:`, Object.keys(strategiesByRisk))
+
+  // Normalize risk identifiers for flexible matching (handle camelCase, snake_case, spaces, etc.)
+  const normalizeRiskId = (id: string): string => {
+    if (!id || typeof id !== 'string') return ''
+    // Remove all special characters, spaces, underscores, hyphens and convert to lowercase
+    return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
+  }
+  
+  // More comprehensive matching function that handles various ID formats
+  const riskIdsMatch = (riskId1: string, riskId2: string): boolean => {
+    if (!riskId1 || !riskId2) return false
+    
+    // Exact match
+    if (riskId1 === riskId2) return true
+    
+    // Normalized match
+    const norm1 = normalizeRiskId(riskId1)
+    const norm2 = normalizeRiskId(riskId2)
+    if (norm1 === norm2) return true
+    
+    // Contains match (for cases like "powerOutage" vs "power_outage")
+    if (norm1.includes(norm2) || norm2.includes(norm1)) return true
+    
+    // Try camelCase/snake_case conversion
+    const camelCase1 = riskId1.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
+    const camelCase2 = riskId2.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
+    if (normalizeRiskId(camelCase1) === normalizeRiskId(camelCase2)) return true
+    
+    const snakeCase1 = riskId1.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+    const snakeCase2 = riskId2.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+    if (normalizeRiskId(snakeCase1) === normalizeRiskId(snakeCase2)) return true
+    
+    return false
+  }
 
   // Filter to only include risks that the user has selected/assessed
+  // Create sets of normalized IDs for flexible matching
   const validRiskIds = new Set(
     validHazards ? validHazards.map(h => h.hazardId) : []
   )
+  
+  // Also create normalized sets for matching
+  const validNormalizedIds = new Set(
+    validHazards ? validHazards.map((h: any) => {
+      const id = h.hazardId || ''
+      const name = h.hazardName || ''
+      return normalizeRiskId(id) || normalizeRiskId(name)
+    }).filter((id: string) => id) : []
+  )
 
   // Remove risks that user hasn't selected from strategiesByRisk
+  // Use flexible matching to handle different ID formats
   Object.keys(strategiesByRisk).forEach(risk => {
-    if (!validRiskIds.has(risk)) {
+    let matches = false
+    
+    // Check against all valid hazards using comprehensive matching
+    if (validHazards && validHazards.length > 0) {
+      matches = validHazards.some((h: any) => {
+        const hazardId = h.hazardId || ''
+        const hazardName = h.hazardName || ''
+        
+        // Try matching against both ID and name
+        return riskIdsMatch(risk, hazardId) || riskIdsMatch(risk, hazardName)
+      })
+    }
+    
+    // Also check exact match in validRiskIds set
+    if (!matches) {
+      matches = validRiskIds.has(risk)
+    }
+    
+    if (!matches) {
       delete strategiesByRisk[risk]
     }
   })
+  
+  // Debug logging to help diagnose matching issues
+  if (validHazards && validHazards.length > 0) {
+    console.log(`[StrategySelectionStep] After filtering - Risk groups:`, Object.keys(strategiesByRisk))
+    console.log(`[StrategySelectionStep] Valid hazard IDs:`, validHazards.map((h: any) => `${h.hazardId} (${h.hazardName})`))
+    console.log(`[StrategySelectionStep] Valid normalized IDs:`, Array.from(validNormalizedIds))
+    
+    // Show which risks were filtered out
+    const allRiskGroups = Object.keys(strategiesByRisk)
+    const originalRiskGroups = strategies.reduce((acc: Set<string>, strategy) => {
+      if (strategy.applicableRisks) {
+        strategy.applicableRisks.forEach((risk: string) => acc.add(risk))
+      }
+      return acc
+    }, new Set<string>())
+    
+    const filteredOut = Array.from(originalRiskGroups).filter(risk => !allRiskGroups.includes(risk))
+    if (filteredOut.length > 0) {
+      console.log(`[StrategySelectionStep] Filtered out risks (no match):`, filteredOut)
+    }
+  }
 
   // Sort risk groups by priority (essential strategies first, then others)
   const sortedRiskGroups = Object.entries(strategiesByRisk)

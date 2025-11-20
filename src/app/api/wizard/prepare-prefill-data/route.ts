@@ -554,7 +554,7 @@ export async function POST(request: NextRequest) {
     // - If parish risk level is 0 or null, we skip that risk entirely
     // - Previously used a default of 5, which incorrectly showed medium risk for all unset parishes
     // - Now: Only Clarendon (or other parishes with data) will show risks; Trelawny (all 0s) shows nothing
-    const riskAssessmentMatrix = []
+    let riskAssessmentMatrix: any[] = []
     const identifiedRiskTypes = new Set<string>()
     
     console.log('🎯 Generating risk assessment matrix...')
@@ -564,9 +564,15 @@ export async function POST(request: NextRequest) {
       for (const vulnerability of businessType.riskVulnerabilities) {
         const riskType = vulnerability.riskType
         
-        // CRITICAL: Normalize risk type to snake_case for consistency
+        // CRITICAL: Normalize risk type to snake_case for consistency with database
+        // Database uses snake_case (e.g., 'power_outage', 'cybersecurity_incident', 'health_emergency')
+        // Business vulnerabilities might have camelCase (e.g., 'powerOutage', 'cyberAttack', 'pandemicDisease')
         const normalizedRiskType = riskType.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
         const camelCaseRiskType = riskType.replace(/_([a-z])/g, (g) => g[1].toUpperCase())
+        
+        // CRITICAL: Use normalizedRiskType (snake_case) as the hazardId to match database IDs
+        // This ensures strategies with snake_case IDs will match correctly
+        const hazardId = normalizedRiskType
         
         // Track that we're processing this risk type in ALL formats
         identifiedRiskTypes.add(riskType)
@@ -631,9 +637,10 @@ export async function POST(request: NextRequest) {
                 ? JSON.parse(adminRisk.riskProfileJson) 
                 : adminRisk.riskProfileJson
               
-              // Try both snake_case and camelCase formats (cyber_attack vs cyberAttack)
+              // Try both snake_case (hazardId) and camelCase formats (cyber_attack vs cyberAttack)
+              // CRITICAL: Use hazardId (normalized snake_case) first to match database format
               const camelCaseKey = riskType.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
-              const riskData = dynamicRisks[riskType] || dynamicRisks[camelCaseKey]
+              const riskData = dynamicRisks[hazardId] || dynamicRisks[riskType] || dynamicRisks[camelCaseKey]
               
               if (riskData && riskData.level !== null && riskData.level !== undefined) {
                 locationRiskLevel = riskData.level
@@ -662,9 +669,9 @@ export async function POST(request: NextRequest) {
           // No location data - add as available but not pre-selected
           console.log(`  📋 ${riskType}: AVAILABLE (no location data) - parish level is ${locationRiskLevel || 'not set'}`)
           
-            riskAssessmentMatrix.push({
-              hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-              hazardId: riskType,
+          riskAssessmentMatrix.push({
+            hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            hazardId: hazardId, // Use normalized snake_case ID to match database
               likelihood: 0, // Not applicable for this location
               severity: Math.round(vulnerability.impactSeverity || 5),
               riskScore: 0,
@@ -696,52 +703,11 @@ export async function POST(request: NextRequest) {
         )
         
         // Use smart categorization logic to determine tier and pre-selection
+        // Auto-select based on calculated risk score (location + business type + multipliers)
         const riskCategory = categorizeRisk(finalScore, hasLocationData, locationRiskLevel)
-        const isPreSelected = riskCategory.preSelect
+        const isPreSelected = riskCategory.preSelect // Auto-select Tier 1 and Tier 2 risks
         
         console.log(`  ⚙️  ${riskType}: locationRisk=${locationRiskLevel}/10, finalScore=${finalScore.toFixed(1)}/10, tier=${riskCategory.tier} (${riskCategory.category}), preSelected=${isPreSelected}`)
-        
-        if (!isPreSelected) {
-          // Risk exists but below threshold - add as available with detailed reasoning
-          console.log(`  📋 ${riskType}: AVAILABLE (Tier ${riskCategory.tier}) - final score ${finalScore.toFixed(1)}/10 < ${RISK_THRESHOLDS.RECOMMENDED}`)
-          
-          riskAssessmentMatrix.push({
-            hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-            hazardId: riskType,
-            likelihood: Math.round(locationRiskLevel),
-            severity: Math.round(vulnerability.impactSeverity || 5),
-            riskScore: Math.round(finalScore * 10) / 10,
-            riskLevel: determineRiskLevel(finalScore),
-            isPreSelected: false,
-            isAvailable: true,
-            source: 'below_threshold',
-            riskTier: riskCategory.tier,
-            riskCategory: riskCategory.category,
-            userLabel: riskCategory.userLabel,
-            initialTier: riskCategory.tier, // Store initial tier
-            initialRiskScore: Math.round(finalScore * 10) / 10, // Store initial score
-            reasoning: (() => {
-              const reasoningParts: string[] = []
-              const locationDesc = getLocationRiskDescription(locationRiskLevel, parishName || location.country || 'your location', locale as Locale)
-              reasoningParts.push(`📍 ${locationDesc}`)
-              
-              const businessDesc = getBusinessVulnerabilityDescription(vulnerability, localizedName, Math.round(vulnerability.impactSeverity || 5), locale as Locale)
-              reasoningParts.push(`🏢 ${businessDesc}`)
-              
-              reasoningParts.push(`💡 This risk exists in your area but has lower overall impact on your business type. You can manually select it if you believe it's relevant to your specific situation.`)
-              
-              return reasoningParts.join('\n\n')
-            })(),
-            dataSource: {
-              locationRisk: `${parishName}: ${locationRiskLevel}/10`,
-              businessImpact: `${localizedName}: ${vulnerability.impactSeverity || 5}/10`,
-              finalScore: `${finalScore.toFixed(1)}/10`,
-              status: 'Available for manual selection',
-              tier: `Tier ${riskCategory.tier}: ${riskCategory.category}`
-            }
-          })
-          continue
-        }
         
         // Determine tier label based on score
         let tierLabel = ''
@@ -752,9 +718,12 @@ export async function POST(request: NextRequest) {
         } else if (riskCategory.tier === 2) {
           tierLabel = getTranslation('common.recommendedRisk', locale as Locale)
           tierEmoji = '🟡'
+        } else {
+          tierLabel = 'Lower Priority'
+          tierEmoji = '⚪'
         }
         
-        console.log(`  ✅ ${riskType}: ${tierLabel} (Tier ${riskCategory.tier}) - final score ${finalScore.toFixed(1)}/10`)
+        console.log(`  ${isPreSelected ? '✅' : '📋'} ${riskType}: ${tierLabel} (Tier ${riskCategory.tier}) - final score ${finalScore.toFixed(1)}/10 - ${isPreSelected ? 'AUTO-SELECTED' : 'Available'}`)
         
         // STEP 1 OUTPUT: Likelihood = Location Risk (1-10 scale, directly from location data)
         const likelihood = Math.round(locationRiskLevel) // Keep as 1-10 integer
@@ -816,12 +785,12 @@ export async function POST(request: NextRequest) {
         
         riskAssessmentMatrix.push({
           hazard: riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
-          hazardId: riskType,
+          hazardId: hazardId, // Use normalized snake_case ID to match database
           likelihood, // 1-10 scale from admin location data
           severity, // 1-10 scale from admin business type data
           riskScore: Math.round(finalScore * 10) / 10, // Final calculated score 1-10
           riskLevel,
-          isPreSelected: true, // Pre-selected based on tier
+          isPreSelected: isPreSelected, // Auto-selected based on calculated tier (Tier 1 & 2)
           isAvailable: true,
           source: 'combined',
           isCalculated: true, // CRITICAL: Indicates this is a calculated risk with multiplier data
@@ -984,43 +953,103 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // CRITICAL: Ensure ALL 13 risk types are included in the matrix
-    // Even if they're not in business type vulnerabilities or parish data
-    const ALL_RISK_TYPES = [
-      'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage',
-      'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 
-      'supplyChainDisruption', 'civilUnrest'
-    ]
+    // CRITICAL: Fetch valid risk types from admin2 backend database
+    // This ensures we only show risks that exist in the admin2 system
+    // Future-proof: When you add more risks in admin2, they'll automatically appear here
+    let validRiskTypes: Array<{ hazardId: string; name: string }> = []
     
-    const existingRiskIds = new Set(riskAssessmentMatrix.map((r: any) => r.hazardId))
-    
-    for (const riskType of ALL_RISK_TYPES) {
-      // Check both camelCase and snake_case variants
-      const snakeCaseVariant = riskType.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
-      const hasRisk = existingRiskIds.has(riskType) || existingRiskIds.has(snakeCaseVariant)
+    try {
+      const hazardTypes = await prisma.adminHazardType.findMany({
+        where: { isActive: true },
+        select: { hazardId: true, name: true },
+        orderBy: { hazardId: 'asc' }
+      })
       
-      if (!hasRisk) {
+      validRiskTypes = hazardTypes.map(h => ({ hazardId: h.hazardId, name: h.name }))
+      console.log(`📋 Loaded ${validRiskTypes.length} active hazard types from admin2 backend:`, validRiskTypes.map(h => h.hazardId).join(', '))
+    } catch (error) {
+      console.error('⚠️ Failed to fetch hazard types from database, using fallback list:', error)
+      // Fallback to standard 13 risks if database fetch fails
+      validRiskTypes = [
+        { hazardId: 'hurricane', name: 'Hurricane/Tropical Storm' },
+        { hazardId: 'flood', name: 'Flooding' },
+        { hazardId: 'earthquake', name: 'Earthquake' },
+        { hazardId: 'drought', name: 'Drought' },
+        { hazardId: 'landslide', name: 'Landslide' },
+        { hazardId: 'powerOutage', name: 'Power Outage' },
+        { hazardId: 'fire', name: 'Fire' },
+        { hazardId: 'cyberAttack', name: 'Cyber Attack' },
+        { hazardId: 'terrorism', name: 'Security Threats' },
+        { hazardId: 'pandemicDisease', name: 'Health Emergencies' },
+        { hazardId: 'economicDownturn', name: 'Economic Crisis' },
+        { hazardId: 'supplyChainDisruption', name: 'Supply Chain Issues' },
+        { hazardId: 'civilUnrest', name: 'Civil Unrest' }
+      ]
+    }
+    
+    // Normalize risk IDs for comparison (handle camelCase/snake_case)
+    const normalizeRiskId = (id: string): string => {
+      if (!id) return ''
+      return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
+    }
+    
+    // CRITICAL: Use a Map to track risks by normalized ID to prevent duplicates
+    const riskMap = new Map<string, any>()
+    
+    // First, add all risks from the business type + location calculation
+    for (const risk of riskAssessmentMatrix) {
+      const normalizedId = normalizeRiskId(risk.hazardId || '')
+      if (!riskMap.has(normalizedId)) {
+        riskMap.set(normalizedId, risk)
+      } else {
+        // If duplicate found, keep the one with higher score or better data
+        const existing = riskMap.get(normalizedId)
+        if ((risk.riskScore || 0) > (existing.riskScore || 0)) {
+          riskMap.set(normalizedId, risk)
+        }
+      }
+    }
+    
+    // Then, ensure all valid risks from admin2 are present (add missing ones)
+    const existingNormalizedIds = new Set(Array.from(riskMap.keys()))
+    
+    for (const hazardType of validRiskTypes) {
+      const normalizedId = normalizeRiskId(hazardType.hazardId)
+      if (!existingNormalizedIds.has(normalizedId)) {
         // Add as available (not pre-selected) risk
-        console.log(`  ➕ Adding missing risk type to matrix: ${riskType} (available, not pre-selected)`)
-        riskAssessmentMatrix.push({
-          hazard: riskType.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, (l: string) => l.toUpperCase()),
-          hazardId: riskType,
+        console.log(`  ➕ Adding missing risk type to matrix: ${hazardType.hazardId} (available, not pre-selected)`)
+        riskMap.set(normalizedId, {
+          hazard: hazardType.name || hazardType.hazardId.replace(/([A-Z])/g, ' $1').trim().replace(/\b\w/g, (l: string) => l.toUpperCase()),
+          hazardId: hazardType.hazardId,
           likelihood: 0,
-          severity: 5, // Default moderate severity if user selects it
+          severity: 5,
           riskScore: 0,
           riskLevel: 'not_applicable',
           confidence: 'low',
           reasoning: `This risk is available for selection but not pre-selected based on your location or business type.`,
           isPreSelected: false,
           isAvailable: true,
-          initialTier: 3, // Always tier 3 for missing risks
+          initialTier: 3,
           initialRiskScore: 0,
           calculationSteps: []
         })
       }
     }
     
-    console.log(`✅ Final risk matrix has ${riskAssessmentMatrix.length} total risks (should be 13)`)
+    // Convert map back to array and filter to only include valid risks
+    const normalizedValidRisks = new Set(validRiskTypes.map(h => normalizeRiskId(h.hazardId)))
+    riskAssessmentMatrix = Array.from(riskMap.values()).filter((r: any) => {
+      const normalizedId = normalizeRiskId(r.hazardId || '')
+      return normalizedValidRisks.has(normalizedId)
+    })
+    
+    // Final check: ensure no duplicates and all risks are valid
+    // Note: isPreSelected is already set correctly based on calculated risk scores above
+    
+    console.log(`✅ Final risk matrix has ${riskAssessmentMatrix.length} total risks (from admin2 backend)`)
+    const selectedCount = riskAssessmentMatrix.filter((r: any) => r.isPreSelected).length
+    console.log(`Risks: ${selectedCount} auto-selected, ${riskAssessmentMatrix.length - selectedCount} available`)
+    console.log(`Selected risks:`, riskAssessmentMatrix.filter((r: any) => r.isPreSelected).map((r: any) => r.hazardId).join(', '))
     
     preFillData.preFilledFields.RISK_ASSESSMENT = {
       'Risk Assessment Matrix': riskAssessmentMatrix

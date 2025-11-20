@@ -335,6 +335,73 @@ export function AdminStrategyCards({
 
   // If strategies have the new priorityTier field, use the enhanced UI
   if (useNewUI) {
+    // Filter to only include risks that are SELECTED (checked) in the risk assessment matrix
+    // This ensures only risks the user selected in the risk section appear in the strategy section
+    let selectedRisks: Array<{ hazardId: string; hazardName: string }> = []
+    
+    if (riskData?.['Risk Assessment Matrix'] && Array.isArray(riskData['Risk Assessment Matrix'])) {
+      // Get selected risks from risk assessment matrix
+      // CRITICAL: Check BOTH isSelected (user manual selection) AND isPreSelected (auto-selected from backend)
+      const selectedRiskItems = riskData['Risk Assessment Matrix'].filter((r: any) => {
+        const isManuallySelected = r.isSelected === true || r.isSelected === 'true' || r.isSelected === 1
+        const isAutoSelected = r.isPreSelected === true || r.isPreSelected === 'true' || r.isPreSelected === 1
+        return isManuallySelected || isAutoSelected
+      })
+      
+      console.log(`[AdminStrategyCards] ========================================`)
+      console.log(`[AdminStrategyCards] Total risks in matrix: ${riskData['Risk Assessment Matrix'].length}`)
+      console.log(`[AdminStrategyCards] Full risk data:`, riskData['Risk Assessment Matrix'].map((r: any) => ({
+        hazardId: r.hazardId || r.hazard,
+        isSelected: r.isSelected,
+        isPreSelected: r.isPreSelected
+      })))
+      console.log(`[AdminStrategyCards] Manually selected (isSelected=true):`, riskData['Risk Assessment Matrix'].filter((r: any) => r.isSelected === true).map((r: any) => r.hazardId || r.hazard).join(', ') || 'NONE')
+      console.log(`[AdminStrategyCards] Auto-selected (isPreSelected=true):`, riskData['Risk Assessment Matrix'].filter((r: any) => r.isPreSelected === true).map((r: any) => r.hazardId || r.hazard).join(', ') || 'NONE')
+      console.log(`[AdminStrategyCards] Combined selected (isSelected OR isPreSelected):`, selectedRiskItems.length)
+      
+      // Map to the format expected by validHazards
+      // Include both the original ID and normalized versions for matching
+      selectedRisks = selectedRiskItems.map((r: any) => {
+        const hazardId = r.hazardId || r.id || r.hazard || ''
+        const hazardName = r.hazardName || r.hazard || r['Hazard Name'] || r['Hazard'] || ''
+        
+        // Normalize the hazard ID for matching (handle camelCase, snake_case, etc.)
+        const normalizeId = (id: string) => {
+          if (!id) return ''
+          return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
+        }
+        
+        return {
+          hazardId: hazardId,
+          hazardName: hazardName,
+          // Store normalized versions for flexible matching
+          normalizedId: normalizeId(hazardId),
+          normalizedName: normalizeId(hazardName)
+        }
+      }).filter((r: any) => r.hazardId && r.hazardName) // Remove any invalid entries
+      
+      console.log(`[AdminStrategyCards] Filtered to ${selectedRisks.length} selected risks from risk assessment matrix:`, 
+        selectedRisks.map(r => r.hazardName).join(', '))
+      console.log(`[AdminStrategyCards] Risk IDs:`, selectedRisks.map(r => `${r.hazardId} (normalized: ${r.normalizedId})`).join(', '))
+    } else if (preFillData?.hazards) {
+      // Fallback: if no riskData, use preFillData but this shouldn't happen in normal flow
+      console.warn('[AdminStrategyCards] No riskData provided, using all preFillData hazards (fallback)')
+      selectedRisks = preFillData.hazards.map((h: any) => {
+        const hazardId = h.hazardId || h.id || ''
+        const hazardName = h.hazardName || h.hazard || ''
+        const normalizeId = (id: string) => {
+          if (!id) return ''
+          return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
+        }
+        return {
+          hazardId: hazardId,
+          hazardName: hazardName,
+          normalizedId: normalizeId(hazardId),
+          normalizedName: normalizeId(hazardName)
+        }
+      }).filter((h: any) => h.hazardId && h.hazardName)
+    }
+    
     return (
       <StrategySelectionStep
         strategies={strategies as any}
@@ -342,7 +409,7 @@ export function AdminStrategyCards({
         onStrategyToggle={handleStrategyIdToggle}
         onContinue={handleContinue}
         countryCode={locationData?.countryCode || 'JM'}
-        validHazards={preFillData?.hazards}
+        validHazards={selectedRisks}
       />
     )
   }

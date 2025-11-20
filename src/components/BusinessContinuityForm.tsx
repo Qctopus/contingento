@@ -1143,6 +1143,7 @@ export function BusinessContinuityForm() {
               })}
               dependsOn={currentQuestion.dependsOn}
               stepData={formData[currentStep]}
+              allFormData={formData}
               preFillData={preFillData}
               onComplete={(value) => handleInputComplete(currentStep, currentQuestion.label, value)}
               initialValue={getCurrentValue()}

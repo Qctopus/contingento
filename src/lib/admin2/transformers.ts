@@ -7,9 +7,11 @@ import { safeJsonParse, transformDatesForApi } from './api-utils'
 import { parseMultilingualJSON } from '../../utils/localizationUtils'
 
 /**
- * All possible risk types (13 total)
+ * Default risk types (fallback if database fetch fails)
+ * NOTE: In production, risks should be fetched from AdminHazardType table
+ * This is just a fallback for backwards compatibility
  */
-const ALL_RISK_TYPES = [
+const DEFAULT_RISK_TYPES = [
   'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage',
   'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 
   'supplyChainDisruption', 'civilUnrest'
@@ -21,9 +23,11 @@ const ALL_RISK_TYPES = [
 export function transformParishForApi(parish: any): any {
   if (!parish) return null
 
-  // CRITICAL: Initialize ALL 13 risks with level 0 first
+  // CRITICAL: Initialize risks with level 0 first
+  // NOTE: In production, this should fetch from AdminHazardType table
+  // For now, using default list as fallback
   let riskProfile: any = {}
-  ALL_RISK_TYPES.forEach(riskType => {
+  DEFAULT_RISK_TYPES.forEach(riskType => {
     riskProfile[riskType] = { level: 0, notes: '' }
   })
   
@@ -56,7 +60,7 @@ export function transformParishForApi(parish: any): any {
           const nonZeroRisks = Object.keys(riskProfile).filter(k => 
             !['lastUpdated', 'updatedBy'].includes(k) && riskProfile[k]?.level > 0
           ).length
-          console.log(`🔍 transformParishForApi: ${parish.name} has ${nonZeroRisks} risks with level > 0 (out of ${ALL_RISK_TYPES.length} total)`)
+          console.log(`🔍 transformParishForApi: ${parish.name} has ${nonZeroRisks} risks with level > 0 (out of ${DEFAULT_RISK_TYPES.length} total)`)
         }
       } catch (error) {
         console.error('⚠️ transformParishForApi: Failed to parse riskProfileJson:', error)
