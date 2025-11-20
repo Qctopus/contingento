@@ -5,26 +5,27 @@ import { useTranslations, useLocale } from 'next-intl'
 import { getLocalizedText, getLocalizedArray } from '@/utils/localizationUtils'
 import { costCalculationService } from '@/services/costCalculationService'
 import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
+import { normalizeRiskId } from '@/utils/riskIdUtils'
 
 interface Strategy {
   id: string
   strategyId?: string
   name: string
   description: string
-  
+
   // Strategy Classification (NEW)
   strategyType?: 'prevention' | 'response' | 'recovery'
-  
+
   // SME-Focused Content
   smeTitle?: string
   smeSummary?: string
   benefitsBullets?: string[]
   realWorldExample?: string
-  
+
   // Backward compat
   smeDescription?: string
   whyImportant?: string
-  
+
   // Basic info
   category: string
   implementationCost: string
@@ -35,33 +36,33 @@ interface Strategy {
   effectiveness: number
   complexityLevel?: string
   quickWinIndicator?: boolean
-  
+
   // Calculated Costs (auto-populated)
   calculatedCostUSD?: number
   calculatedCostLocal?: number
   currencyCode?: string
   currencySymbol?: string
-  
+
   // Wizard integration
   applicableRisks: string[]
   priorityTier: 'essential' | 'recommended' | 'optional'
   reasoning: string
   requiredForRisks?: string[]
-  
+
   // Resource-limited SME support
   lowBudgetAlternative?: string
   diyApproach?: string
   estimatedDIYSavings?: string
-  
+
   // Guidance
   helpfulTips?: string[]
   commonMistakes?: string[]
   successMetrics?: string[]
-  
+
   // Personalization
   industryVariants?: Record<string, string>
   businessSizeGuidance?: Record<string, string>
-  
+
   actionSteps: ActionStep[]
   costItems?: any[]
 }
@@ -113,7 +114,7 @@ export default function StrategySelectionStep({
   const [showUnselectWarning, setShowUnselectWarning] = useState<string | null>(null)
   const [strategyCosts, setStrategyCosts] = useState<Record<string, { amount: number; currency: string; symbol: string }>>({})
   const [currencyInfo, setCurrencyInfo] = useState<{ code: string; symbol: string }>({ code: 'JMD', symbol: 'J$' })
-  
+
   // Load currency info for the selected country
   useEffect(() => {
     async function loadCurrencyInfo() {
@@ -121,8 +122,8 @@ export default function StrategySelectionStep({
         const multiplier = await costCalculationService.getCountryMultiplier(countryCode)
         if (multiplier) {
           setCurrencyInfo({
-            code: multiplier.localCurrency,
-            symbol: multiplier.currencySymbol
+            code: multiplier.currency,
+            symbol: multiplier.currencySymbol || '$'
           })
         }
       } catch (error) {
@@ -131,21 +132,32 @@ export default function StrategySelectionStep({
     }
     loadCurrencyInfo()
   }, [countryCode])
-  
+
   // Calculate costs for all strategies
   useEffect(() => {
     async function calculateCosts() {
       const costs: Record<string, { amount: number; currency: string; symbol: string }> = {}
-      
+
       for (const strategy of strategies) {
         if (strategy.actionSteps && strategy.actionSteps.length > 0) {
           try {
             // calculateStrategyCost expects actionSteps array directly
+            // Ensure phase is present (default to 'short_term' if missing)
+            // Also ensure costItems have actionStepId
+            const stepsForCalc = strategy.actionSteps.map(step => ({
+              ...step,
+              phase: step.phase || 'short_term',
+              costItems: step.costItems?.map(item => ({
+                ...item,
+                actionStepId: step.id
+              }))
+            }))
+
             const result = await costCalculationService.calculateStrategyCost(
-              strategy.actionSteps,
+              stepsForCalc as any, // Cast to any to avoid strict type checking issues with optional properties
               countryCode
             )
-            
+
             // Use the correct property names from StrategyCostCalculation
             const amount = result.localCurrency.amount > 0 ? result.localCurrency.amount : result.totalUSD
             if (typeof amount === 'number' && !isNaN(amount) && amount > 0) {
@@ -160,27 +172,27 @@ export default function StrategySelectionStep({
           }
         }
       }
-      
+
       setStrategyCosts(costs)
     }
-    
+
     if (strategies.length > 0) {
       calculateCosts()
     }
   }, [strategies, countryCode])
-  
+
   // Helper to translate risk names (camelCase to snake_case)
   const translateRisk = (riskName: string) => {
     if (!riskName) return 'Unknown Risk'
-    
+
     // Convert camelCase to snake_case
     const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
-    
+
     // Try to get translation with error handling
     try {
       const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
       const translation = t(translationKey as any)
-      
+
       // Check if translation was found (it returns the key if not found)
       if (translation && !translation.includes('steps.riskAssessment') && !translation.includes('MISSING_MESSAGE')) {
         return translation
@@ -188,22 +200,22 @@ export default function StrategySelectionStep({
     } catch (error) {
       // Translation key doesn't exist, use fallback
     }
-    
+
     // Fallback: return formatted risk name
     return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()).trim()
   }
-  
+
   // Helper to translate complexity/difficulty levels
   const translateLevel = (level: string) => {
     const lowerLevel = level.toLowerCase()
-    
+
     // Try different translation paths
     const paths = [
       `common.${lowerLevel}`,
       `common.severityRanges.${lowerLevel}`,
       `priorityLevels.${lowerLevel}`
     ]
-    
+
     for (const path of paths) {
       const translation = t(path as any)
       // Check if we got a real translation (not the key itself)
@@ -211,15 +223,15 @@ export default function StrategySelectionStep({
         return translation
       }
     }
-    
+
     // Fallback to capitalized level
     return lowerLevel.charAt(0).toUpperCase() + lowerLevel.slice(1)
   }
-  
+
   // Helper to translate strategy reasoning
   const translateReasoning = (reasoning: string) => {
     if (!reasoning) return ''
-    
+
     // Templates in different languages
     const templates = {
       en: {
@@ -238,11 +250,11 @@ export default function StrategySelectionStep({
         recommended: 'Nous recommandons ceci car cela traite votre risque de {risk} avec une efficacité prouvée.'
       }
     }
-    
+
     // Detect which template and extract risk
     let templateType: 'essential' | 'extra' | 'recommended' | null = null
     let riskName = ''
-    
+
     if (reasoning.includes('This is essential because')) {
       templateType = 'essential'
       const match = reasoning.match(/critical (\w+) risk/)
@@ -256,20 +268,38 @@ export default function StrategySelectionStep({
       const match = reasoning.match(/addresses your (\w+) risk/)
       if (match) riskName = match[1]
     }
-    
+
     // If we found a template and risk, translate it
     if (templateType && riskName && templates[locale]) {
       const translatedRisk = translateRisk(riskName)
       return templates[locale][templateType].replace('{risk}', translatedRisk)
     }
-    
+
     // Fallback: return original
     return reasoning
   }
 
   // Group strategies by risk with primary/cross-reference logic
   const strategiesByRisk = strategies.reduce((acc, strategy) => {
-    if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) {
+    // Parse applicableRisks safely
+    let risks: string[] = []
+    if (strategy.applicableRisks) {
+      if (typeof strategy.applicableRisks === 'string') {
+        try {
+          risks = JSON.parse(strategy.applicableRisks)
+        } catch {
+          risks = []
+        }
+      } else if (Array.isArray(strategy.applicableRisks)) {
+        risks = strategy.applicableRisks
+      }
+    }
+
+    // Normalize all risk IDs to snake_case for consistency
+    // Use the shared utility
+    risks = risks.map(risk => normalizeRiskId(risk))
+
+    if (risks.length === 0) {
       // Strategies with no applicable risks go in a general section
       if (!acc['general']) acc['general'] = []
       acc['general'].push({
@@ -280,7 +310,7 @@ export default function StrategySelectionStep({
     }
 
     // For each applicable risk, determine if this strategy is primary or cross-reference
-    strategy.applicableRisks.forEach((risk: string, index: number) => {
+    risks.forEach((risk: string, index: number) => {
       if (!acc[risk]) acc[risk] = []
 
       const isPrimary = index === 0 // First risk is primary
@@ -292,42 +322,24 @@ export default function StrategySelectionStep({
 
     return acc
   }, {} as Record<string, Array<Strategy & { relationshipType: 'primary' | 'crossReference' | 'general' }>>)
-  
+
   // Debug: Log all risk groups before filtering
   console.log(`[StrategySelectionStep] Risk groups before filtering:`, Object.keys(strategiesByRisk))
 
   // Normalize risk identifiers for flexible matching (handle camelCase, snake_case, spaces, etc.)
-  const normalizeRiskId = (id: string): string => {
-    if (!id || typeof id !== 'string') return ''
-    // Remove all special characters, spaces, underscores, hyphens and convert to lowercase
-    return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
-  }
-  
+  // Use the shared utility for consistency
+  // const normalizeRiskId = (id: string): string => {
+  //   return getCanonicalRiskId(id)
+  // }
+
   // More comprehensive matching function that handles various ID formats
   const riskIdsMatch = (riskId1: string, riskId2: string): boolean => {
     if (!riskId1 || !riskId2) return false
-    
-    // Exact match
-    if (riskId1 === riskId2) return true
-    
-    // Normalized match
+
     const norm1 = normalizeRiskId(riskId1)
     const norm2 = normalizeRiskId(riskId2)
-    if (norm1 === norm2) return true
-    
-    // Contains match (for cases like "powerOutage" vs "power_outage")
-    if (norm1.includes(norm2) || norm2.includes(norm1)) return true
-    
-    // Try camelCase/snake_case conversion
-    const camelCase1 = riskId1.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
-    const camelCase2 = riskId2.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
-    if (normalizeRiskId(camelCase1) === normalizeRiskId(camelCase2)) return true
-    
-    const snakeCase1 = riskId1.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
-    const snakeCase2 = riskId2.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
-    if (normalizeRiskId(snakeCase1) === normalizeRiskId(snakeCase2)) return true
-    
-    return false
+
+    return norm1 === norm2
   }
 
   // Filter to only include risks that the user has selected/assessed
@@ -335,61 +347,46 @@ export default function StrategySelectionStep({
   const validRiskIds = new Set(
     validHazards ? validHazards.map(h => h.hazardId) : []
   )
-  
+
   // Also create normalized sets for matching
   const validNormalizedIds = new Set(
     validHazards ? validHazards.map((h: any) => {
       const id = h.hazardId || ''
-      const name = h.hazardName || ''
-      return normalizeRiskId(id) || normalizeRiskId(name)
+      return normalizeRiskId(id)
     }).filter((id: string) => id) : []
   )
 
   // Remove risks that user hasn't selected from strategiesByRisk
   // Use flexible matching to handle different ID formats
   Object.keys(strategiesByRisk).forEach(risk => {
+    if (risk === 'general') return // Always keep general strategies
+
     let matches = false
-    
+
     // Check against all valid hazards using comprehensive matching
     if (validHazards && validHazards.length > 0) {
       matches = validHazards.some((h: any) => {
         const hazardId = h.hazardId || ''
-        const hazardName = h.hazardName || ''
-        
-        // Try matching against both ID and name
-        return riskIdsMatch(risk, hazardId) || riskIdsMatch(risk, hazardName)
+        return riskIdsMatch(risk, hazardId)
       })
     }
-    
-    // Also check exact match in validRiskIds set
-    if (!matches) {
-      matches = validRiskIds.has(risk)
-    }
-    
+
     if (!matches) {
       delete strategiesByRisk[risk]
     }
   })
-  
+
   // Debug logging to help diagnose matching issues
   if (validHazards && validHazards.length > 0) {
-    console.log(`[StrategySelectionStep] After filtering - Risk groups:`, Object.keys(strategiesByRisk))
-    console.log(`[StrategySelectionStep] Valid hazard IDs:`, validHazards.map((h: any) => `${h.hazardId} (${h.hazardName})`))
-    console.log(`[StrategySelectionStep] Valid normalized IDs:`, Array.from(validNormalizedIds))
-    
-    // Show which risks were filtered out
-    const allRiskGroups = Object.keys(strategiesByRisk)
-    const originalRiskGroups = strategies.reduce((acc: Set<string>, strategy) => {
-      if (strategy.applicableRisks) {
-        strategy.applicableRisks.forEach((risk: string) => acc.add(risk))
-      }
-      return acc
-    }, new Set<string>())
-    
-    const filteredOut = Array.from(originalRiskGroups).filter(risk => !allRiskGroups.includes(risk))
-    if (filteredOut.length > 0) {
-      console.log(`[StrategySelectionStep] Filtered out risks (no match):`, filteredOut)
-    }
+    console.log('[DEBUG] Risk-Strategy Matching:')
+    console.log('Valid Hazards:', validHazards?.map(h => ({
+      id: h.hazardId,
+      normalized: normalizeRiskId(h.hazardId)
+    })))
+    console.log('Strategy Groups:', Object.keys(strategiesByRisk))
+    console.log('Matched Groups After Filter:', Object.keys(strategiesByRisk).filter(risk =>
+      validHazards?.some(h => riskIdsMatch(risk, h.hazardId))
+    ))
   }
 
   // Sort risk groups by priority (essential strategies first, then others)
@@ -427,22 +424,22 @@ export default function StrategySelectionStep({
   // Helper to translate time strings
   const translateTime = (timeStr: string) => {
     if (!timeStr) return timeStr
-    
+
     const translations: Record<string, Record<string, string>> = {
-      en: { 
-        day: 'day', days: 'days', week: 'week', weeks: 'weeks', 
-        month: 'month', months: 'months', h: 'h' 
+      en: {
+        day: 'day', days: 'days', week: 'week', weeks: 'weeks',
+        month: 'month', months: 'months', h: 'h'
       },
-      es: { 
+      es: {
         day: 'día', days: 'días', week: 'semana', weeks: 'semanas',
         month: 'mes', months: 'meses', h: 'h'
       },
-      fr: { 
+      fr: {
         day: 'jour', days: 'jours', week: 'semaine', weeks: 'semaines',
         month: 'mois', months: 'mois', h: 'h'
       }
     }
-    
+
     // Handle patterns like "~2 days", "1-2 weeks", "1 day", "1 month"
     let result = timeStr
     Object.entries(translations.en).forEach(([enUnit, enText]) => {
@@ -450,7 +447,7 @@ export default function StrategySelectionStep({
       const translatedUnit = translations[locale]?.[enUnit] || enUnit
       result = result.replace(pattern, translatedUnit)
     })
-    
+
     // Fix singular/plural for Spanish and French (e.g., "2 día" -> "2 días")
     if (locale === 'es') {
       result = result.replace(/([2-9]|\d{2,})\s+día\b/g, '$1 días')
@@ -461,7 +458,7 @@ export default function StrategySelectionStep({
       result = result.replace(/([2-9]|\d{2,})\s+jour\b/g, '$1 jours')
       result = result.replace(/([2-9]|\d{2,})\s+semaine\b/g, '$1 semaines')
     }
-    
+
     return result
   }
 
@@ -471,15 +468,15 @@ export default function StrategySelectionStep({
   const totalTimeRaw = calculateTotalTime(selectedStrategyObjects)
   const totalTime = translateTime(totalTimeRaw)
   const { totalCost, totalCostItems, costByTier } = calculateTotalCostWithItems(
-    selectedStrategyObjects, 
-    strategyCosts, 
+    selectedStrategyObjects,
+    strategyCosts,
     currencyInfo
   )
 
   // Handle strategy toggle with warning for essential
   const handleToggle = (strategyId: string, tier: string) => {
     const isSelected = selectedStrategies.includes(strategyId)
-    
+
     // If unchecking essential strategy, show warning
     if (isSelected && tier === 'essential') {
       setShowUnselectWarning(strategyId)
@@ -556,7 +553,7 @@ export default function StrategySelectionStep({
                       )}
                       tierColor={
                         strategy.priorityTier === 'essential' ? 'red' :
-                        strategy.priorityTier === 'recommended' ? 'yellow' : 'green'
+                          strategy.priorityTier === 'recommended' ? 'yellow' : 'green'
                       }
                       t={t}
                       locale={locale}
@@ -581,80 +578,80 @@ export default function StrategySelectionStep({
             <div className="lg:sticky lg:top-6 space-y-4">
               {/* Main Summary Card */}
               <div className="bg-white rounded-lg border-2 border-blue-500 shadow-lg p-6">
-        <h3 className="font-bold text-gray-900 mb-4">📊 {t('steps.strategySelection.planSummaryTitle')}</h3>
-        
-        <div className="space-y-2 text-sm mb-4">
-          <div className="flex justify-between">
-            <span className="text-gray-600">🎯 Primary Strategies</span>
-            <span className="font-medium">
-              {sortedRiskGroups.reduce((sum, group) =>
-                sum + group.strategies.filter(s => s.relationshipType === 'primary' && selectedStrategies.includes(s.id)).length, 0
-              )} / {sortedRiskGroups.reduce((sum, group) => sum + group.primaryCount, 0)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">🔗 Cross-Reference Strategies</span>
-            <span className="font-medium">
-              {sortedRiskGroups.reduce((sum, group) =>
-                sum + group.strategies.filter(s => s.relationshipType === 'crossReference' && selectedStrategies.includes(s.id)).length, 0
-              )} / {sortedRiskGroups.reduce((sum, group) => sum + group.crossReferenceCount, 0)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">🛡️ Risk Categories Covered</span>
-            <span className="font-medium">
-              {sortedRiskGroups.filter(group => group.strategies.some(s => selectedStrategies.includes(s.id))).length} / {sortedRiskGroups.length}
-            </span>
-          </div>
-        </div>
+                <h3 className="font-bold text-gray-900 mb-4">📊 {t('steps.strategySelection.planSummaryTitle')}</h3>
 
-        <div className="border-t pt-4 mb-4 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">{t('steps.strategySelection.totalStrategies')}</span>
-            <span className="font-bold text-lg">{selectedCount}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">⏱️ {t('steps.strategySelection.totalTime')}</span>
-            <span className="font-medium">{totalTime}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')} ({currencyInfo.code}):</span>
-            <span className="font-medium">{totalCost}</span>
-          </div>
-          {totalCostItems > 0 && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">📦 Cost Items:</span>
-              <span className="font-medium">{totalCostItems} items budgeted</span>
-            </div>
-          )}
-        </div>
+                <div className="space-y-2 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">🎯 Primary Strategies</span>
+                    <span className="font-medium">
+                      {sortedRiskGroups.reduce((sum, group) =>
+                        sum + group.strategies.filter(s => s.relationshipType === 'primary' && selectedStrategies.includes(s.id)).length, 0
+                      )} / {sortedRiskGroups.reduce((sum, group) => sum + group.primaryCount, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">🔗 Cross-Reference Strategies</span>
+                    <span className="font-medium">
+                      {sortedRiskGroups.reduce((sum, group) =>
+                        sum + group.strategies.filter(s => s.relationshipType === 'crossReference' && selectedStrategies.includes(s.id)).length, 0
+                      )} / {sortedRiskGroups.reduce((sum, group) => sum + group.crossReferenceCount, 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">🛡️ Risk Categories Covered</span>
+                    <span className="font-medium">
+                      {sortedRiskGroups.filter(group => group.strategies.some(s => selectedStrategies.includes(s.id))).length} / {sortedRiskGroups.length}
+                    </span>
+                  </div>
+                </div>
 
-        {/* Cost Breakdown by Tier */}
-        {(costByTier.essential > 0 || costByTier.recommended > 0 || costByTier.optional > 0) && (
-          <div className="border-t pt-4 mb-4">
-            <p className="text-xs font-medium text-gray-700 mb-2">💰 Budget Breakdown ({currencyInfo.code})</p>
-            <div className="space-y-1">
-              {costByTier.essential > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-red-700">🔴 Essential:</span>
-                  <span className="font-medium">{currencyInfo.symbol}{costByTier.essential.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                <div className="border-t pt-4 mb-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">{t('steps.strategySelection.totalStrategies')}</span>
+                    <span className="font-bold text-lg">{selectedCount}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">⏱️ {t('steps.strategySelection.totalTime')}</span>
+                    <span className="font-medium">{totalTime}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">💰 {t('steps.strategySelection.totalCost')} ({currencyInfo.code}):</span>
+                    <span className="font-medium">{totalCost}</span>
+                  </div>
+                  {totalCostItems > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">📦 Cost Items:</span>
+                      <span className="font-medium">{totalCostItems} items budgeted</span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {costByTier.recommended > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-yellow-700">🟡 Recommended:</span>
-                  <span className="font-medium">{currencyInfo.symbol}{costByTier.recommended.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-                </div>
-              )}
-              {costByTier.optional > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-green-700">🟢 Optional:</span>
-                  <span className="font-medium">{currencyInfo.symbol}{costByTier.optional.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+
+                {/* Cost Breakdown by Tier */}
+                {(costByTier.essential > 0 || costByTier.recommended > 0 || costByTier.optional > 0) && (
+                  <div className="border-t pt-4 mb-4">
+                    <p className="text-xs font-medium text-gray-700 mb-2">💰 Budget Breakdown ({currencyInfo.code})</p>
+                    <div className="space-y-1">
+                      {costByTier.essential > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-red-700">🔴 Essential:</span>
+                          <span className="font-medium">{currencyInfo.symbol}{costByTier.essential.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        </div>
+                      )}
+                      {costByTier.recommended > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-yellow-700">🟡 Recommended:</span>
+                          <span className="font-medium">{currencyInfo.symbol}{costByTier.recommended.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        </div>
+                      )}
+                      {costByTier.optional > 0 && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-green-700">🟢 Optional:</span>
+                          <span className="font-medium">{currencyInfo.symbol}{costByTier.optional.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Note: Navigation handled by wizard's universal Next button */}
               </div>
@@ -680,8 +677,8 @@ export default function StrategySelectionStep({
                     {selectedStrategies.length} {selectedStrategies.length === 1 ? 'Strategy' : 'Strategies'} Selected
                   </div>
                   <div className="text-xs text-gray-600 mt-1">
-                    {selectedStrategies.length === 0 
-                      ? 'Select at least one strategy to continue' 
+                    {selectedStrategies.length === 0
+                      ? 'Select at least one strategy to continue'
                       : 'Ready to continue - click Next below'}
                   </div>
                 </div>
@@ -752,33 +749,33 @@ function StrategyCard({
     yellow: 'accent-yellow-600',
     green: 'accent-green-600'
   }[tierColor]
-  
+
   // Use SME-focused title if available, otherwise fall back to regular name
   const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
   const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, locale)
-  
+
   // Calculate dynamic time from action steps
   const displayTime = useMemo(() => {
     const calculatedHours = calculateStrategyTimeFromSteps(strategy.actionSteps || [])
     const formatted = formatHoursToDisplay(calculatedHours)
-    
+
     // Validate timeframes
     validateActionStepTimeframes(strategy)
-    
+
     console.log(`[Wizard] Strategy "${displayTitle}": ${calculatedHours}h from ${strategy.actionSteps?.length || 0} steps → "${formatted}"`)
-    
+
     return formatted
   }, [strategy.actionSteps, displayTitle, strategy])
-  
+
   // Helper to format action step costs
   const [stepCosts, setStepCosts] = useState<Record<string, { amount: number; symbol: string; currency: string }>>({})
-  
+
   // Calculate action step costs when expanded
   useEffect(() => {
     if (isExpanded && strategy.actionSteps?.length > 0) {
       const calculateStepCosts = async () => {
         const costs: Record<string, { amount: number; symbol: string; currency: string }> = {}
-        
+
         for (const step of strategy.actionSteps) {
           if (step.costItems && step.costItems.length > 0) {
             try {
@@ -787,7 +784,7 @@ function StrategyCard({
                 step.costItems as any,
                 countryCode // Use country code (e.g., 'JM') not currency code (e.g., 'JMD')
               )
-              
+
               const amount = result.localCurrency.amount > 0 ? result.localCurrency.amount : result.totalUSD
               if (typeof amount === 'number' && !isNaN(amount)) {
                 costs[step.id] = {
@@ -801,10 +798,10 @@ function StrategyCard({
             }
           }
         }
-        
+
         setStepCosts(costs)
       }
-      
+
       calculateStepCosts()
     }
   }, [isExpanded, strategy.actionSteps, countryCode])
@@ -826,14 +823,14 @@ function StrategyCard({
               <h4 className="text-lg font-bold text-gray-900">
                 {displayTitle}
               </h4>
-              
+
               {/* NEW: Strategy Type Badge - Only show if strategyType is explicitly set */}
               {(() => {
                 // Only show badge if strategyType is explicitly set in backend
                 if (!strategy.strategyType) {
                   return null
                 }
-                
+
                 const typeConfig = {
                   prevention: {
                     icon: '🛡️',
@@ -857,7 +854,7 @@ function StrategyCard({
                     borderColor: 'border-green-300'
                   }
                 }[strategy.strategyType]
-                
+
                 if (typeConfig) {
                   return (
                     <span className={`text-xs ${typeConfig.bgColor} ${typeConfig.textColor} border ${typeConfig.borderColor} px-2 py-0.5 rounded font-semibold`}>
@@ -867,7 +864,7 @@ function StrategyCard({
                 }
                 return null
               })()}
-              
+
               {/* Quick Win Indicator */}
               {strategy.quickWinIndicator && (
                 <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded font-medium">
@@ -875,21 +872,21 @@ function StrategyCard({
                 </span>
               )}
             </div>
-            
+
             {/* SME Summary - Plain Language Description */}
             {displaySummary && (
               <p className="text-sm text-gray-600 mb-3">{displaySummary}</p>
             )}
-            
+
             {/* Console logging for debugging */}
             {(() => {
-              const costDisplay = strategyCosts[strategy.id]?.amount 
+              const costDisplay = strategyCosts[strategy.id]?.amount
                 ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
                 : 'Cost TBD'
               console.log(`[Wizard] Strategy "${displayTitle}": ${costDisplay} | Time: ${displayTime}`)
               return null
             })()}
-            
+
             {/* Why Section - Generated Reasoning */}
             {strategy.reasoning && (
               <div className="mb-3">
@@ -897,11 +894,11 @@ function StrategyCard({
                 <p className="text-sm text-gray-600">{translateReasoning(strategy.reasoning)}</p>
               </div>
             )}
-            
+
             {/* NEW: Benefits Bullets - Key Benefits */}
             {(() => {
               const benefitsArray = getLocalizedArray(strategy.benefitsBullets, locale)
-              
+
               return benefitsArray.length > 0 && (
                 <div className="mb-3">
                   <p className="text-sm font-medium text-gray-700 mb-1">✅ {t('steps.strategySelection.whatYouGetLabel')}</p>
@@ -924,13 +921,13 @@ function StrategyCard({
                 {(() => {
                   // Only show risks that actually exist in validHazards
                   const validRisks = strategy.applicableRisks?.filter((risk: string) => {
-                    return validHazards?.some(h => 
-                      h.hazardId === risk || 
+                    return validHazards?.some(h =>
+                      h.hazardId === risk ||
                       h.hazardId === risk.replace(/_/g, '') || // handle snake_case vs camelCase
                       h.hazardId.replace(/_/g, '') === risk.replace(/_/g, '')
                     )
                   }) || []
-                  
+
                   if (validRisks.length === 0) {
                     return (
                       <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
@@ -938,17 +935,17 @@ function StrategyCard({
                       </span>
                     )
                   }
-                  
+
                   return validRisks.map((risk: string) => {
                     // Find the matching valid hazard to get the proper name
-                    const hazard = validHazards?.find(h => 
-                      h.hazardId === risk || 
+                    const hazard = validHazards?.find(h =>
+                      h.hazardId === risk ||
                       h.hazardId === risk.replace(/_/g, '') ||
                       h.hazardId.replace(/_/g, '') === risk.replace(/_/g, '')
                     )
-                    
+
                     return (
-                      <span 
+                      <span
                         key={risk}
                         className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-800 border border-blue-200"
                       >
@@ -971,7 +968,7 @@ function StrategyCard({
               <div>
                 <span className="text-gray-500">💰</span>{' '}
                 <span className="font-medium">
-                  {strategyCosts[strategy.id]?.amount 
+                  {strategyCosts[strategy.id]?.amount
                     ? `${strategyCosts[strategy.id].symbol}${strategyCosts[strategy.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
                     : 'Cost TBD'
                   }
@@ -1002,7 +999,7 @@ function StrategyCard({
               <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, locale)}</p>
             </div>
           )}
-          
+
           {/* NEW: Low Budget Alternative */}
           {strategy.lowBudgetAlternative && (
             <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
@@ -1013,7 +1010,7 @@ function StrategyCard({
               )}
             </div>
           )}
-          
+
           {/* NEW: DIY Approach */}
           {strategy.diyApproach && (
             <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
@@ -1034,16 +1031,15 @@ function StrategyCard({
                         {t('common.actionStep')} {index + 1}: {getLocalizedText(step.title || step.smeAction, locale)}
                       </p>
                       {step.difficultyLevel && (
-                        <span className={`text-xs px-2 py-0.5 rounded ${
-                          step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
+                        <span className={`text-xs px-2 py-0.5 rounded ${step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
                           step.difficultyLevel === 'hard' ? 'bg-red-100 text-red-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
+                            'bg-gray-100 text-gray-700'
+                          }`}>
                           {translateLevel(step.difficultyLevel)}
                         </span>
                       )}
                     </div>
-                    
+
                     {/* NEW: Why This Step Matters */}
                     {step.whyThisStepMatters && (
                       <div className="mb-2 pl-3 border-l-2 border-blue-300">
@@ -1051,9 +1047,9 @@ function StrategyCard({
                         <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, locale)}</p>
                       </div>
                     )}
-                    
+
                     <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, locale)}</p>
-                    
+
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                       {step.estimatedMinutes && (
                         <span>⏱️ ~{step.estimatedMinutes} min</span>
@@ -1067,7 +1063,7 @@ function StrategyCard({
                         <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
                       )}
                     </div>
-                    
+
                     {/* NEW: How to Know It's Done */}
                     {step.howToKnowItsDone && (
                       <div className="mt-2 pt-2 border-t border-gray-100">
@@ -1076,7 +1072,7 @@ function StrategyCard({
                         </p>
                       </div>
                     )}
-                    
+
                     {/* NEW: Free Alternative */}
                     {step.freeAlternative && (
                       <div className="mt-2 bg-green-50 rounded p-2">
@@ -1090,7 +1086,7 @@ function StrategyCard({
               </div>
             </div>
           )}
-          
+
           {/* NEW: Helpful Tips */}
           {(() => {
             const tips = getLocalizedText(strategy.helpfulTips, locale)
@@ -1109,7 +1105,7 @@ function StrategyCard({
               </div>
             )
           })()}
-          
+
           {/* NEW: Common Mistakes */}
           {(() => {
             const mistakes = getLocalizedText(strategy.commonMistakes, locale)
@@ -1151,13 +1147,13 @@ function calculateTotalTime(strategies: Strategy[]): string {
     const strategyHours = calculateStrategyTimeFromSteps(s.actionSteps || [])
     return total + strategyHours
   }, 0)
-  
+
   // Format using the utility function
   return formatHoursToDisplay(totalHours)
 }
 
 function calculateTotalCostWithItems(
-  strategies: Strategy[], 
+  strategies: Strategy[],
   strategyCosts: Record<string, { amount: number; currency: string; symbol: string }>,
   currencyInfo: { code: string; symbol: string }
 ): { totalCost: string; totalCostItems: number; costByTier: { essential: number; recommended: number; optional: number } } {
@@ -1165,12 +1161,12 @@ function calculateTotalCostWithItems(
   let total = 0
   let costItemCount = 0
   const costByTier = { essential: 0, recommended: 0, optional: 0 }
-  
+
   strategies.forEach(strategy => {
     const cost = strategyCosts[strategy.id]
     const amount = cost?.amount || 0
     total += amount
-    
+
     // Add to tier totals
     if (strategy.priorityTier === 'essential') {
       costByTier.essential += amount
@@ -1179,7 +1175,7 @@ function calculateTotalCostWithItems(
     } else if (strategy.priorityTier === 'optional') {
       costByTier.optional += amount
     }
-    
+
     // Count cost items across all action steps
     if (strategy.actionSteps) {
       strategy.actionSteps.forEach(step => {
@@ -1189,7 +1185,7 @@ function calculateTotalCostWithItems(
       })
     }
   })
-  
+
   let totalCostStr: string
   if (total === 0) {
     totalCostStr = `${currencyInfo.symbol}0 (No cost items assigned)`
@@ -1197,11 +1193,11 @@ function calculateTotalCostWithItems(
     // Format with proper currency symbol only (no code suffix)
     const formatted = total.toLocaleString('en-US', { maximumFractionDigits: 0 })
     totalCostStr = `${currencyInfo.symbol}${formatted}`
-    
+
     // Console log for debugging
     console.log(`[Wizard] Total cost: ${totalCostStr} (${costItemCount} items budgeted)`)
   }
-  
+
   return { totalCost: totalCostStr, totalCostItems: costItemCount, costByTier }
 }
 

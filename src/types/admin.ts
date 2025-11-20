@@ -78,7 +78,7 @@ export interface BusinessType {
   category: string
   subcategory?: string
   description?: string // Can be plain string or multilingual object
-  
+
   // Multilingual example content for wizard prefill (JSON arrays)
   // These are business-type-specific suggestions that help users understand what to enter
   exampleBusinessPurposes?: string[] | string // Array of examples or JSON string
@@ -86,7 +86,7 @@ export interface BusinessType {
   exampleKeyPersonnel?: string[] | string
   exampleCustomerBase?: string[] | string
   minimumEquipment?: string[] | string
-  
+
   strategies: BusinessTypeStrategy[]
   riskVulnerabilities?: Array<{
     riskType: string
@@ -125,16 +125,16 @@ export interface ActionStep {
   description: string
   smeAction: string // Simple, clear action for SME users
   sortOrder?: number
-  
+
   // SME Context - Why this matters
   whyThisStepMatters?: string // Plain language importance explanation
   whatHappensIfSkipped?: string // Specific consequence if user skips
-  
+
   // Timing & Difficulty
   timeframe?: string // Human-readable ("1-2 hours", "Within a week")
   estimatedMinutes?: number // Precise timing: 15, 30, 60, 120, etc.
   difficultyLevel?: 'easy' | 'medium' | 'hard'
-  
+
   // Resources & Costs
   responsibility?: string
   estimatedCost?: string // Cost estimate string (e.g., "$400 USD", "$0")
@@ -157,20 +157,20 @@ export interface ActionStep {
     }
   }>
   checklist?: string[] // Step-by-step checklist
-  
+
   // Validation & Completion
   howToKnowItsDone?: string // Clear completion criteria
   exampleOutput?: string // What "done" looks like
-  
+
   // Dependencies
   dependsOnSteps?: string[] // stepIds that must complete first
   isOptional?: boolean // Can this be skipped?
   skipConditions?: string // When to skip
-  
+
   // Alternatives for resource-limited SMEs
   freeAlternative?: string // Free way to do this
   lowTechOption?: string // Non-digital approach
-  
+
   // Help Resources
   commonMistakesForStep?: string[] // Mistakes to avoid
   videoTutorialUrl?: string // YouTube or tutorial link
@@ -187,7 +187,7 @@ export interface Strategy {
   strategyId: string
   name: string // Admin-facing technical name
   description: string // Technical description for admin use
-  
+
   // SME-Focused Content (benefit-driven, plain language)
   smeTitle?: string // Benefit-focused title (e.g., "Stay Connected During Emergencies")
   smeSummary?: string // 2-3 sentence plain language summary
@@ -195,43 +195,46 @@ export interface Strategy {
   whyImportant?: string // DEPRECATED: Use benefitsBullets. Kept for backwards compatibility
   benefitsBullets?: string[] // Array of specific benefits
   realWorldExample?: string // Caribbean success story with real business names
-  
+
   // Implementation Details (enhanced)
   implementationCost: 'low' | 'medium' | 'high' | 'very_high' // Categorical estimate for quick reference
   totalEstimatedHours?: number // Sum of all action step times
   complexityLevel?: 'simple' | 'moderate' | 'advanced'
   roi?: number // Return on investment estimate
   quickWinIndicator?: boolean // Fast + high impact = quick win
-  
+  effectiveness?: number // 1-10 scale
+  category?: string // 'prevention', 'preparation', 'response', 'recovery'
+  timeToImplement?: string // Human readable string
+
   // Calculated costs (computed from action step cost items)
   calculatedCostUSD?: number // Aggregated from action steps
   calculatedCostLocal?: number // In local currency
-  
+
   // Wizard Integration (how strategy appears in wizard)
   defaultSelected?: boolean // Should wizard pre-check this?
   selectionTier?: 'essential' | 'recommended' | 'optional'
   requiredForRisks?: string[] // Risk IDs that make this mandatory
   priorityTier?: 'essential' | 'recommended' | 'optional' // Alias for selectionTier
   reasoning?: string // Why we recommend this (from scoring algorithm)
-  
+
   // Guidance (consolidated)
   helpfulTips?: string[] // Tips for successful implementation
   commonMistakes?: string[] // What to avoid
   successMetrics?: string[] // How to measure success
-  
+
   // Resource-Limited SME Support
   lowBudgetAlternative?: string // Cheaper approach
   diyApproach?: string // DIY instructions
   estimatedDIYSavings?: string // "Save JMD 10,000 by..."
-  
+
   // BCP Document Integration
   bcpSectionMapping?: string // Which BCP section this fills
   bcpTemplateText?: string // Pre-written paragraph for BCP
-  
+
   // Personalization
   industryVariants?: Record<string, string> // Industry-specific guidance
   businessSizeGuidance?: Record<string, string> // Size-specific guidance
-  
+
   // Keep existing fields
   applicableRisks: string[] // Risk types this strategy addresses
   applicableBusinessTypes?: string[] // Business categories (null = all)

@@ -7,6 +7,7 @@ import type { Strategy } from '../types/admin'
 import type { Locale } from '../i18n/config'
 import StrategySelectionStep from './wizard/StrategySelectionStep'
 import { getLocalizedText } from '../utils/localizationUtils'
+import { normalizeRiskId } from '../utils/riskIdUtils'
 
 interface AdminStrategyCardsProps {
   initialValue?: Strategy[]
@@ -43,7 +44,7 @@ export function AdminStrategyCards({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [useNewUI, setUseNewUI] = useState(false)
-  
+
   const t = useTranslations('common')
   const locale = useLocale() as Locale
 
@@ -53,31 +54,31 @@ export function AdminStrategyCards({
       try {
         setLoading(true)
         setError(null)
-        
+
         // Check if we have pre-filled strategies from admin backend
         if (preFillData?.preFilledFields?.STRATEGIES?.['Business Continuity Strategies']) {
           const preFilledStrategies = preFillData.preFilledFields.STRATEGIES['Business Continuity Strategies']
           setStrategies(preFilledStrategies)
-          
+
           // Check if strategies have the new priorityTier field (enhanced recommendation system)
           const hasNewFields = preFilledStrategies.some((s: any) => s.priorityTier !== undefined)
           setUseNewUI(hasNewFields)
-          
+
           if (hasNewFields) {
             // Auto-select essential and recommended strategies
             const autoSelectedIds = preFilledStrategies
-              .filter((strategy: any) => 
+              .filter((strategy: any) =>
                 strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
               )
               .map((s: any) => s.id)
             setSelectedStrategyIds(autoSelectedIds)
-            
+
             // Also set selectedStrategies for backwards compatibility
             const autoSelected = preFilledStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
           } else {
             // Auto-select high-effectiveness strategies (legacy)
-            const autoSelected = preFilledStrategies.filter((strategy: Strategy) => 
+            const autoSelected = preFilledStrategies.filter((strategy: Strategy) =>
               strategy.effectiveness && strategy.effectiveness >= 7
             )
             setSelectedStrategies(autoSelected)
@@ -86,49 +87,49 @@ export function AdminStrategyCards({
         } else {
           // Fallback: load all strategies from centralDataService
           const allStrategies = await centralDataService.getStrategies(true, locale)
-          
+
           // Check if strategies have the new priorityTier field
           const hasNewFields = allStrategies.some((s: any) => s.priorityTier !== undefined)
-          
+
           if (hasNewFields) {
             setStrategies(allStrategies)
             setUseNewUI(true)
-            
+
             // Auto-select essential and recommended strategies
             const autoSelectedIds = allStrategies
-              .filter((strategy: any) => 
+              .filter((strategy: any) =>
                 strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
               )
               .map((s: any) => s.id)
             setSelectedStrategyIds(autoSelectedIds)
-            
+
             // Also set selectedStrategies for backwards compatibility
             const autoSelected = allStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
           } else if (preFillData?.hazards && preFillData.hazards.length > 0) {
             // We have risks but strategies don't have priorityTier - match them dynamically
-            
+
             // Get high-tier risks to determine essential vs recommended strategies
             const highTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 1 || h.riskScore >= 7)
             const mediumTierRisks = preFillData.hazards.filter((h: any) => h.riskTier === 2 || (h.riskScore >= 5 && h.riskScore < 7))
-            
+
             // Enrich strategies with priority tiers based on risks
             const enrichedStrategies = allStrategies.map((strategy: any) => {
               // Match strategy to risks by checking applicableRisks
-              const matchesHighRisk = strategy.applicableRisks?.some((riskId: string) => 
+              const matchesHighRisk = strategy.applicableRisks?.some((riskId: string) =>
                 highTierRisks.some((h: any) => h.hazardId === riskId)
               )
-              const matchesMediumRisk = strategy.applicableRisks?.some((riskId: string) => 
+              const matchesMediumRisk = strategy.applicableRisks?.some((riskId: string) =>
                 mediumTierRisks.some((h: any) => h.hazardId === riskId)
               )
-              
+
               let priorityTier: 'essential' | 'recommended' | 'optional' = 'optional'
               let reasoning = strategy.reasoning || ''
-              
+
               if (matchesHighRisk) {
                 priorityTier = 'essential'
                 if (!reasoning) {
-                  const matchedRisk = highTierRisks.find((h: any) => 
+                  const matchedRisk = highTierRisks.find((h: any) =>
                     strategy.applicableRisks?.includes(h.hazardId)
                   )
                   reasoning = `This is essential because you have critical ${matchedRisk?.hazardName || 'risk'}. This strategy directly reduces that danger.`
@@ -136,7 +137,7 @@ export function AdminStrategyCards({
               } else if (matchesMediumRisk) {
                 priorityTier = 'recommended'
                 if (!reasoning) {
-                  const matchedRisk = mediumTierRisks.find((h: any) => 
+                  const matchedRisk = mediumTierRisks.find((h: any) =>
                     strategy.applicableRisks?.includes(h.hazardId)
                   )
                   reasoning = `We recommend this because it addresses your ${matchedRisk?.hazardName || 'risk'} risk with proven effectiveness.`
@@ -145,41 +146,41 @@ export function AdminStrategyCards({
                 priorityTier = 'recommended'
                 if (!reasoning) reasoning = 'Highly effective general strategy recommended for all businesses.'
               }
-              
+
               return {
                 ...strategy,
                 priorityTier,
                 reasoning
               }
             })
-            
+
             setStrategies(enrichedStrategies)
             setUseNewUI(true)
-            
+
             // Auto-select essential and recommended strategies
             const autoSelectedIds = enrichedStrategies
-              .filter((strategy: any) => 
+              .filter((strategy: any) =>
                 strategy.priorityTier === 'essential' || strategy.priorityTier === 'recommended'
               )
               .map((s: any) => s.id)
             setSelectedStrategyIds(autoSelectedIds)
-            
+
             const autoSelected = enrichedStrategies.filter((s: any) => autoSelectedIds.includes(s.id))
             setSelectedStrategies(autoSelected)
           } else {
             // No priorityTier and no risks - fall back to legacy UI
             setStrategies(allStrategies)
             setUseNewUI(false)
-            
+
             // Auto-select high-effectiveness strategies (legacy)
-            const autoSelected = allStrategies.filter((strategy: Strategy) => 
+            const autoSelected = allStrategies.filter((strategy: Strategy) =>
               strategy.effectiveness && strategy.effectiveness >= 7
             )
             setSelectedStrategies(autoSelected)
             setSelectedStrategyIds(autoSelected.map(s => s.id))
           }
         }
-        
+
       } catch (error) {
         console.error('Failed to load strategies:', error)
         setError('Failed to load business continuity strategies')
@@ -187,7 +188,7 @@ export function AdminStrategyCards({
         setLoading(false)
       }
     }
-    
+
     loadStrategies()
   }, [locale, preFillData])
 
@@ -200,7 +201,7 @@ export function AdminStrategyCards({
     if (setUserInteracted) {
       setUserInteracted()
     }
-    
+
     setSelectedStrategies(prev => {
       const isSelected = prev.some(s => s.id === strategy.id)
       if (isSelected) {
@@ -209,7 +210,7 @@ export function AdminStrategyCards({
         return [...prev, strategy]
       }
     })
-    
+
     // Update selectedStrategyIds as well for new UI
     setSelectedStrategyIds(prev => {
       const isSelected = prev.includes(strategy.id)
@@ -220,13 +221,13 @@ export function AdminStrategyCards({
       }
     })
   }
-  
+
   // Handler for new UI (strategy ID-based)
   const handleStrategyIdToggle = (strategyId: string) => {
     if (setUserInteracted) {
       setUserInteracted()
     }
-    
+
     setSelectedStrategyIds(prev => {
       const isSelected = prev.includes(strategyId)
       if (isSelected) {
@@ -235,12 +236,12 @@ export function AdminStrategyCards({
         return [...prev, strategyId]
       }
     })
-    
+
     // Update selectedStrategies for backwards compatibility
     setSelectedStrategies(prev => {
       const strategy = strategies.find(s => s.id === strategyId)
       if (!strategy) return prev
-      
+
       const isSelected = prev.some(s => s.id === strategyId)
       if (isSelected) {
         return prev.filter(s => s.id !== strategyId)
@@ -249,18 +250,18 @@ export function AdminStrategyCards({
       }
     })
   }
-  
+
   // Auto-save whenever selection changes (with guard to prevent infinite loops)
   const prevSelectedIdsRef = useRef<string>('')
   useEffect(() => {
     if (strategies.length > 0) {
       const fullSelectedStrategies = strategies.filter(s => selectedStrategyIds.includes(s.id))
       const currentIdsString = selectedStrategyIds.sort().join(',')
-      
+
       // Only call onComplete if the selection has actually changed
       if (currentIdsString !== prevSelectedIdsRef.current) {
         prevSelectedIdsRef.current = currentIdsString
-        
+
         if (onComplete) {
           // Call onComplete with strategies array (not wrapped in object)
           onComplete(fullSelectedStrategies)
@@ -268,7 +269,7 @@ export function AdminStrategyCards({
       }
     }
   }, [selectedStrategyIds, strategies, onComplete])
-  
+
   const handleContinue = () => {
     // Called by StrategySelectionStep's onContinue prop
     // Data is already auto-saved via useEffect above, this is just for the button
@@ -338,7 +339,7 @@ export function AdminStrategyCards({
     // Filter to only include risks that are SELECTED (checked) in the risk assessment matrix
     // This ensures only risks the user selected in the risk section appear in the strategy section
     let selectedRisks: Array<{ hazardId: string; hazardName: string }> = []
-    
+
     if (riskData?.['Risk Assessment Matrix'] && Array.isArray(riskData['Risk Assessment Matrix'])) {
       // Get selected risks from risk assessment matrix
       // CRITICAL: Check BOTH isSelected (user manual selection) AND isPreSelected (auto-selected from backend)
@@ -347,7 +348,7 @@ export function AdminStrategyCards({
         const isAutoSelected = r.isPreSelected === true || r.isPreSelected === 'true' || r.isPreSelected === 1
         return isManuallySelected || isAutoSelected
       })
-      
+
       console.log(`[AdminStrategyCards] ========================================`)
       console.log(`[AdminStrategyCards] Total risks in matrix: ${riskData['Risk Assessment Matrix'].length}`)
       console.log(`[AdminStrategyCards] Full risk data:`, riskData['Risk Assessment Matrix'].map((r: any) => ({
@@ -358,29 +359,27 @@ export function AdminStrategyCards({
       console.log(`[AdminStrategyCards] Manually selected (isSelected=true):`, riskData['Risk Assessment Matrix'].filter((r: any) => r.isSelected === true).map((r: any) => r.hazardId || r.hazard).join(', ') || 'NONE')
       console.log(`[AdminStrategyCards] Auto-selected (isPreSelected=true):`, riskData['Risk Assessment Matrix'].filter((r: any) => r.isPreSelected === true).map((r: any) => r.hazardId || r.hazard).join(', ') || 'NONE')
       console.log(`[AdminStrategyCards] Combined selected (isSelected OR isPreSelected):`, selectedRiskItems.length)
-      
+
       // Map to the format expected by validHazards
       // Include both the original ID and normalized versions for matching
       selectedRisks = selectedRiskItems.map((r: any) => {
         const hazardId = r.hazardId || r.id || r.hazard || ''
         const hazardName = r.hazardName || r.hazard || r['Hazard Name'] || r['Hazard'] || ''
-        
+
         // Normalize the hazard ID for matching (handle camelCase, snake_case, etc.)
-        const normalizeId = (id: string) => {
-          if (!id) return ''
-          return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
-        }
-        
+        // Use the shared utility to ensure consistency with StrategySelectionStep
+        const canonicalId = normalizeRiskId(hazardId)
+
         return {
-          hazardId: hazardId,
+          hazardId: canonicalId || hazardId, // Use canonical ID if available
           hazardName: hazardName,
           // Store normalized versions for flexible matching
-          normalizedId: normalizeId(hazardId),
-          normalizedName: normalizeId(hazardName)
+          normalizedId: canonicalId,
+          normalizedName: normalizeRiskId(hazardName)
         }
       }).filter((r: any) => r.hazardId && r.hazardName) // Remove any invalid entries
-      
-      console.log(`[AdminStrategyCards] Filtered to ${selectedRisks.length} selected risks from risk assessment matrix:`, 
+
+      console.log(`[AdminStrategyCards] Filtered to ${selectedRisks.length} selected risks from risk assessment matrix:`,
         selectedRisks.map(r => r.hazardName).join(', '))
       console.log(`[AdminStrategyCards] Risk IDs:`, selectedRisks.map(r => `${r.hazardId} (normalized: ${r.normalizedId})`).join(', '))
     } else if (preFillData?.hazards) {
@@ -389,19 +388,17 @@ export function AdminStrategyCards({
       selectedRisks = preFillData.hazards.map((h: any) => {
         const hazardId = h.hazardId || h.id || ''
         const hazardName = h.hazardName || h.hazard || ''
-        const normalizeId = (id: string) => {
-          if (!id) return ''
-          return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
-        }
+        const canonicalId = normalizeRiskId(hazardId)
+
         return {
-          hazardId: hazardId,
+          hazardId: canonicalId || hazardId,
           hazardName: hazardName,
-          normalizedId: normalizeId(hazardId),
-          normalizedName: normalizeId(hazardName)
+          normalizedId: canonicalId,
+          normalizedName: normalizeRiskId(hazardName)
         }
       }).filter((h: any) => h.hazardId && h.hazardName)
     }
-    
+
     return (
       <StrategySelectionStep
         strategies={strategies as any}
@@ -441,7 +438,7 @@ export function AdminStrategyCards({
             <div className="text-2xl font-bold">{selectedStrategies.length}/{strategies.length}</div>
           </div>
         </div>
-        
+
         {preFillData?.preFilledFields?.STRATEGIES && (
           <div className="mt-4 bg-green-800 bg-opacity-50 rounded-lg p-3">
             <div className="flex items-center space-x-2">
@@ -477,31 +474,30 @@ export function AdminStrategyCards({
             <span className="capitalize">{category} Strategies</span>
             <span className="text-sm text-gray-500">({categoryStrategies.length})</span>
           </h3>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categoryStrategies.map((strategy) => {
               const isSelected = selectedStrategies.some(s => s.id === strategy.id)
-              
+
               return (
                 <div
                   key={strategy.id}
                   onClick={() => handleStrategyToggle(strategy)}
-                  className={`cursor-pointer border-2 rounded-lg p-4 transition-all hover:shadow-md ${
-                    isSelected 
-                      ? 'border-green-500 bg-green-50' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
+                  className={`cursor-pointer border-2 rounded-lg p-4 transition-all hover:shadow-md ${isSelected
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
                 >
                   <div className="flex items-start space-x-3">
                     <label className="flex items-center mt-1 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => {}} // Handled by parent div
+                        onChange={() => { }} // Handled by parent div
                         className="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
                       />
                     </label>
-                    
+
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-medium text-gray-900">{getLocalizedText(strategy.name, locale)}</h4>
@@ -511,9 +507,9 @@ export function AdminStrategyCards({
                           </span>
                         )}
                       </div>
-                      
+
                       <p className="text-sm text-gray-600 mb-3">{getLocalizedText(strategy.description, locale)}</p>
-                      
+
                       <div className="space-y-2">
                         {strategy.implementationCost && (
                           <div className="text-xs text-gray-500">
@@ -544,7 +540,7 @@ export function AdminStrategyCards({
       {selectedStrategies.length > 0 && (
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Strategies Summary</h3>
-          
+
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-900">{selectedStrategies.length}</div>
@@ -566,7 +562,7 @@ export function AdminStrategyCards({
 
           <div className="text-sm text-gray-600">
             <p>
-              You have selected strategies that will help protect your business from various risks. 
+              You have selected strategies that will help protect your business from various risks.
               These strategies include specific action steps that you can implement to improve your business continuity.
             </p>
           </div>
