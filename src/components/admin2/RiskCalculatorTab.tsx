@@ -86,12 +86,12 @@ export default function RiskCalculatorTab() {
   const [multipliers, setMultipliers] = useState<RiskMultiplier[]>([])
   const [strategies, setStrategies] = useState<Strategy[]>([])
   const [error, setError] = useState<string | null>(null)
-  
+
   const [selectedCountry, setSelectedCountry] = useState('')
   const [selectedUnit, setSelectedUnit] = useState('')
   const [selectedBusinessType, setSelectedBusinessType] = useState('')
   const [multiplierAnswers, setMultiplierAnswers] = useState<Record<string, any>>({})
-  
+
   const [riskScores, setRiskScores] = useState<RiskScore[]>([])
   const [recommendedStrategies, setRecommendedStrategies] = useState<Strategy[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,16 +104,16 @@ export default function RiskCalculatorTab() {
     try {
       setLoading(true)
       setError(null)
-      
-      // Use fetch with cache control for better performance
+
+      // Use fetch without cache for development/debugging
       const fetchOptions: RequestInit = {
-        next: { revalidate: 300 } // Cache for 5 minutes
+        cache: 'no-store'
       }
-      
+
       const [countriesRes, businessTypesRes, multipliersRes, strategiesRes] = await Promise.all([
         fetch('/api/admin2/countries', fetchOptions),
         fetch('/api/admin2/business-types', fetchOptions),
-        fetch('/api/admin2/multipliers', fetchOptions),
+        fetch('/api/admin2/multipliers?locale=en', fetchOptions),
         fetch('/api/admin2/strategies', fetchOptions)
       ])
 
@@ -129,7 +129,7 @@ export default function RiskCalculatorTab() {
         dataLength: countriesData.data?.length || 0,
         countriesLength: countriesData.countries?.length || 0
       })
-      
+
       if (countriesData.success) {
         // Handle both response formats: { success, data } and { success, countries }
         const countryList = countriesData.data || countriesData.countries || []
@@ -141,22 +141,22 @@ export default function RiskCalculatorTab() {
       } else {
         setCountries([])
       }
-      
+
       if (businessTypesData.success) {
         const btList = businessTypesData.data || businessTypesData.businessTypes || []
         setBusinessTypes(btList)
       } else {
         setBusinessTypes([])
       }
-      
+
       if (multipliersData.success) {
-        const multiplierList = multipliersData.data || multipliersData.multipliers || []
+        const multiplierList = multipliersData.data || []
         const activeMultipliers = multiplierList.filter((m: RiskMultiplier) => m.isActive)
         setMultipliers(activeMultipliers)
       } else {
         setMultipliers([])
       }
-      
+
       if (strategiesData.success) {
         const stratList = strategiesData.data || strategiesData.strategies || []
         setStrategies(stratList)
@@ -182,7 +182,7 @@ export default function RiskCalculatorTab() {
         next: { revalidate: 300 } // Cache for 5 minutes
       })
       const data = await response.json()
-      
+
       console.log('📍 Admin Units API response:', {
         success: data.success,
         hasData: !!data.data,
@@ -190,7 +190,7 @@ export default function RiskCalculatorTab() {
         dataLength: data.data?.length || 0,
         adminUnitsLength: data.adminUnits?.length || 0
       })
-      
+
       if (data.success) {
         // Handle both response formats: { success, data } and { success, adminUnits }
         const unitList = data.data || data.adminUnits || []
@@ -211,39 +211,7 @@ export default function RiskCalculatorTab() {
     }
   }
 
-  const parseMultilingual = (value: any, lang: string = 'en'): any => {
-    if (!value) return null
-    
-    // If it's already a plain string, return it
-    if (typeof value === 'string' && !value.startsWith('{')) {
-      return value
-    }
-    
-    // If it's a JSON string, parse it
-    if (typeof value === 'string' && value.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(value)
-        if (parsed && typeof parsed === 'object') {
-          return parsed[lang] || parsed.en || Object.values(parsed)[0] || value
-        }
-        return value
-      } catch {
-        return value
-      }
-    }
-    
-    // If it's already an object with language keys
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      return value[lang] || value.en || Object.values(value)[0] || null
-    }
-    
-    // If it's an array, return as-is
-    if (Array.isArray(value)) {
-      return value
-    }
-    
-    return value
-  }
+
 
   const calculateRisks = async () => {
     if (!selectedUnit || !selectedBusinessType) {
@@ -255,11 +223,11 @@ export default function RiskCalculatorTab() {
       // Fetch admin unit risk profile
       const unitResponse = await fetch(`/api/admin2/admin-units?countryId=${selectedCountry}`)
       const unitData = await unitResponse.json()
-      
+
       // Handle both response formats
       const unitList = unitData.data || unitData.adminUnits || []
       const unit = unitList.find((u: any) => u.id === selectedUnit)
-      
+
       if (!unit) {
         alert('Selected location not found')
         return
@@ -267,7 +235,7 @@ export default function RiskCalculatorTab() {
 
       // Parse risk data from adminUnitRisk
       let locationRisks: Record<string, number> = {}
-      
+
       if (unit.adminUnitRisk) {
         // Map database fields to risk type keys
         locationRisks = {
@@ -285,12 +253,12 @@ export default function RiskCalculatorTab() {
           supply_chain_disruption: 0, // Not in DB, default to 0
           civil_unrest: 0 // Not in DB, default to 0
         }
-        
+
         // Also try to parse riskProfileJson if it exists
         try {
           if (unit.adminUnitRisk.riskProfileJson && unit.adminUnitRisk.riskProfileJson !== '{}') {
             const parsedProfile = JSON.parse(unit.adminUnitRisk.riskProfileJson)
-            
+
             // The JSON format is: { "fire": { "level": 3, "notes": "..." }, ... }
             // We need to extract just the level values and map camelCase to snake_case
             const keyMapping: Record<string, string> = {
@@ -302,7 +270,7 @@ export default function RiskCalculatorTab() {
               'supplyChainDisruption': 'supply_chain_disruption',
               'civilUnrest': 'civil_unrest'
             }
-            
+
             Object.entries(parsedProfile).forEach(([key, value]: [string, any]) => {
               if (value && typeof value === 'object' && 'level' in value) {
                 const mappedKey = keyMapping[key] || key
@@ -317,7 +285,7 @@ export default function RiskCalculatorTab() {
         console.warn('No adminUnitRisk found for unit:', unit.name)
       }
       const businessType = businessTypes.find(bt => bt.id === selectedBusinessType)
-      
+
       if (!businessType) return
 
       // Parse business vulnerabilities
@@ -348,7 +316,7 @@ export default function RiskCalculatorTab() {
           // Check if this multiplier applies to this risk type
           const hazardKey = riskType.toLowerCase().replace(/_/g, '')
           const multiplierHazards = (multiplier.applicableHazards || []).map(h => h.toLowerCase().replace(/_/g, ''))
-          
+
           if (!multiplierHazards.includes(hazardKey)) return
 
           // Check if condition is met
@@ -380,9 +348,9 @@ export default function RiskCalculatorTab() {
         finalScore = Math.min(finalScore, 10)
 
         return {
-        riskType,
-        locationRisk,
-        businessVulnerability,
+          riskType,
+          locationRisk,
+          businessVulnerability,
           baseScore: Math.round(baseScore * 10) / 10,
           appliedMultipliers,
           finalScore: Math.round(finalScore * 10) / 10,
@@ -396,14 +364,14 @@ export default function RiskCalculatorTab() {
       const preselectedRisks = scores.filter(s => s.isPreselected).map(s => s.riskType)
       const recommended = strategies.filter(strategy => {
         // Check if strategy applies to any preselected risk
-        const appliesToRisk = (strategy.applicableRisks || []).some(risk => 
+        const appliesToRisk = (strategy.applicableRisks || []).some(risk =>
           preselectedRisks.includes(risk.toLowerCase().replace(/ /g, '_'))
         )
-        
+
         // Check if strategy is recommended for this business type
         const appliesToBusinessType = (strategy.recommendedForBusinessTypes || []).length === 0 ||
           (strategy.recommendedForBusinessTypes || []).includes(selectedBusinessType)
-        
+
         return appliesToRisk && appliesToBusinessType
       })
 
@@ -470,14 +438,14 @@ export default function RiskCalculatorTab() {
         {/* Input Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
           <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">Simulation Parameters</h3>
-          
+
           {/* Location Selection */}
           <div className="space-y-4">
             <h4 className="font-medium text-gray-700">📍 Location</h4>
-            
-          <div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-            <select
+              <select
                 value={selectedCountry}
                 onChange={(e) => handleCountryChange(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -486,12 +454,12 @@ export default function RiskCalculatorTab() {
                 {(countries || []).map(country => (
                   <option key={country.id} value={country.id}>
                     {country.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Administrative Unit *</label>
               <select
                 value={selectedUnit}
@@ -512,46 +480,48 @@ export default function RiskCalculatorTab() {
           {/* Business Type Selection */}
           <div className="space-y-4">
             <h4 className="font-medium text-gray-700">🏢 Business Type</h4>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Business Type *</label>
-            <select
-              value={selectedBusinessType}
-              onChange={(e) => setSelectedBusinessType(e.target.value)}
+              <select
+                value={selectedBusinessType}
+                onChange={(e) => setSelectedBusinessType(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
+              >
                 <option value="">Select business type...</option>
                 {(businessTypes || []).map(bt => (
-                <option key={bt.id} value={bt.id}>
-                    {parseMultilingual(bt.name) || bt.name} ({bt.category})
-                </option>
-              ))}
-            </select>
+                  <option key={bt.id} value={bt.id}>
+                    {bt.name} ({bt.category})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-        </div>
 
           {/* Multiplier Questions */}
           {(activeMultipliers || []).length > 0 && (
             <div className="space-y-4">
               <h4 className="font-medium text-gray-700">🎛️ Multiplier Questions</h4>
-              
+
               {(activeMultipliers || []).map(multiplier => {
-                const question = parseMultilingual(multiplier.wizardQuestion) || multiplier.name
-                const helpText = parseMultilingual(multiplier.wizardHelpText)
+                const question = multiplier.wizardQuestion || multiplier.name
+                const helpText = multiplier.wizardHelpText
                 const currentValue = multiplierAnswers[multiplier.id]
-                
+
                 // Parse answer options if available
                 let answerOptions: any[] = []
                 if (multiplier.wizardAnswerOptions) {
                   try {
-                    answerOptions = typeof multiplier.wizardAnswerOptions === 'string'
-                      ? JSON.parse(multiplier.wizardAnswerOptions)
-                      : multiplier.wizardAnswerOptions
+                    answerOptions = Array.isArray(multiplier.wizardAnswerOptions)
+                      ? multiplier.wizardAnswerOptions
+                      : typeof multiplier.wizardAnswerOptions === 'string'
+                        ? JSON.parse(multiplier.wizardAnswerOptions)
+                        : []
                   } catch (error) {
                     console.error('Error parsing answer options:', error)
                   }
                 }
-                
+
                 return (
                   <div key={multiplier.id} className="space-y-2">
                     <label className="block text-sm font-medium text-gray-700">
@@ -560,7 +530,7 @@ export default function RiskCalculatorTab() {
                     {helpText && (
                       <p className="text-xs text-gray-500">{helpText}</p>
                     )}
-                    
+
                     {multiplier.conditionType === 'boolean' ? (
                       <div className="flex items-center gap-3">
                         {/* Toggle Switch */}
@@ -570,20 +540,18 @@ export default function RiskCalculatorTab() {
                             ...prev,
                             [multiplier.id]: !prev[multiplier.id]
                           }))}
-                          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                            currentValue ? 'bg-blue-600' : 'bg-gray-300'
-                          }`}
+                          className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${currentValue ? 'bg-blue-600' : 'bg-gray-300'
+                            }`}
                         >
                           <span
-                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-                              currentValue ? 'translate-x-7' : 'translate-x-1'
-                            }`}
+                            className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${currentValue ? 'translate-x-7' : 'translate-x-1'
+                              }`}
                           />
                         </button>
                         <span className={`text-sm font-medium ${currentValue ? 'text-blue-700' : 'text-gray-600'}`}>
                           {currentValue ? 'Yes' : 'No'}
                         </span>
-                </div>
+                      </div>
                     ) : answerOptions && answerOptions.length > 0 ? (
                       // Dropdown for predefined options
                       <select
@@ -600,7 +568,7 @@ export default function RiskCalculatorTab() {
                           const optionLabel = option.label !== undefined ? option.label : option
                           return (
                             <option key={idx} value={optionValue}>
-                              {parseMultilingual(optionLabel) || optionLabel}
+                              {optionLabel}
                             </option>
                           )
                         })}
@@ -618,11 +586,11 @@ export default function RiskCalculatorTab() {
                           }))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                           placeholder={
-                            multiplier.conditionType === 'threshold' 
+                            multiplier.conditionType === 'threshold'
                               ? `Enter value (threshold: ${multiplier.thresholdValue})`
                               : multiplier.conditionType === 'range'
-                              ? `Enter value (${multiplier.minValue} - ${multiplier.maxValue})`
-                              : 'Enter value...'
+                                ? `Enter value (${multiplier.minValue} - ${multiplier.maxValue})`
+                                : 'Enter value...'
                           }
                         />
                         {multiplier.conditionType === 'threshold' && multiplier.thresholdValue !== undefined && (
@@ -637,7 +605,7 @@ export default function RiskCalculatorTab() {
                         )}
                       </div>
                     )}
-                </div>
+                  </div>
                 )
               })}
             </div>
@@ -651,21 +619,21 @@ export default function RiskCalculatorTab() {
           >
             🧮 Calculate Risk Profile
           </button>
-          </div>
+        </div>
 
         {/* Results Section */}
-            <div className="space-y-6">
+        <div className="space-y-6">
           {riskScores.length > 0 && (
             <>
               {/* Risk Scores */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Risk Assessment Results</h3>
-                
+
                 <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                   <p className="text-sm text-blue-900">
                     <strong>Threshold:</strong> Risks with final score ≥ {THRESHOLD} or location risk ≥ 5 are <strong>preselected</strong>
                   </p>
-                    </div>
+                </div>
 
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">
                   {(riskScores || [])
@@ -673,11 +641,10 @@ export default function RiskCalculatorTab() {
                     .map(score => (
                       <div
                         key={score.riskType}
-                        className={`p-4 rounded-lg border-2 ${
-                          score.isPreselected
-                            ? 'bg-blue-50 border-blue-500'
-                            : 'bg-gray-50 border-gray-200'
-                        }`}
+                        className={`p-4 rounded-lg border-2 ${score.isPreselected
+                          ? 'bg-blue-50 border-blue-500'
+                          : 'bg-gray-50 border-gray-200'
+                          }`}
                       >
                         <div className="flex items-start justify-between mb-2">
                           <div>
@@ -688,11 +655,11 @@ export default function RiskCalculatorTab() {
                             <p className="text-xs text-gray-600 mt-1">
                               Location: {score.locationRisk}/10 | Business: {score.businessVulnerability}/10 | Base: {score.baseScore}/10
                             </p>
-                                </div>
+                          </div>
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getRiskColor(score.finalScore)}`}>
                             {score.finalScore}/10 - {getRiskLabel(score.finalScore)}
-                                    </span>
-                                  </div>
+                          </span>
+                        </div>
 
                         {score.appliedMultipliers.length > 0 && (
                           <div className="mt-2 pt-2 border-t border-gray-200">
@@ -701,99 +668,62 @@ export default function RiskCalculatorTab() {
                               {score.appliedMultipliers.map((mult, idx) => (
                                 <span key={idx} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded">
                                   {mult.name} (×{mult.factor})
-                                              </span>
-                          ))}
-                        </div>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                ))}
-            </div>
-          </div>
+                    ))}
+                </div>
+              </div>
 
               {/* Recommended Strategies */}
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">🛡️ Recommended Strategies ({(recommendedStrategies || []).length})</h3>
-                
+
                 {(recommendedStrategies || []).length > 0 ? (
-                    <div className="space-y-4">
+                  <div className="space-y-4">
                     {(recommendedStrategies || []).map((strategy: any) => {
-                      const displayTitle = strategy.smeTitle || strategy.name 
-                        ? getLocalizedText(strategy.smeTitle || strategy.name, 'en') 
+                      const displayTitle = strategy.smeTitle || strategy.name
+                        ? getLocalizedText(strategy.smeTitle || strategy.name, 'en')
                         : 'Untitled Strategy'
                       const displaySummary = (strategy.smeSummary || strategy.smeDescription || strategy.description)
                         ? getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, 'en')
                         : ''
-                      
-                      // Helper to extract string from multilingual object or string
+
+                      // Helper to extract string
                       const extractString = (value: any): string => {
                         if (!value) return ''
                         if (typeof value === 'string') return value
-                        if (typeof value === 'object' && value !== null) {
-                          // If it's a multilingual object, extract the English value
-                          if (value.en) return value.en
-                          if (value.es) return value.es
-                          if (value.fr) return value.fr
-                          // If it's an array, join it
-                          if (Array.isArray(value)) return value.map(extractString).join(', ')
-                          // Otherwise, try to stringify
-                          return String(value)
-                        }
                         return String(value)
                       }
-                      
-                      // Parse array fields (stored as JSON strings in DB)
+
+                      // Parse array fields
                       const getBenefits = () => {
                         if (!strategy.benefitsBullets) return []
-                        let items: any[] = []
                         if (Array.isArray(strategy.benefitsBullets)) {
-                          items = strategy.benefitsBullets
-                        } else if (typeof strategy.benefitsBullets === 'string') {
-                          try {
-                            const parsed = JSON.parse(strategy.benefitsBullets)
-                            items = Array.isArray(parsed) ? parsed : []
-                          } catch {
-                            return []
-                          }
+                          return strategy.benefitsBullets.map(extractString).filter(Boolean)
                         }
-                        // Extract strings from multilingual objects
-                        return items.map(extractString).filter(Boolean)
+                        return []
                       }
-                      
+
                       const getTips = () => {
                         if (!strategy.helpfulTips) return []
-                        let items: any[] = []
                         if (Array.isArray(strategy.helpfulTips)) {
-                          items = strategy.helpfulTips
-                        } else if (typeof strategy.helpfulTips === 'string') {
-                          try {
-                            const parsed = JSON.parse(strategy.helpfulTips)
-                            items = Array.isArray(parsed) ? parsed : []
-                          } catch {
-                            return []
-                          }
+                          return strategy.helpfulTips.map(extractString).filter(Boolean)
                         }
-                        // Extract strings from multilingual objects
-                        return items.map(extractString).filter(Boolean)
+                        return []
                       }
-                      
+
                       const getMistakes = () => {
                         if (!strategy.commonMistakes) return []
-                        let items: any[] = []
                         if (Array.isArray(strategy.commonMistakes)) {
-                          items = strategy.commonMistakes
-                        } else if (typeof strategy.commonMistakes === 'string') {
-                          try {
-                            const parsed = JSON.parse(strategy.commonMistakes)
-                            items = Array.isArray(parsed) ? parsed : []
-                          } catch {
-                            return []
-                          }
+                          return strategy.commonMistakes.map(extractString).filter(Boolean)
                         }
-                        // Extract strings from multilingual objects
-                        return items.map(extractString).filter(Boolean)
+                        return []
                       }
-                      
+
                       return (
                         <div key={strategy.id} className="bg-white border-2 border-green-200 rounded-lg overflow-hidden">
                           {/* Header */}
@@ -804,11 +734,11 @@ export default function RiskCalculatorTab() {
                                 {strategy.quickWinIndicator && (
                                   <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full font-medium">⚡ Quick Win</span>
                                 )}
-                        </h4>
+                              </h4>
                             </div>
-                            
+
                             <p className="text-sm text-gray-700 mb-3">{displaySummary}</p>
-                            
+
                             {/* Key Metrics */}
                             <div className="flex flex-wrap gap-2 text-sm">
                               <div className="bg-white px-3 py-1 rounded-full">
@@ -820,7 +750,7 @@ export default function RiskCalculatorTab() {
                               <div className="bg-white px-3 py-1 rounded-full">
                                 <span className="text-gray-500">💰</span>{' '}
                                 <span className="font-medium">
-                                  {strategy.costEstimateJMD || strategy.implementationCost 
+                                  {strategy.costEstimateJMD || strategy.implementationCost
                                     ? getLocalizedText(strategy.costEstimateJMD || strategy.implementationCost, 'en')
                                     : 'N/A'}
                                 </span>
@@ -878,7 +808,7 @@ export default function RiskCalculatorTab() {
                                 </p>
                               </div>
                             )}
-                            
+
                             {/* Low Budget Alternative */}
                             {strategy.lowBudgetAlternative && (
                               <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
@@ -893,7 +823,7 @@ export default function RiskCalculatorTab() {
                                 )}
                               </div>
                             )}
-                            
+
                             {/* DIY Approach */}
                             {strategy.diyApproach && (
                               <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
@@ -918,7 +848,7 @@ export default function RiskCalculatorTab() {
                                 </ul>
                               </div>
                             )}
-                            
+
                             {/* Common Mistakes */}
                             {getMistakes().length > 0 && (
                               <div className="bg-red-50 rounded p-3">
@@ -946,16 +876,15 @@ export default function RiskCalculatorTab() {
                                           Step {index + 1}: {(step.title || step.smeAction) ? getLocalizedText(step.title || step.smeAction, 'en') : 'Untitled Step'}
                                         </p>
                                         {step.difficultyLevel && (
-                                          <span className={`text-xs px-2 py-0.5 rounded ${
-                                            step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
+                                          <span className={`text-xs px-2 py-0.5 rounded ${step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
                                             step.difficultyLevel === 'hard' ? 'bg-red-100 text-red-700' :
-                                            'bg-gray-100 text-gray-700'
-                                          }`}>
+                                              'bg-gray-100 text-gray-700'
+                                            }`}>
                                             {step.difficultyLevel}
                                           </span>
                                         )}
                                       </div>
-                                      
+
                                       {step.whyThisStepMatters && (
                                         <div className="mb-2 pl-3 border-l-2 border-blue-300">
                                           <p className="text-xs text-blue-700 font-medium">Why this matters:</p>
@@ -964,11 +893,11 @@ export default function RiskCalculatorTab() {
                                           </p>
                                         </div>
                                       )}
-                                      
+
                                       <p className="text-sm text-gray-600 mb-2">
                                         {(step.description || step.smeAction) ? getLocalizedText(step.description || step.smeAction, 'en') : ''}
                                       </p>
-                                      
+
                                       <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                                         {step.estimatedMinutes && (
                                           <span>⏱️ ~{step.estimatedMinutes} min</span>
@@ -980,7 +909,7 @@ export default function RiskCalculatorTab() {
                                           <span>💰 {step.estimatedCostJMD ? getLocalizedText(step.estimatedCostJMD, 'en') : 'N/A'}</span>
                                         )}
                                       </div>
-                                      
+
                                       {step.howToKnowItsDone && (
                                         <div className="mt-2 pt-2 border-t border-gray-100">
                                           <p className="text-xs text-gray-600">
@@ -988,7 +917,7 @@ export default function RiskCalculatorTab() {
                                           </p>
                                         </div>
                                       )}
-                                      
+
                                       {step.freeAlternative && (
                                         <div className="mt-2 bg-green-50 rounded p-2">
                                           <p className="text-xs text-green-700">
@@ -996,8 +925,8 @@ export default function RiskCalculatorTab() {
                                           </p>
                                         </div>
                                       )}
-                            </div>
-                          ))}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}
@@ -1015,34 +944,34 @@ export default function RiskCalculatorTab() {
                         </div>
                       )
                     })}
-                          </div>
+                  </div>
                 ) : (
                   <p className="text-sm text-gray-600 italic">
                     No strategies recommended for the current risk profile.
                   </p>
                 )}
               </div>
-                  
+
               {/* Summary Stats */}
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-3">📈 Summary</h3>
                 <div className="grid grid-cols-2 gap-4">
-              <div>
+                  <div>
                     <p className="text-2xl font-bold text-purple-600">
                       {(riskScores || []).filter(s => s.isPreselected).length}
                     </p>
                     <p className="text-sm text-gray-600">Preselected Risks</p>
-                          </div>
+                  </div>
                   <div>
                     <p className="text-2xl font-bold text-green-600">
                       {(recommendedStrategies || []).length}
                     </p>
                     <p className="text-sm text-gray-600">Recommended Strategies</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        </>
-      )}
+            </>
+          )}
 
           {(riskScores || []).length === 0 && (
             <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
@@ -1050,7 +979,7 @@ export default function RiskCalculatorTab() {
               <p className="text-gray-600">
                 Select parameters and click "Calculate Risk Profile" to see results
               </p>
-          </div>
+            </div>
           )}
         </div>
       </div>

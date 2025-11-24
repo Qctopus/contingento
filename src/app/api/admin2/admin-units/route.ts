@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
     const adminUnits = await prisma.adminUnit.findMany({
       where,
       include: {
-        country: true,
-        adminUnitRisk: true
+        Country: true,
+        AdminUnitRisk: true
       },
       orderBy: [
-        { country: { name: 'asc' } },
+        { Country: { name: 'asc' } },
         { name: 'asc' }
       ]
     })
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
         isActive: true
       },
       include: {
-        country: true,
-        adminUnitRisk: true
+        Country: true,
+        AdminUnitRisk: true
       }
     })
 
@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
     const adminUnitWithRisk = await prisma.adminUnit.findUnique({
       where: { id: adminUnit.id },
       include: {
-        country: true,
-        adminUnitRisk: true
+        Country: true,
+        AdminUnitRisk: true
       }
     })
 
@@ -142,8 +142,8 @@ export async function PUT(request: NextRequest) {
         ...(isActive !== undefined && { isActive })
       },
       include: {
-        country: true,
-        adminUnitRisk: true
+        Country: true,
+        AdminUnitRisk: true
       }
     })
 

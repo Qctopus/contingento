@@ -289,16 +289,8 @@ export default function StrategySelectionStep({
   const relevantStrategies = strategies.filter(strategy => {
     // Parse applicableRisks
     let risks: string[] = []
-    if (strategy.applicableRisks) {
-      if (typeof strategy.applicableRisks === 'string') {
-        try {
-          risks = JSON.parse(strategy.applicableRisks)
-        } catch {
-          risks = []
-        }
-      } else if (Array.isArray(strategy.applicableRisks)) {
-        risks = strategy.applicableRisks
-      }
+    if (strategy.applicableRisks && Array.isArray(strategy.applicableRisks)) {
+      risks = strategy.applicableRisks
     }
 
     // Check if ANY of the strategy's applicable risks match user's selected risks
@@ -325,16 +317,8 @@ export default function StrategySelectionStep({
   const strategiesByRisk = relevantStrategies.reduce((acc, strategy) => {
     // Parse applicableRisks safely
     let risks: string[] = []
-    if (strategy.applicableRisks) {
-      if (typeof strategy.applicableRisks === 'string') {
-        try {
-          risks = JSON.parse(strategy.applicableRisks)
-        } catch {
-          risks = []
-        }
-      } else if (Array.isArray(strategy.applicableRisks)) {
-        risks = strategy.applicableRisks
-      }
+    if (strategy.applicableRisks && Array.isArray(strategy.applicableRisks)) {
+      risks = strategy.applicableRisks
     }
 
     // CRITICAL: Do NOT normalize risk IDs - use exact IDs from database

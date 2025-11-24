@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       where: activeOnly ? { isActive: true } : undefined,
       include: {
         _count: {
-          select: { adminUnits: true }
+          select: { AdminUnit: true }
         }
       },
       orderBy: { name: 'asc' }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       },
       include: {
         _count: {
-          select: { adminUnits: true }
+          select: { AdminUnit: true }
         }
       }
     })
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: country }, { status: 201 })
   } catch (error: any) {
     console.error('Error creating country:', error)
-    
+
     if (error.code === 'P2002') {
       return NextResponse.json(
         { success: false, error: 'Country code already exists' },
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
       },
       include: {
         _count: {
-          select: { adminUnits: true }
+          select: { AdminUnit: true }
         }
       }
     })

@@ -20,40 +20,29 @@ export function getLocalizedText(
   fallbackLocale: Locale = 'en'
 ): string {
   if (!content) return ''
-  
-  // If content is a simple string, check if it's JSON first
+
+  // If content is a simple string, return it directly
   if (typeof content === 'string') {
-    // Try to parse as JSON if it looks like multilingual content
-    if (content.startsWith('{') && content.includes('"en":')) {
-      try {
-        const parsed = JSON.parse(content)
-        if (typeof parsed === 'object' && parsed !== null) {
-          return getLocalizedText(parsed, locale, fallbackLocale)
-        }
-      } catch (e) {
-        // If parsing fails, return the original string
-      }
-    }
     return content
   }
-  
+
   // If content is an object, try to get the requested locale
   if (typeof content === 'object' && content !== null) {
     // Try requested locale first
     if (content[locale]) {
       return content[locale]
     }
-    
+
     // Fall back to fallback locale
     if (content[fallbackLocale]) {
       return content[fallbackLocale]
     }
-    
+
     // Fall back to English if available
     if (content.en) {
       return content.en
     }
-    
+
     // Fall back to any available language
     const availableValue = Object.values(content).find(value => {
       if (!value) return false
@@ -61,24 +50,13 @@ export function getLocalizedText(
       if (typeof value === 'string') {
         return value.trim().length > 0
       }
-      // Handle arrays and other types - convert to string if possible
-      if (Array.isArray(value)) {
-        return value.length > 0
-      }
       return true
     })
     if (availableValue) {
-      // Convert to string if it's not already
-      if (typeof availableValue === 'string') {
-        return availableValue
-      }
-      if (Array.isArray(availableValue)) {
-        return JSON.stringify(availableValue)
-      }
       return String(availableValue)
     }
   }
-  
+
   return ''
 }
 
@@ -91,10 +69,10 @@ export function createMultilingualContent(
   es?: string
 ): MultilingualContent {
   const content: MultilingualContent = { en }
-  
+
   if (fr) content.fr = fr
   if (es) content.es = es
-  
+
   return content
 }
 
@@ -112,14 +90,14 @@ export function updateMultilingualContent(
     content[locale] = newText
     return content
   }
-  
+
   // If existing content is null/undefined, create new
   if (!existing) {
     const content: MultilingualContent = { en: '' }
     content[locale] = newText
     return content
   }
-  
+
   // Update existing object
   return {
     ...existing,
@@ -135,11 +113,11 @@ export function hasTranslation(
   locale: Locale
 ): boolean {
   if (!content) return false
-  
+
   if (typeof content === 'string') {
     return locale === 'en' // assume string content is English
   }
-  
+
   return !!(content[locale] && content[locale].trim())
 }
 
@@ -150,16 +128,16 @@ export function getAvailableLanguages(
   content: MultilingualContent | null | undefined
 ): Locale[] {
   if (!content) return []
-  
+
   if (typeof content === 'string') {
     return ['en'] // assume string content is English
   }
-  
+
   const languages: Locale[] = []
   if (content.en && content.en.trim()) languages.push('en')
   if (content.fr && content.fr.trim()) languages.push('fr')
   if (content.es && content.es.trim()) languages.push('es')
-  
+
   return languages
 }
 
@@ -173,10 +151,10 @@ export function migrateToMultilingual(
   if (!existingContent) {
     return { en: '' }
   }
-  
+
   const content: MultilingualContent = { en: '' }
   content[sourceLocale] = existingContent
-  
+
   return content
 }
 
@@ -222,7 +200,7 @@ export function localizeActionStep(actionStep: any, locale: Locale) {
  */
 export function parseMultilingualJSON(content: string | null | undefined): MultilingualContent | null {
   if (!content) return null
-  
+
   try {
     const parsed = JSON.parse(content)
     // If it's already an object with language keys, return it
@@ -237,7 +215,7 @@ export function parseMultilingualJSON(content: string | null | undefined): Multi
     // If JSON parsing fails, treat the content as a plain English string
     return { en: content }
   }
-  
+
   return null
 }
 
@@ -246,12 +224,12 @@ export function parseMultilingualJSON(content: string | null | undefined): Multi
  */
 export function stringifyMultilingualContent(content: MultilingualContent | null | undefined): string {
   if (!content) return ''
-  
+
   // If it's a simple string, convert to multilingual format
   if (typeof content === 'string') {
     return JSON.stringify({ en: content })
   }
-  
+
   return JSON.stringify(content)
 }
 
@@ -266,21 +244,16 @@ export function getLocalizedArray(
   fallbackLocale: Locale = 'en'
 ): string[] {
   if (!content) return []
-  
+
   let parsed: any = null
-  
-  // If content is a string, try to parse as JSON
+
+  // If content is a string, return empty array (strings are not arrays)
   if (typeof content === 'string') {
-    try {
-      parsed = JSON.parse(content)
-    } catch (e) {
-      // If parsing fails, return empty array
-      return []
-    }
-  } else {
-    parsed = content
+    return []
   }
-  
+
+  parsed = content
+
   // If it's already an array, return it (assuming it's already localized)
   if (Array.isArray(parsed)) {
     // Ensure each item is a string
@@ -293,12 +266,12 @@ export function getLocalizedArray(
       return String(item)
     }).filter((item: string) => item && item.trim().length > 0)
   }
-  
+
   // If it's an object with language keys
   if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     // Try to get array for requested locale
     let array: any[] = []
-    
+
     if (parsed[locale] && Array.isArray(parsed[locale])) {
       array = parsed[locale]
     } else if (parsed[fallbackLocale] && Array.isArray(parsed[fallbackLocale])) {
@@ -313,7 +286,7 @@ export function getLocalizedArray(
         array = foundArray
       }
     }
-    
+
     // Ensure each item is a string
     return array.map((item: any) => {
       if (typeof item === 'string') return item
@@ -324,6 +297,6 @@ export function getLocalizedArray(
       return String(item)
     }).filter((item: string) => item && item.trim().length > 0)
   }
-  
+
   return []
 }

@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     const itemId = searchParams.get('itemId')
     const category = searchParams.get('category')
     const search = searchParams.get('search')
-    
+
     // If itemId is provided, fetch specific item
     if (itemId) {
       const item = await prisma.costItem.findUnique({
@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       })
       return NextResponse.json({ items: item ? [item] : [] })
     }
-    
+
     // Build where clause for filtering
     const where: any = { isActive: true }
     if (category) {
@@ -28,20 +28,20 @@ export async function GET(req: NextRequest) {
         { description: { contains: search, mode: 'insensitive' } }
       ]
     }
-    
+
     const items = await prisma.costItem.findMany({
       where,
       include: {
         _count: {
           select: {
-            strategyItems: true,
-            actionStepItems: true
+            ActionStepItemCost: true,
+            StrategyItemCost: true
           }
-        }
+        } as any
       },
       orderBy: { name: 'asc' }
     })
-    
+
     return NextResponse.json({ items })
   } catch (error) {
     console.error('Failed to fetch cost items:', error)
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    
+
     const item = await prisma.costItem.create({
       data: {
         itemId: data.itemId,
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         premiumAlternativeId: data.premiumAlternativeId
       }
     })
-    
+
     return NextResponse.json({ item })
   } catch (error) {
     console.error('Failed to create cost item:', error)

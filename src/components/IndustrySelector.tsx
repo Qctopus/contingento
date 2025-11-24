@@ -57,14 +57,27 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     const loadMultipliers = async () => {
       try {
         setLoadingMultipliers(true)
-        const response = await fetch('/api/admin2/multipliers?activeOnly=true')
+        const response = await fetch(`/api/admin2/multipliers?activeOnly=true&locale=${locale}`)
         const result = await response.json()
-        
+
         if (result.success) {
+          // Handle both response formats: data or multipliers
+          const allMultipliers = result.data || result.multipliers || []
           // Filter to only multipliers with wizard questions
-          const multipliersWithQuestions = result.multipliers.filter((m: any) => m.wizardQuestion)
+          const multipliersWithQuestions = allMultipliers.filter((m: any) => m.wizardQuestion)
           setMultipliers(multipliersWithQuestions)
-          console.log(`📋 Loaded ${multipliersWithQuestions.length} multiplier questions`)
+          console.log(`📋 Loaded ${multipliersWithQuestions.length} multiplier questions (locale: ${locale})`)
+
+          // Debug: Log if multipliers exist but none have wizard questions
+          if (allMultipliers.length > 0 && multipliersWithQuestions.length === 0) {
+            console.warn('⚠️ Multipliers exist but none have wizardQuestion:',
+              allMultipliers.map((m: any) => ({
+                id: m.id,
+                name: m.name,
+                wizardQuestion: m.wizardQuestion
+              }))
+            )
+          }
         }
       } catch (err) {
         console.error('Error loading multipliers:', err)
@@ -72,7 +85,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
         setLoadingMultipliers(false)
       }
     }
-    
+
     loadMultipliers()
   }, [])
 
@@ -85,7 +98,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
           centralDataService.getBusinessTypes(true, locale),
           fetch('/api/admin2/countries?activeOnly=true').then(r => r.json())
         ])
-        
+
         // Group business types by category
         const groupedBusinessTypes = businessTypes.reduce((acc, businessType) => {
           const category = businessType.category || 'other'
@@ -101,10 +114,10 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
           group.businessTypes.push(businessType)
           return acc
         }, [] as Array<{ category: string; title: string; businessTypes: BusinessType[] }>)
-        
+
         setBusinessTypesByCategory(groupedBusinessTypes)
-        
-        if (countriesResponse.success && countriesResponse.data.length > 0) {
+
+        if (countriesResponse.success && countriesResponse.data) {
           setCountries(countriesResponse.data)
           // Auto-select Jamaica if it exists
           const jamaica = countriesResponse.data.find((c: Country) => c.code === 'JM')
@@ -116,6 +129,9 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
               countryCode: jamaica.code
             }))
           }
+        } else {
+          console.error('Countries API error:', countriesResponse)
+          setCountries([])
         }
       } catch (err) {
         setError('Failed to load business types and locations')
@@ -140,7 +156,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
         setLoadingAdminUnits(true)
         const response = await fetch(`/api/admin2/admin-units?countryId=${selectedCountryId}&activeOnly=true`)
         const result = await response.json()
-        
+
         if (result.success) {
           setAdminUnits(result.data)
         }
@@ -155,15 +171,15 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
   }, [selectedCountryId])
 
   // Map admin units to parish format for compatibility
-  const parishes = adminUnits.map(unit => ({ 
-    name: unit.name, 
-    code: unit.id 
+  const parishes = adminUnits.map(unit => ({
+    name: unit.name,
+    code: unit.id
   }))
 
   const handleIndustrySelect = async (industryId: string) => {
     setSelectedIndustry(industryId)
     setCurrentStep('location')
-    
+
     // Fetch risk preview for the selected business type
     try {
       const response = await fetch('/api/wizard/get-smart-recommendations', {
@@ -179,7 +195,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
           urbanArea: location.urbanArea
         })
       })
-      
+
       if (response.ok) {
         const preview = await response.json()
         setPreFillPreview(preview)
@@ -195,18 +211,18 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     // Move to characteristics step
     setCurrentStep('characteristics')
   }
-  
+
   const handleCharacteristicsSubmit = async () => {
     if (!selectedIndustry || !location.country) return
-    
+
     try {
       setSubmitting(true)
       setError(null)
-      
+
       // CRITICAL: Clear old cached data to force fresh calculation with multipliers
       localStorage.removeItem('bcp-prefill-data')
       console.log('🗑️ Cleared old prefill data - generating fresh with multipliers...')
-      
+
       // Call the prepare-prefill-data API with business characteristics
       // Filter out UI-only tracking keys (like _selectedIndex) before submission
       const cleanedCharacteristics = Object.keys(businessCharacteristics).reduce((acc, key) => {
@@ -215,7 +231,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
         }
         return acc
       }, {} as Record<string, any>)
-      
+
       const response = await fetch('/api/wizard/prepare-prefill-data', {
         method: 'POST',
         headers: {
@@ -236,15 +252,15 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
       }
 
       const preFillData = await response.json()
-      
+
       // Store in localStorage as required
       localStorage.setItem('bcp-prefill-data', JSON.stringify(preFillData))
-      
+
       console.log('Pre-fill data prepared and stored:', preFillData)
-      
+
       // Call the original selection handler
       onSelection(selectedIndustry, location)
-      
+
     } catch (error) {
       console.error('Error preparing pre-fill data:', error)
       setError('Failed to prepare business data. Please try again.')
@@ -312,7 +328,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
     const selectedBusiness = businessTypesByCategory
       .flatMap(cat => cat.businessTypes)
       .find(bt => bt.businessTypeId === selectedIndustry)
-    
+
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
         <div className="max-w-3xl mx-auto">
@@ -347,128 +363,317 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 <p className="mt-4 text-gray-600">{t('loadingQuestions')}</p>
               </div>
             ) : (
-            <div className="space-y-6">
-              {/* Location Characteristics - User Input */}
-              <div className="pb-6 border-b border-gray-200 bg-gray-50 p-4 rounded-lg">
-                <label className="block text-lg font-semibold text-gray-900 mb-3">
-                  {t('aboutLocationTitle')}
-                </label>
-                {/* Removed hardcoded location questions - now handled by Dynamic Multiplier Questions below */}
-              </div>
+              <div className="space-y-6">
+                {/* Location Characteristics - User Input */}
+                <div className="pb-6 border-b border-gray-200 bg-gray-50 p-4 rounded-lg">
+                  <label className="block text-lg font-semibold text-gray-900 mb-3">
+                    {t('aboutLocationTitle')}
+                  </label>
+                  {/* Removed hardcoded location questions - now handled by Dynamic Multiplier Questions below */}
+                </div>
 
                 {/* Dynamic Multiplier Questions (from Admin Panel) */}
                 {multipliers
                   .filter(m => m.isActive) // Only show active multipliers
                   .map((multiplier, index) => {
-                  // Parse multilingual fields (API now returns parsed JSON, but handle both cases)
-                  const parseMultilingualField = (field: any): any => {
-                    if (!field) return null
-                    if (typeof field === 'object') return field // Already parsed by API
-                    if (typeof field === 'string') {
-                      try {
-                        return JSON.parse(field)
-                      } catch {
-                        return field
+                    // The API now returns pre-localized strings based on the locale parameter
+                    // If wizardQuestion is a string, use it directly
+                    // If it's an object (legacy format), extract the locale
+                    const getLocalizedValue = (field: any): string | null => {
+                      if (!field) return null
+                      if (typeof field === 'string') return field // Already localized
+                      if (typeof field === 'object' && !Array.isArray(field)) {
+                        return field[locale] || field['en'] || null
+                      }
+                      return null
+                    }
+
+                    const question = getLocalizedValue(multiplier.wizardQuestion) || multiplier.name
+                    const helpText = getLocalizedValue(multiplier.wizardHelpText)
+
+                    // Answer options are returned as an array by the API
+                    const answerOptions = Array.isArray(multiplier.wizardAnswerOptions)
+                      ? multiplier.wizardAnswerOptions
+                      : []
+
+                    const charType = multiplier.characteristicType
+                    const currentValue = businessCharacteristics[charType]
+                    const selectedIndexKey = `${charType}_selectedIndex`
+                    let selectedIndex = businessCharacteristics[selectedIndexKey]
+
+                    // Initialize selectedIndex if we have a currentValue but no selectedIndex
+                    // This handles cases where data was loaded from localStorage or API
+                    if (selectedIndex === undefined && currentValue !== undefined && currentValue !== false && answerOptions && answerOptions.length > 0) {
+                      // Find the first option that matches the currentValue
+                      const matchingIndex = answerOptions.findIndex((opt: any) => opt.value === currentValue)
+                      if (matchingIndex !== -1) {
+                        // Set the selectedIndex to match the currentValue
+                        selectedIndex = matchingIndex
+                        // Update state to persist this
+                        setBusinessCharacteristics(prev => ({
+                          ...prev,
+                          [selectedIndexKey]: matchingIndex
+                        }))
                       }
                     }
-                    return field
-                  }
-                  
-                  const wizardQuestionObj = parseMultilingualField(multiplier.wizardQuestion)
-                  const question = wizardQuestionObj?.[locale] || wizardQuestionObj?.['en'] || multiplier.name
-                  
-                  const wizardHelpTextObj = parseMultilingualField(multiplier.wizardHelpText)
-                  const helpText = wizardHelpTextObj?.[locale] || wizardHelpTextObj?.['en'] || null
-                  
-                  // Answer options should be an array (already parsed by API, but handle both cases)
-                  const answerOptions = Array.isArray(multiplier.wizardAnswerOptions) 
-                    ? multiplier.wizardAnswerOptions 
-                    : parseMultilingualField(multiplier.wizardAnswerOptions)
 
-                  const charType = multiplier.characteristicType
-                  const currentValue = businessCharacteristics[charType]
-                  const selectedIndexKey = `${charType}_selectedIndex`
-                  let selectedIndex = businessCharacteristics[selectedIndexKey]
-                  
-                  // Initialize selectedIndex if we have a currentValue but no selectedIndex
-                  // This handles cases where data was loaded from localStorage or API
-                  if (selectedIndex === undefined && currentValue !== undefined && currentValue !== false && answerOptions && answerOptions.length > 0) {
-                    // Find the first option that matches the currentValue
-                    const matchingIndex = answerOptions.findIndex((opt: any) => opt.value === currentValue)
-                    if (matchingIndex !== -1) {
-                      // Set the selectedIndex to match the currentValue
-                      selectedIndex = matchingIndex
-                      // Update state to persist this
-                      setBusinessCharacteristics(prev => ({
-                        ...prev,
-                        [selectedIndexKey]: matchingIndex
-                      }))
-                    }
-                  }
-                  
-                  return (
-                    <div key={multiplier.id} className={`${index < multipliers.length - 1 ? 'pb-6 border-b border-gray-200' : ''}`}>
-                      <div className="mb-4">
-                        <div className="flex items-start gap-3 mb-2">
-                          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                            <span className="text-blue-700 font-bold text-sm">{index + 1}</span>
-                    </div>
-                          <label className="flex-1 text-lg font-semibold text-gray-900 pt-1">
-                            {question}
-                  </label>
-                    </div>
-                        {helpText && (
-                          <div className="ml-11 flex items-start gap-2 bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r">
-                            <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                            <p className="text-sm text-blue-900">{helpText}</p>
-                    </div>
-                        )}
-              </div>
+                    return (
+                      <div key={multiplier.id} className={`${index < multipliers.length - 1 ? 'pb-6 border-b border-gray-200' : ''}`}>
+                        <div className="mb-4">
+                          <div className="flex items-start gap-3 mb-2">
+                            <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-blue-700 font-bold text-sm">{index + 1}</span>
+                            </div>
+                            <label className="flex-1 text-lg font-semibold text-gray-900 pt-1">
+                              {question}
+                            </label>
+                          </div>
+                          {helpText && (
+                            <div className="ml-11 flex items-start gap-2 bg-blue-50 border-l-4 border-blue-400 p-3 rounded-r">
+                              <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                              </svg>
+                              <p className="text-sm text-blue-900">{helpText}</p>
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Render different input types based on conditionType */}
-                      {multiplier.conditionType === 'boolean' ? (
-                        <div className="ml-11 space-y-2">
-                          {answerOptions && answerOptions.length > 0 ? (
-                            <>
-                              {/* Render answer options */}
-                              {answerOptions.map((option: any, optionIndex: number) => {
-                                const label = typeof option.label === 'object' 
-                                  ? (option.label[locale] || option.label['en']) 
+                        {/* Render different input types based on conditionType */}
+                        {multiplier.conditionType === 'boolean' ? (
+                          <div className="ml-11 space-y-2">
+                            {answerOptions && answerOptions.length > 0 ? (
+                              <>
+                                {/* Render answer options */}
+                                {answerOptions.map((option: any, optionIndex: number) => {
+                                  const label = typeof option.label === 'object'
+                                    ? (option.label[locale] || option.label['en'])
+                                    : option.label
+
+                                  // Track which specific option index is selected (needed when multiple options have same value)
+                                  // Use the selectedIndex from the parent scope (already initialized if needed)
+                                  const isSelected = selectedIndex === optionIndex
+
+                                  // Use a unique key combining multiplier ID and option index to avoid duplicates
+                                  const uniqueKey = `${multiplier.id}-option-${optionIndex}`
+
+                                  return (
+                                    <label
+                                      key={uniqueKey}
+                                      className={`
+                                      group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                      ${isSelected
+                                          ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
+                                          : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                        }
+                                    `}
+                                    >
+                                      <div className="flex items-center h-5">
+                                        <input
+                                          type="radio"
+                                          name={charType}
+                                          checked={isSelected}
+                                          onChange={() => {
+                                            // Always update both the value and the selected index
+                                            setBusinessCharacteristics(prev => ({
+                                              ...prev,
+                                              [charType]: option.value,
+                                              [selectedIndexKey]: optionIndex
+                                            }))
+                                          }}
+                                          className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                      <div className="ml-4 flex-1">
+                                        <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                          {label}
+                                        </div>
+                                        {option.description && (
+                                          <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
+                                            {option.description}
+                                          </div>
+                                        )}
+                                      </div>
+                                      {isSelected && (
+                                        <div className="ml-2">
+                                          <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                    </label>
+                                  )
+                                })}
+
+                                {/* Only show "None of the above" for questions where it makes sense:
+                                  - 3+ answer options (not simple Yes/No)
+                                  - None of the options explicitly represents "none" or "not applicable" */}
+                                {(() => {
+                                  if (!answerOptions || answerOptions.length < 3) {
+                                    // Don't show for simple Yes/No questions
+                                    return null
+                                  }
+
+                                  // Check if any option already represents "none" or "not applicable"
+                                  const hasNoneOption = answerOptions.some((opt: any) => {
+                                    const label = typeof opt.label === 'object'
+                                      ? (opt.label[locale] || opt.label['en'] || '')
+                                      : String(opt.label || '')
+                                    const lowerLabel = label.toLowerCase()
+                                    return lowerLabel.includes('none') ||
+                                      lowerLabel.includes('not applicable') ||
+                                      lowerLabel.includes("doesn't apply") ||
+                                      lowerLabel.includes('not relevant')
+                                  })
+
+                                  if (hasNoneOption) {
+                                    // Already has a "none" option, don't add another
+                                    return null
+                                  }
+
+                                  // Use the selectedIndex from the parent scope (already initialized if needed)
+                                  const isNoneSelected = selectedIndex === undefined && (currentValue === false || currentValue === undefined)
+
+                                  return (
+                                    <label
+                                      className={`group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200 ${isNoneSelected
+                                        ? 'bg-gray-50 border-2 border-gray-400 shadow-sm'
+                                        : 'bg-white border-2 border-gray-200 hover:border-gray-400 hover:shadow-sm'
+                                        }`}
+                                    >
+                                      <div className="flex items-center h-5">
+                                        <input
+                                          type="radio"
+                                          name={charType}
+                                          checked={isNoneSelected}
+                                          onChange={() => {
+                                            setBusinessCharacteristics(prev => ({
+                                              ...prev,
+                                              [charType]: false,
+                                              [selectedIndexKey]: undefined
+                                            }))
+                                          }}
+                                          className="h-5 w-5 text-gray-600 border-gray-300 focus:ring-gray-500"
+                                        />
+                                      </div>
+                                      <div className="ml-4 flex-1">
+                                        <div className="font-semibold text-gray-700">
+                                          None of the above
+                                        </div>
+                                        <div className="text-sm mt-1 text-gray-600">
+                                          Clear selection
+                                        </div>
+                                      </div>
+                                    </label>
+                                  )
+                                })()}
+                              </>
+                            ) : (
+                              // Default Yes/No for boolean
+                              <>
+                                <label className={`
+                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                ${currentValue === true
+                                    ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
+                                    : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                  }
+                              `}>
+                                  <div className="flex items-center h-5">
+                                    <input
+                                      type="radio"
+                                      name={charType}
+                                      checked={currentValue === true}
+                                      onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: true }))}
+                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div className="ml-4 flex-1">
+                                    <div className={`font-semibold ${currentValue === true ? 'text-blue-900' : 'text-gray-900'}`}>
+                                      Yes
+                                    </div>
+                                  </div>
+                                  {currentValue === true && (
+                                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </label>
+                                <label className={`
+                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                ${currentValue === false
+                                    ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
+                                    : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                  }
+                              `}>
+                                  <div className="flex items-center h-5">
+                                    <input
+                                      type="radio"
+                                      name={charType}
+                                      checked={currentValue === false}
+                                      onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: false }))}
+                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                  <div className="ml-4 flex-1">
+                                    <div className={`font-semibold ${currentValue === false ? 'text-blue-900' : 'text-gray-900'}`}>
+                                      No
+                                    </div>
+                                  </div>
+                                  {currentValue === false && (
+                                    <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                    </svg>
+                                  )}
+                                </label>
+                              </>
+                            )}
+                          </div>
+                        ) : multiplier.conditionType === 'threshold' || multiplier.conditionType === 'range' ? (
+                          // Threshold/Range questions - show as cards with radio selection (like boolean)
+                          <div className="ml-11 space-y-2">
+                            {answerOptions && answerOptions.length > 0 ? (
+                              answerOptions.map((option: any, optionIndex: number) => {
+                                const label = typeof option.label === 'object'
+                                  ? (option.label[locale] || option.label['en'])
                                   : option.label
-                                
-                                // Track which specific option index is selected (needed when multiple options have same value)
-                                // Use the selectedIndex from the parent scope (already initialized if needed)
-                                const isSelected = selectedIndex === optionIndex
-                                
+                                const isSelected = currentValue === option.value
+
                                 // Use a unique key combining multiplier ID and option index to avoid duplicates
                                 const uniqueKey = `${multiplier.id}-option-${optionIndex}`
-                                
+
+                                // Handle toggle behavior: if clicking the same option that's already selected, deselect it
+                                const handleChange = () => {
+                                  if (isSelected && currentValue === option.value) {
+                                    // Toggle off: set to false or undefined
+                                    setBusinessCharacteristics(prev => ({
+                                      ...prev,
+                                      [charType]: false
+                                    }))
+                                  } else {
+                                    // Select this option
+                                    setBusinessCharacteristics(prev => ({
+                                      ...prev,
+                                      [charType]: option.value
+                                    }))
+                                  }
+                                }
+
                                 return (
-                                  <label 
+                                  <label
                                     key={uniqueKey}
                                     className={`
-                                      group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
-                                      ${isSelected 
-                                        ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
+                                    group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
+                                    ${isSelected
+                                        ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
                                         : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
                                       }
-                                    `}
+                                  `}
                                   >
                                     <div className="flex items-center h-5">
                                       <input
                                         type="radio"
                                         name={charType}
                                         checked={isSelected}
-                                        onChange={() => {
-                                          // Always update both the value and the selected index
-                                          setBusinessCharacteristics(prev => ({ 
-                                            ...prev, 
-                                            [charType]: option.value,
-                                            [selectedIndexKey]: optionIndex
-                                          }))
-                                        }}
+                                        onChange={handleChange}
                                         className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
                                       />
                                     </div>
@@ -491,208 +696,13 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                                     )}
                                   </label>
                                 )
-                              })}
-                              
-                              {/* Only show "None of the above" for questions where it makes sense:
-                                  - 3+ answer options (not simple Yes/No)
-                                  - None of the options explicitly represents "none" or "not applicable" */}
-                              {(() => {
-                                if (!answerOptions || answerOptions.length < 3) {
-                                  // Don't show for simple Yes/No questions
-                                  return null
-                                }
-                                
-                                // Check if any option already represents "none" or "not applicable"
-                                const hasNoneOption = answerOptions.some((opt: any) => {
-                                  const label = typeof opt.label === 'object' 
-                                    ? (opt.label[locale] || opt.label['en'] || '') 
-                                    : String(opt.label || '')
-                                  const lowerLabel = label.toLowerCase()
-                                  return lowerLabel.includes('none') || 
-                                         lowerLabel.includes('not applicable') ||
-                                         lowerLabel.includes("doesn't apply") ||
-                                         lowerLabel.includes('not relevant')
-                                })
-                                
-                                if (hasNoneOption) {
-                                  // Already has a "none" option, don't add another
-                                  return null
-                                }
-                                
-                                // Use the selectedIndex from the parent scope (already initialized if needed)
-                                const isNoneSelected = selectedIndex === undefined && (currentValue === false || currentValue === undefined)
-                                
-                                return (
-                                  <label 
-                                    className={`group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200 ${
-                                      isNoneSelected 
-                                        ? 'bg-gray-50 border-2 border-gray-400 shadow-sm' 
-                                        : 'bg-white border-2 border-gray-200 hover:border-gray-400 hover:shadow-sm'
-                                    }`}
-                                  >
-                                    <div className="flex items-center h-5">
-                                      <input
-                                        type="radio"
-                                        name={charType}
-                                        checked={isNoneSelected}
-                                        onChange={() => {
-                                          setBusinessCharacteristics(prev => ({ 
-                                            ...prev, 
-                                            [charType]: false,
-                                            [selectedIndexKey]: undefined
-                                          }))
-                                        }}
-                                        className="h-5 w-5 text-gray-600 border-gray-300 focus:ring-gray-500"
-                                      />
-                                    </div>
-                                    <div className="ml-4 flex-1">
-                                      <div className="font-semibold text-gray-700">
-                                        None of the above
-                                      </div>
-                                      <div className="text-sm mt-1 text-gray-600">
-                                        Clear selection
-                                      </div>
-                                    </div>
-                                  </label>
-                                )
-                              })()}
-                            </>
-                          ) : (
-                            // Default Yes/No for boolean
-                            <>
-                              <label className={`
-                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
-                                ${currentValue === true 
-                                  ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
-                                  : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                                }
-                              `}>
-                                <div className="flex items-center h-5">
-                    <input
-                      type="radio"
-                                    name={charType}
-                                    checked={currentValue === true}
-                                    onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: true }))}
-                                    className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                  />
-                    </div>
-                                <div className="ml-4 flex-1">
-                                  <div className={`font-semibold ${currentValue === true ? 'text-blue-900' : 'text-gray-900'}`}>
-                                    Yes
-                    </div>
-                    </div>
-                                {currentValue === true && (
-                                  <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                  </label>
-                              <label className={`
-                                group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
-                                ${currentValue === false 
-                                  ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
-                                  : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                                }
-                              `}>
-                                <div className="flex items-center h-5">
-                    <input
-                      type="radio"
-                                    name={charType}
-                                    checked={currentValue === false}
-                                    onChange={() => setBusinessCharacteristics(prev => ({ ...prev, [charType]: false }))}
-                                    className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                  />
-                    </div>
-                                <div className="ml-4 flex-1">
-                                  <div className={`font-semibold ${currentValue === false ? 'text-blue-900' : 'text-gray-900'}`}>
-                                    No
-                </div>
-              </div>
-                                {currentValue === false && (
-                                  <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                </label>
-                            </>
-                          )}
-                    </div>
-                      ) : multiplier.conditionType === 'threshold' || multiplier.conditionType === 'range' ? (
-                        // Threshold/Range questions - show as cards with radio selection (like boolean)
-                        <div className="ml-11 space-y-2">
-                          {answerOptions && answerOptions.length > 0 ? (
-                            answerOptions.map((option: any, optionIndex: number) => {
-                              const label = typeof option.label === 'object' 
-                                ? (option.label[locale] || option.label['en']) 
-                                : option.label
-                              const isSelected = currentValue === option.value
-                              
-                              // Use a unique key combining multiplier ID and option index to avoid duplicates
-                              const uniqueKey = `${multiplier.id}-option-${optionIndex}`
-                              
-                              // Handle toggle behavior: if clicking the same option that's already selected, deselect it
-                              const handleChange = () => {
-                                if (isSelected && currentValue === option.value) {
-                                  // Toggle off: set to false or undefined
-                                  setBusinessCharacteristics(prev => ({ 
-                                    ...prev, 
-                                    [charType]: false 
-                                  }))
-                                } else {
-                                  // Select this option
-                                  setBusinessCharacteristics(prev => ({ 
-                                    ...prev, 
-                                    [charType]: option.value 
-                                  }))
-                                }
-                              }
-                              
-                              return (
-                                <label 
-                                  key={uniqueKey}
-                                  className={`
-                                    group relative flex items-start p-4 rounded-xl cursor-pointer transition-all duration-200
-                                    ${isSelected 
-                                      ? 'bg-blue-50 border-2 border-blue-500 shadow-md' 
-                                      : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                                    }
-                                  `}
-                                >
-                                  <div className="flex items-center h-5">
-                    <input
-                                      type="radio"
-                                      name={charType}
-                                      checked={isSelected}
-                                      onChange={handleChange}
-                                      className="h-5 w-5 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                    />
-                    </div>
-                                  <div className="ml-4 flex-1">
-                                    <div className={`font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                                      {label}
-                    </div>
-                                    {option.description && (
-                                      <div className={`text-sm mt-1 ${isSelected ? 'text-blue-700' : 'text-gray-600'}`}>
-                                        {option.description}
-                </div>
-                                    )}
-              </div>
-                                  {isSelected && (
-                                    <div className="ml-2">
-                                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                      </svg>
-                    </div>
-                                  )}
-                  </label>
-                              )
-                            })
-                          ) : null}
-                    </div>
-                      ) : null}
-                </div>
-                  )
-                })}
+                              })
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })}
               </div>
             )}
 
@@ -775,11 +785,10 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                     <button
                       key={businessType.businessTypeId}
                       onClick={() => handleIndustrySelect(businessType.businessTypeId)}
-                      className={`p-4 rounded-lg border-2 text-left transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        selectedIndustry === businessType.businessTypeId
-                          ? 'border-blue-500 bg-blue-100'
-                          : 'border-gray-200 bg-white'
-                      }`}
+                      className={`p-4 rounded-lg border-2 text-left transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 ${selectedIndustry === businessType.businessTypeId
+                        ? 'border-blue-500 bg-blue-100'
+                        : 'border-gray-200 bg-white'
+                        }`}
                     >
                       <div className="font-medium text-gray-900 mb-1">
                         {getLocalizedText(businessType.name, locale)}
@@ -883,8 +892,8 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                     value={location.parish}
                     onChange={(e) => {
                       const selectedParish = parishes.find(p => p.name === e.target.value)
-                      setLocation(prev => ({ 
-                        ...prev, 
+                      setLocation(prev => ({
+                        ...prev,
                         parish: e.target.value,
                         // Store admin unit ID for API calls
                         adminUnitId: selectedParish?.code || ''
@@ -922,11 +931,10 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
             <button
               onClick={handleLocationSubmit}
               disabled={!location.country}
-              className={`px-8 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
-                location.country
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+              className={`px-8 py-3 rounded-lg font-medium transition-colors flex items-center space-x-2 ${location.country
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
             >
               <span>{t('continueButton')}</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -957,7 +965,7 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
               </svg>
               <h3 className="font-medium text-gray-900">Common Risks for This Business Type</h3>
             </div>
-            
+
             {preFillPreview.risks?.length > 0 && (
               <div className="space-y-2">
                 <div className="text-sm text-gray-600 mb-2">
@@ -965,18 +973,16 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {preFillPreview.risks.slice(0, 6).map((risk: any, index: number) => (
-                    <div key={index} className={`flex items-center space-x-2 p-2 rounded text-xs ${
-                      risk.finalRiskLevel === 'very_high' ? 'bg-red-100 text-red-800' :
+                    <div key={index} className={`flex items-center space-x-2 p-2 rounded text-xs ${risk.finalRiskLevel === 'very_high' ? 'bg-red-100 text-red-800' :
                       risk.finalRiskLevel === 'high' ? 'bg-orange-100 text-orange-800' :
-                      risk.finalRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full ${
-                        risk.finalRiskLevel === 'very_high' ? 'bg-red-500' :
+                        risk.finalRiskLevel === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                      }`}>
+                      <div className={`w-2 h-2 rounded-full ${risk.finalRiskLevel === 'very_high' ? 'bg-red-500' :
                         risk.finalRiskLevel === 'high' ? 'bg-orange-500' :
-                        risk.finalRiskLevel === 'medium' ? 'bg-yellow-500' :
-                        'bg-green-500'
-                      }`}></div>
+                          risk.finalRiskLevel === 'medium' ? 'bg-yellow-500' :
+                            'bg-green-500'
+                        }`}></div>
                       <span className="font-medium">{risk.hazardName}</span>
                       <span className="text-xs opacity-75">({risk.finalRiskLevel})</span>
                     </div>

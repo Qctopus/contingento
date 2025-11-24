@@ -116,44 +116,31 @@ function buildBasicRiskProfile(parishRisk: any): any {
 /**
  * Transform BusinessType data from database to API format
  */
+/**
+ * Transform BusinessType data from database to API format
+ */
 export function transformBusinessTypeForApi(businessType: any): any {
   if (!businessType) return null
 
-  // Extract name and description from translations
-  // The API route filters by locale, so we should have 0 or 1 translation
-  let name = ''
-  let description = ''
-  let exampleBusinessPurposes: any[] = []
-  let exampleProducts: any[] = []
-  let exampleKeyPersonnel: any[] = []
-  let exampleCustomerBase: any[] = []
-  let minimumEquipment: any[] = []
-
-  if (businessType.BusinessTypeTranslation && businessType.BusinessTypeTranslation.length > 0) {
-    const translation = businessType.BusinessTypeTranslation[0]
-    name = translation.name || ''
-    description = translation.description || ''
-    exampleBusinessPurposes = translation.exampleBusinessPurposes || []
-    exampleProducts = translation.exampleProducts || []
-    exampleKeyPersonnel = translation.exampleKeyPersonnel || []
-    exampleCustomerBase = translation.exampleCustomerBase || []
-    minimumEquipment = translation.minimumEquipment || []
-  }
-
-  // Fallback: if no translation found, show businessTypeId as name
-  if (!name) {
-    name = businessType.businessTypeId
-  }
+  // Extract translation if available
+  const translation = businessType.BusinessTypeTranslation?.[0] || {}
 
   return {
     id: businessType.id,
     businessTypeId: businessType.businessTypeId,
-    name: name,
     category: businessType.category,
     subcategory: businessType.subcategory,
-    description: description,
 
-    // Characteristics (non-translatable)
+    // Use translation fields with fallback
+    name: translation.name || businessType.businessTypeId, // Fallback to ID if no name
+    description: translation.description || '',
+    exampleBusinessPurposes: translation.exampleBusinessPurposes || [],
+    exampleProducts: translation.exampleProducts || [],
+    exampleKeyPersonnel: translation.exampleKeyPersonnel || [],
+    exampleCustomerBase: translation.exampleCustomerBase || [],
+    minimumEquipment: translation.minimumEquipment || [],
+
+    // Non-translatable characteristics
     touristDependency: businessType.touristDependency,
     digitalDependency: businessType.digitalDependency,
     physicalAssetIntensity: businessType.physicalAssetIntensity,
@@ -161,19 +148,16 @@ export function transformBusinessTypeForApi(businessType: any): any {
     supplyChainComplexity: businessType.supplyChainComplexity,
     regulatoryCompliance: businessType.regulatoryCompliance,
 
-    // Multilingual example content for wizard prefill
-    exampleBusinessPurposes,
-    exampleProducts,
-    exampleKeyPersonnel,
-    exampleCustomerBase,
-    minimumEquipment,
-
-    // Transform risk vulnerabilities
-    riskVulnerabilities: businessType.BusinessRiskVulnerability?.map((rv: any) => ({
+    // Risk vulnerabilities
+    riskVulnerabilities: (businessType.BusinessRiskVulnerability || []).map((rv: any) => ({
       riskType: rv.riskType,
       vulnerabilityLevel: rv.vulnerabilityLevel,
       impactSeverity: rv.impactSeverity
-    })) || [],
+    })),
+
+    // Remove raw arrays
+    BusinessTypeTranslation: undefined,
+    BusinessRiskVulnerability: undefined,
 
     // Placeholder for strategies (populated separately)
     strategies: []
@@ -186,23 +170,25 @@ export function transformBusinessTypeForApi(businessType: any): any {
 export function transformStrategyForApi(strategy: any): any {
   if (!strategy) return null
 
+  // Extract translation if available
+  const translation = strategy.StrategyTranslation?.[0] || {}
   const applicableBusinessTypesFromDb = safeJsonParse(strategy.applicableBusinessTypes, [])
 
   const transformed = {
     ...strategy,
-    // Basic Info
-    name: parseMultilingualJSON(strategy.name) || strategy.name,
-    description: parseMultilingualJSON(strategy.description) || strategy.description,
+    // Basic Info - Use translation fields, fallback to main table fields
+    name: translation.name || strategy.name,
+    description: translation.description || strategy.description,
 
     // SME-Focused Content (NEW)
-    smeTitle: parseMultilingualJSON(strategy.smeTitle) || strategy.smeTitle,
-    smeSummary: parseMultilingualJSON(strategy.smeSummary) || strategy.smeSummary,
-    benefitsBullets: safeJsonParse(strategy.benefitsBullets, []),
-    realWorldExample: parseMultilingualJSON(strategy.realWorldExample) || strategy.realWorldExample,
+    smeTitle: translation.smeTitle || strategy.smeTitle,
+    smeSummary: translation.smeSummary || strategy.smeSummary,
+    benefitsBullets: translation.benefitsBullets || safeJsonParse(strategy.benefitsBullets, []),
+    realWorldExample: translation.realWorldExample || strategy.realWorldExample,
 
     // Backward compatibility (deprecated fields)
-    smeDescription: parseMultilingualJSON(strategy.smeDescription) || strategy.smeDescription || strategy.description || '',
-    whyImportant: parseMultilingualJSON(strategy.whyImportant) || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
+    smeDescription: translation.smeDescription || strategy.smeDescription || strategy.description || '',
+    whyImportant: translation.whyImportant || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
 
     // Implementation Details (enhanced)
     costEstimateJMD: strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost), // Use DB value if available, otherwise compute
@@ -216,13 +202,13 @@ export function transformStrategyForApi(strategy: any): any {
     requiredForRisks: safeJsonParse(strategy.requiredForRisks, []),
 
     // Resource-Limited SME Support (NEW)
-    lowBudgetAlternative: parseMultilingualJSON(strategy.lowBudgetAlternative) || strategy.lowBudgetAlternative,
-    diyApproach: parseMultilingualJSON(strategy.diyApproach) || strategy.diyApproach,
+    lowBudgetAlternative: translation.lowBudgetAlternative || strategy.lowBudgetAlternative,
+    diyApproach: translation.diyApproach || strategy.diyApproach,
     estimatedDIYSavings: strategy.estimatedDIYSavings,
 
     // BCP Document Integration (NEW)
     bcpSectionMapping: strategy.bcpSectionMapping,
-    bcpTemplateText: parseMultilingualJSON(strategy.bcpTemplateText) || strategy.bcpTemplateText,
+    bcpTemplateText: translation.bcpTemplateText || strategy.bcpTemplateText,
 
     // Personalization (NEW)
     industryVariants: safeJsonParse(strategy.industryVariants, {}),
@@ -237,81 +223,92 @@ export function transformStrategyForApi(strategy: any): any {
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
 
     // Guidance arrays
-    helpfulTips: safeJsonParse(strategy.helpfulTips, []),
-    commonMistakes: safeJsonParse(strategy.commonMistakes, []),
-    successMetrics: safeJsonParse(strategy.successMetrics, []),
+    helpfulTips: translation.helpfulTips || safeJsonParse(strategy.helpfulTips, []),
+    commonMistakes: translation.commonMistakes || safeJsonParse(strategy.commonMistakes, []),
+    successMetrics: translation.successMetrics || safeJsonParse(strategy.successMetrics, []),
 
-    // Transform action steps from database (with NEW SME context fields)
-    actionSteps: (strategy.actionSteps || []).map((step: any) => ({
-      id: step.stepId,
-      stepId: step.stepId,
-      strategyId: step.strategyId,
+    // Transform action steps with their translations
+    actionSteps: (strategy.actionSteps || []).map(transformActionStepForApi),
 
-      // Basic Info
-      phase: step.phase,
-      title: parseMultilingualJSON(step.title) || step.title,
-      action: parseMultilingualJSON(step.description) || step.description,
-      description: parseMultilingualJSON(step.description) || step.description,
-      smeAction: parseMultilingualJSON(step.smeAction) || step.smeAction,
-      sortOrder: step.sortOrder,
-
-      // SME Context (NEW)
-      whyThisStepMatters: parseMultilingualJSON(step.whyThisStepMatters) || step.whyThisStepMatters,
-      whatHappensIfSkipped: parseMultilingualJSON(step.whatHappensIfSkipped) || step.whatHappensIfSkipped,
-
-      // Timing & Difficulty (NEW)
-      timeframe: parseMultilingualJSON(step.timeframe) || step.timeframe,
-      estimatedMinutes: step.estimatedMinutes,
-      difficultyLevel: step.difficultyLevel || 'medium',
-
-      // Resources & Costs
-      responsibility: parseMultilingualJSON(step.responsibility) || step.responsibility,
-      cost: step.estimatedCost,
-      estimatedCostJMD: step.estimatedCostJMD,
-      resources: safeJsonParse(step.resources, []),
-      checklist: safeJsonParse(step.checklist, []),
-
-      // Cost Items (NEW - structured costing system)
-      costItems: (step.itemCosts || []).map((itemCost: any) => ({
-        id: itemCost.id,
-        itemId: itemCost.itemId,
-        quantity: itemCost.quantity,
-        customNotes: itemCost.customNotes,
-        item: itemCost.item ? {
-          id: itemCost.item.id,
-          itemId: itemCost.item.itemId,
-          name: itemCost.item.name,
-          description: itemCost.item.description,
-          category: itemCost.item.category,
-          baseUSD: itemCost.item.baseUSD,
-          baseUSDMin: itemCost.item.baseUSDMin,
-          baseUSDMax: itemCost.item.baseUSDMax,
-          unit: itemCost.item.unit
-        } : undefined
-      })),
-
-      // Validation & Completion (NEW)
-      howToKnowItsDone: parseMultilingualJSON(step.howToKnowItsDone) || step.howToKnowItsDone,
-      exampleOutput: parseMultilingualJSON(step.exampleOutput) || step.exampleOutput,
-
-      // Dependencies (NEW)
-      dependsOnSteps: safeJsonParse(step.dependsOnSteps, []),
-      isOptional: step.isOptional || false,
-      skipConditions: parseMultilingualJSON(step.skipConditions) || step.skipConditions,
-
-      // Alternatives for resource-limited SMEs (NEW)
-      freeAlternative: parseMultilingualJSON(step.freeAlternative) || step.freeAlternative,
-      lowTechOption: parseMultilingualJSON(step.lowTechOption) || step.lowTechOption,
-
-      // Help Resources (NEW)
-      commonMistakesForStep: safeJsonParse(step.commonMistakesForStep, []),
-      videoTutorialUrl: step.videoTutorialUrl,
-      externalResourceUrl: step.externalResourceUrl
-    }))
+    // Remove raw translation arrays from response
+    StrategyTranslation: undefined
   }
 
-
   return transformDatesForApi(transformed)
+}
+
+function transformActionStepForApi(step: any): any {
+  const translation = step.ActionStepTranslation?.[0] || {}
+
+  return {
+    id: step.stepId,
+    stepId: step.stepId,
+    strategyId: step.strategyId,
+
+    // Basic Info
+    phase: step.phase,
+    title: translation.title || step.title,
+    action: translation.description || step.description,
+    description: translation.description || step.description,
+    smeAction: translation.smeAction || step.smeAction,
+    sortOrder: step.sortOrder,
+
+    // SME Context (NEW)
+    whyThisStepMatters: translation.whyThisStepMatters || step.whyThisStepMatters,
+    whatHappensIfSkipped: translation.whatHappensIfSkipped || step.whatHappensIfSkipped,
+
+    // Timing & Difficulty (NEW)
+    timeframe: translation.timeframe || step.timeframe,
+    estimatedMinutes: step.estimatedMinutes,
+    difficultyLevel: step.difficultyLevel || 'medium',
+
+    // Resources & Costs
+    responsibility: translation.responsibility || step.responsibility,
+    cost: step.estimatedCost,
+    estimatedCostJMD: step.estimatedCostJMD,
+    resources: safeJsonParse(step.resources, []),
+    checklist: safeJsonParse(step.checklist, []),
+
+    // Cost Items (NEW - structured costing system)
+    costItems: (step.itemCosts || []).map((itemCost: any) => ({
+      id: itemCost.id,
+      itemId: itemCost.itemId,
+      quantity: itemCost.quantity,
+      customNotes: itemCost.customNotes,
+      item: itemCost.item ? {
+        id: itemCost.item.id,
+        itemId: itemCost.item.itemId,
+        name: itemCost.item.name,
+        description: itemCost.item.description,
+        category: itemCost.item.category,
+        baseUSD: itemCost.item.baseUSD,
+        baseUSDMin: itemCost.item.baseUSDMin,
+        baseUSDMax: itemCost.item.baseUSDMax,
+        unit: itemCost.item.unit
+      } : undefined
+    })),
+
+    // Validation & Completion (NEW)
+    howToKnowItsDone: translation.howToKnowItsDone || step.howToKnowItsDone,
+    exampleOutput: translation.exampleOutput || step.exampleOutput,
+
+    // Dependencies (NEW)
+    dependsOnSteps: safeJsonParse(step.dependsOnSteps, []),
+    isOptional: step.isOptional || false,
+    skipConditions: translation.skipConditions || step.skipConditions,
+
+    // Alternatives for resource-limited SMEs (NEW)
+    freeAlternative: translation.freeAlternative || step.freeAlternative,
+    lowTechOption: translation.lowTechOption || step.lowTechOption,
+
+    // Help Resources (NEW)
+    commonMistakesForStep: translation.commonMistakesForStep || safeJsonParse(step.commonMistakesForStep, []),
+    videoTutorialUrl: step.videoTutorialUrl,
+    externalResourceUrl: step.externalResourceUrl,
+
+    // Remove raw translation array
+    ActionStepTranslation: undefined
+  }
 }
 
 /**

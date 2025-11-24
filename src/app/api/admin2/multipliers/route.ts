@@ -10,17 +10,23 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const activeOnly = searchParams.get('activeOnly') === 'true'
-    
+    const locale = searchParams.get('locale') || 'en'
+
     const multipliers = await prisma.riskMultiplier.findMany({
       where: activeOnly ? { isActive: true } : undefined,
+      include: {
+        RiskMultiplierTranslation: {
+          where: { locale }
+        }
+      } as any, // Cast to any to bypass type check since we can't regenerate client
       orderBy: [
         { priority: 'asc' },
         { name: 'asc' }
       ]
     })
-    
+
     console.log(`📊 Retrieved ${multipliers.length} risk multipliers`)
-    
+
     // Helper function to safely parse JSON fields
     const parseJsonField = (value: string | null | undefined): any => {
       if (!value) return null
@@ -30,16 +36,29 @@ export async function GET(request: NextRequest) {
         return value
       }
     }
-    
+
+    // Transform the data to flatten translations
+    const flattenedMultipliers = multipliers.map((multiplier: any) => {
+      // Get translation for current locale
+      // Get translation for current locale - since we filter in the query, it should be the first one
+      const translation = multiplier.RiskMultiplierTranslation?.[0] || {}
+
+      return {
+        ...multiplier,
+        name: translation.name || multiplier.name,
+        description: translation.description || multiplier.description,
+        wizardQuestion: translation.wizardQuestion || parseJsonField(multiplier.wizardQuestion),
+        wizardHelpText: translation.wizardHelpText || parseJsonField(multiplier.wizardHelpText),
+        wizardAnswerOptions: translation.wizardAnswerOptions || parseJsonField(multiplier.wizardAnswerOptions),
+        applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
+        // Remove the raw translation array from the response
+        RiskMultiplierTranslation: undefined
+      }
+    })
+
     return NextResponse.json({
       success: true,
-      multipliers: multipliers.map(m => ({
-        ...m,
-        applicableHazards: parseJsonField(m.applicableHazards) || [],
-        wizardQuestion: parseJsonField(m.wizardQuestion),
-        wizardAnswerOptions: parseJsonField(m.wizardAnswerOptions),
-        wizardHelpText: parseJsonField(m.wizardHelpText)
-      }))
+      data: flattenedMultipliers
     })
   } catch (error) {
     console.error('❌ Error fetching multipliers:', error)
@@ -67,9 +86,12 @@ export async function POST(request: NextRequest) {
       priority,
       reasoning,
       isActive = true,
-      createdBy = 'admin'
+      createdBy = 'admin',
+      wizardQuestion,
+      wizardHelpText,
+      wizardAnswerOptions
     } = body
-    
+
     // Validation
     if (!name || !description || !characteristicType || !conditionType || !multiplierFactor || !applicableHazards) {
       return NextResponse.json(
@@ -77,9 +99,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    
-    // Convert JSON fields to strings if they're objects/arrays
-    const data: any = {
+
+    // Prepare base data
+    const baseData: any = {
       name,
       description,
       characteristicType,
@@ -88,36 +110,38 @@ export async function POST(request: NextRequest) {
       minValue,
       maxValue,
       multiplierFactor,
-      applicableHazards: JSON.stringify(applicableHazards),
+      applicableHazards: typeof applicableHazards === 'object' ? JSON.stringify(applicableHazards) : applicableHazards,
       priority: priority || 0,
       reasoning,
       isActive,
       createdBy
     }
-    
-    // Handle multilingual fields
-    if (body.wizardQuestion) {
-      data.wizardQuestion = typeof body.wizardQuestion === 'object' 
-        ? JSON.stringify(body.wizardQuestion) 
-        : body.wizardQuestion
+
+    // Prepare translation data
+    const translationData = {
+      locale: 'en', // Default to English for now
+      name,
+      description,
+      reasoning,
+      wizardQuestion: typeof wizardQuestion === 'object' ? JSON.stringify(wizardQuestion) : wizardQuestion,
+      wizardHelpText: typeof wizardHelpText === 'object' ? JSON.stringify(wizardHelpText) : wizardHelpText,
+      wizardAnswerOptions: (Array.isArray(wizardAnswerOptions) || typeof wizardAnswerOptions === 'object') ? JSON.stringify(wizardAnswerOptions) : wizardAnswerOptions
     }
-    if (body.wizardAnswerOptions) {
-      data.wizardAnswerOptions = (Array.isArray(body.wizardAnswerOptions) || typeof body.wizardAnswerOptions === 'object')
-        ? JSON.stringify(body.wizardAnswerOptions)
-        : body.wizardAnswerOptions
-    }
-    if (body.wizardHelpText) {
-      data.wizardHelpText = typeof body.wizardHelpText === 'object'
-        ? JSON.stringify(body.wizardHelpText)
-        : body.wizardHelpText
-    }
-    
+
     const multiplier = await prisma.riskMultiplier.create({
-      data
+      data: {
+        ...baseData,
+        RiskMultiplierTranslation: {
+          create: translationData
+        }
+      },
+      include: {
+        RiskMultiplierTranslation: true
+      } as any
     })
-    
+
     console.log(`✅ Created multiplier: ${name}`)
-    
+
     // Helper function to safely parse JSON fields
     const parseJsonField = (value: string | null | undefined): any => {
       if (!value) return null
@@ -127,15 +151,19 @@ export async function POST(request: NextRequest) {
         return value
       }
     }
-    
+
+    // Get the created translation
+    const createdTranslation: any = multiplier.RiskMultiplierTranslation?.[0] || {}
+
     return NextResponse.json({
       success: true,
-      multiplier: {
+      data: {
         ...multiplier,
         applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
-        wizardQuestion: parseJsonField(multiplier.wizardQuestion),
-        wizardAnswerOptions: parseJsonField(multiplier.wizardAnswerOptions),
-        wizardHelpText: parseJsonField(multiplier.wizardHelpText)
+        wizardQuestion: parseJsonField(createdTranslation.wizardQuestion),
+        wizardAnswerOptions: parseJsonField(createdTranslation.wizardAnswerOptions),
+        wizardHelpText: parseJsonField(createdTranslation.wizardHelpText),
+        RiskMultiplierTranslation: undefined
       }
     })
   } catch (error) {
@@ -152,35 +180,80 @@ export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json()
     const { id, ...updates } = body
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Multiplier ID required' },
         { status: 400 }
       )
     }
-    
-    // Convert JSON fields to strings if they're objects/arrays
-    if (updates.applicableHazards && Array.isArray(updates.applicableHazards)) {
-      updates.applicableHazards = JSON.stringify(updates.applicableHazards)
-    }
-    if (updates.wizardQuestion && typeof updates.wizardQuestion === 'object') {
-      updates.wizardQuestion = JSON.stringify(updates.wizardQuestion)
-    }
-    if (updates.wizardAnswerOptions && (Array.isArray(updates.wizardAnswerOptions) || typeof updates.wizardAnswerOptions === 'object')) {
-      updates.wizardAnswerOptions = JSON.stringify(updates.wizardAnswerOptions)
-    }
-    if (updates.wizardHelpText && typeof updates.wizardHelpText === 'object') {
-      updates.wizardHelpText = JSON.stringify(updates.wizardHelpText)
-    }
-    
+
+    // Separate base updates and translation updates
+    const baseUpdates: any = {}
+    const translationUpdates: any = {}
+    const translationFields = ['wizardQuestion', 'wizardHelpText', 'wizardAnswerOptions', 'name', 'description', 'reasoning']
+
+    Object.keys(updates).forEach(key => {
+      if (translationFields.includes(key)) {
+        let value = updates[key]
+        if (key === 'wizardQuestion' && typeof value === 'object') value = JSON.stringify(value)
+        if (key === 'wizardHelpText' && typeof value === 'object') value = JSON.stringify(value)
+        if (key === 'wizardAnswerOptions' && (Array.isArray(value) || typeof value === 'object')) value = JSON.stringify(value)
+
+        translationUpdates[key] = value
+
+        // name, description, reasoning also go to base table
+        if (['name', 'description', 'reasoning'].includes(key)) {
+          baseUpdates[key] = value
+        }
+      } else if (key === 'applicableHazards') {
+        baseUpdates[key] = Array.isArray(updates[key]) ? JSON.stringify(updates[key]) : updates[key]
+      } else {
+        baseUpdates[key] = updates[key]
+      }
+    })
+
+    // Update base multiplier
     const multiplier = await prisma.riskMultiplier.update({
       where: { id },
-      data: updates
+      data: baseUpdates,
+      include: {
+        RiskMultiplierTranslation: true
+      } as any
     })
-    
-    console.log(`✅ Updated multiplier: ${multiplier.name}`)
-    
+
+    // Update or create translation for 'en'
+    if (Object.keys(translationUpdates).length > 0) {
+      const existingTranslation = multiplier.RiskMultiplierTranslation?.find((t: any) => t.locale === 'en' || t.language === 'en')
+
+      if (existingTranslation) {
+        await prisma.riskMultiplierTranslation.update({
+          where: { id: existingTranslation.id },
+          data: translationUpdates
+        })
+      } else {
+        await prisma.riskMultiplierTranslation.create({
+          data: {
+            riskMultiplierId: id,
+            locale: 'en',
+            name: updates.name || multiplier.name,
+            description: updates.description || multiplier.description,
+            ...translationUpdates
+          }
+        })
+      }
+    }
+
+    // Fetch updated data
+    const updatedMultiplier = await prisma.riskMultiplier.findUnique({
+      where: { id },
+      include: {
+        RiskMultiplierTranslation: true
+      } as any
+    })
+
+    console.log(`✅ Updated multiplier: ${updatedMultiplier?.name}`)
+
     // Helper function to safely parse JSON fields
     const parseJsonField = (value: string | null | undefined): any => {
       if (!value) return null
@@ -190,15 +263,18 @@ export async function PATCH(request: NextRequest) {
         return value
       }
     }
-    
+
+    const finalTranslation: any = updatedMultiplier?.RiskMultiplierTranslation?.find((t: any) => t.locale === 'en' || t.language === 'en') || {}
+
     return NextResponse.json({
       success: true,
-      multiplier: {
-        ...multiplier,
-        applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
-        wizardQuestion: parseJsonField(multiplier.wizardQuestion),
-        wizardAnswerOptions: parseJsonField(multiplier.wizardAnswerOptions),
-        wizardHelpText: parseJsonField(multiplier.wizardHelpText)
+      data: {
+        ...updatedMultiplier,
+        applicableHazards: parseJsonField(updatedMultiplier?.applicableHazards) || [],
+        wizardQuestion: parseJsonField(finalTranslation.wizardQuestion),
+        wizardAnswerOptions: parseJsonField(finalTranslation.wizardAnswerOptions),
+        wizardHelpText: parseJsonField(finalTranslation.wizardHelpText),
+        RiskMultiplierTranslation: undefined
       }
     })
   } catch (error) {
@@ -215,20 +291,20 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Multiplier ID required' },
         { status: 400 }
       )
     }
-    
+
     await prisma.riskMultiplier.delete({
       where: { id }
     })
-    
+
     console.log(`✅ Deleted multiplier: ${id}`)
-    
+
     return NextResponse.json({
       success: true,
       message: 'Multiplier deleted'

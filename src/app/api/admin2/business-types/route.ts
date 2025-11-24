@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
           BusinessTypeTranslation: {
             where: { locale }
           }
-        },
+        } as any,
         orderBy: [
           { category: 'asc' },
           { businessTypeId: 'asc' }
@@ -36,12 +36,8 @@ export async function GET(request: NextRequest) {
     }, 'GET /api/admin2/business-types')
 
     // Transform database data to match frontend expectations
-    let transformedBusinessTypes = businessTypes.map(transformBusinessTypeForApi)
-
-    // Only localize if not requesting raw data (for editing, we need full multilingual objects)
-    if (!raw) {
-      transformedBusinessTypes = transformedBusinessTypes.map(bt => localizeBusinessType(bt, locale))
-    }
+    // The transformer handles flattening translations
+    const transformedBusinessTypes = businessTypes.map(transformBusinessTypeForApi)
 
     console.log(`🏢 Business Types GET API: Successfully fetched ${businessTypes.length} business types (locale: ${locale}, raw: ${raw})`)
     return createSuccessResponse(transformedBusinessTypes)

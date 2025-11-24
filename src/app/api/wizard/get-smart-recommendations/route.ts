@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 // Risk level ordering for calculations
 const RISK_LEVELS: Record<RiskLevel, number> = {
   'low': 1,
-  'medium': 2, 
+  'medium': 2,
   'high': 3,
   'very_high': 4
 }
@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
     const businessType = await (prisma as any).adminBusinessType.findUnique({
       where: { businessTypeId },
       include: {
-        businessTypeHazards: {
+        AdminBusinessTypeHazard: {
           include: {
-            hazard: {
+            AdminHazardType: {
               include: {
-                hazardStrategies: {
+                AdminHazardStrategy: {
                   include: {
-                    strategy: true
+                    AdminStrategy: true
                   },
                   where: { isActive: true }
                 }
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
         parish: parish || null
       },
       include: {
-        locationHazards: {
+        AdminLocationHazard: {
           include: {
-            hazard: true
+            AdminHazardType: true
           },
           where: { isActive: true }
         }
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Create location hazard lookup
     const locationHazardMap = new Map()
     if (location) {
-      location.locationHazards.forEach((lh: any) => {
+      location.AdminLocationHazard.forEach((lh: any) => {
         locationHazardMap.set(lh.hazardId, lh)
       })
     }
@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
     const risks = []
     const allStrategies = new Map()
 
-    for (const businessTypeHazard of businessType.businessTypeHazards) {
-      const hazard = businessTypeHazard.hazard
-      
+    for (const businessTypeHazard of businessType.AdminBusinessTypeHazard) {
+      const hazard = businessTypeHazard.AdminHazardType
+
       // Start with base risk from business type
       let baseRiskLevel = businessTypeHazard.riskLevel as RiskLevel
       let baseRiskScore = RISK_LEVELS[baseRiskLevel] || 2
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       // Apply location modifier if available
       let locationModifier = 'none'
       let locationModifierScore = 0
-      
+
       const locationHazard = locationHazardMap.get(hazard.hazardId)
       if (locationHazard) {
         const locationRiskScore = RISK_LEVELS[locationHazard.riskLevel as RiskLevel] || 2
@@ -126,10 +126,10 @@ export async function POST(request: NextRequest) {
       }
 
       // Calculate final risk score
-      let finalRiskScore = Math.max(1, Math.min(4, 
+      let finalRiskScore = Math.max(1, Math.min(4,
         baseRiskScore + locationModifierScore + environmentalModifier
       ))
-      
+
       const finalRiskLevel = RISK_LEVEL_NAMES[finalRiskScore - 1]
 
       // Check seasonal patterns
@@ -179,10 +179,10 @@ export async function POST(request: NextRequest) {
       })
 
       // Collect strategies for this hazard
-      hazard.hazardStrategies.forEach((hs: any) => {
-        const strategy = hs.strategy
+      hazard.AdminHazardStrategy.forEach((hs: any) => {
+        const strategy = hs.AdminStrategy
         const key = strategy.strategyId
-        
+
         if (!allStrategies.has(key)) {
           // Check if strategy applies to this business type
           let appliesTo = true
@@ -218,21 +218,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert strategies map to array and sort by priority/effectiveness
-    const strategies = Array.from(allStrategies.values()).sort((a, b) => {
+    const strategies = Array.from(allStrategies.values()).sort((a: any, b: any) => {
       // Recommended strategies first
       if (a.isRecommended !== b.isRecommended) {
         return a.isRecommended ? -1 : 1
       }
-      
+
       // Then by priority
       const priorityOrder: Record<string, number> = { 'high': 3, 'medium': 2, 'low': 1 }
       const aPriority = priorityOrder[a.priority as string] || 2
       const bPriority = priorityOrder[b.priority as string] || 2
-      
+
       if (aPriority !== bPriority) {
         return bPriority - aPriority
       }
-      
+
       // Then by effectiveness
       return b.effectiveness - a.effectiveness
     })
@@ -262,12 +262,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate typical impacts based on high-risk hazards
-    const highRiskHazards = risks.filter(r => 
+    const highRiskHazards = risks.filter(r =>
       r.finalRiskLevel === 'high' || r.finalRiskLevel === 'very_high'
     )
-    
+
     businessContext.typicalImpacts = generateTypicalImpacts(
-      highRiskHazards, 
+      highRiskHazards,
       businessContext.vulnerabilities
     )
 
@@ -305,39 +305,39 @@ function calculateEffectiveness(riskScore: number, priority: string): number {
     'medium': 0.8,
     'low': 0.6
   }
-  
+
   const multiplier = priorityMultiplier[priority] || 0.8
   return Math.round(riskScore * multiplier * 25) // Scale to 0-100
 }
 
 // Helper function to generate typical impacts
 function generateTypicalImpacts(
-  highRiskHazards: any[], 
+  highRiskHazards: any[],
   vulnerabilities: any
 ): string[] {
   const impacts: string[] = []
-  
+
   // Standard impacts based on common vulnerabilities
   if (vulnerabilities.powerCritical >= 4) {
     impacts.push('Extended power outages could halt all operations')
   }
-  
+
   if (vulnerabilities.waterIntensive >= 4) {
     impacts.push('Water supply disruption could force closure')
   }
-  
+
   if (vulnerabilities.supplyChainReliant >= 4) {
     impacts.push('Supply chain disruptions could create inventory shortages')
   }
-  
+
   if (vulnerabilities.perishableGoods >= 3) {
     impacts.push('Product spoilage during extended outages')
   }
-  
+
   if (vulnerabilities.touristDependent >= 3) {
     impacts.push('Tourist evacuations could eliminate customer base')
   }
-  
+
   // Hazard-specific impacts
   const hazardImpacts: Record<string, string> = {
     'hurricane': 'Structural damage and extended closure periods',
@@ -347,12 +347,12 @@ function generateTypicalImpacts(
     'fire': 'Total facility loss and equipment replacement needs',
     'crime_theft': 'Inventory loss and employee safety concerns'
   }
-  
+
   highRiskHazards.forEach(hazard => {
     if (hazardImpacts[hazard.hazardId as string]) {
       impacts.push(hazardImpacts[hazard.hazardId as string])
     }
   })
-  
+
   return Array.from(new Set(impacts)) // Remove duplicates
-} 
+}

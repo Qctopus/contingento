@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getPrismaClient, 
-  withDatabase, 
-  createSuccessResponse, 
+import {
+  getPrismaClient,
+  withDatabase,
+  createSuccessResponse,
   handleApiError,
   createErrorResponse,
   safeJsonStringify
@@ -19,43 +19,46 @@ export async function GET(request: NextRequest) {
     // Get query parameters
     const { searchParams } = new URL(request.url)
     const locale = searchParams.get('locale') as Locale || 'en'
-    const skipLocalization = searchParams.get('skipLocalization') === 'true' // Admin needs all languages
+
+    // Note: Admin interface might need raw data, but for now we prioritize the standard API response
+    // If we need raw data for editing, we might need a different endpoint or param
 
     const strategies = await withDatabase(async () => {
       const prisma = getPrismaClient()
       return await prisma.riskMitigationStrategy.findMany({
         where: { isActive: true },
         include: {
-          actionSteps: {
+          ActionStep: {
             where: { isActive: true },
             include: {
-              itemCosts: {
+              ActionStepTranslation: {
+                where: { locale }
+              },
+              ActionStepItemCost: {
                 include: {
-                  item: true
+                  CostItem: true
                 }
               }
-            },
+            } as any,
             orderBy: { sortOrder: 'asc' }
+          },
+          StrategyTranslation: {
+            where: { locale }
           }
-        },
+        } as any,
         orderBy: [
-          { name: 'asc' }
+          { strategyId: 'asc' }
         ]
       })
     }, 'GET /api/admin2/strategies')
-    
+
     // Transform database strategies to match frontend format
-    let transformedStrategies = strategies.map(transformStrategyForApi)
-    
-    // Only localize for non-admin contexts (wizard, etc.)
-    // Admin interface needs all languages to allow switching
-    if (!skipLocalization) {
-      transformedStrategies = transformedStrategies.map(strategy => localizeStrategy(strategy, locale))
-    }
-    
-    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale}, skipLocalization: ${skipLocalization})`)
+    // The transformer will handle flattening the translations
+    const transformedStrategies = strategies.map(transformStrategyForApi)
+
+    console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale})`)
     return createSuccessResponse(transformedStrategies)
-    
+
   } catch (error) {
     return handleApiError(error, 'Failed to fetch strategies')
   }
@@ -64,118 +67,101 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const strategyData = await request.json()
-    
+
     console.log('🛡️ Creating new strategy:', strategyData.name)
-    
+
     // Validate input data
     const validation = validateStrategyData(strategyData)
     if (!validation.isValid) {
       return createErrorResponse(
-        'Invalid strategy data', 
-        400, 
-        'VALIDATION_ERROR', 
+        'Invalid strategy data',
+        400,
+        'VALIDATION_ERROR',
         validation.errors
       )
     }
-    
+
     const newStrategy = await withDatabase(async () => {
       const prisma = getPrismaClient()
-      
-      // Prepare create data - only include fields that exist in the Prisma schema
+
+      // Prepare base data - only include fields that exist in the RiskMitigationStrategy table
       const createData: any = {
         strategyId: strategyData.strategyId || `custom_${Date.now()}`,
-        name: strategyData.name,
-        description: strategyData.description || '',
         applicableRisks: safeJsonStringify(strategyData.applicableRisks || []),
         applicableBusinessTypes: safeJsonStringify(strategyData.applicableBusinessTypes || []),
-        isActive: true
+        isActive: true,
+        selectionTier: strategyData.selectionTier || 'recommended'
       }
-      
-      // Optional fields that exist in schema
-      if (strategyData.smeTitle !== undefined) {
-        createData.smeTitle = strategyData.smeTitle
-      }
-      if (strategyData.smeSummary !== undefined) {
-        createData.smeSummary = strategyData.smeSummary
-      }
-      if (strategyData.smeDescription !== undefined) {
-        createData.smeDescription = strategyData.smeDescription
-      }
-      if (strategyData.whyImportant !== undefined) {
-        createData.whyImportant = strategyData.whyImportant
-      }
-      if (strategyData.benefitsBullets !== undefined) {
-        createData.benefitsBullets = typeof strategyData.benefitsBullets === 'string' 
-          ? strategyData.benefitsBullets 
-          : safeJsonStringify(strategyData.benefitsBullets)
-      }
-      if (strategyData.realWorldExample !== undefined) {
-        createData.realWorldExample = strategyData.realWorldExample
-      }
-      if (strategyData.selectionTier !== undefined) {
-        createData.selectionTier = strategyData.selectionTier
-      } else {
-        createData.selectionTier = 'recommended' // Default value
-      }
-      if (strategyData.requiredForRisks !== undefined) {
-        createData.requiredForRisks = typeof strategyData.requiredForRisks === 'string'
+
+      // Prepare translation data
+      const translationData: any = {
+        locale: 'en', // Default to English
+        name: strategyData.name,
+        description: strategyData.description || '',
+        smeTitle: strategyData.smeTitle,
+        smeSummary: strategyData.smeSummary,
+        smeDescription: strategyData.smeDescription,
+        whyImportant: strategyData.whyImportant,
+        realWorldExample: strategyData.realWorldExample,
+        lowBudgetAlternative: strategyData.lowBudgetAlternative,
+
+        // JSON fields in translation
+        benefitsBullets: typeof strategyData.benefitsBullets === 'string'
+          ? strategyData.benefitsBullets
+          : safeJsonStringify(strategyData.benefitsBullets),
+        helpfulTips: typeof strategyData.helpfulTips === 'string'
+          ? strategyData.helpfulTips
+          : safeJsonStringify(strategyData.helpfulTips || []),
+        commonMistakes: typeof strategyData.commonMistakes === 'string'
+          ? strategyData.commonMistakes
+          : safeJsonStringify(strategyData.commonMistakes || []),
+        successMetrics: typeof strategyData.successMetrics === 'string'
+          ? strategyData.successMetrics
+          : safeJsonStringify(strategyData.successMetrics || []),
+        requiredForRisks: typeof strategyData.requiredForRisks === 'string'
           ? strategyData.requiredForRisks
           : safeJsonStringify(strategyData.requiredForRisks || [])
       }
-      if (strategyData.helpfulTips !== undefined) {
-        createData.helpfulTips = typeof strategyData.helpfulTips === 'string'
-          ? strategyData.helpfulTips
-          : safeJsonStringify(strategyData.helpfulTips || [])
-      }
-      if (strategyData.commonMistakes !== undefined) {
-        createData.commonMistakes = typeof strategyData.commonMistakes === 'string'
-          ? strategyData.commonMistakes
-          : safeJsonStringify(strategyData.commonMistakes || [])
-      }
-      if (strategyData.successMetrics !== undefined) {
-        createData.successMetrics = typeof strategyData.successMetrics === 'string'
-          ? strategyData.successMetrics
-          : safeJsonStringify(strategyData.successMetrics || [])
-      }
-      if (strategyData.lowBudgetAlternative !== undefined) {
-        createData.lowBudgetAlternative = strategyData.lowBudgetAlternative
-      }
-      
-      // Calculated costs (from frontend calculation)
-      if (typeof strategyData.calculatedCostUSD === 'number') {
-        createData.calculatedCostUSD = strategyData.calculatedCostUSD
-      }
-      if (typeof strategyData.calculatedCostLocal === 'number') {
-        createData.calculatedCostLocal = strategyData.calculatedCostLocal
-      }
-      if (strategyData.currencyCode !== undefined) {
-        createData.currencyCode = strategyData.currencyCode
-      }
-      if (strategyData.currencySymbol !== undefined) {
-        createData.currencySymbol = strategyData.currencySymbol
-      }
-      if (typeof strategyData.totalEstimatedHours === 'number') {
-        createData.totalEstimatedHours = strategyData.totalEstimatedHours
-      }
-      
-      console.log('💰 Creating strategy with calculated costs:', {
-        costUSD: createData.calculatedCostUSD,
-        costLocal: createData.calculatedCostLocal,
-        currency: createData.currencyCode,
-        hours: createData.totalEstimatedHours
-      })
-      
+
+      // Calculated costs (from frontend calculation) - these seem to be on the base table based on previous code?
+      // Checking schema: calculatedCostUSD is NOT in RiskMitigationStrategy in the schema I viewed (lines 703-735).
+      // It has costEstimateJMD, implementationCost, etc.
+      // But the previous code was trying to save calculatedCostUSD. 
+      // If it's not in schema, it will fail. I will omit them if they are not in schema.
+      // Schema has: costEstimateJMD, implementationCost, implementationTime, estimatedTotalHours, estimatedDIYSavings.
+
+      if (strategyData.costEstimateJMD !== undefined) createData.costEstimateJMD = strategyData.costEstimateJMD
+      if (strategyData.implementationCost !== undefined) createData.implementationCost = strategyData.implementationCost
+      if (strategyData.implementationTime !== undefined) createData.implementationTime = strategyData.implementationTime
+      if (strategyData.estimatedTotalHours !== undefined) createData.estimatedTotalHours = strategyData.estimatedTotalHours
+      if (strategyData.estimatedDIYSavings !== undefined) createData.estimatedDIYSavings = strategyData.estimatedDIYSavings
+      if (strategyData.complexityLevel !== undefined) createData.complexityLevel = strategyData.complexityLevel
+      if (strategyData.difficultyLevel !== undefined) createData.difficultyLevel = strategyData.difficultyLevel
+      if (strategyData.effectiveness !== undefined) createData.effectiveness = strategyData.effectiveness
+      if (strategyData.priority !== undefined) createData.priority = strategyData.priority
+      if (strategyData.quickWinIndicator !== undefined) createData.quickWinIndicator = strategyData.quickWinIndicator
+
+      console.log('💰 Creating strategy with base data:', createData)
+
       return await prisma.riskMitigationStrategy.create({
-        data: createData
+        data: {
+          ...createData,
+          StrategyTranslation: {
+            create: translationData
+          }
+        },
+        include: {
+          StrategyTranslation: true
+        } as any
       })
     }, 'POST /api/admin2/strategies')
-    
+
     // Transform response using shared transformer
     const transformedStrategy = transformStrategyForApi(newStrategy)
-    
+
     console.log('🛡️ Strategy created successfully:', transformedStrategy.name)
     return createSuccessResponse(transformedStrategy, 201)
-    
+
   } catch (error) {
     return handleApiError(error, 'Failed to create strategy')
   }

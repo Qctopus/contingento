@@ -23,13 +23,13 @@ export interface ApiResponse<T = any> {
  * Standardized error response creator
  */
 export function createErrorResponse(
-  message: string, 
-  status: number = 500, 
+  message: string,
+  status: number = 500,
   code?: string,
   details?: any
 ): NextResponse<ApiResponse> {
   console.error(`API Error (${status}):`, { message, code, details })
-  
+
   return NextResponse.json(
     {
       success: false,
@@ -47,7 +47,7 @@ export function createErrorResponse(
  * Standardized success response creator
  */
 export function createSuccessResponse<T>(
-  data: T, 
+  data: T,
   status: number = 200
 ): NextResponse<ApiResponse<T>> {
   return NextResponse.json(
@@ -144,13 +144,18 @@ export async function withDatabase<T>(
 /**
  * Parse and validate JSON fields safely
  */
-export function safeJsonParse<T>(jsonString: string | null, fallback: T): T {
-  if (!jsonString) return fallback
-  
+export function safeJsonParse<T>(value: any, fallback: T): T {
+  if (!value) return fallback
+
+  // If it's already an object or array, return it
+  if (typeof value === 'object') {
+    return value as T
+  }
+
   try {
-    return JSON.parse(jsonString)
+    return JSON.parse(value)
   } catch (error) {
-    console.warn('Failed to parse JSON:', jsonString, error)
+    console.warn('Failed to parse JSON:', value, error)
     return fallback
   }
 }
@@ -171,17 +176,17 @@ export function safeJsonStringify(data: any, fallback: string = '{}'): string {
  * Validate required fields in request data
  */
 export function validateRequiredFields(
-  data: Record<string, any>, 
+  data: Record<string, any>,
   requiredFields: string[]
 ): string[] {
   const missingFields: string[] = []
-  
+
   for (const field of requiredFields) {
     if (data[field] === undefined || data[field] === null || data[field] === '') {
       missingFields.push(field)
     }
   }
-  
+
   return missingFields
 }
 
@@ -204,9 +209,9 @@ export function getPrismaClient() {
  */
 export function transformDatesForApi(obj: any): any {
   if (!obj) return obj
-  
+
   const transformed = { ...obj }
-  
+
   // Transform common date fields
   if (transformed.createdAt instanceof Date) {
     transformed.createdAt = transformed.createdAt.toISOString()
@@ -217,6 +222,6 @@ export function transformDatesForApi(obj: any): any {
   if (transformed.lastUpdated instanceof Date) {
     transformed.lastUpdated = transformed.lastUpdated.toISOString()
   }
-  
+
   return transformed
 }
