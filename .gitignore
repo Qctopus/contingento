@@ -30,21 +30,6 @@ yarn-error.log*
 .env
 
 # vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# database
-*.db
-*.db-journal
-
-# Anonymous session storage
-/data/
-
-# IDE and Editor files
-.vscode/
 .idea/
 *.swp
 *.swo
@@ -111,3 +96,5 @@ workbox-*
 # Uncomment if you auto-generate these
 # /public/icon-*.png
 # /public/manifest.json 
+# Prisma generated client (contains large binary files)
+/src/generated/
