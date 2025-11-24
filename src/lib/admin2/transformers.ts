@@ -13,7 +13,7 @@ import { parseMultilingualJSON } from '../../utils/localizationUtils'
  */
 const DEFAULT_RISK_TYPES = [
   'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage',
-  'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn', 
+  'fire', 'cyberAttack', 'terrorism', 'pandemicDisease', 'economicDownturn',
   'supplyChainDisruption', 'civilUnrest'
 ]
 
@@ -30,34 +30,34 @@ export function transformParishForApi(parish: any): any {
   DEFAULT_RISK_TYPES.forEach(riskType => {
     riskProfile[riskType] = { level: 0, notes: '' }
   })
-  
+
   // Override with actual data from database
   if (parish.parishRisk) {
     // Merge basic 6 hardcoded risks
     const basicRisks = buildBasicRiskProfile(parish.parishRisk)
     Object.assign(riskProfile, basicRisks)
-    
+
     // CRITICAL: Merge in ALL dynamic risks from riskProfileJson
     // This includes: fire, cyberAttack, terrorism, pandemicDisease, etc.
     if (parish.parishRisk.riskProfileJson) {
       try {
-        const dynamicRisks = typeof parish.parishRisk.riskProfileJson === 'string' 
-          ? JSON.parse(parish.parishRisk.riskProfileJson) 
+        const dynamicRisks = typeof parish.parishRisk.riskProfileJson === 'string'
+          ? JSON.parse(parish.parishRisk.riskProfileJson)
           : parish.parishRisk.riskProfileJson
-        
+
         if (dynamicRisks && typeof dynamicRisks === 'object') {
           // Merge ALL risks from JSON (including overwriting hardcoded ones if they exist)
           Object.keys(dynamicRisks).forEach(riskKey => {
             // Skip metadata fields
             if (['lastUpdated', 'updatedBy'].includes(riskKey)) return
-            
+
             // Add/update risk data
             if (dynamicRisks[riskKey] && typeof dynamicRisks[riskKey] === 'object') {
               riskProfile[riskKey] = dynamicRisks[riskKey]
             }
           })
-          
-          const nonZeroRisks = Object.keys(riskProfile).filter(k => 
+
+          const nonZeroRisks = Object.keys(riskProfile).filter(k =>
             !['lastUpdated', 'updatedBy'].includes(k) && riskProfile[k]?.level > 0
           ).length
           console.log(`🔍 transformParishForApi: ${parish.name} has ${nonZeroRisks} risks with level > 0 (out of ${DEFAULT_RISK_TYPES.length} total)`)
@@ -67,11 +67,11 @@ export function transformParishForApi(parish: any): any {
       }
     }
   }
-  
+
   // Ensure metadata is always present
   riskProfile.lastUpdated = parish.parishRisk?.lastUpdated?.toISOString() || new Date().toISOString()
   riskProfile.updatedBy = parish.parishRisk?.updatedBy || 'system'
-  
+
   return {
     id: parish.id,
     name: parish.name,
@@ -119,33 +119,62 @@ function buildBasicRiskProfile(parishRisk: any): any {
 export function transformBusinessTypeForApi(businessType: any): any {
   if (!businessType) return null
 
+  // Extract name and description from translations
+  // The API route filters by locale, so we should have 0 or 1 translation
+  let name = ''
+  let description = ''
+  let exampleBusinessPurposes: any[] = []
+  let exampleProducts: any[] = []
+  let exampleKeyPersonnel: any[] = []
+  let exampleCustomerBase: any[] = []
+  let minimumEquipment: any[] = []
+
+  if (businessType.BusinessTypeTranslation && businessType.BusinessTypeTranslation.length > 0) {
+    const translation = businessType.BusinessTypeTranslation[0]
+    name = translation.name || ''
+    description = translation.description || ''
+    exampleBusinessPurposes = translation.exampleBusinessPurposes || []
+    exampleProducts = translation.exampleProducts || []
+    exampleKeyPersonnel = translation.exampleKeyPersonnel || []
+    exampleCustomerBase = translation.exampleCustomerBase || []
+    minimumEquipment = translation.minimumEquipment || []
+  }
+
+  // Fallback: if no translation found, show businessTypeId as name
+  if (!name) {
+    name = businessType.businessTypeId
+  }
+
   return {
     id: businessType.id,
     businessTypeId: businessType.businessTypeId,
-    name: parseMultilingualJSON(businessType.name) || businessType.name,
+    name: name,
     category: businessType.category,
     subcategory: businessType.subcategory,
-    description: parseMultilingualJSON(businessType.description) || businessType.description,
-    
-    // Reference information
-    typicalRevenue: businessType.typicalRevenue,
-    typicalEmployees: businessType.typicalEmployees,
-    operatingHours: businessType.operatingHours,
-    
+    description: description,
+
+    // Characteristics (non-translatable)
+    touristDependency: businessType.touristDependency,
+    digitalDependency: businessType.digitalDependency,
+    physicalAssetIntensity: businessType.physicalAssetIntensity,
+    seasonalityFactor: businessType.seasonalityFactor,
+    supplyChainComplexity: businessType.supplyChainComplexity,
+    regulatoryCompliance: businessType.regulatoryCompliance,
+
     // Multilingual example content for wizard prefill
-    exampleBusinessPurposes: safeJsonParse(businessType.exampleBusinessPurposes, []),
-    exampleProducts: safeJsonParse(businessType.exampleProducts, []),
-    exampleKeyPersonnel: safeJsonParse(businessType.exampleKeyPersonnel, []),
-    exampleCustomerBase: safeJsonParse(businessType.exampleCustomerBase, []),
-    minimumEquipment: safeJsonParse(businessType.minimumEquipment, []),
-    
+    exampleBusinessPurposes,
+    exampleProducts,
+    exampleKeyPersonnel,
+    exampleCustomerBase,
+    minimumEquipment,
+
     // Transform risk vulnerabilities
-    riskVulnerabilities: businessType.riskVulnerabilities?.map((rv: any) => ({
+    riskVulnerabilities: businessType.BusinessRiskVulnerability?.map((rv: any) => ({
       riskType: rv.riskType,
       vulnerabilityLevel: rv.vulnerabilityLevel,
       impactSeverity: rv.impactSeverity
     })) || [],
-    
+
     // Placeholder for strategies (populated separately)
     strategies: []
   }
@@ -164,60 +193,60 @@ export function transformStrategyForApi(strategy: any): any {
     // Basic Info
     name: parseMultilingualJSON(strategy.name) || strategy.name,
     description: parseMultilingualJSON(strategy.description) || strategy.description,
-    
+
     // SME-Focused Content (NEW)
     smeTitle: parseMultilingualJSON(strategy.smeTitle) || strategy.smeTitle,
     smeSummary: parseMultilingualJSON(strategy.smeSummary) || strategy.smeSummary,
     benefitsBullets: safeJsonParse(strategy.benefitsBullets, []),
     realWorldExample: parseMultilingualJSON(strategy.realWorldExample) || strategy.realWorldExample,
-    
+
     // Backward compatibility (deprecated fields)
     smeDescription: parseMultilingualJSON(strategy.smeDescription) || strategy.smeDescription || strategy.description || '',
     whyImportant: parseMultilingualJSON(strategy.whyImportant) || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
-    
+
     // Implementation Details (enhanced)
     costEstimateJMD: strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost), // Use DB value if available, otherwise compute
     totalEstimatedHours: strategy.totalEstimatedHours,
     complexityLevel: strategy.complexityLevel || 'moderate',
-    
+
     // Wizard Integration (NEW)
     quickWinIndicator: strategy.quickWinIndicator || false,
     defaultSelected: strategy.defaultSelected || false,
     selectionTier: strategy.selectionTier,
     requiredForRisks: safeJsonParse(strategy.requiredForRisks, []),
-    
+
     // Resource-Limited SME Support (NEW)
     lowBudgetAlternative: parseMultilingualJSON(strategy.lowBudgetAlternative) || strategy.lowBudgetAlternative,
     diyApproach: parseMultilingualJSON(strategy.diyApproach) || strategy.diyApproach,
     estimatedDIYSavings: strategy.estimatedDIYSavings,
-    
+
     // BCP Document Integration (NEW)
     bcpSectionMapping: strategy.bcpSectionMapping,
     bcpTemplateText: parseMultilingualJSON(strategy.bcpTemplateText) || strategy.bcpTemplateText,
-    
+
     // Personalization (NEW)
     industryVariants: safeJsonParse(strategy.industryVariants, {}),
     businessSizeGuidance: safeJsonParse(strategy.businessSizeGuidance, {}),
-    
+
     // Existing risk/business type fields
     applicableRisks: safeJsonParse(strategy.applicableRisks, []),
     applicableBusinessTypes: applicableBusinessTypesFromDb,
     prerequisites: safeJsonParse(strategy.prerequisites, []),
-    
+
     // Backward compatibility fields
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
-    
+
     // Guidance arrays
     helpfulTips: safeJsonParse(strategy.helpfulTips, []),
     commonMistakes: safeJsonParse(strategy.commonMistakes, []),
     successMetrics: safeJsonParse(strategy.successMetrics, []),
-    
+
     // Transform action steps from database (with NEW SME context fields)
     actionSteps: (strategy.actionSteps || []).map((step: any) => ({
       id: step.stepId,
       stepId: step.stepId,
       strategyId: step.strategyId,
-      
+
       // Basic Info
       phase: step.phase,
       title: parseMultilingualJSON(step.title) || step.title,
@@ -225,7 +254,7 @@ export function transformStrategyForApi(strategy: any): any {
       description: parseMultilingualJSON(step.description) || step.description,
       smeAction: parseMultilingualJSON(step.smeAction) || step.smeAction,
       sortOrder: step.sortOrder,
-      
+
       // SME Context (NEW)
       whyThisStepMatters: parseMultilingualJSON(step.whyThisStepMatters) || step.whyThisStepMatters,
       whatHappensIfSkipped: parseMultilingualJSON(step.whatHappensIfSkipped) || step.whatHappensIfSkipped,
@@ -241,7 +270,7 @@ export function transformStrategyForApi(strategy: any): any {
       estimatedCostJMD: step.estimatedCostJMD,
       resources: safeJsonParse(step.resources, []),
       checklist: safeJsonParse(step.checklist, []),
-      
+
       // Cost Items (NEW - structured costing system)
       costItems: (step.itemCosts || []).map((itemCost: any) => ({
         id: itemCost.id,
@@ -260,20 +289,20 @@ export function transformStrategyForApi(strategy: any): any {
           unit: itemCost.item.unit
         } : undefined
       })),
-      
+
       // Validation & Completion (NEW)
       howToKnowItsDone: parseMultilingualJSON(step.howToKnowItsDone) || step.howToKnowItsDone,
       exampleOutput: parseMultilingualJSON(step.exampleOutput) || step.exampleOutput,
-      
+
       // Dependencies (NEW)
       dependsOnSteps: safeJsonParse(step.dependsOnSteps, []),
       isOptional: step.isOptional || false,
       skipConditions: parseMultilingualJSON(step.skipConditions) || step.skipConditions,
-      
+
       // Alternatives for resource-limited SMEs (NEW)
       freeAlternative: parseMultilingualJSON(step.freeAlternative) || step.freeAlternative,
       lowTechOption: parseMultilingualJSON(step.lowTechOption) || step.lowTechOption,
-      
+
       // Help Resources (NEW)
       commonMistakesForStep: safeJsonParse(step.commonMistakesForStep, []),
       videoTutorialUrl: step.videoTutorialUrl,

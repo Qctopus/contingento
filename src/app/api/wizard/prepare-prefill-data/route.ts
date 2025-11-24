@@ -4,6 +4,7 @@ import { generateDynamicPreFillData } from '@/services/dynamicPreFillService'
 import { getLocalizedText, localizeBusinessType } from '@/utils/localizationUtils'
 import { applyMultipliers, convertSimplifiedInputs, convertLegacyCharacteristics } from '@/services/multiplierService'
 import { normalizeRiskId as normalizeRiskIdUtil } from '@/utils/riskIdUtils'
+import { MultilingualDataService } from '@/services/multilingualDataService'
 import type { Locale } from '@/i18n/config'
 
 // Import translation files
@@ -221,6 +222,7 @@ function categorizeRisk(
   }
 }
 
+
 /**
  * Legacy function for backwards compatibility
  * @deprecated Use categorizeRisk instead
@@ -344,12 +346,8 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Looking up business type:', businessTypeId)
     let businessType
     try {
-      businessType = await (prisma as any).businessType.findUnique({
-        where: { businessTypeId },
-        include: {
-          riskVulnerabilities: true
-        }
-      })
+      const dataService = new MultilingualDataService(prisma, locale as Locale)
+      businessType = await dataService.getBusinessType(businessTypeId)
       console.log('📊 Business type lookup result:', businessType ? `Found: ${businessType.name || businessType.businessTypeId}` : 'NOT FOUND')
     } catch (dbError) {
       console.error('❌ Database error looking up business type:', dbError)
@@ -794,6 +792,7 @@ export async function POST(request: NextRequest) {
           riskScore: Math.round(finalScore * 10) / 10, // Final calculated score 1-10
           riskLevel,
           isPreSelected: isPreSelected, // Auto-selected based on calculated tier (Tier 1 & 2)
+          isSelected: isPreSelected, // CRITICAL: Initially matches isPreSelected, but user can change this
           isAvailable: true,
           source: 'combined',
           isCalculated: true, // CRITICAL: Indicates this is a calculated risk with multiplier data
@@ -1138,23 +1137,10 @@ export async function POST(request: NextRequest) {
     // CRITICAL: Return ALL strategies, not just those matching pre-selected risks
     // This allows users to manually add ANY risk and see its strategies
     // The frontend will filter strategies based on user's actual selections
-    const allStrategies = await (prisma as any).riskMitigationStrategy.findMany({
-      where: {
-        isActive: true
-      },
-      include: {
-        actionSteps: {
-          orderBy: { sortOrder: 'asc' },
-          include: {
-            itemCosts: {
-              include: {
-                item: true
-              }
-            }
-          }
-        }
-      }
-    })
+    // Load ALL active strategies from database using MultilingualDataService
+    // This returns already localized data with flattened structure
+    const dataService = new MultilingualDataService(prisma, locale as Locale)
+    const allStrategies = await dataService.getStrategies({})
 
     console.log(`📚 Loaded ${allStrategies.length} total active strategies (ALL risks)`)
 
@@ -1505,12 +1491,14 @@ export async function POST(request: NextRequest) {
     // console.log(`   Essential: ${essential.length}, Recommended: ${recommended.length}, Optional: ${optional.length}`)
 
     // Helper function to safely parse JSON fields with fallback
-    const parseJSONField = (field: string | null | undefined, fallback: any = null): any => {
+    // Helper function to safely parse JSON fields with fallback
+    const parseJSONField = (field: any, fallback: any = null): any => {
       if (!field) return fallback
+      if (typeof field === 'object') return field
       try {
         return JSON.parse(field)
       } catch (error) {
-        console.warn('Failed to parse JSON field:', field?.substring(0, 50))
+        console.warn('Failed to parse JSON field:', String(field).substring(0, 50))
         return fallback
       }
     }
@@ -1521,17 +1509,17 @@ export async function POST(request: NextRequest) {
       strategyId: strategy.strategyId,
 
       // Basic Info
-      name: getLocalizedText(strategy.name, locale as Locale) || strategy.name,
+      name: strategy.name,
       category: strategy.category,
-      description: getLocalizedText(strategy.description, locale as Locale) || strategy.description,
+      description: strategy.description,
 
       // SME-Focused Content (benefit-driven, plain language)
-      smeTitle: getLocalizedText(strategy.smeTitle, locale as Locale) || strategy.smeTitle,
-      smeSummary: getLocalizedText(strategy.smeSummary, locale as Locale) || strategy.smeSummary,
-      smeDescription: getLocalizedText(strategy.smeDescription, locale as Locale) || strategy.smeDescription, // backwards compat
-      whyImportant: getLocalizedText(strategy.whyImportant, locale as Locale) || strategy.whyImportant, // backwards compat
+      smeTitle: strategy.smeTitle,
+      smeSummary: strategy.smeSummary,
+      smeDescription: strategy.smeDescription, // backwards compat
+      whyImportant: strategy.whyImportant, // backwards compat
       benefitsBullets: parseJSONField(strategy.benefitsBullets, []),
-      realWorldExample: getLocalizedText(strategy.realWorldExample, locale as Locale) || strategy.realWorldExample,
+      realWorldExample: strategy.realWorldExample,
 
       // Implementation Details (enhanced)
       implementationCost: strategy.implementationCost,
@@ -1564,13 +1552,13 @@ export async function POST(request: NextRequest) {
       successMetrics: parseJSONField(strategy.successMetrics, []),
 
       // Resource-Limited SME Support
-      lowBudgetAlternative: getLocalizedText(strategy.lowBudgetAlternative, locale as Locale) || strategy.lowBudgetAlternative,
-      diyApproach: getLocalizedText(strategy.diyApproach, locale as Locale) || strategy.diyApproach,
+      lowBudgetAlternative: strategy.lowBudgetAlternative,
+      diyApproach: strategy.diyApproach,
       estimatedDIYSavings: strategy.estimatedDIYSavings,
 
       // BCP Document Integration
       bcpSectionMapping: strategy.bcpSectionMapping,
-      bcpTemplateText: getLocalizedText(strategy.bcpTemplateText, locale as Locale) || strategy.bcpTemplateText,
+      bcpTemplateText: strategy.bcpTemplateText,
 
       // Personalization (industry and size variants)
       industryVariants: parseJSONField(strategy.industryVariants, {}),
@@ -1589,15 +1577,15 @@ export async function POST(request: NextRequest) {
         strategyId: step.strategyId,
 
         // Basic Info
-        title: getLocalizedText(step.title, locale as Locale) || step.title,
-        description: getLocalizedText(step.description, locale as Locale) || step.description,
-        smeAction: getLocalizedText(step.smeAction, locale as Locale) || step.smeAction,
+        title: step.title,
+        description: step.description,
+        smeAction: step.smeAction,
         phase: step.phase,
         sortOrder: step.sortOrder,
 
         // SME Context (why this matters)
-        whyThisStepMatters: getLocalizedText(step.whyThisStepMatters, locale as Locale) || step.whyThisStepMatters,
-        whatHappensIfSkipped: getLocalizedText(step.whatHappensIfSkipped, locale as Locale) || step.whatHappensIfSkipped,
+        whyThisStepMatters: step.whyThisStepMatters,
+        whatHappensIfSkipped: step.whatHappensIfSkipped,
 
         // Timing & Difficulty
         timeframe: step.timeframe,
@@ -1632,17 +1620,17 @@ export async function POST(request: NextRequest) {
         })) || [],
 
         // Validation & Completion
-        howToKnowItsDone: getLocalizedText(step.howToKnowItsDone, locale as Locale) || step.howToKnowItsDone,
-        exampleOutput: getLocalizedText(step.exampleOutput, locale as Locale) || step.exampleOutput,
+        howToKnowItsDone: step.howToKnowItsDone,
+        exampleOutput: step.exampleOutput,
 
         // Dependencies
         dependsOnSteps: parseJSONField(step.dependsOnSteps, []),
         isOptional: step.isOptional || false,
-        skipConditions: getLocalizedText(step.skipConditions, locale as Locale) || step.skipConditions,
+        skipConditions: step.skipConditions,
 
         // Alternatives for resource-limited SMEs
-        freeAlternative: getLocalizedText(step.freeAlternative, locale as Locale) || step.freeAlternative,
-        lowTechOption: getLocalizedText(step.lowTechOption, locale as Locale) || step.lowTechOption,
+        freeAlternative: step.freeAlternative,
+        lowTechOption: step.lowTechOption,
 
         // Help Resources
         commonMistakesForStep: parseJSONField(step.commonMistakesForStep, []),

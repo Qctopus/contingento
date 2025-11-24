@@ -6,7 +6,6 @@ import { centralDataService } from '../services/centralDataService'
 import type { Strategy } from '../types/admin'
 import type { Locale } from '../i18n/config'
 import StrategySelectionStep from './wizard/StrategySelectionStep'
-import { getLocalizedText } from '../utils/localizationUtils'
 import { normalizeRiskId } from '../utils/riskIdUtils'
 
 interface AdminStrategyCardsProps {
@@ -354,10 +353,13 @@ export function AdminStrategyCards({
       // Get selected risks from risk assessment matrix
       // CRITICAL: Check BOTH isSelected (user manual selection) AND isPreSelected (auto-selected from backend)
       const selectedRiskItems = riskData['Risk Assessment Matrix'].filter((r: any) => {
-        // CRITICAL FIX: Only use isSelected. isPreSelected is static and prevents deselection.
-        // SimplifiedRiskAssessment handles initializing isSelected based on isPreSelected.
-        const isSelected = r.isSelected === true || r.isSelected === 'true' || r.isSelected === 1
-        return isSelected
+        // Logic: Include risk if r.isSelected === true OR (r.isPreSelected === true AND r.isSelected !== false)
+        // This handles cases where isSelected might be undefined (initial load) or explicitly set
+        const isExplicitlySelected = r.isSelected === true || r.isSelected === 'true' || r.isSelected === 1
+        const isExplicitlyDeselected = r.isSelected === false || r.isSelected === 'false' || r.isSelected === 0
+        const isPreSelected = r.isPreSelected === true || r.isPreSelected === 'true'
+
+        return isExplicitlySelected || (isPreSelected && !isExplicitlyDeselected)
       })
 
       console.log(`[AdminStrategyCards] ========================================`)
@@ -501,7 +503,7 @@ export function AdminStrategyCards({
 
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{getLocalizedText(strategy.name, locale)}</h4>
+                        <h4 className="font-medium text-gray-900">{strategy.name}</h4>
                         {strategy.effectiveness && (
                           <span className={`px-2 py-1 text-xs rounded-full font-medium border ${getEffectivenessColor(strategy.effectiveness)}`}>
                             {strategy.effectiveness}% effective
@@ -509,7 +511,7 @@ export function AdminStrategyCards({
                         )}
                       </div>
 
-                      <p className="text-sm text-gray-600 mb-3">{getLocalizedText(strategy.description, locale)}</p>
+                      <p className="text-sm text-gray-600 mb-3">{strategy.description}</p>
 
                       <div className="space-y-2">
                         {strategy.implementationCost && (

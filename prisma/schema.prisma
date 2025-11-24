@@ -1,147 +1,375 @@
-// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-model BusinessContinuityPlan {
-  id                  String               @id @default(cuid())
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  planInformation     PlanInformation?
-  businessOverview    BusinessOverview?
-  essentialFunction   EssentialFunction?
-  riskAssessment      RiskAssessment?
-  strategy            Strategy?
-  actionPlan          ActionPlan?
-  contactsInformation ContactsInformation?
-  testingMaintenance  TestingMaintenance?
-}
-
-model PlanInformation {
-  id                   String                 @id @default(cuid())
-  planId               String                 @unique
-  plan                 BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  companyName          String
-  planManager          String
-  alternateManager     String?
-  physicalPlanLocation String
-  digitalPlanLocation  String?
-}
-
-model BusinessOverview {
-  id                     String                 @id @default(cuid())
-  planId                 String                 @unique
-  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  businessLicenseNumber  String
-  businessPurpose        String
-  productsAndServices    String
-  serviceDeliveryMethods String
-  operatingHours         String
-  keyPersonnel           String
-  minimumResources       String
-  customerBase           String
-  serviceProviderBCP     String
-}
-
-model EssentialFunction {
-  id                       String                 @id @default(cuid())
-  planId                   String                 @unique
-  plan                     BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  supplyChainManagement    String // JSON array of selected functions
-  staffManagement          String // JSON array of selected functions
-  technology               String // JSON array of selected functions
-  productsServices         String // JSON array of selected functions
-  infrastructureFacilities String // JSON array of selected functions
-  sales                    String // JSON array of selected functions
-  administration           String // JSON array of selected functions
-}
-
-model RiskAssessment {
-  id               String                 @id @default(cuid())
-  planId           String                 @unique
-  plan             BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  potentialHazards String // JSON array of selected hazards
-  hazards          String // JSON array of selected hazards
-}
-
-model Strategy {
-  id                    String                 @id @default(cuid())
-  planId                String                 @unique
-  plan                  BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  preventionStrategies  String // JSON array of selected strategies
-  responseStrategies    String // JSON array of selected strategies
-  recoveryStrategies    String // JSON array of selected strategies
-  longTermRiskReduction String // JSON string of long-term risk reduction measures
-}
-
 model ActionPlan {
-  id                     String                 @id @default(cuid())
+  id                     String                 @id
   planId                 String                 @unique
-  plan                   BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  actionPlanByRisk       String // JSON string of action plan by risk level
+  actionPlanByRisk       String
   implementationTimeline String
   resourceRequirements   String
   responsibleParties     String
   reviewUpdateSchedule   String
-  testingAssessmentPlan  String // JSON string of testing and assessment plan
+  testingAssessmentPlan  String
+  BusinessContinuityPlan BusinessContinuityPlan @relation(fields: [planId], references: [id])
 }
 
-model Session {
-  id              String           @id @default(cuid())
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  currentStep     String
-  stepData        String
-  businessProfile BusinessProfile?
+model ActionStep {
+  id                     String                  @id
+  strategyId             String
+  stepId                 String
+  phase                  String                  @default("immediate")
+  estimatedMinutes       Int?                    @default(60)
+  difficultyLevel        String?                 @default("medium")
+  estimatedCost          String?
+  dependsOnSteps         String?
+  isOptional             Boolean                 @default(false)
+  skipConditions         String?
+  videoTutorialUrl       String?
+  externalResourceUrl    String?
+  sortOrder              Int                     @default(0)
+  isActive               Boolean                 @default(true)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime
+  priority               String                  @default("medium")
+  requiredSkills         Json?
+  requiresExternal       Boolean                 @default(false)
+  stepNumber             Int                     @default(0)
+  tools                  Json?
+  RiskMitigationStrategy RiskMitigationStrategy  @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+  ActionStepItemCost     ActionStepItemCost[]
+  ActionStepTranslation  ActionStepTranslation[]
+
+  @@unique([strategyId, stepId])
+  @@index([difficultyLevel])
+  @@index([isOptional])
+  @@index([phase])
+  @@index([strategyId])
 }
 
-model BusinessProfile {
-  id        String  @id @default(cuid())
-  sessionId String  @unique
-  session   Session @relation(fields: [sessionId], references: [id])
-  name      String
-  industry  String
-  size      String
-  location  String
+model ActionStepItemCost {
+  id               String     @id
+  actionStepId     String
+  itemId           String
+  quantity         Int        @default(1)
+  customNotes      String?
+  countryOverrides String?
+  displayOrder     Int        @default(0)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime
+  ActionStep       ActionStep @relation(fields: [actionStepId], references: [id], onDelete: Cascade)
+  CostItem         CostItem   @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+
+  @@unique([actionStepId, itemId])
+  @@index([actionStepId])
+  @@index([itemId])
 }
 
-model ContactsInformation {
-  id                         String                 @id @default(cuid())
-  planId                     String                 @unique
-  plan                       BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  staffContactInfo           String // JSON array of staff contact information
-  keyCustomerContacts        String // JSON array of customer contacts
-  supplierInformation        String // JSON array of supplier information
-  emergencyServicesUtilities String // JSON array of emergency services
-  criticalBusinessInfo       String // Text field for critical business info
-  planDistributionList       String // JSON array of distribution list
+model ActionStepTranslation {
+  id                    String     @id
+  actionStepId          String
+  locale                String
+  title                 String
+  description           String?
+  smeAction             String?
+  timeframe             String?
+  whyThisStepMatters    String?
+  howToKnowItsDone      String?
+  whatHappensIfSkipped  String?
+  exampleOutput         String?
+  freeAlternative       String?
+  lowTechOption         String?
+  commonMistakesForStep Json?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime
+  ActionStep            ActionStep @relation(fields: [actionStepId], references: [id], onDelete: Cascade)
+
+  @@unique([actionStepId, locale])
+  @@index([actionStepId])
+  @@index([locale])
 }
 
-model TestingMaintenance {
-  id                      String                 @id @default(cuid())
-  planId                  String                 @unique
-  plan                    BusinessContinuityPlan @relation(fields: [planId], references: [id])
-  planTestingSchedule     String // JSON array of testing schedule
-  planRevisionHistory     String // JSON array of revision history
-  improvementTracking     String // JSON array of improvement tracking
-  annualReviewProcess     String // Text field for annual review process
-  triggerEventsForUpdates String // Text field for trigger events
+model AdminActionPlan {
+  id                    String                  @id
+  hazardId              String                  @unique
+  resourcesNeeded       String
+  immediateActions      String
+  shortTermActions      String
+  mediumTermActions     String
+  longTermReduction     String
+  businessTypeModifiers String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime
+  AdminHazardType       AdminHazardType         @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  AdminHazardActionPlan AdminHazardActionPlan[]
+}
+
+model AdminBusinessType {
+  id                      String                    @id
+  businessTypeId          String                    @unique
+  name                    String
+  localName               String
+  category                String
+  description             String?
+  typicalOperatingHours   String?
+  minimumStaff            String?
+  minimumEquipment        String?
+  minimumUtilities        String?
+  minimumSpace            String?
+  essentialFunctions      String?
+  criticalSuppliers       String?
+  exampleBusinessPurposes String?
+  exampleProducts         String?
+  exampleKeyPersonnel     String?
+  exampleCustomerBase     String?
+  dependencies            String?
+  vulnerabilityMatrix     String?
+  operationalThresholds   String?
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  AdminBusinessTypeHazard AdminBusinessTypeHazard[]
+  AdminRiskProfile        AdminRiskProfile[]
+
+  @@index([category])
+  @@index([dependencies])
+}
+
+model AdminBusinessTypeHazard {
+  id                String            @id
+  businessTypeId    String
+  hazardId          String
+  riskLevel         String
+  frequency         String?
+  impact            String?
+  notes             String?
+  isActive          Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime
+  AdminBusinessType AdminBusinessType @relation(fields: [businessTypeId], references: [businessTypeId], onDelete: Cascade)
+  AdminHazardType   AdminHazardType   @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+
+  @@unique([businessTypeId, hazardId])
+  @@index([businessTypeId])
+  @@index([hazardId])
+}
+
+model AdminHazardActionPlan {
+  id              String          @id
+  hazardId        String
+  actionPlanId    String
+  businessTypes   String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  AdminActionPlan AdminActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
+  AdminHazardType AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+
+  @@unique([hazardId, actionPlanId])
+  @@index([hazardId])
+}
+
+model AdminHazardStrategy {
+  id              String          @id
+  hazardId        String
+  strategyId      String
+  businessTypes   String?
+  priority        String          @default("medium")
+  isRecommended   Boolean         @default(false)
+  notes           String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  AdminHazardType AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  AdminStrategy   AdminStrategy   @relation(fields: [strategyId], references: [strategyId], onDelete: Cascade)
+
+  @@unique([hazardId, strategyId])
+  @@index([hazardId])
+  @@index([strategyId])
+}
+
+model AdminHazardType {
+  id                      String                    @id
+  hazardId                String                    @unique
+  name                    String
+  category                String
+  description             String?
+  defaultFrequency        String
+  defaultImpact           String
+  seasonalPattern         String?
+  peakMonths              String?
+  warningTime             String?
+  geographicScope         String?
+  cascadingRisks          String?
+  isActive                Boolean                   @default(true)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime
+  AdminActionPlan         AdminActionPlan?
+  AdminBusinessTypeHazard AdminBusinessTypeHazard[]
+  AdminHazardActionPlan   AdminHazardActionPlan[]
+  AdminHazardStrategy     AdminHazardStrategy[]
+  AdminLocationHazard     AdminLocationHazard[]
+  HazardTranslation       HazardTranslation[]
+
+  @@index([category])
+  @@index([geographicScope])
+  @@index([seasonalPattern])
+}
+
+model AdminLocation {
+  id                  String                @id
+  country             String
+  countryCode         String
+  parish              String?
+  isCoastal           Boolean               @default(false)
+  isUrban             Boolean               @default(false)
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  AdminLocationHazard AdminLocationHazard[]
+  AdminRiskProfile    AdminRiskProfile[]
+
+  @@unique([countryCode, parish])
+  @@index([countryCode])
+}
+
+model AdminLocationHazard {
+  id              String          @id
+  locationId      String
+  hazardId        String
+  riskLevel       String
+  frequency       String?
+  impact          String?
+  notes           String?
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  AdminHazardType AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
+  AdminLocation   AdminLocation   @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, hazardId])
+  @@index([hazardId])
+  @@index([locationId])
+}
+
+model AdminRiskProfile {
+  id                    String            @id
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime
+  businessTypeId        String
+  locationId            String
+  calculatedRisks       String
+  recommendedStrategies String
+  lastCalculated        DateTime          @default(now())
+  riskScore             Int
+  AdminBusinessType     AdminBusinessType @relation(fields: [businessTypeId], references: [id])
+  AdminLocation         AdminLocation     @relation(fields: [locationId], references: [id])
+
+  @@unique([businessTypeId, locationId])
+  @@index([businessTypeId])
+  @@index([locationId])
+}
+
+model AdminStrategy {
+  id                  String                @id
+  strategyId          String                @unique
+  title               String
+  description         String
+  category            String
+  reasoning           String?
+  icon                String?
+  isActive            Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  AdminHazardStrategy AdminHazardStrategy[]
+
+  @@index([category])
+}
+
+model AdminUnit {
+  id            String         @id
+  name          String
+  localName     String?
+  type          String         @default("parish")
+  region        String?
+  countryId     String
+  population    Int            @default(0)
+  area          Float?
+  elevation     Float?
+  coordinates   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime
+  isActive      Boolean        @default(true)
+  Country       Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  AdminUnitRisk AdminUnitRisk?
+
+  @@unique([countryId, name])
+  @@index([countryId])
+  @@index([isActive])
+  @@index([region])
+  @@index([type])
+}
+
+model AdminUnitRisk {
+  id                     String                   @id
+  adminUnitId            String                   @unique
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime
+  lastUpdated            DateTime                 @default(now())
+  updatedBy              String                   @default("system")
+  hurricaneLevel         Int                      @default(0)
+  hurricaneNotes         String                   @default("")
+  floodLevel             Int                      @default(0)
+  floodNotes             String                   @default("")
+  earthquakeLevel        Int                      @default(0)
+  earthquakeNotes        String                   @default("")
+  droughtLevel           Int                      @default(0)
+  droughtNotes           String                   @default("")
+  landslideLevel         Int                      @default(0)
+  landslideNotes         String                   @default("")
+  powerOutageLevel       Int                      @default(0)
+  powerOutageNotes       String                   @default("")
+  riskProfileJson        String                   @default("{}")
+  isActive               Boolean                  @default(true)
+  AdminUnit              AdminUnit                @relation(fields: [adminUnitId], references: [id], onDelete: Cascade)
+  AdminUnitRiskChangeLog AdminUnitRiskChangeLog[]
+
+  @@index([adminUnitId])
+}
+
+model AdminUnitRiskChangeLog {
+  id              String        @id
+  adminUnitRiskId String
+  riskType        String
+  oldLevel        Int
+  newLevel        Int
+  oldNotes        String        @default("")
+  newNotes        String        @default("")
+  changedBy       String
+  changeReason    String?
+  createdAt       DateTime      @default(now())
+  AdminUnitRisk   AdminUnitRisk @relation(fields: [adminUnitRiskId], references: [id], onDelete: Cascade)
+
+  @@index([adminUnitRiskId])
+  @@index([createdAt])
+  @@index([riskType])
 }
 
 model AnonymousSession {
-  id                  String   @id @default(cuid())
+  id                  String   @id
   sessionId           String   @unique
-  businessName        String // Lowercase for searching
-  displayBusinessName String // Original casing for display
-  pin                 String // 6-digit PIN
-  email               String? // Optional email for recovery
-  planData            String // JSON string of the BCP data
-  shareableId         String? // Unique ID for shareable links
+  businessName        String
+  displayBusinessName String
+  pin                 String
+  email               String?
+  planData            String
+  shareableId         String?
   allowSharing        Boolean  @default(false)
   createdAt           DateTime @default(now())
   lastAccessed        DateTime @default(now())
@@ -151,760 +379,478 @@ model AnonymousSession {
   @@index([shareableId])
 }
 
-// Admin Management Tables
-model AdminBusinessType {
-  id                      String   @id @default(cuid())
-  businessTypeId          String   @unique // e.g., 'grocery_store', 'restaurant'
-  name                    String // e.g., 'Grocery Store'
-  localName               String // e.g., 'Local Grocery/Mini-Mart'
-  category                String // e.g., 'retail', 'hospitality'
-  description             String?
-  typicalOperatingHours   String?
-  minimumStaff            String?
-  minimumEquipment        String? // JSON array
-  minimumUtilities        String? // JSON array
-  minimumSpace            String?
-  essentialFunctions      String? // JSON object with core, support, administrative
-  criticalSuppliers       String? // JSON array
-  exampleBusinessPurposes String? // JSON array
-  exampleProducts         String? // JSON array
-  exampleKeyPersonnel     String? // JSON array
-  exampleCustomerBase     String? // JSON array
-  
-  // Characteristic-based dependency system
-  dependencies            String? // JSON object with ratings 1-5 for: powerCritical, waterIntensive, touristDependent, supplyChainReliant, perishableGoods, outdoorOperations, coastalExposure
-  vulnerabilityMatrix     String? // JSON object mapping each dependency to impact severity
-  operationalThresholds   String? // JSON object defining minimum requirements to operate
-  
-  isActive                Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  // Relations
-  businessTypeHazards AdminBusinessTypeHazard[]
-  riskProfiles        AdminRiskProfile[]
-
-  @@index([category])
-  @@index([dependencies])
+model BusinessContinuityPlan {
+  id                  String               @id
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime
+  ActionPlan          ActionPlan?
+  BusinessOverview    BusinessOverview?
+  ContactsInformation ContactsInformation?
+  EssentialFunction   EssentialFunction?
+  PlanInformation     PlanInformation?
+  RiskAssessment      RiskAssessment?
+  Strategy            Strategy?
+  TestingMaintenance  TestingMaintenance?
 }
 
-model AdminHazardType {
-  id               String   @id @default(cuid())
-  hazardId         String   @unique // e.g., 'hurricane', 'power_outage'
-  name             String // e.g., 'Hurricane/Tropical Storm'
-  category         String // e.g., 'natural', 'technological', 'human'
-  description      String?
-  defaultFrequency String // 'rare', 'unlikely', 'possible', 'likely', 'almost_certain'
-  defaultImpact    String // 'minimal', 'minor', 'moderate', 'major', 'catastrophic'
-  
-  // Caribbean-specific risk taxonomy
-  seasonalPattern  String? // e.g., "june-november" for hurricanes, "year-round" for earthquakes
-  peakMonths       String? // JSON array of months when risk is highest, e.g., ["8", "9", "10"]
-  warningTime      String? // e.g., "days", "hours", "minutes", "none"
-  geographicScope  String? // e.g., "localized", "regional", "island-wide", "multi-island"
-  cascadingRisks   String? // JSON array of hazardIds that typically follow this hazard
-  
-  isActive         Boolean  @default(true)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  // Relations
-  businessTypeHazards AdminBusinessTypeHazard[]
-  locationHazards     AdminLocationHazard[]
-  hazardStrategies    AdminHazardStrategy[]
-  hazardActionPlans   AdminHazardActionPlan[]
-  AdminActionPlan     AdminActionPlan?
-
-  @@index([category])
-  @@index([seasonalPattern])
-  @@index([geographicScope])
+model BusinessOverview {
+  id                     String                 @id
+  planId                 String                 @unique
+  businessLicenseNumber  String
+  businessPurpose        String
+  productsAndServices    String
+  serviceDeliveryMethods String
+  operatingHours         String
+  keyPersonnel           String
+  minimumResources       String
+  customerBase           String
+  serviceProviderBCP     String
+  BusinessContinuityPlan BusinessContinuityPlan @relation(fields: [planId], references: [id])
 }
 
-model AdminLocation {
-  id          String   @id @default(cuid())
-  country     String // e.g., 'Jamaica'
-  countryCode String // e.g., 'JM'
-  parish      String? // e.g., 'Kingston', null for country-level
-  isCoastal   Boolean  @default(false) // coastal modifier
-  isUrban     Boolean  @default(false) // urban modifier
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  locationHazards AdminLocationHazard[]
-  riskProfiles    AdminRiskProfile[]
-
-  @@unique([countryCode, parish])
-  @@index([countryCode])
-}
-
-model AdminBusinessTypeHazard {
-  id             String   @id @default(cuid())
-  businessTypeId String
-  hazardId       String
-  riskLevel      String // 'low', 'medium', 'high', 'very_high'
-  frequency      String? // Override default frequency
-  impact         String? // Override default impact
-  notes          String?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  businessType AdminBusinessType @relation(fields: [businessTypeId], references: [businessTypeId], onDelete: Cascade)
-  hazard       AdminHazardType   @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
-
-  @@unique([businessTypeId, hazardId])
-  @@index([businessTypeId])
-  @@index([hazardId])
-}
-
-model AdminLocationHazard {
-  id         String   @id @default(cuid())
-  locationId String
-  hazardId   String
-  riskLevel  String // 'low', 'medium', 'high', 'very_high'
-  frequency  String? // Override default frequency
-  impact     String? // Override default impact
-  notes      String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  // Relations
-  location AdminLocation   @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  hazard   AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
-
-  @@unique([locationId, hazardId])
-  @@index([locationId])
-  @@index([hazardId])
-}
-
-model AdminStrategy {
-  id          String   @id @default(cuid())
-  strategyId  String   @unique // e.g., 'maintenance', 'physical_security'
-  title       String // e.g., 'Regular Maintenance'
-  description String // Description of the strategy
-  category    String // 'prevention', 'response', 'recovery'
-  reasoning   String? // Why this strategy is effective
-  icon        String? // Emoji or icon identifier
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  hazardStrategies AdminHazardStrategy[]
-
-  @@index([category])
-}
-
-model AdminHazardStrategy {
-  id            String   @id @default(cuid())
-  hazardId      String
-  strategyId    String
-  businessTypes String? // JSON array of business types this applies to (null = all)
-  priority      String   @default("medium") // 'low', 'medium', 'high'
-  isRecommended Boolean  @default(false) // Auto-selected for matching business types
-  notes         String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  hazard   AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
-  strategy AdminStrategy   @relation(fields: [strategyId], references: [strategyId], onDelete: Cascade)
-
-  @@unique([hazardId, strategyId])
-  @@index([hazardId])
-  @@index([strategyId])
-}
-
-model AdminActionPlan {
-  id                    String   @id @default(cuid())
-  hazardId              String   @unique
-  resourcesNeeded       String // JSON array
-  immediateActions      String // JSON array of action items
-  shortTermActions      String // JSON array of action items
-  mediumTermActions     String // JSON array of action items
-  longTermReduction     String // JSON array
-  businessTypeModifiers String? // JSON object with business type specific modifications
-  isActive              Boolean  @default(true)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-
-  // Relations
-  hazard                AdminHazardType         @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
-  AdminHazardActionPlan AdminHazardActionPlan[]
-}
-
-model AdminHazardActionPlan {
-  id            String   @id @default(cuid())
-  hazardId      String
-  actionPlanId  String
-  businessTypes String? // JSON array of business types this applies to (null = all)
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations  
-  hazard     AdminHazardType @relation(fields: [hazardId], references: [hazardId], onDelete: Cascade)
-  actionPlan AdminActionPlan @relation(fields: [actionPlanId], references: [id], onDelete: Cascade)
-
-  @@unique([hazardId, actionPlanId])
-  @@index([hazardId])
-}
-
-model AdminRiskProfile {
-  id                    String   @id @default(cuid())
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  businessTypeId        String
-  locationId            String
-  calculatedRisks       String   // JSON array of {hazardId, riskLevel, reasoning, seasonalAdjustment, coastalMultiplier}
-  recommendedStrategies String   // JSON array of {strategyId, priority, effectiveness, cost, roi, conflicts}
-  lastCalculated        DateTime @default(now())
-  riskScore             Int      // Overall risk score (1-100)
-  businessType          AdminBusinessType @relation(fields: [businessTypeId], references: [id])
-  location              AdminLocation @relation(fields: [locationId], references: [id])
-
-  @@unique([businessTypeId, locationId])
-  @@index([businessTypeId])
-  @@index([locationId])
-}
-
-// Country Management
-model Country {
-  id          String   @id @default(cuid())
-  name        String   // e.g., 'Jamaica', 'Trinidad and Tobago'
-  code        String   @unique // ISO country code: 'JM', 'TT', etc.
-  region      String?  // e.g., 'Caribbean', 'Central America'
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  adminUnits AdminUnit[]
-
-  @@index([code])
-  @@index([isActive])
-}
-
-// Administrative Unit (Parish, District, State, etc.)
-model AdminUnit {
-  id          String   @id @default(cuid())
-  name        String   // e.g., 'Kingston', 'St. Andrew', 'Port of Spain'
-  localName   String?  // Local language name if different
-  type        String   @default("parish") // 'parish', 'district', 'state', 'province', etc.
-  region      String?  // e.g., 'Kingston Metropolitan', 'North Coast'
-  countryId   String
-  country     Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  population  Int      @default(0)
-  area        Float?   // Square kilometers
-  elevation   Float?   // Meters above sea level
-  coordinates String?  // JSON: {"lat": 18.0179, "lng": -76.8099}
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isActive    Boolean  @default(true)
-
-  // Relations
-  adminUnitRisk AdminUnitRisk?
-
-  @@unique([countryId, name])
-  @@index([countryId])
-  @@index([type])
-  @@index([region])
-  @@index([isActive])
-}
-
-// Keeping Parish for backward compatibility - will be migrated to AdminUnit
-// Note: isCoastal and isUrban removed - now handled via multiplier system (Jan 2025)
-model Parish {
-  id          String   @id @default(cuid())
-  name        String   // e.g., 'Kingston', 'St. Andrew'
-  region      String   // e.g., 'Kingston Metropolitan', 'North Coast'
-  countryCode String   @default("JM") // ISO country code
-  population  Int      @default(0)
-  area        Float?   // Square kilometers
-  elevation   Float?   // Meters above sea level
-  coordinates String?  // JSON: {"lat": 18.0179, "lng": -76.8099}
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  isActive    Boolean  @default(true)
-
-  // Relations
-  parishRisk ParishRisk?
-  businessRiskProfiles BusinessRiskProfile[]
-
-  @@index([region])
-  @@index([countryCode])
-}
-
-// Risk data for administrative units
-model AdminUnitRisk {
-  id            String   @id @default(cuid())
-  adminUnitId   String   @unique
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastUpdated   DateTime @default(now())
-  updatedBy     String   @default("system")
-
-  // Risk levels (0-10 scale) - keeping common ones for backward compatibility
-  hurricaneLevel    Int    @default(0)
-  hurricaneNotes    String @default("")
-  floodLevel        Int    @default(0)
-  floodNotes        String @default("")
-  earthquakeLevel   Int    @default(0)
-  earthquakeNotes   String @default("")
-  droughtLevel      Int    @default(0)
-  droughtNotes      String @default("")
-  landslideLevel    Int    @default(0)
-  landslideNotes    String @default("")
-  powerOutageLevel  Int    @default(0)
-  powerOutageNotes  String @default("")
-
-  // Complete risk profile as JSON to support dynamic risk types
-  riskProfileJson   String @default("{}")
-
-  isActive Boolean @default(true)
-
-  // Relations
-  adminUnit  AdminUnit             @relation(fields: [adminUnitId], references: [id], onDelete: Cascade)
-  changeLogs AdminUnitRiskChangeLog[]
-
-  @@index([adminUnitId])
-}
-
-model AdminUnitRiskChangeLog {
-  id              String   @id @default(cuid())
-  adminUnitRiskId String
-  riskType        String   // 'hurricane', 'flood', etc.
-  oldLevel        Int
-  newLevel        Int
-  oldNotes        String   @default("")
-  newNotes        String   @default("")
-  changedBy       String
-  changeReason    String?
-  createdAt       DateTime @default(now())
-
-  // Relations
-  adminUnitRisk AdminUnitRisk @relation(fields: [adminUnitRiskId], references: [id], onDelete: Cascade)
-
-  @@index([adminUnitRiskId])
-  @@index([riskType])
-  @@index([createdAt])
-}
-
-model ParishRisk {
-  id           String   @id @default(cuid())
-  parishId     String   @unique
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  lastUpdated  DateTime @default(now())
-  updatedBy    String   @default("system")
-
-  // Risk levels (0-10 scale)
-  hurricaneLevel    Int    @default(0)
-  hurricaneNotes    String @default("")
-  floodLevel        Int    @default(0)
-  floodNotes        String @default("")
-  earthquakeLevel   Int    @default(0)
-  earthquakeNotes   String @default("")
-  droughtLevel      Int    @default(0)
-  droughtNotes      String @default("")
-  landslideLevel    Int    @default(0)
-  landslideNotes    String @default("")
-  powerOutageLevel  Int    @default(0)
-  powerOutageNotes  String @default("")
-
-  // Complete risk profile as JSON to support dynamic risk types
-  riskProfileJson   String @default("{}")
-
-  isActive Boolean @default(true)
-
-  // Relations
-  parish     Parish          @relation(fields: [parishId], references: [id], onDelete: Cascade)
-  changeLogs RiskChangeLog[]
-
-  @@index([parishId])
-}
-
-model RiskChangeLog {
-  id            String   @id @default(cuid())
-  parishRiskId  String
-  riskType      String   // 'hurricane', 'flood', etc.
-  oldLevel      Int
-  newLevel      Int
-  oldNotes      String   @default("")
-  newNotes      String   @default("")
-  changedBy     String
-  changeReason  String?
-  createdAt     DateTime @default(now())
-
-  // Relations
-  parishRisk ParishRisk @relation(fields: [parishRiskId], references: [id], onDelete: Cascade)
-
-  @@index([parishRiskId])
-  @@index([riskType])
-  @@index([createdAt])
-}
-
-// Business Type Risk Management System
-// Stores business type templates with multilingual examples for wizard prefill
-// User-specific characteristics (tourism share, seasonality, etc.) are collected in the wizard
-model BusinessType {
-  id                      String   @id @default(cuid())
-  businessTypeId          String   @unique // e.g., 'restaurant', 'grocery_store'
-  name                    String   // JSON: { en, fr, es } for multilingual support
-  category                String   // e.g., 'hospitality', 'retail', 'services'
-  subcategory             String?  // e.g., 'casual_dining', 'convenience_store'
-  description             String?  // JSON: { en, fr, es } for multilingual support
-  
-  // Multilingual example content for wizard prefill (suggestions for users to customize)
-  // These are business-type-specific examples that help users understand what to enter
-  exampleBusinessPurposes String?  // JSON array: [{ en, fr, es }]
-  exampleProducts         String?  // JSON array: [{ en, fr, es }]
-  exampleKeyPersonnel     String?  // JSON array: [{ en, fr, es }]
-  exampleCustomerBase     String?  // JSON array: [{ en, fr, es }]
-  minimumEquipment        String?  // JSON array: [{ en, fr, es }]
-  
-  isActive                Boolean  @default(true)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-
-  // Relations
-  riskVulnerabilities    BusinessRiskVulnerability[]
-  businessTypeStrategies BusinessTypeStrategy[]
-  businessRiskProfiles   BusinessRiskProfile[]
-
-  @@index([category])
-  @@index([businessTypeId])
-}
-
-model BusinessRiskVulnerability {
-  id                   String   @id @default(cuid())
-  businessTypeId       String
-  riskType             String   // 'hurricane', 'flood', 'earthquake', 'drought', 'landslide', 'powerOutage'
-  vulnerabilityLevel   Int      @default(5) // 1-10 scale (how vulnerable this business type is)
-  impactSeverity       Int      @default(5) // 1-10 scale (how severe impact would be)
-  recoveryTime         String?  @default("medium") // 'hours', 'days', 'weeks', 'months'
-  reasoning            String   @default("")
-  mitigationDifficulty Int?     @default(3) // 1-10 scale (how hard to mitigate)
-  costToRecover        String?  @default("medium") // 'low', 'medium', 'high', 'very_high'
-  businessImpactAreas  String?  // JSON: ['operations', 'supply_chain', 'customers', 'staff', 'assets']
-  criticalDependencies String?  // JSON: ['power', 'water', 'internet', 'suppliers', 'transportation']
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  // Relations
-  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
-
-  @@unique([businessTypeId, riskType])
-  @@index([businessTypeId])
-  @@index([riskType])
-}
-
-model RiskMitigationStrategy {
-  id                     String   @id @default(cuid())
-  strategyId             String   @unique // e.g., 'hurricane_comprehensive', 'emergency_response'
-  name                   String   // JSON multilingual: {"en":"Hurricane Preparedness","es":"...","fr":"..."}
-  description            String   // JSON multilingual
-  
-  // SME-Focused Content (benefit-driven, plain language)
-  smeTitle               String?  // Short, benefit-focused title (e.g., "Stay Connected During Emergencies")
-  smeSummary             String?  // 2-3 sentence plain language summary for SME owners
-  smeDescription         String?  // DEPRECATED: Use smeSummary instead. Kept for backwards compatibility
-  whyImportant           String?  // DEPRECATED: Use benefitsBullets instead. Kept for backwards compatibility
-  benefitsBullets        String?  // JSON array of specific benefits user gets
-  realWorldExample       String?  // Caribbean business success story with names and outcomes
-  
-  // Calculated Values (AUTO-CALCULATED from action steps - DO NOT set manually!)
-  calculatedCostUSD      Decimal? // Total cost in USD (sum of all action step costs)
-  calculatedCostLocal    Decimal? // Total cost in local currency
-  currencyCode           String?  // Local currency code (JMD, HTG, BSD, etc.)
-  currencySymbol         String?  // Local currency symbol (J$, G, B$, etc.)
-  totalEstimatedHours    Int?     // Total hours (sum of all action step estimatedMinutes / 60)
-  
-  // Wizard Integration (how strategy appears in wizard)
-  selectionTier          String?  @default("recommended") // 'essential' | 'recommended' | 'optional'
-  requiredForRisks       String?  // JSON array of risk IDs that make this mandatory
-  
-  // Guidance (consolidated from existing)
-  helpfulTips            String?  // JSON array of tips
-  commonMistakes         String?  // JSON array of common mistakes
-  successMetrics         String?  // JSON array of success metrics
-  
-  // Resource-Limited SME Support
-  lowBudgetAlternative   String?  // Cheaper approach description for cash-constrained SMEs
-  
-  // Applicability
-  applicableRisks        String   // JSON array of risk types this strategy addresses
-  applicableBusinessTypes String? // JSON array of business type categories (null = all)
-  
-  // Status
-  isActive               Boolean  @default(true)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  // Relations
-  businessTypeStrategies BusinessTypeStrategy[]
-  actionSteps            ActionStep[]
-  itemCosts              StrategyItemCost[]
-
-  @@index([strategyId])
-  @@index([selectionTier])
-}
-
-model ActionStep {
-  id                String                 @id @default(cuid())
-  strategyId        String
-  stepId            String                 // e.g., 'step_1', 'step_2'
-  phase             String                 @default("immediate") // 'immediate', 'short_term', 'medium_term', 'long_term'
-  title             String
-  description       String
-  smeAction         String?                // Simplified action description for SMEs
-  
-  // SME Context (why this step matters)
-  whyThisStepMatters    String?            // Plain language importance explanation
-  whatHappensIfSkipped  String?            // Specific consequence if user skips this step
-  
-  // Timing & Difficulty (enhanced precision)
-  timeframe         String?                // Human-readable timeframe ("1-2 hours", "Within a week")
-  estimatedMinutes  Int?                   // Precise timing: 15, 30, 60, 120, etc.
-  difficultyLevel   String?   @default("medium") // 'easy' | 'medium' | 'hard'
-  
-  // Resources and Costs
-  responsibility    String?
-  estimatedCost     String?
-  estimatedCostJMD  String?
-  resources         String?                // JSON array of required resources
-  checklist         String?                // JSON array of checklist items
-  
-  // Validation & Completion (how to know it's done)
-  howToKnowItsDone  String?                // Clear completion criteria
-  exampleOutput     String?                // What "done" looks like (example or photo description)
-  
-  // Dependencies (what must happen first)
-  dependsOnSteps    String?                // JSON array of stepIds that must complete first
-  isOptional        Boolean   @default(false) // Can this step be skipped?
-  skipConditions    String?                // When to skip (e.g., "Skip if you already have X")
-  
-  // Resource Alternatives (for cash-limited SMEs)
-  freeAlternative   String?                // Free way to do this step
-  lowTechOption     String?                // Non-digital approach for SMEs without tech
-  
-  // Help Resources
-  commonMistakesForStep String?            // JSON array of step-specific mistakes to avoid
-  videoTutorialUrl      String?            // Link to YouTube or other video tutorial
-  externalResourceUrl   String?            // Link to external resource (template, guide, etc.)
-  
-  // Keep existing fields
-  sortOrder         Int                    @default(0) // For ordering steps within a strategy
-  isActive          Boolean                @default(true)
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-
-  // Relations
-  strategy  RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-  itemCosts ActionStepItemCost[]
-
-  @@unique([strategyId, stepId])
-  @@index([strategyId])
-  @@index([phase])
-  @@index([difficultyLevel])
-  @@index([isOptional])
-}
-
-model BusinessTypeStrategy {
-  id             String   @id @default(cuid())
-  businessTypeId String
-  strategyId     String
-  relevanceScore Int?     @default(7) // 1-10 scale for this specific business type
-  customNotes    String?
-  isRecommended  Boolean? @default(true)
-  priority       String?  @default("medium") // 'low', 'medium', 'high', 'critical'
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  // Relations
-  businessType BusinessType          @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
-  strategy     RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-
-  @@unique([businessTypeId, strategyId])
+model BusinessProfile {
+  id        String  @id
+  sessionId String  @unique
+  name      String
+  industry  String
+  size      String
+  location  String
+  Session   Session @relation(fields: [sessionId], references: [id])
 }
 
 model BusinessRiskProfile {
-  id                    String   @id @default(cuid())
+  id                    String       @id
   businessTypeId        String
   parishId              String
-  combinedRisks         String   // JSON: combined location + business type risks
-  recommendedStrategies String   // JSON: top recommended strategies
-  overallRiskScore      Int      // 1-100 combined risk score
-  priorityActions       String?  // JSON: immediate actions to take
-  calculatedAt          DateTime @default(now())
-  calculatedBy          String?  @default("system")
-  isActive              Boolean  @default(true)
-
-  // Relations
-  businessType BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
-  parish       Parish       @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  combinedRisks         String
+  recommendedStrategies String
+  overallRiskScore      Int
+  priorityActions       String?
+  calculatedAt          DateTime     @default(now())
+  calculatedBy          String?      @default("system")
+  isActive              Boolean      @default(true)
+  BusinessType          BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  Parish                Parish       @relation(fields: [parishId], references: [id], onDelete: Cascade)
 
   @@unique([businessTypeId, parishId])
   @@index([businessTypeId])
   @@index([parishId])
 }
 
+model BusinessRiskVulnerability {
+  id                   String       @id
+  businessTypeId       String
+  riskType             String
+  vulnerabilityLevel   Int          @default(5)
+  impactSeverity       Int          @default(5)
+  recoveryTime         String?      @default("medium")
+  reasoning            String       @default("")
+  mitigationDifficulty Int?         @default(3)
+  costToRecover        String?      @default("medium")
+  businessImpactAreas  String?
+  criticalDependencies String?
+  isActive             Boolean      @default(true)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime
+  BusinessType         BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, riskType])
+  @@index([businessTypeId])
+  @@index([riskType])
+}
+
+model BusinessType {
+  id                        String                      @id
+  businessTypeId            String                      @unique
+  category                  String
+  subcategory               String?
+  isActive                  Boolean                     @default(true)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime
+  digitalDependency         Int?                        @default(5)
+  physicalAssetIntensity    Int?                        @default(5)
+  regulatoryCompliance      Int?                        @default(5)
+  seasonalityFactor         Int?                        @default(5)
+  supplyChainComplexity     Int?                        @default(5)
+  touristDependency         Int?                        @default(5)
+  BusinessRiskProfile       BusinessRiskProfile[]
+  BusinessRiskVulnerability BusinessRiskVulnerability[]
+  BusinessTypeStrategy      BusinessTypeStrategy[]
+  BusinessTypeTranslation   BusinessTypeTranslation[]
+
+  @@index([businessTypeId])
+  @@index([category])
+}
+
+model BusinessTypeStrategy {
+  id                     String                 @id
+  businessTypeId         String
+  strategyId             String
+  relevanceScore         Int?                   @default(7)
+  customNotes            String?
+  isRecommended          Boolean?               @default(true)
+  priority               String?                @default("medium")
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  BusinessType           BusinessType           @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+  RiskMitigationStrategy RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, strategyId])
+}
+
+model BusinessTypeTranslation {
+  id                      String       @id
+  businessTypeId          String
+  locale                  String
+  name                    String
+  description             String?
+  exampleBusinessPurposes Json?
+  exampleProducts         Json?
+  exampleKeyPersonnel     Json?
+  exampleCustomerBase     Json?
+  minimumEquipment        Json?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime
+  BusinessType            BusinessType @relation(fields: [businessTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([businessTypeId, locale])
+  @@index([businessTypeId])
+  @@index([locale])
+}
+
+model ContactsInformation {
+  id                         String                 @id
+  planId                     String                 @unique
+  staffContactInfo           String
+  keyCustomerContacts        String
+  supplierInformation        String
+  emergencyServicesUtilities String
+  criticalBusinessInfo       String
+  planDistributionList       String
+  BusinessContinuityPlan     BusinessContinuityPlan @relation(fields: [planId], references: [id])
+}
+
+model CostItem {
+  id                   String               @id
+  itemId               String               @unique
+  name                 String
+  description          String?
+  category             String
+  baseUSD              Float
+  baseUSDMin           Float?
+  baseUSDMax           Float?
+  unit                 String?
+  complexity           String               @default("medium")
+  notes                String?
+  tags                 String?
+  budgetAlternativeId  String?
+  premiumAlternativeId String?
+  isActive             Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime
+  ActionStepItemCost   ActionStepItemCost[]
+  StrategyItemCost     StrategyItemCost[]
+
+  @@index([category])
+  @@index([itemId])
+}
+
+model Country {
+  id        String      @id
+  name      String
+  code      String      @unique
+  region    String?
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime
+  AdminUnit AdminUnit[]
+
+  @@index([code])
+  @@index([isActive])
+}
+
+model CountryCostMultiplier {
+  id              String   @id
+  countryCode     String   @unique
+  construction    Float    @default(1.0)
+  equipment       Float    @default(1.0)
+  service         Float    @default(1.0)
+  supplies        Float    @default(1.0)
+  currency        String
+  currencySymbol  String?
+  exchangeRateUSD Float
+  lastUpdated     DateTime @default(now())
+  updatedBy       String?
+  dataSource      String?
+  confidenceLevel String   @default("medium")
+  notes           String?
+
+  @@index([countryCode])
+}
+
+model EssentialFunction {
+  id                       String                 @id
+  planId                   String                 @unique
+  supplyChainManagement    String
+  staffManagement          String
+  technology               String
+  productsServices         String
+  infrastructureFacilities String
+  sales                    String
+  administration           String
+  BusinessContinuityPlan   BusinessContinuityPlan @relation(fields: [planId], references: [id])
+}
+
+model HazardTranslation {
+  id              String          @id
+  hazardId        String
+  locale          String
+  name            String
+  description     String?
+  impact          String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime
+  AdminHazardType AdminHazardType @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+
+  @@unique([hazardId, locale])
+  @@index([hazardId])
+  @@index([locale])
+}
+
+model Parish {
+  id                  String                @id
+  name                String
+  region              String
+  countryCode         String                @default("JM")
+  population          Int                   @default(0)
+  area                Float?
+  elevation           Float?
+  coordinates         String?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  isActive            Boolean               @default(true)
+  BusinessRiskProfile BusinessRiskProfile[]
+  ParishRisk          ParishRisk?
+
+  @@index([countryCode])
+  @@index([region])
+}
+
+model ParishRisk {
+  id               String          @id
+  parishId         String          @unique
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime
+  lastUpdated      DateTime        @default(now())
+  updatedBy        String          @default("system")
+  hurricaneLevel   Int             @default(0)
+  hurricaneNotes   String          @default("")
+  floodLevel       Int             @default(0)
+  floodNotes       String          @default("")
+  earthquakeLevel  Int             @default(0)
+  earthquakeNotes  String          @default("")
+  droughtLevel     Int             @default(0)
+  droughtNotes     String          @default("")
+  landslideLevel   Int             @default(0)
+  landslideNotes   String          @default("")
+  powerOutageLevel Int             @default(0)
+  powerOutageNotes String          @default("")
+  riskProfileJson  String          @default("{}")
+  isActive         Boolean         @default(true)
+  Parish           Parish          @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  RiskChangeLog    RiskChangeLog[]
+
+  @@index([parishId])
+}
+
+model PlanInformation {
+  id                     String                 @id
+  planId                 String                 @unique
+  companyName            String
+  planManager            String
+  alternateManager       String?
+  physicalPlanLocation   String
+  digitalPlanLocation    String?
+  BusinessContinuityPlan BusinessContinuityPlan @relation(fields: [planId], references: [id])
+}
+
+model RiskAssessment {
+  id                     String                 @id
+  planId                 String                 @unique
+  potentialHazards       String
+  hazards                String
+  BusinessContinuityPlan BusinessContinuityPlan @relation(fields: [planId], references: [id])
+}
+
+model RiskChangeLog {
+  id           String     @id
+  parishRiskId String
+  riskType     String
+  oldLevel     Int
+  newLevel     Int
+  oldNotes     String     @default("")
+  newNotes     String     @default("")
+  changedBy    String
+  changeReason String?
+  createdAt    DateTime   @default(now())
+  ParishRisk   ParishRisk @relation(fields: [parishRiskId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@index([parishRiskId])
+  @@index([riskType])
+}
+
+model RiskMitigationStrategy {
+  id                      String                 @id
+  strategyId              String                 @unique
+  selectionTier           String?                @default("recommended")
+  isActive                Boolean                @default(true)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime
+  bcpSectionMapping       String?
+  businessContinuityPhase String?
+  businessSizeGuidance    Json?
+  complexityLevel         String?                @default("moderate")
+  costEstimateJMD         String?
+  defaultSelected         Boolean                @default(false)
+  difficultyLevel         String?                @default("medium")
+  effectiveness           Int                    @default(70)
+  estimatedDIYSavings     String?
+  estimatedTotalHours     Int?
+  implementationCost      String                 @default("medium")
+  implementationTime      String                 @default("medium")
+  industryVariants        Json?
+  prerequisites           Json?
+  priority                String                 @default("medium")
+  quickWinIndicator       Boolean                @default(false)
+  applicableRisks         Json?
+  applicableBusinessTypes Json?
+  ActionStep              ActionStep[]
+  BusinessTypeStrategy    BusinessTypeStrategy[]
+  StrategyItemCost        StrategyItemCost[]
+  StrategyTranslation     StrategyTranslation[]
+
+  @@index([selectionTier])
+  @@index([strategyId])
+}
+
 model RiskMultiplier {
-  id                  String   @id @default(cuid())
-  name                String   // Admin-only: "Coastal Location", "High Tourism Dependency"
-  description         String   // Admin-only: What this multiplier represents
-  
-  // Which characteristic does this check?
-  characteristicType  String   // "location_coastal", "location_urban", "tourism_share", etc.
-  
-  // What's the condition for applying this multiplier?
-  conditionType       String   // "boolean", "threshold", "range"
-  thresholdValue      Float?   // e.g., 70 (for 70% tourism dependency)
-  minValue            Float?   // For range conditions
-  maxValue            Float?   // For range conditions
-  
-  // What's the multiplier effect?
-  multiplierFactor    Float    // e.g., 1.2 (means ×1.2)
-  
-  // Which risks does this apply to?
-  applicableHazards   String   // JSON array: ["hurricane", "flood"]
-  
-  // Wizard question content - USER-FACING (multilingual JSON: {en: "...", es: "...", fr: "..."})
-  wizardQuestion      String?  // The question shown to users in the wizard (multilingual)
-  wizardAnswerOptions String?  // JSON array of answer options with multilingual labels
-  wizardHelpText      String?  // Additional help text for users (multilingual)
-  
-  // Admin metadata
-  isActive            Boolean  @default(true)
-  priority            Int      @default(0) // Order of application
-  reasoning           String?  // Admin-only: Why this multiplier exists
-  
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  createdBy           String   @default("system")
-  
+  id                        String                      @id
+  name                      String
+  description               String
+  characteristicType        String
+  conditionType             String
+  thresholdValue            Float?
+  minValue                  Float?
+  maxValue                  Float?
+  multiplierFactor          Float
+  applicableHazards         String
+  isActive                  Boolean                     @default(true)
+  priority                  Int                         @default(0)
+  reasoning                 String?
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime
+  createdBy                 String                      @default("system")
+  RiskMultiplierTranslation RiskMultiplierTranslation[]
+
   @@index([characteristicType])
   @@index([isActive])
   @@index([priority])
 }
 
-// ============================================================================
-// CURRENCY MANAGEMENT SYSTEM
-// ============================================================================
+model RiskMultiplierTranslation {
+  id                  String         @id
+  riskMultiplierId    String
+  locale              String
+  name                String
+  description         String?
+  reasoning           String?
+  wizardQuestion      String?
+  wizardHelpText      String?
+  wizardAnswerOptions Json?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime
+  RiskMultiplier      RiskMultiplier @relation(fields: [riskMultiplierId], references: [id], onDelete: Cascade)
 
-model CostItem {
-  id              String   @id @default(cuid())
-  itemId          String   @unique  // "hurricane_shutters_std"
-  name            String              // JSON multilingual: {"en": "Hurricane Shutters", "es": "...", "fr": "..."}
-  description     String?             // JSON multilingual: {"en": "Roll-down shutters", "es": "...", "fr": "..."}
-  category        String              // "construction" | "equipment" | "service" | "supplies"
-  
-  // Base pricing in USD
-  baseUSD         Float               // 450.00
-  baseUSDMin      Float?              // 350.00 (optional range)
-  baseUSDMax      Float?              // 550.00 (optional range)
-  
-  // Metadata
-  unit            String?             // "per window" | "per unit" | "per month"
-  complexity      String   @default("medium")  // "simple" | "medium" | "complex"
-  notes           String?             // JSON multilingual: {"en": "Admin notes", "es": "...", "fr": "..."}
-  tags            String?             // JSON array: ["hurricane", "windows", "protection"]
-  
-  // Alternative options (references to other CostItem IDs)
-  budgetAlternativeId   String?       // Points to cheaper option
-  premiumAlternativeId  String?       // Points to better option
-  
-  // Audit
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  strategyItems   StrategyItemCost[]
-  actionStepItems ActionStepItemCost[]
-  
-  @@index([category])
-  @@index([itemId])
+  @@unique([riskMultiplierId, locale])
+  @@index([locale])
+  @@index([riskMultiplierId])
 }
 
-model CountryCostMultiplier {
-  id              String   @id @default(cuid())
-  countryCode     String   @unique  // "JM", "HT", "BS" - links to AdminLocation.countryCode
-  
-  // Multipliers by category (relative to USD base)
-  construction    Float    @default(1.0)  // 0.70 = 30% cheaper, 1.40 = 40% more expensive
-  equipment       Float    @default(1.0)
-  service         Float    @default(1.0)
-  supplies        Float    @default(1.0)
-  
-  // Currency info
-  currency        String              // "JMD", "HTG", "BSD"
-  currencySymbol  String?             // "J$", "G", "B$"
-  exchangeRateUSD Float               // 157.50 (how many local currency = 1 USD)
-  
-  // Metadata
-  lastUpdated     DateTime @default(now())
-  updatedBy       String?
-  dataSource      String?             // "World Bank", "Manual", "Numbeo"
-  confidenceLevel String   @default("medium")  // "high" | "medium" | "low"
-  notes           String?
-  
-  @@index([countryCode])
+model Session {
+  id              String           @id
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime
+  currentStep     String
+  stepData        String
+  BusinessProfile BusinessProfile?
+}
+
+model Strategy {
+  id                     String                 @id
+  planId                 String                 @unique
+  preventionStrategies   String
+  responseStrategies     String
+  recoveryStrategies     String
+  longTermRiskReduction  String
+  BusinessContinuityPlan BusinessContinuityPlan @relation(fields: [planId], references: [id])
 }
 
 model StrategyItemCost {
-  id              String   @id @default(cuid())
-  strategyId      String              // FK to RiskMitigationStrategy
-  itemId          String              // FK to CostItem
-  
-  // Configuration
-  quantity        Int      @default(1)
-  customNotes     String?
-  
-  // Manual overrides per country (JSON)
-  // Format: {"JM": {"amount": 75000, "verified": true}, "HT": {"amount": 42000, "verified": true}}
-  countryOverrides String?
-  
-  isRequired      Boolean  @default(true)  // vs optional upgrade
-  displayOrder    Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  strategy        RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
-  item            CostItem @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-  
+  id                     String                 @id
+  strategyId             String
+  itemId                 String
+  quantity               Int                    @default(1)
+  customNotes            String?
+  countryOverrides       String?
+  isRequired             Boolean                @default(true)
+  displayOrder           Int                    @default(0)
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  CostItem               CostItem               @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
+  RiskMitigationStrategy RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
   @@unique([strategyId, itemId])
-  @@index([strategyId])
   @@index([itemId])
+  @@index([strategyId])
 }
 
-model ActionStepItemCost {
-  id              String   @id @default(cuid())
-  actionStepId    String              // FK to ActionStep
-  itemId          String              // FK to CostItem
-  
-  quantity        Int      @default(1)
-  customNotes     String?
-  countryOverrides String?
-  
-  displayOrder    Int      @default(0)
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relations
-  actionStep      ActionStep @relation(fields: [actionStepId], references: [id], onDelete: Cascade)
-  item            CostItem @relation(fields: [itemId], references: [itemId], onDelete: Cascade)
-  
-  @@unique([actionStepId, itemId])
-  @@index([actionStepId])
-  @@index([itemId])
+model StrategyTranslation {
+  id                     String                 @id
+  strategyId             String
+  locale                 String
+  name                   String
+  description            String
+  smeTitle               String?
+  smeSummary             String?
+  realWorldExample       String?
+  whyImportant           String?
+  whenToImplement        String?
+  expectedOutcome        String?
+  benefitsBullets        Json?
+  helpfulTips            Json?
+  commonMistakes         Json?
+  successMetrics         Json?
+  requiredResources      Json?
+  lowBudgetAlternative   String?
+  diyApproach            String?
+  bcpTemplateText        String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime
+  RiskMitigationStrategy RiskMitigationStrategy @relation(fields: [strategyId], references: [id], onDelete: Cascade)
+
+  @@unique([strategyId, locale])
+  @@index([locale])
+  @@index([strategyId])
+}
+
+model TestingMaintenance {
+  id                      String                 @id
+  planId                  String                 @unique
+  planTestingSchedule     String
+  planRevisionHistory     String
+  improvementTracking     String
+  annualReviewProcess     String
+  triggerEventsForUpdates String
+  BusinessContinuityPlan  BusinessContinuityPlan @relation(fields: [planId], references: [id])
 }

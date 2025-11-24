@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { getLocalizedText, getLocalizedArray } from '@/utils/localizationUtils'
 import { costCalculationService } from '@/services/costCalculationService'
 import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
 import { normalizeRiskId } from '@/utils/riskIdUtils'
@@ -303,13 +302,20 @@ export default function StrategySelectionStep({
     }
 
     // Check if ANY of the strategy's applicable risks match user's selected risks
+    // If validHazards is provided, we MUST filter. If not provided (undefined), we show all.
+    if (!validHazards) return true
+
+    // If strategy has NO applicable risks, it's a general strategy -> KEEP IT
+    if (risks.length === 0) return true
+
+    // Check for match
     const hasMatch = risks.some(risk => validHazardIds.has(risk))
 
-    if (!hasMatch && risks.length > 0) {
-      console.log(` ❌ Excluding strategy "${strategy.name || strategy.id}" - risks [${risks.join(', ')}] don't match selected`)
+    if (!hasMatch) {
+      // console.log(` ❌ Excluding strategy "${strategy.name || strategy.id}" - risks [${risks.join(', ')}] don't match selected`)
     }
 
-    return hasMatch || risks.length === 0 // Keep strategies with no risks (general) or matching risks
+    return hasMatch
   })
 
   console.log('Relevant strategies after filtering:', relevantStrategies.length)
@@ -788,8 +794,8 @@ function StrategyCard({
   }[tierColor]
 
   // Use SME-focused title if available, otherwise fall back to regular name
-  const displayTitle = getLocalizedText(strategy.smeTitle || strategy.name, locale)
-  const displaySummary = getLocalizedText(strategy.smeSummary || strategy.smeDescription || strategy.description, locale)
+  const displayTitle = strategy.smeTitle || strategy.name
+  const displaySummary = strategy.smeSummary || strategy.smeDescription || strategy.description
 
   // Calculate dynamic time from action steps
   const displayTime = useMemo(() => {
@@ -934,7 +940,7 @@ function StrategyCard({
 
             {/* NEW: Benefits Bullets - Key Benefits */}
             {(() => {
-              const benefitsArray = getLocalizedArray(strategy.benefitsBullets, locale)
+              const benefitsArray = strategy.benefitsBullets || []
 
               return benefitsArray.length > 0 && (
                 <div className="mb-3">
@@ -1033,7 +1039,7 @@ function StrategyCard({
               <h5 className="font-bold text-green-900 mb-2 flex items-center">
                 <span className="mr-2">💚</span> {t('steps.strategySelection.realSuccessStory')}
               </h5>
-              <p className="text-sm text-green-800">{getLocalizedText(strategy.realWorldExample, locale)}</p>
+              <p className="text-sm text-green-800">{strategy.realWorldExample}</p>
             </div>
           )}
 
@@ -1041,9 +1047,9 @@ function StrategyCard({
           {strategy.lowBudgetAlternative && (
             <div className="bg-yellow-50 border-l-4 border-yellow-500 rounded p-3">
               <h5 className="font-bold text-yellow-900 mb-2">💰 {t('steps.strategySelection.lowBudgetAlternative')}</h5>
-              <p className="text-sm text-yellow-800">{getLocalizedText(strategy.lowBudgetAlternative, locale)}</p>
+              <p className="text-sm text-yellow-800">{strategy.lowBudgetAlternative}</p>
               {strategy.estimatedDIYSavings && (
-                <p className="text-xs text-yellow-700 mt-1 italic">{getLocalizedText(strategy.estimatedDIYSavings, locale)}</p>
+                <p className="text-xs text-yellow-700 mt-1 italic">{strategy.estimatedDIYSavings}</p>
               )}
             </div>
           )}
@@ -1052,7 +1058,7 @@ function StrategyCard({
           {strategy.diyApproach && (
             <div className="bg-blue-50 border-l-4 border-blue-500 rounded p-3">
               <h5 className="font-bold text-blue-900 mb-2">🔧 {t('steps.strategySelection.diyApproach')}</h5>
-              <p className="text-sm text-blue-800">{getLocalizedText(strategy.diyApproach, locale)}</p>
+              <p className="text-sm text-blue-800">{strategy.diyApproach}</p>
             </div>
           )}
 
@@ -1065,7 +1071,7 @@ function StrategyCard({
                   <div key={step.id} className="bg-white rounded p-3 border border-gray-200">
                     <div className="flex items-start justify-between mb-2">
                       <p className="font-medium text-gray-900">
-                        {t('common.actionStep')} {index + 1}: {getLocalizedText(step.title || step.smeAction, locale)}
+                        {t('common.actionStep')} {index + 1}: {step.title || step.smeAction}
                       </p>
                       {step.difficultyLevel && (
                         <span className={`text-xs px-2 py-0.5 rounded ${step.difficultyLevel === 'easy' ? 'bg-green-100 text-green-700' :
@@ -1081,23 +1087,23 @@ function StrategyCard({
                     {step.whyThisStepMatters && (
                       <div className="mb-2 pl-3 border-l-2 border-blue-300">
                         <p className="text-xs text-blue-700 font-medium">{t('steps.strategySelection.whyThisMatters')}:</p>
-                        <p className="text-xs text-blue-600">{getLocalizedText(step.whyThisStepMatters, locale)}</p>
+                        <p className="text-xs text-blue-600">{step.whyThisStepMatters}</p>
                       </div>
                     )}
 
-                    <p className="text-sm text-gray-600 mb-2">{getLocalizedText(step.description || step.smeAction, locale)}</p>
+                    <p className="text-sm text-gray-600 mb-2">{step.description || step.smeAction}</p>
 
                     <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                       {step.estimatedMinutes && (
                         <span>⏱️ ~{step.estimatedMinutes} min</span>
                       )}
                       {!step.estimatedMinutes && step.timeframe && (
-                        <span>⏱️ {translateTime(getLocalizedText(step.timeframe, locale))}</span>
+                        <span>⏱️ {translateTime(step.timeframe)}</span>
                       )}
                       {stepCosts[step.id] && stepCosts[step.id].amount !== undefined ? (
                         <span>💰 {stepCosts[step.id].symbol}{stepCosts[step.id].amount.toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
                       ) : step.estimatedCostJMD && (
-                        <span>💰 {getLocalizedText(step.estimatedCostJMD, locale)}</span>
+                        <span>💰 {step.estimatedCostJMD}</span>
                       )}
                     </div>
 
@@ -1105,7 +1111,7 @@ function StrategyCard({
                     {step.howToKnowItsDone && (
                       <div className="mt-2 pt-2 border-t border-gray-100">
                         <p className="text-xs text-gray-600">
-                          <span className="font-medium">✓ {t('steps.strategySelection.doneWhen')}:</span> {getLocalizedText(step.howToKnowItsDone, locale)}
+                          <span className="font-medium">✓ {t('steps.strategySelection.doneWhen')}:</span> {step.howToKnowItsDone}
                         </p>
                       </div>
                     )}
@@ -1114,7 +1120,7 @@ function StrategyCard({
                     {step.freeAlternative && (
                       <div className="mt-2 bg-green-50 rounded p-2">
                         <p className="text-xs text-green-700">
-                          <span className="font-medium">💸 {t('steps.strategySelection.freeOption')}:</span> {getLocalizedText(step.freeAlternative, locale)}
+                          <span className="font-medium">💸 {t('steps.strategySelection.freeOption')}:</span> {step.freeAlternative}
                         </p>
                       </div>
                     )}
@@ -1126,7 +1132,7 @@ function StrategyCard({
 
           {/* NEW: Helpful Tips */}
           {(() => {
-            const tips = getLocalizedText(strategy.helpfulTips, locale)
+            const tips = strategy.helpfulTips
             const tipsArray = Array.isArray(tips) ? tips : (typeof tips === 'string' && tips ? [tips] : [])
             return tipsArray.length > 0 && (
               <div className="bg-blue-50 rounded p-3">
@@ -1145,7 +1151,7 @@ function StrategyCard({
 
           {/* NEW: Common Mistakes */}
           {(() => {
-            const mistakes = getLocalizedText(strategy.commonMistakes, locale)
+            const mistakes = strategy.commonMistakes
             const mistakesArray = Array.isArray(mistakes) ? mistakes : (typeof mistakes === 'string' && mistakes ? [mistakes] : [])
             return mistakesArray.length > 0 && (
               <div className="bg-red-50 rounded p-3">
@@ -1166,7 +1172,7 @@ function StrategyCard({
           {!strategy.benefitsBullets && strategy.whyImportant && (
             <div className="bg-blue-50 rounded p-3">
               <h5 className="font-bold text-blue-900 mb-1">✨ What You'll Get</h5>
-              <p className="text-sm text-blue-800">{getLocalizedText(strategy.whyImportant, locale)}</p>
+              <p className="text-sm text-blue-800">{strategy.whyImportant}</p>
             </div>
           )}
         </div>

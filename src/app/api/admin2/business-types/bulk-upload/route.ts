@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { 
-  getPrismaClient, 
-  withDatabase, 
-  createSuccessResponse, 
+import {
+  getPrismaClient,
+  withDatabase,
+  createSuccessResponse,
   handleApiError,
   createErrorResponse
 } from '@/lib/admin2/api-utils'
@@ -11,7 +11,7 @@ function parseCSVRow(row: string): string[] {
   const result: string[] = []
   let inQuotes = false
   let current = ''
-  
+
   for (let i = 0; i < row.length; i++) {
     const char = row[i]
     if (char === '"') {
@@ -51,14 +51,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const file = formData.get('file') as File
     const replaceAll = formData.get('replaceAll') === 'true'
-    
+
     if (!file) {
       return createErrorResponse('No file provided', 400)
     }
 
     const text = await file.text()
     const lines = text.split('\n').filter(line => line.trim())
-    
+
     if (lines.length < 2) {
       return createErrorResponse('CSV file must contain at least a header row and one data row', 400)
     }
@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
     const expectedHeaders = [
       'Business Type ID', 'Name', 'Category', 'Subcategory', 'Description',
       'Typical Revenue', 'Typical Employees', 'Operating Hours',
-      'Seasonality Factor', 'Tourist Dependency', 'Supply Chain Complexity', 
-      'Digital Dependency', 'Cash Flow Pattern', 'Physical Asset Intensity', 
+      'Seasonality Factor', 'Tourist Dependency', 'Supply Chain Complexity',
+      'Digital Dependency', 'Cash Flow Pattern', 'Physical Asset Intensity',
       'Customer Concentration', 'Regulatory Burden',
       // Risk vulnerabilities
       'Hurricane Vulnerability', 'Hurricane Recovery Impact',
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
           for (const riskType of riskTypes) {
             const vulnerabilityKey = `${riskType.charAt(0).toUpperCase() + riskType.slice(1)} Vulnerability`
             const recoveryKey = `${riskType.charAt(0).toUpperCase() + riskType.slice(1)} Recovery Impact`
-            
+
             const vulnerabilityLevel = validateNumericField(rowData[vulnerabilityKey], 1, 10, 5)
             const impactSeverity = validateNumericField(rowData[recoveryKey], 1, 10, 5)
 
@@ -241,7 +241,7 @@ export async function GET() {
         include: { riskVulnerabilities: true },
         orderBy: [
           { category: 'asc' },
-          { name: 'asc' }
+          { businessTypeId: 'asc' }
         ]
       })
     }, 'GET /api/admin2/business-types/bulk-upload')
@@ -250,8 +250,8 @@ export async function GET() {
     const csvHeaders = [
       'Business Type ID', 'Name', 'Category', 'Subcategory', 'Description',
       'Typical Revenue', 'Typical Employees', 'Operating Hours',
-      'Seasonality Factor', 'Tourist Dependency', 'Supply Chain Complexity', 
-      'Digital Dependency', 'Cash Flow Pattern', 'Physical Asset Intensity', 
+      'Seasonality Factor', 'Tourist Dependency', 'Supply Chain Complexity',
+      'Digital Dependency', 'Cash Flow Pattern', 'Physical Asset Intensity',
       'Customer Concentration', 'Regulatory Burden',
       // Risk vulnerabilities
       'Hurricane Vulnerability', 'Hurricane Recovery Impact',

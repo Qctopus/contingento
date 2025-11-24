@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { CostItemBrowser } from './CostItemBrowser'
 import { costCalculationService } from '@/services/costCalculationService'
 import type { ActionStepItemCost } from '@/services/costCalculationService'
-import { getLocalizedText } from '@/utils/localizationUtils'
+
 
 interface ActionStepCostItemSelectorProps {
   actionStepId: string
@@ -76,7 +76,7 @@ export function ActionStepCostItemSelector({
         selectedItems as ActionStepItemCost[],
         countryCode
       )
-      
+
       setCostSummary({
         totalUSD: calculation.totalUSD,
         localAmount: calculation.localCurrency.amount,
@@ -104,10 +104,10 @@ export function ActionStepCostItemSelector({
           }
         })
       )
-      
+
       // Merge with existing items
       const updatedItems = [...selectedItems]
-      
+
       for (const newItem of itemsWithDetails) {
         const existingIndex = updatedItems.findIndex(i => i.itemId === newItem.itemId)
         if (existingIndex >= 0) {
@@ -118,7 +118,7 @@ export function ActionStepCostItemSelector({
           updatedItems.push(newItem)
         }
       }
-      
+
       onItemsChange(updatedItems)
       setShowBrowser(false)
     } catch (error) {
@@ -137,9 +137,9 @@ export function ActionStepCostItemSelector({
       handleRemoveItem(itemId)
       return
     }
-    
+
     onItemsChange(
-      selectedItems.map(i => 
+      selectedItems.map(i =>
         i.itemId === itemId ? { ...i, quantity } : i
       )
     )
@@ -187,7 +187,7 @@ export function ActionStepCostItemSelector({
           {selectedItems.map((selectedItem) => {
             const item = selectedItem.item
             if (!item) return null
-            
+
             const unitPrice = item.baseUSD
             const totalPrice = unitPrice * selectedItem.quantity
             const categoryIcons: Record<string, string> = {
@@ -196,7 +196,7 @@ export function ActionStepCostItemSelector({
               service: '👷',
               supplies: '📦'
             }
-            
+
             return (
               <div
                 key={selectedItem.itemId}
@@ -206,15 +206,15 @@ export function ActionStepCostItemSelector({
                   <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="text-xl">{categoryIcons[item.category] || '📦'}</span>
-                      <h5 className="font-medium text-gray-900">{getLocalizedText(item.name, 'en')}</h5>
+                      <h5 className="font-medium text-gray-900">{item.name}</h5>
                     </div>
-                    
+
                     {item.description && (
                       <p className="text-sm text-gray-600 mt-1 ml-7">
-                        {getLocalizedText(item.description, 'en')}
+                        {item.description}
                       </p>
                     )}
-                    
+
                     <div className="flex items-center gap-4 mt-2 ml-7">
                       <div className="flex items-center space-x-2">
                         <label className="text-sm text-gray-600">Qty:</label>
@@ -238,18 +238,18 @@ export function ActionStepCostItemSelector({
                           +
                         </button>
                       </div>
-                      
+
                       <div className="text-sm text-gray-600">
                         × ${unitPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD
                         {item.unit && ` / ${item.unit}`}
                       </div>
-                      
+
                       <div className="text-sm font-medium text-blue-600">
                         = ${totalPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} USD
                       </div>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={() => handleRemoveItem(selectedItem.itemId)}
                     className="text-red-600 hover:text-red-800 ml-4"

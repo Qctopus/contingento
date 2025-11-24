@@ -60,27 +60,27 @@ export function SimplifiedRiskAssessment({
   const [hasAdminData, setHasAdminData] = useState(false)
   const [confidenceLevels, setConfidenceLevels] = useState<Map<string, string>>(new Map())
   const [showAvailableRisks, setShowAvailableRisks] = useState(false)
-  
+
   const t = useTranslations('common')
   const tSteps = useTranslations('steps.riskAssessment')
   const locale = useLocale() as Locale
-  
+
   // Helper to translate risk names from camelCase/snake_case to proper translation
   const translateRiskName = (riskName: string) => {
     if (!riskName) return riskName
-    
+
     // Convert camelCase to snake_case
     const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
-    
+
     // Try to get translation
     const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
     const translation = tSteps(`hazardLabels.${snakeCase}` as any)
-    
+
     // Check if translation was found (it returns the key if not found)
     if (translation && !translation.includes('hazardLabels')) {
       return translation
     }
-    
+
     // Fallback: return formatted risk name (capitalize first letter of each word)
     return riskName.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim().replace(/\b\w/g, l => l.toUpperCase())
   }
@@ -89,11 +89,11 @@ export function SimplifiedRiskAssessment({
   const getHazardLabel = (hazardKey: string): string => {
     try {
       const translatedLabel = tSteps(`hazardLabels.${hazardKey}`)
-      
+
       if (translatedLabel && translatedLabel !== `hazardLabels.${hazardKey}` && translatedLabel !== `steps.riskAssessment.hazardLabels.${hazardKey}`) {
         return translatedLabel
       }
-      
+
       return hazardKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
     } catch (error) {
       return hazardKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
@@ -106,11 +106,11 @@ export function SimplifiedRiskAssessment({
     // Skip only if: we have ALL risks loaded (including available) AND selections match initialValue
     if (riskItems.length > 0 && !loading && preFillData?.hazards) {
       const hasUserData = initialValue && initialValue.length > 0
-      
+
       // Check if we have all expected risks loaded (from preFillData)
       const expectedRiskCount = preFillData.hazards.length
       const hasAllRisks = riskItems.length === expectedRiskCount
-      
+
       if (hasAllRisks) {
         if (hasUserData) {
           // Check if ALL risks (not just selected) match initialValue
@@ -119,7 +119,7 @@ export function SimplifiedRiskAssessment({
             const matchingInitial = initialValue.find((iv: any) => iv.hazardId === currentRisk.hazardId)
             return matchingInitial && matchingInitial.isSelected === currentRisk.isSelected
           })
-          
+
           if (dataMatch) {
             return
           }
@@ -129,33 +129,33 @@ export function SimplifiedRiskAssessment({
         }
       }
     }
-    
+
     if (preFillData?.hazards && preFillData.hazards.length > 0) {
       const initialRisks: RiskItem[] = preFillData.hazards.map((hazard: any) => {
         // Check if this risk already has assessment data
-        const existingData = initialValue?.find(item => 
+        const existingData = initialValue?.find(item =>
           item.hazard === hazard.hazardName || item.hazardId === hazard.hazardId
         )
-        
+
         // Map backend risk calculations to UI values
         const mapBackendToUIValue = (backendValue: string | number, type: 'likelihood' | 'severity'): string => {
           // If already a number (from 1-10 scale), return as string
           if (typeof backendValue === 'number') {
             return String(backendValue)
           }
-          
+
           // If no value, return default
           if (!backendValue) {
             return type === 'likelihood' ? '1' : '5'
           }
-          
+
           // Convert string labels to numeric values
           const valueStr = String(backendValue).toLowerCase()
-          
+
           if (type === 'likelihood') {
             const mapping: Record<string, string> = {
               'rare': '1',
-              'unlikely': '2', 
+              'unlikely': '2',
               'possible': '3',
               'likely': '4',
               'almost_certain': '4'
@@ -198,25 +198,25 @@ export function SimplifiedRiskAssessment({
         // CRITICAL: Only use backend pre-selection flag - NO auto-selection fallbacks!
         // PRIORITY: User's previous choice > Backend pre-selection flag > NOTHING (default false)
         let shouldBeSelected = false
-        
+
         // NEVER pre-select risks marked as 'not_applicable' (level=0 from parish)
-        const isNotApplicable = prefilledRiskLevel === 'not_applicable' || 
-                                 riskMatrixEntry?.riskLevel === 'not_applicable' ||
-                                 hazard.riskLevel === 'not_applicable'
-        
+        const isNotApplicable = prefilledRiskLevel === 'not_applicable' ||
+          riskMatrixEntry?.riskLevel === 'not_applicable' ||
+          hazard.riskLevel === 'not_applicable'
+
         if (existingData && existingData.isSelected !== undefined) {
           // User has EXPLICITLY set isSelected - preserve their choice
           shouldBeSelected = existingData.isSelected
         } else {
-          // No explicit user choice - ONLY use backend pre-selection flag
-          // NO FALLBACKS - user must manually select if backend doesn't pre-select
-          if (isNotApplicable) {
-            shouldBeSelected = false
+          // No explicit user choice - use backend initialization
+          // The backend now sets isSelected = isPreSelected, so we can trust it
+          if (riskMatrixEntry?.isSelected !== undefined) {
+            shouldBeSelected = riskMatrixEntry.isSelected
           } else if (riskMatrixEntry?.isPreSelected === true) {
-            // ONLY select if backend explicitly sets isPreSelected = true
+            // Fallback to isPreSelected if isSelected is missing
             shouldBeSelected = true
           } else {
-            // Default: NOT selected - user must manually select
+            // Default: NOT selected
             shouldBeSelected = false
           }
         }
@@ -232,21 +232,21 @@ export function SimplifiedRiskAssessment({
           isSelected: shouldBeSelected, // Use backend pre-selection logic OR user's previous choice
           isPreSelected: riskMatrixEntry?.isPreSelected || hazard.isPreSelected || false, // CRITICAL: Preserve backend auto-selection flag
           // CRITICAL FIX: Always mark as calculated if we have backend data with baseScore
-          isCalculated: !!(riskMatrixEntry?.baseScore !== undefined), 
+          isCalculated: !!(riskMatrixEntry?.baseScore !== undefined),
           reasoning: riskMatrixEntry?.reasoning || '', // Only use backend reasoning, no generic fallback
           // CRITICAL: Pass through initial tier and score from backend
-          initialTier: riskMatrixEntry?.initialTier || riskMatrixEntry?.riskTier || 
-                       (prefilledRiskScore >= 7.0 ? 1 : prefilledRiskScore >= 5.0 ? 2 : 3),
+          initialTier: riskMatrixEntry?.initialTier || riskMatrixEntry?.riskTier ||
+            (prefilledRiskScore >= 7.0 ? 1 : prefilledRiskScore >= 5.0 ? 2 : 3),
           initialRiskScore: riskMatrixEntry?.initialRiskScore || prefilledRiskScore,
-          riskTier: riskMatrixEntry?.riskTier || 
-                    (prefilledRiskScore >= 7.0 ? 1 : prefilledRiskScore >= 5.0 ? 2 : 3),
+          riskTier: riskMatrixEntry?.riskTier ||
+            (prefilledRiskScore >= 7.0 ? 1 : prefilledRiskScore >= 5.0 ? 2 : 3),
           riskCategory: riskMatrixEntry?.riskCategory,
           // Pass through multiplier information
           baseScore: riskMatrixEntry?.baseScore,
           appliedMultipliers: riskMatrixEntry?.appliedMultipliers
         }
       })
-      
+
       setRiskItems(initialRisks)
       setHasAdminData(true)
       setLoading(false)
@@ -260,11 +260,11 @@ export function SimplifiedRiskAssessment({
         setLoading(false)
         return
       }
-      
+
       try {
         const businessTypeId = preFillData?.industry?.id || businessData?.industryType
         const location = preFillData?.location || locationData
-        
+
         if (!businessTypeId) {
           setHasAdminData(false)
           setLoading(false)
@@ -289,14 +289,14 @@ export function SimplifiedRiskAssessment({
 
         if (response.ok) {
           const data = await response.json()
-          
+
           const calculatedRisks: RiskItem[] = selectedHazards.map(hazardId => {
             const hazardLabel = getHazardLabel(hazardId)
             const calculation = data.riskCalculations?.find((calc: any) => calc.hazardId === hazardId)
-            const existingData = initialValue?.find(item => 
+            const existingData = initialValue?.find(item =>
               item.hazard === hazardLabel || item.hazardId === hazardId
             )
-            
+
             return {
               hazard: hazardLabel,
               hazardId,
@@ -311,10 +311,10 @@ export function SimplifiedRiskAssessment({
               confidence: calculation?.confidence
             }
           })
-          
+
           setRiskItems(calculatedRisks)
           setHasAdminData(true)
-          
+
           // Set confidence levels
           const newConfidenceLevels = new Map()
           data.riskCalculations?.forEach((calc: any) => {
@@ -336,16 +336,16 @@ export function SimplifiedRiskAssessment({
   const calculateRiskLevel = useCallback((likelihood: string | number, severity: string | number): { level: string; score: number; color: string } => {
     const l = typeof likelihood === 'string' ? parseInt(likelihood) || 0 : likelihood
     const s = typeof severity === 'string' ? parseInt(severity) || 0 : severity
-    
+
     // Admin formula: (Likelihood × 0.6) + (Severity × 0.4)
     const score = (l * 0.6) + (s * 0.4)
-    
+
     const veryHighRisk = 'Very High'
     const highRisk = 'High'
     const mediumRisk = 'Medium'
     const lowRisk = 'Low'
     const veryLowRisk = 'Very Low'
-    
+
     if (score >= 8) {
       return { level: veryHighRisk, score: Number(score.toFixed(1)), color: 'bg-red-600 text-white border-2 border-red-700' }
     }
@@ -366,11 +366,11 @@ export function SimplifiedRiskAssessment({
     if (setUserInteracted) {
       setUserInteracted()
     }
-    
+
     setRiskItems(prevItems => {
       const updatedItems = [...prevItems]
       const currentItem = { ...updatedItems[index] }
-      
+
       if (field === 'isSelected') {
         currentItem.isSelected = value as boolean
         // Clear user input if deselecting, but preserve original riskLevel for categorization
@@ -378,7 +378,7 @@ export function SimplifiedRiskAssessment({
           currentItem.likelihood = ''
           currentItem.severity = ''
           // DON'T clear riskLevel - we need it to know if this was 'not_applicable' or pre-filled
-          currentItem.riskScore = 0
+          // currentItem.riskScore = 0 // DON'T clear risk score - we need it for tier calculation even if deselected
           currentItem.planningMeasures = ''
         } else {
           // When selecting a risk, ensure it has default values if it was an "available" risk (level=0)
@@ -399,11 +399,11 @@ export function SimplifiedRiskAssessment({
       } else if (field === 'likelihood' || field === 'severity') {
         currentItem[field] = value as string
         currentItem.isCalculated = false // Mark as manually adjusted
-        
+
         // Recalculate risk level if both values exist
         const newLikelihood = field === 'likelihood' ? value as string : currentItem.likelihood
         const newSeverity = field === 'severity' ? value as string : currentItem.severity
-        
+
         if (newLikelihood && newSeverity) {
           const { level, score } = calculateRiskLevel(newLikelihood, newSeverity)
           currentItem.riskLevel = level
@@ -418,7 +418,7 @@ export function SimplifiedRiskAssessment({
         // For other fields, handle them explicitly
         (currentItem as Record<string, unknown>)[field] = value
       }
-      
+
       updatedItems[index] = currentItem
       return updatedItems
     })
@@ -428,16 +428,16 @@ export function SimplifiedRiskAssessment({
   useEffect(() => {
     // Skip if still loading (initialization phase)
     if (loading) return
-    
+
     // Skip if no risks loaded yet
     if (riskItems.length === 0) return
-    
+
     const timeoutId = setTimeout(() => {
       // Send ALL risks to parent (selected and unselected)
       // This prevents re-initialization loop when unselected risks are "lost"
       onComplete(riskItems)  // Send ALL risks, not just selected
     }, 100) // 100ms debounce
-    
+
     return () => clearTimeout(timeoutId)
   }, [riskItems, onComplete, loading])
 
@@ -486,21 +486,21 @@ export function SimplifiedRiskAssessment({
   // Separate risks by INITIAL tier for display
   // This ensures risks stay in their original section even if user adjusts sliders
   // Visual styling will update dynamically, but cards won't jump between sections
-  
+
   // Tier 1: Highly Recommended - Use initialTier (from pre-fill) to determine section
   const highlyRecommendedRisks = riskItems.filter(item => {
     const score = item.initialRiskScore || item.riskScore || 0
     const tier = item.initialTier || (score >= 7.0 ? 1 : score >= 5.0 ? 2 : 3)
     return tier === 1
   })
-  
+
   // Tier 2: Recommended
   const recommendedRisks = riskItems.filter(item => {
     const score = item.initialRiskScore || item.riskScore || 0
     const tier = item.initialTier || (score >= 7.0 ? 1 : score >= 5.0 ? 2 : 3)
     return tier === 2
   })
-  
+
   // Tier 3: Available (low priority or not applicable)
   const availableRisks = riskItems.filter(item => {
     const score = item.initialRiskScore || item.riskScore || 0
@@ -508,12 +508,12 @@ export function SimplifiedRiskAssessment({
     const isNotApplicable = item.riskLevel === 'not_applicable'
     return tier === 3 || isNotApplicable || score < 5.0
   })
-  
+
   // Legacy grouping for backwards compatibility
-  const preSelectedRisks = riskItems.filter(item => 
+  const preSelectedRisks = riskItems.filter(item =>
     item.riskLevel !== 'not_applicable' && item.riskLevel !== '' && item.riskScore >= 5.0
   )
-  
+
   // Selected risks for summary and onComplete (only actually checked risks)
   const selectedRisks = riskItems.filter(item => item.isSelected)
   const assessedRisks = selectedRisks.filter(item => item.likelihood && item.severity)
@@ -522,13 +522,13 @@ export function SimplifiedRiskAssessment({
   // Render individual risk card
   const renderRiskCard = (risk: any, actualIndex: number) => {
     const isAvailable = risk.riskLevel === 'not_applicable'
-    
+
     // CRITICAL: Use CURRENT risk score to determine visual styling (not initial tier)
     // This allows the card appearance to update as user adjusts sliders
     // But the card stays in its original section (determined by initialTier)
     const currentScore = risk.riskScore || 0
     const currentTier = currentScore >= 7.0 ? 1 : currentScore >= 5.0 ? 2 : 3
-    
+
     // Determine tier badge based on CURRENT calculated score
     let tierBadge = null
     let tierLabel = ''
@@ -555,216 +555,212 @@ export function SimplifiedRiskAssessment({
       )
     }
 
-  return (
+    return (
       <div
         key={risk.hazardId}
-            className={`bg-white border-2 rounded-lg overflow-hidden transition-all duration-300 ${
-              risk.isSelected 
-                ? currentTier === 1
-                  ? 'border-red-400 shadow-lg ring-2 ring-red-200'
-                  : currentTier === 2
-                  ? 'border-orange-400 shadow-lg ring-2 ring-orange-200'
-                  : 'border-blue-500 shadow-md' 
+        className={`bg-white border-2 rounded-lg overflow-hidden transition-all duration-300 ${risk.isSelected
+            ? currentTier === 1
+              ? 'border-red-400 shadow-lg ring-2 ring-red-200'
+              : currentTier === 2
+                ? 'border-orange-400 shadow-lg ring-2 ring-orange-200'
+                : 'border-blue-500 shadow-md'
             : isAvailable
-            ? 'border-gray-200 hover:border-gray-300'
-                : currentTier === 1
+              ? 'border-gray-200 hover:border-gray-300'
+              : currentTier === 1
                 ? 'border-red-200 hover:border-red-300'
                 : currentTier === 2
-                ? 'border-orange-200 hover:border-orange-300'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            {/* Risk Header */}
-            <div className={`p-4 transition-colors duration-300 ${
-              risk.isSelected && currentTier === 1 ? 'bg-red-50' :
-              risk.isSelected && currentTier === 2 ? 'bg-orange-50' :
+                  ? 'border-orange-200 hover:border-orange-300'
+                  : 'border-gray-200 hover:border-gray-300'
+          }`}
+      >
+        {/* Risk Header */}
+        <div className={`p-4 transition-colors duration-300 ${risk.isSelected && currentTier === 1 ? 'bg-red-50' :
+            risk.isSelected && currentTier === 2 ? 'bg-orange-50' :
               risk.isSelected && currentTier === 3 ? 'bg-gray-50' :
-              risk.isSelected ? 'bg-blue-50' : ''
-            }`}>
-              <div className="flex items-start space-x-3">
-                <label className="flex items-center mt-1 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={risk.isSelected}
+                risk.isSelected ? 'bg-blue-50' : ''
+          }`}>
+          <div className="flex items-start space-x-3">
+            <label className="flex items-center mt-1 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={risk.isSelected}
                 onChange={(e) => updateRiskItem(actualIndex, 'isSelected', e.target.checked)}
-                    className={`h-6 w-6 border-2 rounded focus:ring-2 transition-all duration-300 ${
-                      currentTier === 1 ? 'text-red-600 border-red-300 focus:ring-red-500' :
-                      currentTier === 2 ? 'text-orange-600 border-orange-300 focus:ring-orange-500' :
+                className={`h-6 w-6 border-2 rounded focus:ring-2 transition-all duration-300 ${currentTier === 1 ? 'text-red-600 border-red-300 focus:ring-red-500' :
+                    currentTier === 2 ? 'text-orange-600 border-orange-300 focus:ring-orange-500' :
                       'text-blue-600 border-gray-300 focus:ring-blue-500'
-                    }`}
-                  />
-                </label>
-                
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-2">
+                  }`}
+              />
+            </label>
+
+            <div className="flex-1">
+              <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 pr-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-bold text-gray-900 text-lg">{translateRiskName(risk.hazard)}</h3>
-                        {tierBadge}
-                      </div>
-                      {!isAvailable && risk.riskScore > 0 && (
-                        <div className="text-sm text-gray-600 mb-1">
-                          <span className={`font-bold transition-colors duration-300 ${
-                            currentTier === 1 ? 'text-red-700' :
-                            currentTier === 2 ? 'text-orange-700' :
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-gray-900 text-lg">{translateRiskName(risk.hazard)}</h3>
+                    {tierBadge}
+                  </div>
+                  {!isAvailable && risk.riskScore > 0 && (
+                    <div className="text-sm text-gray-600 mb-1">
+                      <span className={`font-bold transition-colors duration-300 ${currentTier === 1 ? 'text-red-700' :
+                          currentTier === 2 ? 'text-orange-700' :
                             'text-gray-700'
-                          }`}>{risk.riskScore?.toFixed(1)}/10</span> {t('riskScoreLabel')}
-                        </div>
-                      )}
+                        }`}>{risk.riskScore?.toFixed(1)}/10</span> {t('riskScoreLabel')}
+                    </div>
+                  )}
                   {isAvailable && (
                     <p className="text-sm text-gray-500 mt-1">
                       ⚪ {t('notSignificantInLocation', { location: locationData?.parish || 'this location' })}
                     </p>
-                      )}
-                    </div>
-                    
+                  )}
+                </div>
+
                 <div className="flex flex-col items-end space-y-2">
                   {risk.isCalculated && !isAvailable && (
                     <span className="px-2 py-1 text-xs rounded-md bg-green-100 text-green-700 border border-green-200" title={t('preFilledForYou')}>
                       ✨ {t('preFilled')}
-                        </span>
-                      )}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Simple reasoning preview - only if meaningful */}
+              {risk.reasoning && !isAvailable && risk.isSelected && !risk.isCalculated && (() => {
+                const isGeneric = risk.reasoning.includes('risk requires your attention') ||
+                  risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
+                  risk.reasoning.length < 50
+
+                if (isGeneric) return null
+
+                return (
+                  <div className="mt-2 text-xs text-gray-600 bg-white bg-opacity-60 rounded p-2 border border-gray-200">
+                    💡 <span className="font-medium">{t('whyRiskMatters')}:</span> {risk.reasoning.split('\n')[0]}
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
+
+        {/* Assessment Section - Only show when selected */}
+        {risk.isSelected && (
+          <div className="border-t bg-gray-50 p-4">
+            {risk.isCalculated && risk.reasoning && !isAvailable && (() => {
+              // Only show if reasoning is meaningful (not generic fallback text)
+              const isGeneric = risk.reasoning.includes('risk requires your attention') ||
+                risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
+                risk.reasoning.length < 50
+
+              if (isGeneric) return null
+
+              // Clean up any JSON objects in the reasoning text
+              let cleanedReasoning = risk.reasoning
+              if (typeof cleanedReasoning === 'string') {
+                // Remove JSON-like objects and extract the localized text
+                cleanedReasoning = cleanedReasoning.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
+                  try {
+                    const parsed = JSON.parse(match)
+                    return parsed.en || parsed.es || parsed.fr || match
+                  } catch {
+                    // Extract English value if JSON parsing fails
+                    const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
+                    return enMatch ? enMatch[1] : match
+                  }
+                })
+              }
+
+              // Split reasoning into parts and display nicely
+              const reasoningLines = cleanedReasoning.split('\n').filter(line => line.trim())
+
+              return (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="text-sm text-blue-900">
+                    <strong>💡 {t('whyRiskMatters')}:</strong>
+                    <div className="mt-2 space-y-2">
+                      {reasoningLines.map((line, idx) => (
+                        <p key={idx} className="text-blue-800">
+                          {line}
+                        </p>
+                      ))}
                     </div>
                   </div>
-                  
-                  {/* Simple reasoning preview - only if meaningful */}
-                  {risk.reasoning && !isAvailable && risk.isSelected && !risk.isCalculated && (() => {
-                    const isGeneric = risk.reasoning.includes('risk requires your attention') || 
-                                     risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
-                                     risk.reasoning.length < 50
-                    
-                    if (isGeneric) return null
-                    
-                    return (
-                      <div className="mt-2 text-xs text-gray-600 bg-white bg-opacity-60 rounded p-2 border border-gray-200">
-                        💡 <span className="font-medium">{t('whyRiskMatters')}:</span> {risk.reasoning.split('\n')[0]}
-                      </div>
-                    )
-                  })()}
+                </div>
+              )
+            })()}
+
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Likelihood */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('likelihoodOccurrence')}
+                  {risk.isCalculated && (
+                    <span className="ml-2 text-xs font-normal text-gray-500">✨ {t('preFilledFromLocation')}</span>
+                  )}
+                </label>
+                <div className="bg-blue-50 p-3 rounded-lg mb-2">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={risk.likelihood || 1}
+                    onChange={(e) => updateRiskItem(actualIndex, 'likelihood', e.target.value)}
+                    disabled={risk.isCalculated}
+                    className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex justify-between text-xs text-gray-700 mt-2">
+                    <span>1-3: {t('likelihoodRanges.rare')}</span>
+                    <span className="font-bold text-blue-600 text-lg">{risk.likelihood || 1}/10</span>
+                    <span>4-6: {t('likelihoodRanges.possible')}</span>
+                    <span>7-8: {t('likelihoodRanges.likely')}</span>
+                    <span>9-10: {t('likelihoodRanges.certain')}</span>
+                  </div>
+                </div>
+                {risk.isCalculated && !isAvailable && locationData?.parish && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    ✨ {t('basedOnYourLocation', { location: locationData.parish })}
+                  </p>
+                )}
+              </div>
+
+              {/* Severity */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  {t('impactSeverity')}
+                </label>
+                <div className="bg-orange-50 p-3 rounded-lg mb-2">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={risk.severity || 1}
+                    onChange={(e) => updateRiskItem(actualIndex, 'severity', e.target.value)}
+                    className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
+                  />
+                  <div className="flex justify-between text-xs text-gray-700 mt-2">
+                    <span>1-3: {t('severityRanges.minor')}</span>
+                    <span className="font-bold text-orange-600 text-lg">{risk.severity || 1}/10</span>
+                    <span>4-6: {t('severityRanges.moderate')}</span>
+                    <span>7-8: {t('severityRanges.major')}</span>
+                    <span>9-10: {t('severityRanges.severe')}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-        {/* Assessment Section - Only show when selected */}
-            {risk.isSelected && (
-              <div className="border-t bg-gray-50 p-4">
-            {risk.isCalculated && risk.reasoning && !isAvailable && (() => {
-                  // Only show if reasoning is meaningful (not generic fallback text)
-                  const isGeneric = risk.reasoning.includes('risk requires your attention') || 
-                                   risk.reasoning.includes('Based on') && !risk.reasoning.includes('📍') ||
-                                   risk.reasoning.length < 50
-                  
-                  if (isGeneric) return null
-                  
-                  // Clean up any JSON objects in the reasoning text
-                  let cleanedReasoning = risk.reasoning
-                  if (typeof cleanedReasoning === 'string') {
-                    // Remove JSON-like objects and extract the localized text
-                    cleanedReasoning = cleanedReasoning.replace(/\{[^}]*"en"\s*:\s*"[^"]*"[^}]*\}/g, (match) => {
-                      try {
-                        const parsed = JSON.parse(match)
-                        return parsed.en || parsed.es || parsed.fr || match
-                      } catch {
-                        // Extract English value if JSON parsing fails
-                        const enMatch = match.match(/"en"\s*:\s*"([^"]+)"/)
-                        return enMatch ? enMatch[1] : match
-                      }
-                    })
-                  }
-                  
-                  // Split reasoning into parts and display nicely
-                  const reasoningLines = cleanedReasoning.split('\n').filter(line => line.trim())
-                  
-                  return (
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="text-sm text-blue-900">
-                        <strong>💡 {t('whyRiskMatters')}:</strong>
-                        <div className="mt-2 space-y-2">
-                          {reasoningLines.map((line, idx) => (
-                            <p key={idx} className="text-blue-800">
-                              {line}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
+            {/* Risk Level Display */}
+            {(risk.likelihood || 0) > 0 && (risk.severity || 0) > 0 && (
+              <div className="mt-4 p-4 bg-white border-2 border-gray-300 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-gray-700 mb-2">{t('yourRiskLevel')}</div>
+                    <div className="text-xs text-gray-600">
+                      {t('riskScoreLabel')}: <span className="font-semibold text-gray-800">{risk.riskScore?.toFixed(1) || calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').score}/10</span>
                     </div>
-                  )
-                })()}
-            
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Likelihood */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">
-                      {t('likelihoodOccurrence')}
-                      {risk.isCalculated && (
-                        <span className="ml-2 text-xs font-normal text-gray-500">✨ {t('preFilledFromLocation')}</span>
-                      )}
-                    </label>
-                    <div className="bg-blue-50 p-3 rounded-lg mb-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                    value={risk.likelihood || 1}
-                    onChange={(e) => updateRiskItem(actualIndex, 'likelihood', e.target.value)}
-                        disabled={risk.isCalculated}
-                        className="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer accent-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      />
-                      <div className="flex justify-between text-xs text-gray-700 mt-2">
-                        <span>1-3: {t('likelihoodRanges.rare')}</span>
-                    <span className="font-bold text-blue-600 text-lg">{risk.likelihood || 1}/10</span>
-                        <span>4-6: {t('likelihoodRanges.possible')}</span>
-                        <span>7-8: {t('likelihoodRanges.likely')}</span>
-                        <span>9-10: {t('likelihoodRanges.certain')}</span>
-                      </div>
-                    </div>
-                {risk.isCalculated && !isAvailable && locationData?.parish && (
-                      <p className="text-xs text-blue-600 mt-1">
-                    ✨ {t('basedOnYourLocation', { location: locationData.parish })}
-                      </p>
-                    )}
                   </div>
-
-                  {/* Severity */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-900 mb-2">
-                      {t('impactSeverity')}
-                    </label>
-                    <div className="bg-orange-50 p-3 rounded-lg mb-2">
-                      <input
-                        type="range"
-                        min="1"
-                        max="10"
-                    value={risk.severity || 1}
-                    onChange={(e) => updateRiskItem(actualIndex, 'severity', e.target.value)}
-                        className="w-full h-2 bg-orange-200 rounded-lg appearance-none cursor-pointer accent-orange-600"
-                      />
-                      <div className="flex justify-between text-xs text-gray-700 mt-2">
-                        <span>1-3: {t('severityRanges.minor')}</span>
-                    <span className="font-bold text-orange-600 text-lg">{risk.severity || 1}/10</span>
-                        <span>4-6: {t('severityRanges.moderate')}</span>
-                        <span>7-8: {t('severityRanges.major')}</span>
-                        <span>9-10: {t('severityRanges.severe')}</span>
-                      </div>
-                    </div>
+                  <div className={`px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap ${calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').color}`}>
+                    {calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').level}
                   </div>
                 </div>
-
-                {/* Risk Level Display */}
-            {(risk.likelihood || 0) > 0 && (risk.severity || 0) > 0 && (
-                  <div className="mt-4 p-4 bg-white border-2 border-gray-300 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-700 mb-2">{t('yourRiskLevel')}</div>
-                        <div className="text-xs text-gray-600">
-                          {t('riskScoreLabel')}: <span className="font-semibold text-gray-800">{risk.riskScore?.toFixed(1) || calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').score}/10</span>
-                        </div>
-                      </div>
-                      <div className={`px-5 py-2 rounded-full font-bold text-sm whitespace-nowrap ${calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').color}`}>
-                        {calculateRiskLevel(risk.likelihood || '1', risk.severity || '1').level}
-                      </div>
-                    </div>
-                  </div>
+              </div>
             )}
           </div>
         )}
@@ -788,7 +784,7 @@ export function SimplifiedRiskAssessment({
             <div className="text-2xl font-bold">{assessedRisks.length}/{preSelectedRisks.length}</div>
           </div>
         </div>
-        
+
         {hasAdminData && (
           <div className="mt-4 bg-blue-800 bg-opacity-50 rounded-lg p-3">
             <div className="flex items-center space-x-2">
@@ -927,7 +923,7 @@ export function SimplifiedRiskAssessment({
               </span>
             </div>
           </button>
-          
+
           {showAvailableRisks && (
             <div className="border-t-2 border-gray-300 p-4 space-y-3 bg-white">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
@@ -948,7 +944,7 @@ export function SimplifiedRiskAssessment({
       {preSelectedRisks.length > 0 && (
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('assessmentSummary')}</h3>
-          
+
           <div className="grid md:grid-cols-3 gap-4 mb-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-900">{selectedRisks.length}</div>
