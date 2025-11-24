@@ -55,9 +55,17 @@ export function AdminStrategyCards({
         setLoading(true)
         setError(null)
 
+        // CRITICAL: Force refresh strategies to get latest data from database
+        // This ensures updated strategy applicableRisks (like break_in_theft) are loaded
+        console.log('🔄 AdminStrategyCards: Force refreshing strategies from database')
+
+        // Clear any cached strategies first
+        centralDataService.invalidateCache('strategies')
+
         // Check if we have pre-filled strategies from admin backend
         if (preFillData?.preFilledFields?.STRATEGIES?.['Business Continuity Strategies']) {
           const preFilledStrategies = preFillData.preFilledFields.STRATEGIES['Business Continuity Strategies']
+          console.log('📋 Using pre-filled strategies:', preFilledStrategies.length)
           setStrategies(preFilledStrategies)
 
           // Check if strategies have the new priorityTier field (enhanced recommendation system)
@@ -85,8 +93,10 @@ export function AdminStrategyCards({
             setSelectedStrategyIds(autoSelected.map(s => s.id))
           }
         } else {
-          // Fallback: load all strategies from centralDataService
-          const allStrategies = await centralDataService.getStrategies(true, locale)
+          // CRITICAL: ALWAYS force refresh to get latest database data
+          // This prevents stale cached strategies from being used
+          console.log('🔄 Loading fresh strategies from database (force refresh)')
+          const allStrategies = await centralDataService.getStrategies(true, locale) // Force refresh = true
 
           // Check if strategies have the new priorityTier field
           const hasNewFields = allStrategies.some((s: any) => s.priorityTier !== undefined)
@@ -344,9 +354,10 @@ export function AdminStrategyCards({
       // Get selected risks from risk assessment matrix
       // CRITICAL: Check BOTH isSelected (user manual selection) AND isPreSelected (auto-selected from backend)
       const selectedRiskItems = riskData['Risk Assessment Matrix'].filter((r: any) => {
-        const isManuallySelected = r.isSelected === true || r.isSelected === 'true' || r.isSelected === 1
-        const isAutoSelected = r.isPreSelected === true || r.isPreSelected === 'true' || r.isPreSelected === 1
-        return isManuallySelected || isAutoSelected
+        // CRITICAL FIX: Only use isSelected. isPreSelected is static and prevents deselection.
+        // SimplifiedRiskAssessment handles initializing isSelected based on isPreSelected.
+        const isSelected = r.isSelected === true || r.isSelected === 'true' || r.isSelected === 1
+        return isSelected
       })
 
       console.log(`[AdminStrategyCards] ========================================`)
@@ -361,40 +372,30 @@ export function AdminStrategyCards({
       console.log(`[AdminStrategyCards] Combined selected (isSelected OR isPreSelected):`, selectedRiskItems.length)
 
       // Map to the format expected by validHazards
-      // Include both the original ID and normalized versions for matching
+      // CRITICAL: Use EXACT IDs from risk data - NO NORMALIZATION
       selectedRisks = selectedRiskItems.map((r: any) => {
         const hazardId = r.hazardId || r.id || r.hazard || ''
         const hazardName = r.hazardName || r.hazard || r['Hazard Name'] || r['Hazard'] || ''
 
-        // Normalize the hazard ID for matching (handle camelCase, snake_case, etc.)
-        // Use the shared utility to ensure consistency with StrategySelectionStep
-        const canonicalId = normalizeRiskId(hazardId)
-
         return {
-          hazardId: canonicalId || hazardId, // Use canonical ID if available
-          hazardName: hazardName,
-          // Store normalized versions for flexible matching
-          normalizedId: canonicalId,
-          normalizedName: normalizeRiskId(hazardName)
+          hazardId: hazardId, // EXACT ID - no normalization
+          hazardName: hazardName
         }
       }).filter((r: any) => r.hazardId && r.hazardName) // Remove any invalid entries
 
       console.log(`[AdminStrategyCards] Filtered to ${selectedRisks.length} selected risks from risk assessment matrix:`,
         selectedRisks.map(r => r.hazardName).join(', '))
-      console.log(`[AdminStrategyCards] Risk IDs:`, selectedRisks.map(r => `${r.hazardId} (normalized: ${r.normalizedId})`).join(', '))
+      console.log(`[AdminStrategyCards] Risk IDs (EXACT):`, selectedRisks.map(r => r.hazardId).join(', '))
     } else if (preFillData?.hazards) {
       // Fallback: if no riskData, use preFillData but this shouldn't happen in normal flow
       console.warn('[AdminStrategyCards] No riskData provided, using all preFillData hazards (fallback)')
       selectedRisks = preFillData.hazards.map((h: any) => {
         const hazardId = h.hazardId || h.id || ''
         const hazardName = h.hazardName || h.hazard || ''
-        const canonicalId = normalizeRiskId(hazardId)
 
         return {
-          hazardId: canonicalId || hazardId,
-          hazardName: hazardName,
-          normalizedId: canonicalId,
-          normalizedName: normalizeRiskId(hazardName)
+          hazardId: hazardId, // EXACT ID - no normalization
+          hazardName: hazardName
         }
       }).filter((h: any) => h.hazardId && h.hazardName)
     }

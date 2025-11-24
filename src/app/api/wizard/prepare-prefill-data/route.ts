@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { generateDynamicPreFillData } from '@/services/dynamicPreFillService'
 import { getLocalizedText, localizeBusinessType } from '@/utils/localizationUtils'
 import { applyMultipliers, convertSimplifiedInputs, convertLegacyCharacteristics } from '@/services/multiplierService'
+import { normalizeRiskId as normalizeRiskIdUtil } from '@/utils/riskIdUtils'
 import type { Locale } from '@/i18n/config'
 
 // Import translation files
@@ -233,38 +234,7 @@ function shouldPreSelectRisk(
   return result.preSelect
 }
 
-// Canonical risk ID mapping
-const CANONICAL_RISK_IDS: Record<string, string> = {
-  'flooding': 'flood',
-  'powerOutage': 'power_outage',
-  'cyberAttack': 'cyber_attack',
-  'pandemicDisease': 'pandemic',
-  'economicDownturn': 'economic_downturn',
-  'supplyChainDisruption': 'supply_chain_disruption',
-  'civilUnrest': 'civil_unrest',
-  'equipmentFailure': 'equipment_failure',
-  'theft': 'theft',
-  'crime': 'crime'
-}
-
-function getCanonicalRiskId(riskType: string): string {
-  if (!riskType) return ''
-
-  // Check explicit mapping first
-  if (CANONICAL_RISK_IDS[riskType]) {
-    return CANONICAL_RISK_IDS[riskType]
-  }
-
-  // Convert camelCase to snake_case
-  const snakeCase = riskType.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
-
-  // Check if snake_case version is in mapping (in case keys are snake_case)
-  if (CANONICAL_RISK_IDS[snakeCase]) {
-    return CANONICAL_RISK_IDS[snakeCase]
-  }
-
-  return snakeCase
-}
+// Canonical risk ID mapping is now handled by @/utils/riskIdUtils
 
 export async function POST(request: NextRequest) {
   let body: any = null
@@ -600,12 +570,12 @@ export async function POST(request: NextRequest) {
         // CRITICAL: Normalize risk type to snake_case for consistency with database
         // Database uses snake_case (e.g., 'power_outage', 'cybersecurity_incident', 'health_emergency')
         // Business vulnerabilities might have camelCase (e.g., 'powerOutage', 'cyberAttack', 'pandemicDisease')
-        const normalizedRiskType = getCanonicalRiskId(riskType)
+        const normalizedRiskType = normalizeRiskIdUtil(riskType)
         const camelCaseRiskType = riskType.replace(/_([a-z])/g, (g: string) => g[1].toUpperCase())
 
         // CRITICAL: Use normalizedRiskType (snake_case) as the hazardId to match database IDs
         // This ensures strategies with snake_case IDs will match correctly
-        const hazardId = getCanonicalRiskId(riskType)
+        const hazardId = normalizeRiskIdUtil(riskType)
 
         // Track that we're processing this risk type in ALL formats
         identifiedRiskTypes.add(riskType)
@@ -1164,7 +1134,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 Searching for strategies with risk variants:`, Array.from(allRiskVariants).slice(0, 10).join(', '))
 
-    // Get ALL active strategies first (we'll filter in memory for better JSON array matching)
+    // Load ALL active strategies from database
+    // CRITICAL: Return ALL strategies, not just those matching pre-selected risks
+    // This allows users to manually add ANY risk and see its strategies
+    // The frontend will filter strategies based on user's actual selections
     const allStrategies = await (prisma as any).riskMitigationStrategy.findMany({
       where: {
         isActive: true
@@ -1183,43 +1156,22 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log(`📚 Found ${allStrategies.length} total active strategies`)
+    console.log(`📚 Loaded ${allStrategies.length} total active strategies (ALL risks)`)
 
-    // SIMPLE APPROACH: Use admin-configured risk-strategy relationships
-    // Get strategies linked to ANY user's selected risks (manual OR pre-ticked)
-    const linkedStrategyIds = new Set<string>()
-
-    allUserRisks.forEach((risk: any) => {
-      // Include risks that are selected (manual OR pre-ticked by system)
-      const isSelected = risk.isSelected !== false // Default to selected if not explicitly false
-      const riskScore = risk.riskScore || 0
-      const isHighRisk = riskScore >= 5.0
-
-      if (isSelected || isHighRisk) {
-        const userRiskId = risk.hazardId
-
-        // Find strategies that have this risk in their applicableRisks (admin-configured)
-        allStrategies.forEach((strategy: any) => {
-          try {
-            const strategyRisks = JSON.parse(strategy.applicableRisks || '[]')
-            if (strategyRisks.includes(userRiskId)) {
-              linkedStrategyIds.add(strategy.strategyId)
-            }
-          } catch (e) {
-            // Skip strategies with invalid applicableRisks
-          }
-        })
+    // DEBUG: Log ALL strategies and their applicableRisks to trace the issue
+    console.log('\n🔍 DEBUG: ALL STRATEGIES FROM DATABASE:')
+    allStrategies.slice(0, 15).forEach((s: any) => {
+      try {
+        const risks = JSON.parse(s.applicableRisks || '[]')
+        console.log(`  - ${s.strategyId}: risks = [${risks.join(', ')}]`)
+      } catch (e) {
+        console.log(`  - ${s.strategyId}: ERROR parsing applicableRisks`)
       }
     })
 
-    // Filter to only the directly linked strategies (admin-configured relationships)
-    const strategiesFromDB = allStrategies.filter((strategy: any) =>
-      linkedStrategyIds.has(strategy.strategyId)
-    )
+    // Use ALL strategies - let frontend filter based on user selections
+    const strategiesFromDB = allStrategies
 
-    console.log(`✅ Found ${linkedStrategyIds.size} strategies directly linked to user's selected risks`)
-    console.log(`📋 Linked strategies:`, Array.from(linkedStrategyIds).join(', '))
-    console.log(`📋 User's selected risks:`, allUserRisks.filter((r: any) => r.isSelected !== false || (r.riskScore || 0) >= 5.0).map((r: any) => `${r.hazardId} (${r.isSelected !== false ? 'selected' : 'high-risk'})`).join(', '))
     console.log(`📋 Sample strategy details:`, strategiesFromDB.slice(0, 5).map((s: any) => {
       try {
         const appRisks = JSON.parse(s.applicableRisks || '[]')
@@ -1367,13 +1319,12 @@ export async function POST(request: NextRequest) {
         })
 
         // Skip if strategy doesn't match ANY of the user's selected risks
+        // CRITICAL CHANGE: Do NOT skip strategies even if they don't match initial risks.
+        // We need to return ALL strategies so the frontend can show them if the user
+        // manually adds a risk later.
         if (matchingRisks.length === 0) {
-          console.log(`  ⏭️  Skipping ${strategy.strategyId} (${(typeof strategy.name === 'string' ? strategy.name : JSON.stringify(strategy.name))?.substring(0, 50)}): No matching risks`)
-          console.log(`      Strategy applicableRisks: [${applicableRisks.join(', ')}]`)
-          console.log(`      User's hazardIds: [${allUserRisks.map((r: any) => r.hazardId).join(', ')}]`)
-          console.log(`      Strategy applicableBusinessTypes: [${JSON.parse(strategy.applicableBusinessTypes || '[]').join(', ')}]`)
-          console.log(`      User's businessTypeId: ${businessTypeId}, category: ${businessType.category}`)
-          return null
+          console.log(`  ⚠️  Strategy ${strategy.strategyId} has no matching initial risks, but including it for manual selection availability.`)
+          // return null // DISABLED: Allow all strategies
         }
 
         console.log(`  ✓ ${strategy.strategyId}: Matches ${matchingRisks.length} risk(s): ${matchingRisks.map((r: any) => `${r.hazardId} (${r.riskScore?.toFixed(1)})`).join(', ')}`)
@@ -1537,23 +1488,21 @@ export async function POST(request: NextRequest) {
       .filter((s): s is ScoredStrategy => s !== null) // Remove null entries
 
     // SMART SELECTION: Don't just take top N, select for coverage and need
-    const essential = scoredStrategies.filter(s => s.priorityTier === 'essential')
-      .sort((a, b) => b.totalScore - a.totalScore)
-      .slice(0, 5) // Max 5 essential
+    // CRITICAL CHANGE: Return ALL strategies so frontend can filter dynamically
+    // when users manually add risks. Do NOT slice or filter by score here.
 
-    const recommended = scoredStrategies.filter(s => s.priorityTier === 'recommended')
-      .sort((a, b) => b.totalScore - a.totalScore)
-      .slice(0, 5) // Max 5 recommended
+    const selectedStrategies = scoredStrategies.sort((a, b) => {
+      // Sort by priority then score
+      const priorityOrder = { 'essential': 3, 'recommended': 2, 'optional': 1 }
+      const priorityDiff = priorityOrder[a.priorityTier] - priorityOrder[b.priorityTier]
+      if (priorityDiff !== 0) return priorityDiff
+      return b.totalScore - a.totalScore
+    })
 
-    const optional = scoredStrategies.filter(s => s.priorityTier === 'optional')
-      .filter(s => s.totalScore >= 65) // Only high-scoring optional
-      .sort((a, b) => b.totalScore - a.totalScore)
-      .slice(0, 3) // Max 3 optional
-
-    const selectedStrategies = [...essential, ...recommended, ...optional]
+    console.log(`✅ Returning ${selectedStrategies.length} strategies (ALL available)`)
 
     console.log(`✅ Selected ${selectedStrategies.length} strategies:`)
-    console.log(`   Essential: ${essential.length}, Recommended: ${recommended.length}, Optional: ${optional.length}`)
+    // console.log(`   Essential: ${essential.length}, Recommended: ${recommended.length}, Optional: ${optional.length}`)
 
     // Helper function to safely parse JSON fields with fallback
     const parseJSONField = (field: string | null | undefined, fallback: any = null): any => {

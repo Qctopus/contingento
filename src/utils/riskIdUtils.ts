@@ -42,6 +42,9 @@ export function normalizeRiskId(riskId: string): string {
     // Special case: "flooding" should map to "flood"
     if (riskId.toLowerCase() === 'flooding') return 'flood'
     if (riskId === 'pandemicDisease') return 'pandemic'
+    if (riskId === 'cybersecurity_incident') return 'cyber_attack' // New mapping
+    if (riskId === 'health_emergency') return 'pandemic' // New mapping
+    if (riskId === 'supply_disruption') return 'supply_chain_disruption' // New mapping
 
     // Convert to snake_case
     return riskId

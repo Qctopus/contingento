@@ -279,8 +279,44 @@ export default function StrategySelectionStep({
     return reasoning
   }
 
+  // CRITICAL FIX: Filter strategies to ONLY those that match user-selected risks
+  // Before grouping, remove strategies that don't apply to ANY of the validHazards
+  const validHazardIds = new Set(validHazards ? validHazards.map(h => h.hazardId) : [])
+
+  console.log('\n🔍 FILTERING STRATEGIES BY SELECTED RISKS')
+  console.log('Valid hazard IDs:', Array.from(validHazardIds))
+  console.log('Total strategies before filtering:', strategies.length)
+
+  const relevantStrategies = strategies.filter(strategy => {
+    // Parse applicableRisks
+    let risks: string[] = []
+    if (strategy.applicableRisks) {
+      if (typeof strategy.applicableRisks === 'string') {
+        try {
+          risks = JSON.parse(strategy.applicableRisks)
+        } catch {
+          risks = []
+        }
+      } else if (Array.isArray(strategy.applicableRisks)) {
+        risks = strategy.applicableRisks
+      }
+    }
+
+    // Check if ANY of the strategy's applicable risks match user's selected risks
+    const hasMatch = risks.some(risk => validHazardIds.has(risk))
+
+    if (!hasMatch && risks.length > 0) {
+      console.log(` ❌ Excluding strategy "${strategy.name || strategy.id}" - risks [${risks.join(', ')}] don't match selected`)
+    }
+
+    return hasMatch || risks.length === 0 // Keep strategies with no risks (general) or matching risks
+  })
+
+  console.log('Relevant strategies after filtering:', relevantStrategies.length)
+  console.log('Strategy IDs:', relevantStrategies.map(s => s.id || s.strategyId).join(', '))
+
   // Group strategies by risk with primary/cross-reference logic
-  const strategiesByRisk = strategies.reduce((acc, strategy) => {
+  const strategiesByRisk = relevantStrategies.reduce((acc, strategy) => {
     // Parse applicableRisks safely
     let risks: string[] = []
     if (strategy.applicableRisks) {
@@ -295,9 +331,8 @@ export default function StrategySelectionStep({
       }
     }
 
-    // Normalize all risk IDs to snake_case for consistency
-    // Use the shared utility
-    risks = risks.map(risk => normalizeRiskId(risk))
+    // CRITICAL: Do NOT normalize risk IDs - use exact IDs from database
+    // Strategies must have the EXACT hazardId in their applicableRisks array
 
     if (risks.length === 0) {
       // Strategies with no applicable risks go in a general section
@@ -332,14 +367,11 @@ export default function StrategySelectionStep({
   //   return getCanonicalRiskId(id)
   // }
 
-  // More comprehensive matching function that handles various ID formats
+  // CRITICAL: Use EXACT ID matching - no normalization
+  // Strategies must have the exact hazardId in their applicableRisks array
   const riskIdsMatch = (riskId1: string, riskId2: string): boolean => {
     if (!riskId1 || !riskId2) return false
-
-    const norm1 = normalizeRiskId(riskId1)
-    const norm2 = normalizeRiskId(riskId2)
-
-    return norm1 === norm2
+    return riskId1 === riskId2 // Exact match only
   }
 
   // Filter to only include risks that the user has selected/assessed
@@ -348,13 +380,12 @@ export default function StrategySelectionStep({
     validHazards ? validHazards.map(h => h.hazardId) : []
   )
 
-  // Also create normalized sets for matching
-  const validNormalizedIds = new Set(
-    validHazards ? validHazards.map((h: any) => {
-      const id = h.hazardId || ''
-      return normalizeRiskId(id)
-    }).filter((id: string) => id) : []
-  )
+  // REMOVED: No normalization - exact ID matching only
+
+  console.log('\n=== STRATEGY FILTERING DEBUG ===')
+  console.log('validHazards:', validHazards)
+  console.log('validHazards IDs:', validHazards?.map(h => h.hazardId))
+  console.log('strategiesByRisk keys BEFORE filtering:', Object.keys(strategiesByRisk))
 
   // Remove risks that user hasn't selected from strategiesByRisk
   // Use flexible matching to handle different ID formats
@@ -367,22 +398,28 @@ export default function StrategySelectionStep({
     if (validHazards && validHazards.length > 0) {
       matches = validHazards.some((h: any) => {
         const hazardId = h.hazardId || ''
-        return riskIdsMatch(risk, hazardId)
+        const doesMatch = riskIdsMatch(risk, hazardId)
+        console.log(`  Comparing strategy risk "${risk}" with hazard "${hazardId}": ${doesMatch}`)
+        return doesMatch
       })
     }
 
+    console.log(`  Risk "${risk}" matches=${matches}`)
     if (!matches) {
+      console.log(`  ❌ DELETING risk "${risk}" from strategiesByRisk`)
       delete strategiesByRisk[risk]
+    } else {
+      console.log(`  ✅ KEEPING risk "${risk}" in strategiesByRisk`)
     }
   })
+
+  console.log('strategiesByRisk keys AFTER filtering:', Object.keys(strategiesByRisk))
+  console.log('=== END FILTERING DEBUG ===\n')
 
   // Debug logging to help diagnose matching issues
   if (validHazards && validHazards.length > 0) {
     console.log('[DEBUG] Risk-Strategy Matching:')
-    console.log('Valid Hazards:', validHazards?.map(h => ({
-      id: h.hazardId,
-      normalized: normalizeRiskId(h.hazardId)
-    })))
+    console.log('Valid Hazards (EXACT IDs):', validHazards?.map(h => h.hazardId))
     console.log('Strategy Groups:', Object.keys(strategiesByRisk))
     console.log('Matched Groups After Filter:', Object.keys(strategiesByRisk).filter(risk =>
       validHazards?.some(h => riskIdsMatch(risk, h.hazardId))
