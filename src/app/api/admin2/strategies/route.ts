@@ -10,6 +10,7 @@ import {
 import { transformStrategyForApi } from '@/lib/admin2/transformers'
 import { validateStrategyData } from '@/lib/admin2/validation'
 import { localizeStrategy } from '@/utils/localizationUtils'
+import { costCalculationService } from '@/services/costCalculationService'
 import type { Locale } from '@/i18n/config'
 
 export const dynamic = 'force-dynamic'
@@ -52,13 +53,74 @@ export async function GET(request: NextRequest) {
       })
     }, 'GET /api/admin2/strategies')
 
+    // Pre-fetch cost calculation data (Multipliers and Cost Items)
+    const prisma = getPrismaClient()
+    
+    // 1. Fetch Country Multiplier for JM (default context)
+    const multiplier = await prisma.countryCostMultiplier.findUnique({
+      where: { countryCode: 'JM' }
+    })
+
+    // 2. Collect all used Cost Items IDs
+    const costItemIds = new Set<string>()
+    strategies.forEach((s: any) => {
+      s.ActionStep?.forEach((step: any) => {
+        step.ActionStepItemCost?.forEach((ic: any) => {
+          if (ic.itemId) costItemIds.add(ic.itemId)
+        })
+      })
+    })
+
+    // 3. Fetch used Cost Items
+    const costItemsList = await prisma.costItem.findMany({
+      where: { itemId: { in: Array.from(costItemIds) } }
+    })
+    
+    const costItemsMap = new Map<string, any>()
+    costItemsList.forEach(item => costItemsMap.set(item.itemId, item))
+
+    // Prepare Data Context for Service
+    const dataContext = {
+      countryMultiplier: multiplier,
+      costItems: costItemsMap
+    }
+
+    // Calculate costs for each strategy using the service with injected data
+    const enrichedStrategies = await Promise.all(strategies.map(async (strategy: any) => {
+      // Map ActionSteps to the format expected by cost service
+      const stepsForCalc = (strategy.ActionStep || []).map((step: any) => ({
+        id: step.id,
+        phase: step.phase,
+        costItems: (step.ActionStepItemCost || []).map((ic: any) => ({
+          actionStepId: step.id,
+          itemId: ic.itemId,
+          quantity: ic.quantity,
+          item: ic.CostItem // Prisma include already populated this, but we also have map
+        }))
+      }))
+
+      // Calculate cost using injected data (no fetch calls)
+      const costCalc = await costCalculationService.calculateStrategyCost(stepsForCalc, 'JM', dataContext)
+      
+      return {
+        ...strategy,
+        // Inject calculated costs
+        calculatedTotalCostUSD: costCalc.totalUSD,
+        calculatedTotalCostJMD: costCalc.localCurrency.amount,
+        // Override cost estimate if we have real data
+        costEstimateJMD: costCalc.totalUSD > 0 
+          ? costCalculationService.formatCurrency(costCalc.localCurrency.amount, 'JMD')
+          : (strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost))
+      }
+    }))
+
     // Transform database strategies to match frontend format
     // The transformer will handle flattening the translations
-    const transformedStrategies = strategies.map(transformStrategyForApi)
+    const transformedStrategies = enrichedStrategies.map(transformStrategyForApi)
 
     console.log(`🛡️ Strategies GET API: Successfully fetched ${strategies.length} strategies from database (locale: ${locale})`)
     return createSuccessResponse(transformedStrategies)
-
+    
   } catch (error) {
     return handleApiError(error, 'Failed to fetch strategies')
   }
@@ -123,13 +185,7 @@ export async function POST(request: NextRequest) {
           : safeJsonStringify(strategyData.requiredForRisks || [])
       }
 
-      // Calculated costs (from frontend calculation) - these seem to be on the base table based on previous code?
-      // Checking schema: calculatedCostUSD is NOT in RiskMitigationStrategy in the schema I viewed (lines 703-735).
-      // It has costEstimateJMD, implementationCost, etc.
-      // But the previous code was trying to save calculatedCostUSD. 
-      // If it's not in schema, it will fail. I will omit them if they are not in schema.
-      // Schema has: costEstimateJMD, implementationCost, implementationTime, estimatedTotalHours, estimatedDIYSavings.
-
+      // Calculated costs
       if (strategyData.costEstimateJMD !== undefined) createData.costEstimateJMD = strategyData.costEstimateJMD
       if (strategyData.implementationCost !== undefined) createData.implementationCost = strategyData.implementationCost
       if (strategyData.implementationTime !== undefined) createData.implementationTime = strategyData.implementationTime
@@ -167,3 +223,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Helper for cost estimate (fallback)
+function getCostEstimateJMD(cost: string): string {
+  switch (cost) {
+    case 'low':
+      return 'Under JMD $10,000'
+    case 'medium':
+      return 'JMD $10,000 - $50,000'
+    case 'high':
+      return 'Over JMD $50,000'
+    default:
+      return 'Cost estimate not available'
+  }
+}

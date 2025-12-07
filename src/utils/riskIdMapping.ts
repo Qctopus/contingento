@@ -1,44 +1,78 @@
-// Canonical risk ID mappings (all in snake_case)
+/**
+ * Canonical risk ID mappings
+ * Maps various input formats to the 13 canonical hazard IDs in AdminHazardType
+ * 
+ * CANONICAL IDs: hurricane, flooding, drought, earthquake, landslide,
+ *                power_outage, fire, cybersecurity_incident,
+ *                civil_unrest, break_in_theft, health_emergency,
+ *                supply_disruption, economic_downturn
+ */
 export const RISK_ID_MAPPINGS: Record<string, string> = {
-    // Standard mappings
+    // Hurricane
     'hurricane': 'hurricane',
     'Hurricane': 'hurricane',
-    'flood': 'flood',
-    'Flood': 'flood',
-    'flooding': 'flood',
-    'Flooding': 'flood',
+    
+    // Flooding (not "flood")
+    'flood': 'flooding',
+    'Flood': 'flooding',
+    'flooding': 'flooding',
+    'Flooding': 'flooding',
+    
+    // Drought
+    'drought': 'drought',
+    'Drought': 'drought',
+    
+    // Earthquake
+    'earthquake': 'earthquake',
+    'Earthquake': 'earthquake',
+    
+    // Landslide
+    'landslide': 'landslide',
+    'Landslide': 'landslide',
+    
+    // Power Outage
     'powerOutage': 'power_outage',
     'PowerOutage': 'power_outage',
     'power_outage': 'power_outage',
-    'cyberAttack': 'cyber_attack',
-    'CyberAttack': 'cyber_attack',
-    'cyber_attack': 'cyber_attack',
-    'supplyChainDisruption': 'supply_chain_disruption',
-    'SupplyChainDisruption': 'supply_chain_disruption',
-    'supply_chain_disruption': 'supply_chain_disruption',
-    'economicDownturn': 'economic_downturn',
-    'EconomicDownturn': 'economic_downturn',
-    'economic_downturn': 'economic_downturn',
-    'pandemic': 'pandemic',
-    'pandemicDisease': 'pandemic',
-    'PandemicDisease': 'pandemic',
+    
+    // Fire
+    'fire': 'fire',
+    'Fire': 'fire',
+    
+    // Cybersecurity Incident (not "cyber_attack")
+    'cyberAttack': 'cybersecurity_incident',
+    'CyberAttack': 'cybersecurity_incident',
+    'cyber_attack': 'cybersecurity_incident',
+    'cybersecurity_incident': 'cybersecurity_incident',
+    
+    // Civil Unrest
     'civilUnrest': 'civil_unrest',
     'CivilUnrest': 'civil_unrest',
     'civil_unrest': 'civil_unrest',
-    'fire': 'fire',
-    'Fire': 'fire',
-    'earthquake': 'earthquake',
-    'Earthquake': 'earthquake',
-    'drought': 'drought',
-    'Drought': 'drought',
-    'theft': 'theft',
-    'crime': 'crime',
-    'Crime': 'crime',
-    'landslide': 'landslide',
-    'Landslide': 'landslide',
-    'equipmentFailure': 'equipment_failure',
-    'EquipmentFailure': 'equipment_failure',
-    'equipment_failure': 'equipment_failure'
+    
+    // Break-in/Theft (not "theft" or "crime")
+    'theft': 'break_in_theft',
+    'crime': 'break_in_theft',
+    'Crime': 'break_in_theft',
+    'break_in_theft': 'break_in_theft',
+    'theft_vandalism': 'break_in_theft',
+    
+    // Health Emergency (not "pandemic")
+    'pandemic': 'health_emergency',
+    'pandemicDisease': 'health_emergency',
+    'PandemicDisease': 'health_emergency',
+    'health_emergency': 'health_emergency',
+    
+    // Supply Disruption (not "supply_chain_disruption")
+    'supplyChainDisruption': 'supply_disruption',
+    'SupplyChainDisruption': 'supply_disruption',
+    'supply_chain_disruption': 'supply_disruption',
+    'supply_disruption': 'supply_disruption',
+    
+    // Economic Downturn
+    'economicDownturn': 'economic_downturn',
+    'EconomicDownturn': 'economic_downturn',
+    'economic_downturn': 'economic_downturn'
 }
 
 export function getCanonicalRiskId(riskId: string): string {

@@ -119,10 +119,92 @@ function buildBasicRiskProfile(parishRisk: any): any {
 /**
  * Transform BusinessType data from database to API format
  */
-export function transformBusinessTypeForApi(businessType: any): any {
+export function transformBusinessTypeForApi(businessType: any, raw: boolean = false): any {
   if (!businessType) return null
 
-  // Extract translation if available
+  // If raw mode, construct multilingual objects from all translations
+  if (raw && Array.isArray(businessType.BusinessTypeTranslation)) {
+    const multilingualFields: any = {
+      name: { en: '', es: '', fr: '' },
+      description: { en: '', es: '', fr: '' },
+      exampleBusinessPurposes: { en: [], es: [], fr: [] },
+      exampleProducts: { en: [], es: [], fr: [] },
+      exampleKeyPersonnel: { en: [], es: [], fr: [] },
+      exampleCustomerBase: { en: [], es: [], fr: [] },
+      minimumEquipment: { en: [], es: [], fr: [] }
+    }
+
+    // Populate multilingual fields from translations
+    businessType.BusinessTypeTranslation.forEach((t: any) => {
+      if (['en', 'es', 'fr'].includes(t.locale)) {
+        const locale = t.locale as 'en' | 'es' | 'fr'
+        multilingualFields.name[locale] = t.name || ''
+        multilingualFields.description[locale] = t.description || ''
+        multilingualFields.exampleBusinessPurposes[locale] = safeJsonParse(t.exampleBusinessPurposes, [])
+        multilingualFields.exampleProducts[locale] = safeJsonParse(t.exampleProducts, [])
+        multilingualFields.exampleKeyPersonnel[locale] = safeJsonParse(t.exampleKeyPersonnel, [])
+        multilingualFields.exampleCustomerBase[locale] = safeJsonParse(t.exampleCustomerBase, [])
+        multilingualFields.minimumEquipment[locale] = safeJsonParse(t.minimumEquipment, [])
+      }
+    })
+
+    // Also check base fields if translation is missing (legacy fallback)
+    if (!multilingualFields.name.en && businessType.name) multilingualFields.name.en = businessType.name
+    if (!multilingualFields.description.en && businessType.description) multilingualFields.description.en = businessType.description
+    
+    // Array fallbacks
+    if (multilingualFields.exampleBusinessPurposes.en.length === 0 && businessType.exampleBusinessPurposes) 
+      multilingualFields.exampleBusinessPurposes.en = safeJsonParse(businessType.exampleBusinessPurposes, [])
+    
+    if (multilingualFields.exampleProducts.en.length === 0 && businessType.exampleProducts) 
+      multilingualFields.exampleProducts.en = safeJsonParse(businessType.exampleProducts, [])
+      
+    if (multilingualFields.exampleKeyPersonnel.en.length === 0 && businessType.exampleKeyPersonnel) 
+      multilingualFields.exampleKeyPersonnel.en = safeJsonParse(businessType.exampleKeyPersonnel, [])
+      
+    if (multilingualFields.exampleCustomerBase.en.length === 0 && businessType.exampleCustomerBase) 
+      multilingualFields.exampleCustomerBase.en = safeJsonParse(businessType.exampleCustomerBase, [])
+      
+    if (multilingualFields.minimumEquipment.en.length === 0 && businessType.minimumEquipment) 
+      multilingualFields.minimumEquipment.en = safeJsonParse(businessType.minimumEquipment, [])
+
+    return {
+      id: businessType.id,
+      businessTypeId: businessType.businessTypeId,
+      category: businessType.category,
+      subcategory: businessType.subcategory,
+      
+      // Multilingual fields (as JSON strings or objects, Editor expects objects for some, strings for others?)
+      // The Editor's parseMultilingual expects JSON string OR object.
+      // The Editor's parseMultilingualArray expects JSON string OR object.
+      // Let's return objects directly, the frontend seems to handle it.
+      ...multilingualFields,
+
+      // Non-translatable characteristics
+      touristDependency: businessType.touristDependency,
+      digitalDependency: businessType.digitalDependency,
+      physicalAssetIntensity: businessType.physicalAssetIntensity,
+      seasonalityFactor: businessType.seasonalityFactor,
+      supplyChainComplexity: businessType.supplyChainComplexity,
+      regulatoryCompliance: businessType.regulatoryCompliance,
+
+      // Risk vulnerabilities
+      riskVulnerabilities: (businessType.BusinessRiskVulnerability || []).map((rv: any) => ({
+        riskType: rv.riskType,
+        vulnerabilityLevel: rv.vulnerabilityLevel,
+        impactSeverity: rv.impactSeverity
+      })),
+
+      // Remove raw arrays
+      BusinessTypeTranslation: undefined,
+      BusinessRiskVulnerability: undefined,
+
+      // Placeholder for strategies
+      strategies: []
+    }
+  }
+
+  // Extract translation if available (Normal mode)
   const translation = businessType.BusinessTypeTranslation?.[0] || {}
 
   return {
@@ -131,8 +213,8 @@ export function transformBusinessTypeForApi(businessType: any): any {
     category: businessType.category,
     subcategory: businessType.subcategory,
 
-    // Use translation fields with fallback
-    name: translation.name || businessType.businessTypeId, // Fallback to ID if no name
+    // Use translation fields (no legacy fallback)
+    name: translation.name || '',
     description: translation.description || '',
     exampleBusinessPurposes: translation.exampleBusinessPurposes || [],
     exampleProducts: translation.exampleProducts || [],
@@ -176,20 +258,20 @@ export function transformStrategyForApi(strategy: any): any {
 
   const transformed = {
     ...strategy,
-    // Basic Info - Use translation fields, fallback to main table fields
-    name: translation.name || strategy.name,
-    description: translation.description || strategy.description,
+    // Basic Info - Use translation fields
+    name: translation.name || '',
+    description: translation.description || '',
 
     // SME-Focused Content (NEW)
-    smeTitle: translation.smeTitle || strategy.smeTitle,
-    smeSummary: translation.smeSummary || strategy.smeSummary,
-    benefitsBullets: translation.benefitsBullets || safeJsonParse(strategy.benefitsBullets, []),
-    realWorldExample: translation.realWorldExample || strategy.realWorldExample,
+    smeTitle: translation.smeTitle || '',
+    smeSummary: translation.smeSummary || '',
+    benefitsBullets: translation.benefitsBullets || [],
+    realWorldExample: translation.realWorldExample || '',
 
     // Backward compatibility (deprecated fields)
-    smeDescription: translation.smeDescription || strategy.smeDescription || strategy.description || '',
-    whyImportant: translation.whyImportant || strategy.whyImportant || `This strategy helps protect your business from ${safeJsonParse(strategy.applicableRisks, []).join(', ')} risks.`,
-
+    smeDescription: translation.smeDescription || '',
+    whyImportant: translation.whyImportant || '',
+    
     // Implementation Details (enhanced)
     costEstimateJMD: strategy.costEstimateJMD || getCostEstimateJMD(strategy.implementationCost), // Use DB value if available, otherwise compute
     totalEstimatedHours: strategy.totalEstimatedHours,
@@ -202,13 +284,13 @@ export function transformStrategyForApi(strategy: any): any {
     requiredForRisks: safeJsonParse(strategy.requiredForRisks, []),
 
     // Resource-Limited SME Support (NEW)
-    lowBudgetAlternative: translation.lowBudgetAlternative || strategy.lowBudgetAlternative,
-    diyApproach: translation.diyApproach || strategy.diyApproach,
+    lowBudgetAlternative: translation.lowBudgetAlternative || '',
+    diyApproach: translation.diyApproach || '',
     estimatedDIYSavings: strategy.estimatedDIYSavings,
 
     // BCP Document Integration (NEW)
     bcpSectionMapping: strategy.bcpSectionMapping,
-    bcpTemplateText: translation.bcpTemplateText || strategy.bcpTemplateText,
+    bcpTemplateText: translation.bcpTemplateText || '',
 
     // Personalization (NEW)
     industryVariants: safeJsonParse(strategy.industryVariants, {}),
@@ -223,15 +305,16 @@ export function transformStrategyForApi(strategy: any): any {
     businessTypes: applicableBusinessTypesFromDb, // Map applicableBusinessTypes to businessTypes for frontend
 
     // Guidance arrays
-    helpfulTips: translation.helpfulTips || safeJsonParse(strategy.helpfulTips, []),
-    commonMistakes: translation.commonMistakes || safeJsonParse(strategy.commonMistakes, []),
-    successMetrics: translation.successMetrics || safeJsonParse(strategy.successMetrics, []),
+    helpfulTips: translation.helpfulTips || [],
+    commonMistakes: translation.commonMistakes || [],
+    successMetrics: translation.successMetrics || [],
 
     // Transform action steps with their translations
-    actionSteps: (strategy.actionSteps || []).map(transformActionStepForApi),
+    actionSteps: (strategy.ActionStep || strategy.actionSteps || []).map(transformActionStepForApi),
 
     // Remove raw translation arrays from response
-    StrategyTranslation: undefined
+    StrategyTranslation: undefined,
+    ActionStep: undefined
   }
 
   return transformDatesForApi(transformed)
@@ -247,62 +330,63 @@ function transformActionStepForApi(step: any): any {
 
     // Basic Info
     phase: step.phase,
-    title: translation.title || step.title,
-    action: translation.description || step.description,
-    description: translation.description || step.description,
-    smeAction: translation.smeAction || step.smeAction,
+    title: translation.title || '',
+    action: translation.description || '',
+    description: translation.description || '',
+    smeAction: translation.smeAction || '',
     sortOrder: step.sortOrder,
 
     // SME Context (NEW)
-    whyThisStepMatters: translation.whyThisStepMatters || step.whyThisStepMatters,
-    whatHappensIfSkipped: translation.whatHappensIfSkipped || step.whatHappensIfSkipped,
+    whyThisStepMatters: translation.whyThisStepMatters || '',
+    whatHappensIfSkipped: translation.whatHappensIfSkipped || '',
 
     // Timing & Difficulty (NEW)
-    timeframe: translation.timeframe || step.timeframe,
+    timeframe: translation.timeframe || '',
     estimatedMinutes: step.estimatedMinutes,
     difficultyLevel: step.difficultyLevel || 'medium',
 
     // Resources & Costs
-    responsibility: translation.responsibility || step.responsibility,
+    responsibility: translation.responsibility || '',
     cost: step.estimatedCost,
     estimatedCostJMD: step.estimatedCostJMD,
     resources: safeJsonParse(step.resources, []),
     checklist: safeJsonParse(step.checklist, []),
 
     // Cost Items (NEW - structured costing system)
-    costItems: (step.itemCosts || []).map((itemCost: any) => ({
+    // Handle Prisma relation name (ActionStepItemCost)
+    costItems: (step.ActionStepItemCost || step.itemCosts || []).map((itemCost: any) => ({
       id: itemCost.id,
       itemId: itemCost.itemId,
       quantity: itemCost.quantity,
       customNotes: itemCost.customNotes,
-      item: itemCost.item ? {
-        id: itemCost.item.id,
-        itemId: itemCost.item.itemId,
-        name: itemCost.item.name,
-        description: itemCost.item.description,
-        category: itemCost.item.category,
-        baseUSD: itemCost.item.baseUSD,
-        baseUSDMin: itemCost.item.baseUSDMin,
-        baseUSDMax: itemCost.item.baseUSDMax,
-        unit: itemCost.item.unit
+      item: (itemCost.CostItem || itemCost.item) ? {
+        id: (itemCost.CostItem || itemCost.item).id,
+        itemId: (itemCost.CostItem || itemCost.item).itemId,
+        name: (itemCost.CostItem || itemCost.item).name,
+        description: (itemCost.CostItem || itemCost.item).description,
+        category: (itemCost.CostItem || itemCost.item).category,
+        baseUSD: (itemCost.CostItem || itemCost.item).baseUSD,
+        baseUSDMin: (itemCost.CostItem || itemCost.item).baseUSDMin,
+        baseUSDMax: (itemCost.CostItem || itemCost.item).baseUSDMax,
+        unit: (itemCost.CostItem || itemCost.item).unit
       } : undefined
     })),
 
     // Validation & Completion (NEW)
-    howToKnowItsDone: translation.howToKnowItsDone || step.howToKnowItsDone,
-    exampleOutput: translation.exampleOutput || step.exampleOutput,
+    howToKnowItsDone: translation.howToKnowItsDone || '',
+    exampleOutput: translation.exampleOutput || '',
 
     // Dependencies (NEW)
     dependsOnSteps: safeJsonParse(step.dependsOnSteps, []),
     isOptional: step.isOptional || false,
-    skipConditions: translation.skipConditions || step.skipConditions,
+    skipConditions: translation.skipConditions || '',
 
     // Alternatives for resource-limited SMEs (NEW)
-    freeAlternative: translation.freeAlternative || step.freeAlternative,
-    lowTechOption: translation.lowTechOption || step.lowTechOption,
+    freeAlternative: translation.freeAlternative || '',
+    lowTechOption: translation.lowTechOption || '',
 
     // Help Resources (NEW)
-    commonMistakesForStep: translation.commonMistakesForStep || safeJsonParse(step.commonMistakesForStep, []),
+    commonMistakesForStep: translation.commonMistakesForStep || [],
     videoTutorialUrl: step.videoTutorialUrl,
     externalResourceUrl: step.externalResourceUrl,
 

@@ -384,7 +384,7 @@ export async function POST(request: NextRequest) {
             id: location.adminUnitId
           },
           include: {
-            adminUnitRisk: true
+            AdminUnitRisk: true
           }
         })
 
@@ -401,7 +401,7 @@ export async function POST(request: NextRequest) {
             name: location.parish
           },
           include: {
-            adminUnitRisk: true
+            AdminUnitRisk: true
           }
         })
 
@@ -448,7 +448,7 @@ export async function POST(request: NextRequest) {
       },
       businessProfile: {
         dependencies: {}, // BusinessType has different dependency structure
-        vulnerabilityMatrix: businessType.riskVulnerabilities?.map((rv: any) => ({
+        vulnerabilityMatrix: businessType.BusinessRiskVulnerability?.map((rv: any) => ({
           riskType: rv.riskType,
           vulnerabilityLevel: rv.vulnerabilityLevel,
           impactSeverity: rv.impactSeverity
@@ -484,7 +484,7 @@ export async function POST(request: NextRequest) {
         },
         ESSENTIAL_FUNCTIONS: {}
       },
-      hazards: businessType.riskVulnerabilities?.map((rv: any) => ({
+      hazards: businessType.BusinessRiskVulnerability?.map((rv: any) => ({
         hazardId: rv.riskType,
         hazardName: rv.riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
         riskLevel: rv.vulnerabilityLevel > 3 ? 'high' : rv.vulnerabilityLevel > 2 ? 'medium' : 'low',
@@ -494,50 +494,50 @@ export async function POST(request: NextRequest) {
         warningTime: 'hours',
         geographicScope: 'localized'
       })) || [],
-      locationRisks: locationData?.adminUnitRisk ? [
+      locationRisks: locationData?.AdminUnitRisk ? [
         // Only include risks that have been explicitly set (> 0)
-        ...(locationData.adminUnitRisk.hurricaneLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.hurricaneLevel > 0 ? [{
           hazardId: 'hurricane',
           hazardName: 'Hurricane',
-          locationRiskLevel: locationData.adminUnitRisk.hurricaneLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.hurricaneNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.hurricaneLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.hurricaneNotes || ''
         }] : []),
-        ...(locationData.adminUnitRisk.floodLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.floodLevel > 0 ? [{
           hazardId: 'flood',
           hazardName: 'Flood',
-          locationRiskLevel: locationData.adminUnitRisk.floodLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.floodNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.floodLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.floodNotes || ''
         }] : []),
-        ...(locationData.adminUnitRisk.earthquakeLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.earthquakeLevel > 0 ? [{
           hazardId: 'earthquake',
           hazardName: 'Earthquake',
-          locationRiskLevel: locationData.adminUnitRisk.earthquakeLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.earthquakeNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.earthquakeLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.earthquakeNotes || ''
         }] : []),
-        ...(locationData.adminUnitRisk.droughtLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.droughtLevel > 0 ? [{
           hazardId: 'drought',
           hazardName: 'Drought',
-          locationRiskLevel: locationData.adminUnitRisk.droughtLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.droughtNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.droughtLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.droughtNotes || ''
         }] : []),
-        ...(locationData.adminUnitRisk.landslideLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.landslideLevel > 0 ? [{
           hazardId: 'landslide',
           hazardName: 'Landslide',
-          locationRiskLevel: locationData.adminUnitRisk.landslideLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.landslideNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.landslideLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.landslideNotes || ''
         }] : []),
-        ...(locationData.adminUnitRisk.powerOutageLevel > 0 ? [{
+        ...(locationData.AdminUnitRisk.powerOutageLevel > 0 ? [{
           hazardId: 'power_outage',
           hazardName: 'Power Outage',
-          locationRiskLevel: locationData.adminUnitRisk.powerOutageLevel > 3 ? 'high' : 'medium',
-          notes: locationData.adminUnitRisk.powerOutageNotes || ''
+          locationRiskLevel: locationData.AdminUnitRisk.powerOutageLevel > 3 ? 'high' : 'medium',
+          notes: locationData.AdminUnitRisk.powerOutageNotes || ''
         }] : [])
       ] : [],
       riskPreview: {
-        highRiskHazards: businessType.riskVulnerabilities?.filter((rv: any) => rv.vulnerabilityLevel > 3)
+        highRiskHazards: businessType.BusinessRiskVulnerability?.filter((rv: any) => rv.vulnerabilityLevel > 3)
           .map((rv: any) => rv.riskType.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())) || [],
-        totalRisks: businessType.riskVulnerabilities?.length || 0,
-        locationModifiers: locationData?.adminUnitRisk ? 2 : 0
+        totalRisks: businessType.BusinessRiskVulnerability?.length || 0,
+        locationModifiers: locationData?.AdminUnitRisk ? 2 : 0
       },
       locationWarnings: generateLocationWarnings(location, locationData),
       metadata: {
@@ -561,8 +561,8 @@ export async function POST(request: NextRequest) {
     console.log('🎯 Generating risk assessment matrix...')
 
     // Process business type risk vulnerabilities
-    if (businessType.riskVulnerabilities) {
-      for (const vulnerability of businessType.riskVulnerabilities) {
+    if (businessType.BusinessRiskVulnerability) {
+      for (const vulnerability of businessType.BusinessRiskVulnerability) {
         const riskType = vulnerability.riskType
 
         // CRITICAL: Normalize risk type to snake_case for consistency with database
@@ -584,8 +584,8 @@ export async function POST(request: NextRequest) {
         let locationRiskLevel = null // null means no data set by admin
         let hasLocationData = false
 
-        if (locationData?.adminUnitRisk) {
-          const adminRisk = locationData.adminUnitRisk
+        if (locationData?.AdminUnitRisk) {
+          const adminRisk = locationData.AdminUnitRisk
 
           // Get the location-specific risk level for this hazard type
           // NOTE: We check !== null to differentiate between 0 (explicitly set as no risk) and unset
@@ -819,8 +819,8 @@ export async function POST(request: NextRequest) {
     // STEP 5: Add admin unit-specific risks that aren't in business type vulnerabilities
     // This allows admin to set risks for an admin unit that apply regardless of business type
     // IMPORTANT: Now supports DYNAMIC risk types from riskProfileJson (cyber_attack, pandemic, etc.)
-    if (locationData?.adminUnitRisk) {
-      const adminRisk = locationData.adminUnitRisk
+    if (locationData?.AdminUnitRisk) {
+      const adminRisk = locationData.AdminUnitRisk
 
       // Start with hardcoded fields for backward compatibility
       const allAdminRisks: Array<{ type: string, level: number, notes: string }> = [
@@ -971,29 +971,33 @@ export async function POST(request: NextRequest) {
       console.log(`📋 Loaded ${validRiskTypes.length} active hazard types from admin2 backend:`, validRiskTypes.map(h => h.hazardId).join(', '))
     } catch (error) {
       console.error('⚠️ Failed to fetch hazard types from database, using fallback list:', error)
-      // Fallback to standard 13 risks if database fetch fails
+      // Fallback - matches AdminHazardType database table exactly (13 hazards)
       const fallbackRiskTypes = [
-        { hazardId: 'hurricane', name: 'Hurricane/Tropical Storm' },
-        { hazardId: 'flood', name: 'Flood' },
-        { hazardId: 'earthquake', name: 'Earthquake' },
+        // Natural Hazards
+        { hazardId: 'hurricane', name: 'Hurricane / Tropical Storm' },
+        { hazardId: 'flooding', name: 'Flooding' },
         { hazardId: 'drought', name: 'Drought' },
-        { hazardId: 'landslide', name: 'Landslide' },
+        { hazardId: 'earthquake', name: 'Earthquake' },
+        { hazardId: 'landslide', name: 'Landslide / Mudslide' },
+        // Technological Hazards
         { hazardId: 'power_outage', name: 'Power Outage' },
         { hazardId: 'fire', name: 'Fire' },
-        { hazardId: 'cyber_attack', name: 'Cyber Attack' },
-        { hazardId: 'terrorism', name: 'Security Threats' },
-        { hazardId: 'pandemic', name: 'Health Emergencies' },
-        { hazardId: 'economic_downturn', name: 'Economic Crisis' },
-        { hazardId: 'supply_chain_disruption', name: 'Supply Chain Issues' },
-        { hazardId: 'civil_unrest', name: 'Civil Unrest' }
+        { hazardId: 'cybersecurity_incident', name: 'Cybersecurity Incident / Data Breach' },
+        // Human/Social Hazards
+        { hazardId: 'civil_unrest', name: 'Civil Unrest / Protests' },
+        { hazardId: 'break_in_theft', name: 'Break-ins & Theft' },
+        { hazardId: 'health_emergency', name: 'Health Emergency / Pandemic' },
+        // Economic Hazards
+        { hazardId: 'supply_disruption', name: 'Supply Chain Disruption' },
+        { hazardId: 'economic_downturn', name: 'Economic Downturn / Tourism Decline' }
       ]
       validRiskTypes = fallbackRiskTypes
     }
 
-    // Normalize risk IDs for comparison (handle camelCase/snake_case)
+    // Use exact ID matching - no normalization needed with canonical IDs
     const normalizeRiskId = (id: string): string => {
       if (!id) return ''
-      return id.toLowerCase().replace(/[_\s-]+/g, '').trim()
+      return id // Return as-is - canonical IDs should match exactly
     }
 
     // CRITICAL: Use a Map to track risks by normalized ID to prevent duplicates
@@ -1188,7 +1192,7 @@ export async function POST(request: NextRequest) {
           return strategy
         }
 
-        // Otherwise, calculate costs now if strategy has action steps
+        // Calculate costs from action steps with cost items
         if (strategy.actionSteps && strategy.actionSteps.length > 0) {
           try {
             const costResult = await costCalculationService.calculateStrategyCost(
@@ -1201,19 +1205,7 @@ export async function POST(request: NextRequest) {
               'US' // Always use USD as default per requirements
             )
 
-            // Update strategy in database with calculated costs
-            await (prisma as any).riskMitigationStrategy.update({
-              where: { id: strategy.id },
-              data: {
-                calculatedCostUSD: costResult.totalUSD,
-                calculatedCostLocal: costResult.localCurrency.amount,
-                currencyCode: costResult.localCurrency.code,
-                currencySymbol: costResult.localCurrency.symbol,
-                totalEstimatedHours: costResult.calculatedHours
-              }
-            })
-
-            console.log(`  💰 ${strategy.strategyId}: Calculated ${costResult.localCurrency.symbol}${costResult.localCurrency.amount.toFixed(0)} (${costResult.calculatedHours}h)`)
+            console.log(`  💰 ${strategy.strategyId}: $${costResult.totalUSD.toFixed(0)} USD (${costResult.calculatedHours}h)`)
 
             return {
               ...strategy,
@@ -1261,10 +1253,10 @@ export async function POST(request: NextRequest) {
       .map((strategy: any) => {
         const applicableRisks = JSON.parse(strategy.applicableRisks || '[]')
 
-        // Normalize risk types for matching (handle camelCase, snake_case, etc.)
+        // Use exact ID matching - canonical IDs should match exactly
         const normalizeRiskType = (riskType: string | null | undefined): string => {
           if (!riskType || typeof riskType !== 'string') return ''
-          return riskType.toLowerCase().replace(/[_-]/g, '')
+          return riskType // Return as-is - canonical IDs should match exactly
         }
 
         // Get matching risks from ALL identified risks (not just highPriorityRisks)
@@ -1503,147 +1495,166 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Transform for frontend with COMPLETE new structure including all SME fields
-    const detailedStrategies = selectedStrategies.map(({ strategy, priorityTier, reasoning }: ScoredStrategy) => ({
-      id: strategy.strategyId,
-      strategyId: strategy.strategyId,
+    const detailedStrategies = selectedStrategies.map(({ strategy, priorityTier, reasoning }: ScoredStrategy) => {
+      const normalizeRiskList = (value: any): string[] => {
+        const raw = parseJSONField(value, [])
+        if (!Array.isArray(raw)) return []
+        return raw
+          .map((r: any) => {
+            if (typeof r === 'string') return normalizeRiskIdUtil(r)
+            if (r && typeof r === 'object') {
+              if (typeof r.hazardId === 'string') return normalizeRiskIdUtil(r.hazardId)
+              if (typeof r.id === 'string') return normalizeRiskIdUtil(r.id)
+            }
+            return ''
+          })
+          .filter((r: string) => !!r)
+      }
 
-      // Basic Info
-      name: strategy.name,
-      category: strategy.category,
-      description: strategy.description,
+      const normalizedApplicableRisks = normalizeRiskList(strategy.applicableRisks)
+      const normalizedRequiredForRisks = normalizeRiskList(strategy.requiredForRisks)
 
-      // SME-Focused Content (benefit-driven, plain language)
-      smeTitle: strategy.smeTitle,
-      smeSummary: strategy.smeSummary,
-      smeDescription: strategy.smeDescription, // backwards compat
-      whyImportant: strategy.whyImportant, // backwards compat
-      benefitsBullets: parseJSONField(strategy.benefitsBullets, []),
-      realWorldExample: strategy.realWorldExample,
-
-      // Implementation Details (enhanced)
-      implementationCost: strategy.implementationCost,
-      costEstimateJMD: strategy.costEstimateJMD,
-      timeToImplement: strategy.timeToImplement,
-      implementationTime: strategy.implementationTime,
-      totalEstimatedHours: strategy.totalEstimatedHours,
-      complexityLevel: strategy.complexityLevel || 'moderate',
-      effectiveness: strategy.effectiveness,
-      roi: strategy.roi,
-      priority: strategy.priority,
-      quickWinIndicator: strategy.quickWinIndicator || false,
-
-      // NEW: Calculated Costs (auto-populated from cost calculation service)
-      calculatedCostUSD: strategy.calculatedCostUSD || 0,
-      calculatedCostLocal: strategy.calculatedCostLocal || 0,
-      currencyCode: strategy.currencyCode || 'USD',
-      currencySymbol: strategy.currencySymbol || '$',
-
-      // Wizard Integration (how strategy appears in wizard)
-      defaultSelected: strategy.defaultSelected || false,
-      selectionTier: strategy.selectionTier || priorityTier, // Use DB value or calculated
-      priorityTier, // Alias for backwards compatibility
-      requiredForRisks: parseJSONField(strategy.requiredForRisks, []),
-      reasoning, // Generated by scoring algorithm
-
-      // Guidance (consolidated)
-      helpfulTips: parseJSONField(strategy.helpfulTips, []),
-      commonMistakes: parseJSONField(strategy.commonMistakes, []),
-      successMetrics: parseJSONField(strategy.successMetrics, []),
-
-      // Resource-Limited SME Support
-      lowBudgetAlternative: strategy.lowBudgetAlternative,
-      diyApproach: strategy.diyApproach,
-      estimatedDIYSavings: strategy.estimatedDIYSavings,
-
-      // BCP Document Integration
-      bcpSectionMapping: strategy.bcpSectionMapping,
-      bcpTemplateText: strategy.bcpTemplateText,
-
-      // Personalization (industry and size variants)
-      industryVariants: parseJSONField(strategy.industryVariants, {}),
-      businessSizeGuidance: parseJSONField(strategy.businessSizeGuidance, {}),
-
-      // Keep existing fields
-      applicableRisks: parseJSONField(strategy.applicableRisks, []),
-      applicableBusinessTypes: parseJSONField(strategy.applicableBusinessTypes, []),
-      prerequisites: parseJSONField(strategy.prerequisites, []),
-      maintenanceRequirement: strategy.maintenanceRequirement,
-
-      // Action Steps with COMPLETE new structure
-      actionSteps: strategy.actionSteps.map((step: any) => ({
-        id: step.stepId,
-        stepId: step.stepId,
-        strategyId: step.strategyId,
+      return {
+        id: strategy.strategyId,
+        strategyId: strategy.strategyId,
 
         // Basic Info
-        title: step.title,
-        description: step.description,
-        smeAction: step.smeAction,
-        phase: step.phase,
-        sortOrder: step.sortOrder,
+        name: strategy.name,
+        category: strategy.category,
+        description: strategy.description,
 
-        // SME Context (why this matters)
-        whyThisStepMatters: step.whyThisStepMatters,
-        whatHappensIfSkipped: step.whatHappensIfSkipped,
+        // SME-Focused Content (benefit-driven, plain language)
+        smeTitle: strategy.smeTitle,
+        smeSummary: strategy.smeSummary,
+        smeDescription: strategy.smeDescription, // backwards compat
+        whyImportant: strategy.whyImportant, // backwards compat
+        benefitsBullets: parseJSONField(strategy.benefitsBullets, []),
+        realWorldExample: strategy.realWorldExample,
 
-        // Timing & Difficulty
-        timeframe: step.timeframe,
-        estimatedMinutes: step.estimatedMinutes,
-        difficultyLevel: step.difficultyLevel || 'medium',
+        // Implementation Details (enhanced)
+        implementationCost: strategy.implementationCost,
+        costEstimateJMD: strategy.costEstimateJMD,
+        timeToImplement: strategy.timeToImplement,
+        implementationTime: strategy.implementationTime,
+        totalEstimatedHours: strategy.totalEstimatedHours,
+        complexityLevel: strategy.complexityLevel || 'moderate',
+        effectiveness: strategy.effectiveness,
+        roi: strategy.roi,
+        priority: strategy.priority,
+        quickWinIndicator: strategy.quickWinIndicator || false,
 
-        // Resources & Costs
-        responsibility: step.responsibility,
-        cost: step.estimatedCost,
-        estimatedCostJMD: step.estimatedCostJMD,
-        resources: parseJSONField(step.resources, []),
-        checklist: parseJSONField(step.checklist, []),
+        // NEW: Calculated Costs (auto-populated from cost calculation service)
+        calculatedCostUSD: strategy.calculatedCostUSD || 0,
+        calculatedCostLocal: strategy.calculatedCostLocal || 0,
+        currencyCode: strategy.currencyCode || 'USD',
+        currencySymbol: strategy.currencySymbol || '$',
 
-        // Cost Items (structured costing)
-        costItems: step.itemCosts?.map((ic: any) => ({
-          id: ic.id,
-          itemId: ic.item?.itemId || ic.itemId,
-          quantity: ic.quantity,
-          notes: ic.customNotes,
-          // Include full cost item details for calculation
-          costItem: ic.item ? {
-            itemId: ic.item.itemId,
-            name: ic.item.name,
-            description: ic.item.description,
-            category: ic.item.category,
-            baseUSD: ic.item.baseUSD,
-            baseUSDMin: ic.item.baseUSDMin,
-            baseUSDMax: ic.item.baseUSDMax,
-            unit: ic.item.unit,
-            complexity: ic.item.complexity
-          } : null
-        })) || [],
+        // Wizard Integration (how strategy appears in wizard)
+        defaultSelected: strategy.defaultSelected || false,
+        selectionTier: strategy.selectionTier || priorityTier, // Use DB value or calculated
+        priorityTier, // Alias for backwards compatibility
+        requiredForRisks: normalizedRequiredForRisks,
+        reasoning, // Generated by scoring algorithm
 
-        // Validation & Completion
-        howToKnowItsDone: step.howToKnowItsDone,
-        exampleOutput: step.exampleOutput,
+        // Guidance (consolidated)
+        helpfulTips: parseJSONField(strategy.helpfulTips, []),
+        commonMistakes: parseJSONField(strategy.commonMistakes, []),
+        successMetrics: parseJSONField(strategy.successMetrics, []),
 
-        // Dependencies
-        dependsOnSteps: parseJSONField(step.dependsOnSteps, []),
-        isOptional: step.isOptional || false,
-        skipConditions: step.skipConditions,
+        // Resource-Limited SME Support
+        lowBudgetAlternative: strategy.lowBudgetAlternative,
+        diyApproach: strategy.diyApproach,
+        estimatedDIYSavings: strategy.estimatedDIYSavings,
 
-        // Alternatives for resource-limited SMEs
-        freeAlternative: step.freeAlternative,
-        lowTechOption: step.lowTechOption,
+        // BCP Document Integration
+        bcpSectionMapping: strategy.bcpSectionMapping,
+        bcpTemplateText: strategy.bcpTemplateText,
 
-        // Help Resources
-        commonMistakesForStep: parseJSONField(step.commonMistakesForStep, []),
-        videoTutorialUrl: step.videoTutorialUrl,
-        externalResourceUrl: step.externalResourceUrl
-      })).sort((a: any, b: any) => a.sortOrder - b.sortOrder),
+        // Personalization (industry and size variants)
+        industryVariants: parseJSONField(strategy.industryVariants, {}),
+        businessSizeGuidance: parseJSONField(strategy.businessSizeGuidance, {}),
 
-      // Keep existing recommendationReason for backwards compatibility
-      recommendationReason: highPriorityRisks
-        .filter((r: any) => parseJSONField(strategy.applicableRisks, []).includes(r.type))
-        .map((r: any) => `${r.type.replace(/_/g, ' ')} (${r.level})`)
-        .join(', ') || 'General business continuity'
-    }))
+        // Keep existing fields (normalized applicable risks for exact matching)
+        applicableRisks: normalizedApplicableRisks,
+        applicableBusinessTypes: parseJSONField(strategy.applicableBusinessTypes, []),
+        prerequisites: parseJSONField(strategy.prerequisites, []),
+        maintenanceRequirement: strategy.maintenanceRequirement,
+
+        // Action Steps with COMPLETE new structure
+        actionSteps: strategy.actionSteps.map((step: any) => ({
+          id: step.stepId,
+          stepId: step.stepId,
+          strategyId: step.strategyId,
+
+          // Basic Info
+          title: step.title,
+          description: step.description,
+          smeAction: step.smeAction,
+          phase: step.phase,
+          sortOrder: step.sortOrder,
+
+          // SME Context (why this matters)
+          whyThisStepMatters: step.whyThisStepMatters,
+          whatHappensIfSkipped: step.whatHappensIfSkipped,
+
+          // Timing & Difficulty
+          timeframe: step.timeframe,
+          estimatedMinutes: step.estimatedMinutes,
+          difficultyLevel: step.difficultyLevel || 'medium',
+
+          // Resources & Costs
+          responsibility: step.responsibility,
+          cost: step.estimatedCost,
+          estimatedCostJMD: step.estimatedCostJMD,
+          resources: parseJSONField(step.resources, []),
+          checklist: parseJSONField(step.checklist, []),
+
+          // Cost Items (structured costing)
+          costItems: step.itemCosts?.map((ic: any) => ({
+            id: ic.id,
+            itemId: ic.item?.itemId || ic.itemId,
+            quantity: ic.quantity,
+            notes: ic.customNotes,
+            // Include full cost item details for calculation
+            costItem: ic.item ? {
+              itemId: ic.item.itemId,
+              name: ic.item.name,
+              description: ic.item.description,
+              category: ic.item.category,
+              baseUSD: ic.item.baseUSD,
+              baseUSDMin: ic.item.baseUSDMin,
+              baseUSDMax: ic.item.baseUSDMax,
+              unit: ic.item.unit,
+              complexity: ic.item.complexity
+            } : null
+          })) || [],
+
+          // Validation & Completion
+          howToKnowItsDone: step.howToKnowItsDone,
+          exampleOutput: step.exampleOutput,
+
+          // Dependencies
+          dependsOnSteps: parseJSONField(step.dependsOnSteps, []),
+          isOptional: step.isOptional || false,
+          skipConditions: step.skipConditions,
+
+          // Alternatives for resource-limited SMEs
+          freeAlternative: step.freeAlternative,
+          lowTechOption: step.lowTechOption,
+
+          // Help Resources
+          commonMistakesForStep: parseJSONField(step.commonMistakesForStep, []),
+          videoTutorialUrl: step.videoTutorialUrl,
+          externalResourceUrl: step.externalResourceUrl
+        })).sort((a: any, b: any) => a.sortOrder - b.sortOrder),
+
+        // Keep existing recommendationReason for backwards compatibility
+        recommendationReason: highPriorityRisks
+          .filter((r: any) => normalizedApplicableRisks.includes(normalizeRiskIdUtil(r.type)))
+          .map((r: any) => `${r.type.replace(/_/g, ' ')} (${r.level})`)
+          .join(', ') || 'General business continuity'
+      }
+    })
 
     console.log(`📦 Transformed ${detailedStrategies.length} strategies with complete SME field structure`)
 
@@ -1708,14 +1719,14 @@ function calculateDataQuality(businessType: any, locationData: any): string {
   if (businessType.category) score += 1
   if (businessType.operatingHours) score += 1
   if (businessType.typicalEmployees) score += 1
-  if (businessType.riskVulnerabilities?.length > 0) score += 3
+  if (businessType.BusinessRiskVulnerability?.length > 0) score += 3
   if (businessType.touristDependency !== undefined) score += 1
   if (businessType.supplyChainComplexity !== undefined) score += 1
 
   // Location data quality
   maxScore += 5
   if (locationData) score += 2
-  if (locationData?.adminUnitRisk) score += 3
+  if (locationData?.AdminUnitRisk) score += 3
 
   const percentage = (score / maxScore) * 100
 
@@ -1724,3 +1735,4 @@ function calculateDataQuality(businessType: any, locationData: any): string {
   if (percentage >= 40) return 'fair'
   return 'limited'
 } 
+

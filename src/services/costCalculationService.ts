@@ -87,6 +87,11 @@ interface StrategyCostCalculation {
   calculatedHours: number // Added: total implementation time in hours
 }
 
+interface DataContext {
+  countryMultiplier?: CountryCostMultiplier | null
+  costItems?: Map<string, CostItem>
+}
+
 class CostCalculationService {
   private countryMultipliersCache: Map<string, CountryCostMultiplier> = new Map()
   private costItemsCache: Map<string, CostItem> = new Map()
@@ -101,6 +106,10 @@ class CostCalculationService {
     }
 
     try {
+      // Ensure we use an absolute URL or proper fetch handling depending on environment
+      // However, for pure client-side usage, relative is fine. 
+      // For server-side without DataContext, this might fail if not configured.
+      // Consumers should prefer providing DataContext on server.
       const response = await fetch(`/api/admin2/country-multipliers?countryCode=${countryCode}`)
       if (!response.ok) {
         console.warn(`No multiplier found for country ${countryCode}, using defaults`)
@@ -146,14 +155,17 @@ class CostCalculationService {
   async calculateItemPrice(
     item: CostItem,
     quantity: number,
-    countryCode: string
+    countryCode: string,
+    dataContext?: DataContext
   ): Promise<{
     unitPriceUSD: number
     totalUSD: number
     localAmount: number
     localCurrency: { code: string; symbol: string }
   }> {
-    const multiplier = await this.getCountryMultiplier(countryCode)
+    const multiplier = dataContext?.countryMultiplier !== undefined 
+      ? dataContext.countryMultiplier 
+      : await this.getCountryMultiplier(countryCode)
     
     // Get base USD price
     const baseUSD = item.baseUSD || 0
@@ -202,7 +214,8 @@ class CostCalculationService {
   async calculateActionStepCost(
     actionStepId: string,
     costItems: ActionStepItemCost[],
-    countryCode: string = 'US'
+    countryCode: string = 'US',
+    dataContext?: DataContext
   ): Promise<ActionStepCostCalculation> {
     let totalUSD = 0
     let totalLocal = 0
@@ -211,14 +224,23 @@ class CostCalculationService {
 
     for (const costItemLink of costItems) {
       // Get the full cost item details
-      const item = costItemLink.item || await this.getCostItem(costItemLink.itemId)
+      let item: CostItem | null = costItemLink.item || null
+      
+      if (!item) {
+        if (dataContext?.costItems?.has(costItemLink.itemId)) {
+          item = dataContext.costItems.get(costItemLink.itemId)!
+        } else {
+          item = await this.getCostItem(costItemLink.itemId)
+        }
+      }
+
       if (!item) {
         console.warn(`Cost item ${costItemLink.itemId} not found`)
         continue
       }
 
       // Calculate price for this item
-      const price = await this.calculateItemPrice(item, costItemLink.quantity, countryCode)
+      const price = await this.calculateItemPrice(item, costItemLink.quantity, countryCode, dataContext)
       
       totalUSD += price.totalUSD
       totalLocal += price.localAmount
@@ -259,7 +281,8 @@ class CostCalculationService {
       phase: string
       costItems?: ActionStepItemCost[]
     }>,
-    countryCode: string = 'US'
+    countryCode: string = 'US',
+    dataContext?: DataContext
   ): Promise<StrategyCostCalculation> {
     let totalUSD = 0
     let totalLocal = 0
@@ -287,7 +310,8 @@ class CostCalculationService {
       const stepCost = await this.calculateActionStepCost(
         step.id,
         step.costItems,
-        countryCode
+        countryCode,
+        dataContext
       )
 
       totalUSD += stepCost.totalUSD
@@ -420,5 +444,6 @@ export type {
   CountryCostMultiplier,
   CostBreakdownItem,
   ActionStepCostCalculation,
-  StrategyCostCalculation
+  StrategyCostCalculation,
+  DataContext
 }

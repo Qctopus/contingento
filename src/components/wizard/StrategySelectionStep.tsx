@@ -285,6 +285,12 @@ export default function StrategySelectionStep({
   console.log('\n🔍 FILTERING STRATEGIES BY SELECTED RISKS')
   console.log('Valid hazard IDs:', Array.from(validHazardIds))
   console.log('Total strategies before filtering:', strategies.length)
+  
+  // DEBUG: Log first 3 strategies' applicableRisks to diagnose matching
+  console.log('🔎 DEBUG - First 3 strategies applicableRisks:')
+  strategies.slice(0, 3).forEach((s, i) => {
+    console.log(`  Strategy ${i + 1} "${s.name || s.id}": applicableRisks =`, s.applicableRisks, `(type: ${typeof s.applicableRisks}, isArray: ${Array.isArray(s.applicableRisks)})`)
+  })
 
   const relevantStrategies = strategies.filter(strategy => {
     // Parse applicableRisks
@@ -489,9 +495,11 @@ export default function StrategySelectionStep({
     return result
   }
 
-  // Calculate summary stats
-  const selectedCount = selectedStrategies.length
-  const selectedStrategyObjects = strategies.filter(s => selectedStrategies.includes(s.id))
+  // Calculate summary stats - only count strategies that are relevant to selected risks
+  const relevantStrategyIds = new Set(relevantStrategies.map(s => s.id || s.strategyId))
+  const selectedRelevantStrategies = selectedStrategies.filter(id => relevantStrategyIds.has(id))
+  const selectedCount = selectedRelevantStrategies.length
+  const selectedStrategyObjects = relevantStrategies.filter(s => selectedRelevantStrategies.includes(s.id || s.strategyId))
   const totalTimeRaw = calculateTotalTime(selectedStrategyObjects)
   const totalTime = translateTime(totalTimeRaw)
   const { totalCost, totalCostItems, costByTier } = calculateTotalCostWithItems(
@@ -526,7 +534,7 @@ export default function StrategySelectionStep({
             📋 {t('steps.strategySelection.headerTitle')}
           </h2>
           <p className="text-gray-600">
-            {t('steps.strategySelection.headerDescription', { count: strategies.length })}
+            {t('steps.strategySelection.headerDescription', { count: relevantStrategies.length })}
           </p>
           <div className="mt-4 p-3 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-900">
@@ -683,17 +691,16 @@ export default function StrategySelectionStep({
                 {/* Note: Navigation handled by wizard's universal Next button */}
               </div>
 
-              {/* Quick Stats Card */}
+              {/* Quick Stats Card - only counts strategies relevant to selected risks */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center font-bold text-xl">
-                    {selectedStrategies.length}
+                    {selectedCount}
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-600">Action Steps</div>
                     <div className="text-2xl font-bold text-blue-600">
-                      {selectedStrategies.reduce((sum, id) => {
-                        const strategy = strategies.find(s => s.id === id)
+                      {selectedStrategyObjects.reduce((sum, strategy) => {
                         return sum + (strategy?.actionSteps?.length || 0)
                       }, 0)}
                     </div>
@@ -701,10 +708,10 @@ export default function StrategySelectionStep({
                 </div>
                 <div className="text-center">
                   <div className="font-bold text-gray-900">
-                    {selectedStrategies.length} {selectedStrategies.length === 1 ? 'Strategy' : 'Strategies'} Selected
+                    {selectedCount} {selectedCount === 1 ? 'Strategy' : 'Strategies'} Selected
                   </div>
                   <div className="text-xs text-gray-600 mt-1">
-                    {selectedStrategies.length === 0
+                    {selectedCount === 0
                       ? 'Select at least one strategy to continue'
                       : 'Ready to continue - click Next below'}
                   </div>

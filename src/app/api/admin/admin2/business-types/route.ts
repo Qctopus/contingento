@@ -163,7 +163,7 @@ export async function GET() {
     const businessTypes = await prisma.businessType.findMany({
       where: { isActive: true },
       include: {
-        riskVulnerabilities: true
+        BusinessRiskVulnerability: true
       },
       orderBy: [
         { category: 'asc' },
@@ -191,7 +191,7 @@ export async function GET() {
         physicalAssetIntensity: bt.physicalAssetIntensity,
         customerConcentration: bt.customerConcentration,
         regulatoryBurden: bt.regulatoryBurden,
-        riskVulnerabilities: bt.riskVulnerabilities.map(rv => ({
+        riskVulnerabilities: bt.BusinessRiskVulnerability.map(rv => ({
           riskType: rv.riskType,
           vulnerabilityLevel: rv.vulnerabilityLevel,
           impactSeverity: rv.impactSeverity

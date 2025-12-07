@@ -6,6 +6,24 @@ import { useAutoSave } from '../../hooks/useAutoSave'
 import { AutoSaveIndicator } from './AutoSaveIndicator'
 
 interface AdminUnitWithRisk extends AdminUnit {
+  AdminUnitRisk?: {
+    id: string
+    hurricaneLevel: number
+    hurricaneNotes: string
+    floodLevel: number
+    floodNotes: string
+    earthquakeLevel: number
+    earthquakeNotes: string
+    droughtLevel: number
+    droughtNotes: string
+    landslideLevel: number
+    landslideNotes: string
+    powerOutageLevel: number
+    powerOutageNotes: string
+    riskProfileJson: string
+    lastUpdated: string
+    updatedBy: string
+  }
   adminUnitRisk?: {
     id: string
     hurricaneLevel: number
@@ -90,9 +108,10 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
   }))
 
   const getRiskValue = (riskKey: string): { level: number; notes: string } => {
-    if (!editedUnit.adminUnitRisk) return { level: 0, notes: '' }
+    const riskData = editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk
+    if (!riskData) return { level: 0, notes: '' }
 
-    const riskMap: Record<string, { levelKey: keyof typeof editedUnit.adminUnitRisk; notesKey: keyof typeof editedUnit.adminUnitRisk }> = {
+    const riskMap: Record<string, { levelKey: keyof typeof riskData; notesKey: keyof typeof riskData }> = {
       hurricane: { levelKey: 'hurricaneLevel', notesKey: 'hurricaneNotes' },
       flood: { levelKey: 'floodLevel', notesKey: 'floodNotes' },
       earthquake: { levelKey: 'earthquakeLevel', notesKey: 'earthquakeNotes' },
@@ -104,14 +123,14 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
     const keys = riskMap[riskKey]
     if (keys) {
       return {
-        level: (editedUnit.adminUnitRisk[keys.levelKey] as number) || 0,
-        notes: (editedUnit.adminUnitRisk[keys.notesKey] as string) || ''
+        level: (riskData[keys.levelKey] as number) || 0,
+        notes: (riskData[keys.notesKey] as string) || ''
       }
     }
 
     // Try to get from JSON profile for dynamic risk types
     try {
-      const profile = JSON.parse(editedUnit.adminUnitRisk.riskProfileJson || '{}')
+      const profile = JSON.parse(riskData.riskProfileJson || '{}')
       return profile[riskKey] || { level: 0, notes: '' }
     } catch {
       return { level: 0, notes: '' }
@@ -119,9 +138,10 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
   }
 
   const handleRiskLevelChange = async (riskType: string, level: number) => {
-    if (!editedUnit.adminUnitRisk) return
+    const riskData = editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk
+    if (!riskData) return
 
-    const riskMap: Record<string, keyof typeof editedUnit.adminUnitRisk> = {
+    const riskMap: Record<string, keyof typeof riskData> = {
       hurricane: 'hurricaneLevel',
       flood: 'floodLevel',
       earthquake: 'earthquakeLevel',
@@ -132,15 +152,23 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
 
     const levelKey = riskMap[riskType]
     if (levelKey) {
-      setEditedUnit(prev => ({
-        ...prev,
-        adminUnitRisk: {
-          ...prev.adminUnitRisk!,
+      setEditedUnit(prev => {
+        const currentRiskData = prev.AdminUnitRisk || prev.adminUnitRisk
+        if (!currentRiskData) return prev
+        
+        const updatedRiskData = {
+          ...currentRiskData,
           [levelKey]: level,
           lastUpdated: new Date().toISOString(),
           updatedBy: 'admin'
         }
-      }))
+        
+        return {
+          ...prev,
+          AdminUnitRisk: prev.AdminUnitRisk ? updatedRiskData : undefined,
+          adminUnitRisk: prev.adminUnitRisk ? updatedRiskData : undefined
+        }
+      })
     }
   }
 
@@ -151,11 +179,12 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
   }
 
   const saveNotes = async (riskKey: string) => {
-    if (!editedUnit.adminUnitRisk) return
+    const riskData = editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk
+    if (!riskData) return
 
     setIsSavingNotes(prev => ({ ...prev, [riskKey]: true }))
     
-    const riskMap: Record<string, keyof typeof editedUnit.adminUnitRisk> = {
+    const riskMap: Record<string, keyof typeof riskData> = {
       hurricane: 'hurricaneNotes',
       flood: 'floodNotes',
       earthquake: 'earthquakeNotes',
@@ -167,15 +196,23 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
     const notesKey = riskMap[riskKey]
     if (notesKey) {
       try {
-        setEditedUnit(prev => ({
-          ...prev,
-          adminUnitRisk: {
-            ...prev.adminUnitRisk!,
+        setEditedUnit(prev => {
+          const currentRiskData = prev.AdminUnitRisk || prev.adminUnitRisk
+          if (!currentRiskData) return prev
+          
+          const updatedRiskData = {
+            ...currentRiskData,
             [notesKey]: notesBeingEdited[riskKey] || '',
             lastUpdated: new Date().toISOString(),
             updatedBy: 'admin'
           }
-        }))
+          
+          return {
+            ...prev,
+            AdminUnitRisk: prev.AdminUnitRisk ? updatedRiskData : undefined,
+            adminUnitRisk: prev.adminUnitRisk ? updatedRiskData : undefined
+          }
+        })
         
         setNotesBeingEdited(prev => {
           const newState = { ...prev }
@@ -243,7 +280,7 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
           
           <div className="flex items-center space-x-3">
             <span className="text-xs text-gray-500">
-              Updated: {editedUnit.adminUnitRisk ? new Date(editedUnit.adminUnitRisk.lastUpdated).toLocaleDateString() : 'Never'}
+              Updated: {editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk ? new Date((editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk)!.lastUpdated).toLocaleDateString() : 'Never'}
             </span>
             <button
               onClick={onClose}
@@ -499,7 +536,7 @@ export function AdminUnitRiskEditor({ unit, onUpdate, onClose }: AdminUnitRiskEd
                 <div>
                   <span className="text-blue-700">Last Updated:</span>
                   <div className="font-semibold text-blue-900 text-xs">
-                    {editedUnit.adminUnitRisk ? new Date(editedUnit.adminUnitRisk.lastUpdated).toLocaleDateString() : 'Never'}
+                    {editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk ? new Date((editedUnit.AdminUnitRisk || editedUnit.adminUnitRisk)!.lastUpdated).toLocaleDateString() : 'Never'}
                   </div>
                 </div>
               </div>

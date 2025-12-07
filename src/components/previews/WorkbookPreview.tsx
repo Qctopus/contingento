@@ -14,6 +14,29 @@
 
 import React from 'react'
 import { calculateStrategyTimeFromSteps, formatHoursToDisplay } from '@/utils/timeCalculation'
+import { getLocalizedText } from '@/utils/localizationUtils'
+import type { Locale } from '@/i18n/config'
+
+// Import translation messages for UI labels
+import enMessages from '@/messages/en.json'
+import esMessages from '@/messages/es.json'
+import frMessages from '@/messages/fr.json'
+
+// Translation helper for UI labels
+const getUIText = (key: string, locale: Locale): string => {
+  const messages = locale === 'es' ? esMessages : locale === 'fr' ? frMessages : enMessages
+  // Navigate nested key path (e.g., "bcpPreview.workbook.title")
+  const keys = key.split('.')
+  let value: any = messages
+  for (const k of keys) {
+    if (value && typeof value === 'object') {
+      value = value[k]
+    } else {
+      return key // Return key if translation not found
+    }
+  }
+  return typeof value === 'string' ? value : key
+}
 
 interface ActionStep {
   id: string
@@ -22,20 +45,44 @@ interface ActionStep {
   smeAction?: string
   timeframe?: string
   sortOrder: number
+  phase?: string
+  executionTiming?: string
   costItems?: Array<{
     itemId: string
     quantity: number
     notes?: string
     item?: any
+    costItem?: any
+    name?: any
   }>
+  // SME Context
+  whyThisStepMatters?: string
+  whatHappensIfSkipped?: string
+  howToKnowItsDone?: string
+  exampleOutput?: string
+  // Resources
+  resources?: any
+  checklist?: any
+  responsibility?: string
+  // Alternatives
+  freeAlternative?: string
+  lowTechOption?: string
+  // Guidance
+  commonMistakesForStep?: any
+  videoTutorialUrl?: string
+  // Other
+  estimatedMinutes?: number
+  difficultyLevel?: string
 }
 
 interface Strategy {
   id: string
+  strategyId?: string
   name: string
   smeTitle?: string
   description: string
   smeSummary?: string
+  strategyType?: string
   priorityLevel?: string // 'essential' | 'recommended' | 'optional'
   applicableRisks: string[]
   actionSteps: ActionStep[]
@@ -51,14 +98,18 @@ interface WorkbookPreviewProps {
   riskSummary?: any
   strategies: Strategy[]
   totalInvestment: number
+  locale?: Locale
 }
 
 export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
   formData,
   riskSummary,
   strategies,
-  totalInvestment
+  totalInvestment,
+  locale: propLocale
 }) => {
+  // Determine locale - default to 'en' if not provided
+  const currentLocale: Locale = (propLocale || 'en') as Locale
   
   // ============================================================================
   // HELPER FUNCTIONS
@@ -73,9 +124,9 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
       if (value.startsWith('{') && (value.includes('"en":') || value.includes('"es":') || value.includes('"fr":'))) {
         try {
           const parsed = JSON.parse(value)
-          // If parsed successfully, extract English (or first available language)
+          // If parsed successfully, extract localized text
           if (typeof parsed === 'object' && parsed !== null) {
-            return parsed.en || parsed.es || parsed.fr || ''
+            return parsed[currentLocale] || parsed.en || parsed.es || parsed.fr || ''
           }
         } catch {
           // If parsing fails, return original string
@@ -86,12 +137,61 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
     
     // If it's already an object with language keys
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      if (value.en || value.es || value.fr) {
-        return value.en || value.es || value.fr || ''
+      if (value[currentLocale] || value.en || value.es || value.fr) {
+        return value[currentLocale] || value.en || value.es || value.fr || ''
       }
     }
     
     return String(value)
+  }
+  
+  // Helper function to get cost item name with multilingual support
+  const getCostItemName = (costItem: any): string => {
+    // Priority 1: Full item object with multilingual name (from transformers)
+    if (costItem.item?.name) {
+      return getLocalizedText(costItem.item.name, currentLocale)
+    }
+    // Priority 2: costItem nested object (from API prepare-prefill-data)
+    if (costItem.costItem?.name) {
+      return getLocalizedText(costItem.costItem.name, currentLocale)
+    }
+    // Priority 3: Direct name field
+    if (costItem.name) {
+      return getLocalizedText(costItem.name, currentLocale)
+    }
+    // Fallback to itemId (indicates missing data)
+    if (costItem.itemId) {
+      console.warn(`[WorkbookPreview] Cost item ${costItem.itemId} missing multilingual name`)
+      return costItem.itemId
+    }
+    return 'Unknown Item'
+  }
+  
+  // Helper function to collect and aggregate cost items from a strategy
+  const getStrategyCostItems = (strategy: any): Array<{ name: string; quantity: number; unit: string; category: string }> => {
+    const itemMap = new Map<string, { name: string; quantity: number; unit: string; category: string }>()
+    
+    strategy.actionSteps?.forEach((step: any) => {
+      if (step.costItems && Array.isArray(step.costItems)) {
+        step.costItems.forEach((costItem: any) => {
+          const itemName = getCostItemName(costItem)
+          const quantity = costItem.quantity || 1
+          const unit = costItem.item?.unit || costItem.costItem?.unit || costItem.unit || ''
+          const category = costItem.item?.category || costItem.costItem?.category || costItem.category || 'supplies'
+          
+          // Aggregate by item name
+          const key = itemName.toLowerCase()
+          if (itemMap.has(key)) {
+            const existing = itemMap.get(key)!
+            existing.quantity += quantity
+          } else {
+            itemMap.set(key, { name: itemName, quantity, unit, category })
+          }
+        })
+      }
+    })
+    
+    return Array.from(itemMap.values())
   }
   
   const getRiskEmoji = (hazard: string): string => {
@@ -385,7 +485,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
         <div className="mb-8">
           <div className="text-sm font-semibold text-blue-600 mb-2 uppercase tracking-wide">Business Continuity</div>
           <h1 className="text-5xl font-black mb-6 text-gray-900" style={{ fontSize: '3rem', lineHeight: '1.1' }}>
-            ACTION WORKBOOK
+            {getUIText('bcpPreview.workbook.title', currentLocale).toUpperCase()}
           </h1>
           <div className="text-3xl font-bold text-blue-600 mb-4" style={{ fontSize: '2rem' }}>
             {companyName}
@@ -398,7 +498,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
         {/* Emergency Contact Box */}
         <div className="border-4 border-red-500 bg-red-50 p-6 mb-8 text-left">
           <h2 className="text-2xl font-black mb-4 text-red-900 text-center">
-            🚨 EMERGENCY CONTACTS
+            🚨 {getUIText('bcpPreview.workbook.emergencyContacts', currentLocale)}
           </h2>
           <div className="space-y-3 text-lg">
             {emergencyContacts.length > 0 ? (
@@ -721,11 +821,33 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                 </div>
                 <p className="text-sm text-gray-700 mb-4">{stratDesc}</p>
                 
+                {/* Cost Items - What You Need to Purchase */}
+                {(() => {
+                  const costItems = getStrategyCostItems(strategy)
+                  if (costItems.length === 0) return null
+                  
+                  return (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+                      <div className="text-sm font-bold text-yellow-900 mb-2">🛒 {getUIText('bcpPreview.workbook.itemsToPurchase', currentLocale)}:</div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {costItems.map((item, itemIdx) => (
+                          <div key={itemIdx} className="text-sm text-yellow-800 flex items-center gap-1">
+                            <span className="text-yellow-600">•</span>
+                            {item.quantity > 1 && <span className="font-semibold">{item.quantity}x</span>}
+                            <span>{item.name}</span>
+                            {item.unit && <span className="text-xs text-yellow-600">({item.unit})</span>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })()}
+                
                 {/* BEFORE: Prevention & Preparation */}
                 {beforeSteps.length > 0 && (
                   <div className="mb-6">
                     <div className="bg-blue-600 text-white p-3 mb-3">
-                      <h3 className="text-xl font-black">🛡️ BEFORE: Prevention & Preparation</h3>
+                      <h3 className="text-xl font-black">🛡️ {getUIText('bcpPreview.workbook.beforePreparation', currentLocale)}</h3>
                       <p className="text-sm mt-1">Do these things NOW to reduce risk and prepare for potential impact</p>
                     </div>
                     
@@ -846,7 +968,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                 {duringSteps.length > 0 && (
                   <div className="mb-6">
                     <div className="bg-red-600 text-white p-3 mb-3">
-                      <h3 className="text-xl font-black">🚨 DURING: Emergency Response</h3>
+                      <h3 className="text-xl font-black">🚨 {getUIText('bcpPreview.workbook.duringResponse', currentLocale)}</h3>
                       <p className="text-sm mt-1">Follow these steps when this emergency is happening NOW</p>
                     </div>
                     
@@ -965,7 +1087,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                 {afterSteps.length > 0 && (
                   <div className="mb-6">
                     <div className="bg-green-600 text-white p-3 mb-3">
-                      <h3 className="text-xl font-black">🔄 AFTER: Recovery & Return</h3>
+                      <h3 className="text-xl font-black">🔄 {getUIText('bcpPreview.workbook.afterRecovery', currentLocale)}</h3>
                       <p className="text-sm mt-1">Steps to restore operations and get back to business</p>
                     </div>
                     
@@ -1206,7 +1328,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             {/* BEFORE: Prevention & Preparation */}
             <div className="mb-6">
               <div className="bg-blue-600 text-white p-3 mb-3">
-                <h2 className="text-2xl font-black">🛡️ BEFORE: Prevention & Preparation</h2>
+                <h2 className="text-2xl font-black">🛡️ {getUIText('bcpPreview.workbook.beforePreparation', currentLocale)}</h2>
                 <p className="text-sm mt-1">Do these things NOW to reduce risk and prepare for potential impact</p>
               </div>
               
@@ -1242,6 +1364,25 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                           </div>
                         </div>
                         <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Cost Items - What You Need to Purchase */}
+                        {(() => {
+                          const costItems = getStrategyCostItems(strategy)
+                          if (costItems.length === 0) return null
+                          
+                          return (
+                            <div className="mb-3 p-2 bg-yellow-50 border border-yellow-300 rounded">
+                              <div className="text-xs font-bold text-yellow-900 mb-1">🛒 {getUIText('bcpPreview.workbook.itemsToPurchase', currentLocale)}:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {costItems.map((item, itemIdx) => (
+                                  <span key={itemIdx} className="text-xs text-yellow-800 bg-yellow-100 px-2 py-0.5 rounded">
+                                    {item.quantity > 1 && `${item.quantity}x `}{item.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })()}
                         
                         {/* Action Steps */}
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (
@@ -1364,7 +1505,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             {/* DURING: Emergency Response */}
             <div className="mb-6">
               <div className="bg-red-600 text-white p-3 mb-3">
-                <h2 className="text-2xl font-black">🚨 DURING: Emergency Response</h2>
+                <h2 className="text-2xl font-black">🚨 {getUIText('bcpPreview.workbook.duringResponse', currentLocale)}</h2>
                 <p className="text-sm mt-1">Follow these steps when this emergency is happening NOW</p>
               </div>
               
@@ -1384,6 +1525,25 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                       <div key={sIdx} className="border-2 border-red-400 bg-red-50 p-4">
                         <h3 className="text-lg font-bold text-red-900 mb-2">{stratName}</h3>
                         <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Cost Items - What You Need to Have Ready */}
+                        {(() => {
+                          const costItems = getStrategyCostItems(strategy)
+                          if (costItems.length === 0) return null
+                          
+                          return (
+                            <div className="mb-3 p-2 bg-red-100 border border-red-300 rounded">
+                              <div className="text-xs font-bold text-red-900 mb-1">🛒 {getUIText('bcpPreview.workbook.itemsNeeded', currentLocale)}:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {costItems.map((item, itemIdx) => (
+                                  <span key={itemIdx} className="text-xs text-red-800 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                                    {item.quantity > 1 && `${item.quantity}x `}{item.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })()}
                         
                         {/* Action Steps */}
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (
@@ -1482,7 +1642,7 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
             {/* AFTER: Recovery */}
             <div className="mb-6">
               <div className="bg-green-600 text-white p-3 mb-3">
-                <h2 className="text-2xl font-black">🔄 AFTER: Recovery & Return</h2>
+                <h2 className="text-2xl font-black">🔄 {getUIText('bcpPreview.workbook.afterRecovery', currentLocale)}</h2>
                 <p className="text-sm mt-1">Steps to restore operations and get back to business</p>
               </div>
               
@@ -1510,6 +1670,25 @@ export const WorkbookPreview: React.FC<WorkbookPreviewProps> = ({
                           )}
                         </div>
                         <p className="text-sm text-gray-700 mb-3">{stratDesc}</p>
+                        
+                        {/* Cost Items - What You Need for Recovery */}
+                        {(() => {
+                          const costItems = getStrategyCostItems(strategy)
+                          if (costItems.length === 0) return null
+                          
+                          return (
+                            <div className="mb-3 p-2 bg-green-100 border border-green-300 rounded">
+                              <div className="text-xs font-bold text-green-900 mb-1">🛒 {getUIText('bcpPreview.workbook.itemsForRecovery', currentLocale)}:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {costItems.map((item, itemIdx) => (
+                                  <span key={itemIdx} className="text-xs text-green-800 bg-green-50 px-2 py-0.5 rounded border border-green-200">
+                                    {item.quantity > 1 && `${item.quantity}x `}{item.name}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })()}
                         
                         {/* Action Steps */}
                         {strategy.actionSteps && strategy.actionSteps.length > 0 && (

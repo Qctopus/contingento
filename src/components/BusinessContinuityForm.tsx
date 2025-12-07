@@ -681,31 +681,24 @@ export function BusinessContinuityForm() {
     }
   }
 
-  const exportToPDF = async (mode: 'formal' | 'workbook' = 'formal') => {
+  const exportToPDF = async (mode: 'formal' | 'workbook' = 'formal', strategiesArg?: any[], risksArg?: any[]) => {
     try {
-      // Determine API endpoint based on mode
-      let endpoint = '/api/export-workbook-pdf'
-      let suffix = 'bcp-action-workbook'
-      
-      if (mode === 'formal') {
-        endpoint = '/api/export-formal-bcp'
-        suffix = 'formal-bcp'
-      }
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/export-word', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           planData: formData,
-          localCurrency: 'JMD',
-          exchangeRate: 150
-        }),
+          mode,
+          locale,
+          strategies: strategiesArg,
+          risks: risksArg
+        })
       })
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF')
+        throw new Error('Failed to generate document')
       }
 
       const blob = await response.blob()
@@ -713,16 +706,15 @@ export function BusinessContinuityForm() {
       const a = document.createElement('a')
       a.href = url
       
-      // Determine filename based on mode
       const companyName = formData.PLAN_INFORMATION?.['Company Name'] || 'business'
-      a.download = `${companyName}-${suffix}.pdf`
+      a.download = `${companyName}-${mode === 'formal' ? 'formal-bcp' : 'action-workbook'}.docx`
       
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
-      console.error('Error generating PDF:', error)
+      console.error('Error generating document:', error)
       alert(t('common.error'))
     }
   }

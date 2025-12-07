@@ -601,7 +601,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {riskTypes.map(riskType => {
-                const vulnerability = editedBusinessType.riskVulnerabilities?.find(r => r.riskType === riskType)
+                const vulnerability = editedBusinessType.BusinessRiskVulnerability?.find(r => r.riskType === riskType)
                 const level = vulnerability?.vulnerabilityLevel || 5
                 const impact = vulnerability?.impactSeverity || 5
                 
@@ -622,7 +622,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
                           max="10"
                           value={level}
                           onChange={(e) => {
-                            const newVulnerabilities = editedBusinessType.riskVulnerabilities?.filter(r => r.riskType !== riskType) || []
+                            const newVulnerabilities = editedBusinessType.BusinessRiskVulnerability?.filter(r => r.riskType !== riskType) || []
                             newVulnerabilities.push({
                               riskType,
                               vulnerabilityLevel: parseInt(e.target.value),
@@ -648,7 +648,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
                           max="10"
                           value={impact}
                           onChange={(e) => {
-                            const newVulnerabilities = editedBusinessType.riskVulnerabilities?.filter(r => r.riskType !== riskType) || []
+                            const newVulnerabilities = editedBusinessType.BusinessRiskVulnerability?.filter(r => r.riskType !== riskType) || []
                             newVulnerabilities.push({
                               riskType,
                               vulnerabilityLevel: level,
@@ -675,3 +675,4 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
     </>
   )
 }
+

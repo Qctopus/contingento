@@ -8,6 +8,25 @@ import { BulkUploadModal } from './BulkUploadModal'
 import { logger } from '@/utils/logger'
 
 interface AdminUnitWithRisk extends AdminUnit {
+  AdminUnitRisk?: {
+    id: string
+    hurricaneLevel: number
+    hurricaneNotes: string
+    floodLevel: number
+    floodNotes: string
+    earthquakeLevel: number
+    earthquakeNotes: string
+    droughtLevel: number
+    droughtNotes: string
+    landslideLevel: number
+    landslideNotes: string
+    powerOutageLevel: number
+    powerOutageNotes: string
+    riskProfileJson: string
+    lastUpdated: string
+    updatedBy: string
+  }
+  // Keep lowercase for backward compatibility or if transformed
   adminUnitRisk?: {
     id: string
     hurricaneLevel: number
@@ -252,11 +271,12 @@ export function AdminUnitManagement() {
   }
 
   const getRiskLevel = (unit: AdminUnitWithRisk, riskKey: string): number => {
-    if (!unit.adminUnitRisk) return 0
+    const riskData = unit.AdminUnitRisk || unit.adminUnitRisk
+    if (!riskData) return 0
     
     // First, try to get from JSON profile (supports all risk types including dynamic ones)
     try {
-      const profile = JSON.parse(unit.adminUnitRisk.riskProfileJson || '{}')
+      const profile = JSON.parse(riskData.riskProfileJson || '{}')
       if (profile[riskKey]?.level !== undefined) {
         return profile[riskKey].level
       }
@@ -269,7 +289,7 @@ export function AdminUnitManagement() {
     }
     
     // Fallback to direct fields for core risks (backward compatibility)
-    const riskMap: Record<string, keyof typeof unit.adminUnitRisk> = {
+    const riskMap: Record<string, keyof typeof riskData> = {
       hurricane: 'hurricaneLevel',
       flood: 'floodLevel',
       earthquake: 'earthquakeLevel',
@@ -279,8 +299,8 @@ export function AdminUnitManagement() {
     }
     
     const field = riskMap[riskKey]
-    if (field && typeof unit.adminUnitRisk[field] === 'number') {
-      return unit.adminUnitRisk[field] as number
+    if (field && typeof riskData[field] === 'number') {
+      return riskData[field] as number
     }
     
     return 0

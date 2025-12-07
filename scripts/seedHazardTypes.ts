@@ -43,7 +43,7 @@ const CARIBBEAN_HAZARD_TYPES = [
     peakMonths: JSON.stringify(['2', '3', '4']),
     warningTime: 'weeks',
     geographicScope: 'regional',
-    cascadingRisks: JSON.stringify(['water_shortage', 'crop_failure', 'power_outage']),
+    cascadingRisks: JSON.stringify(['drought', 'crop_failure', 'power_outage']),
     isActive: true
   },
   {
@@ -57,7 +57,7 @@ const CARIBBEAN_HAZARD_TYPES = [
     peakMonths: null,
     warningTime: 'none',
     geographicScope: 'regional',
-    cascadingRisks: JSON.stringify(['structural_damage', 'fire', 'power_outage', 'tsunami']),
+    cascadingRisks: JSON.stringify(['structural_damage', 'fire', 'power_outage', 'landslide']),
     isActive: true
   },
   {
@@ -72,34 +72,6 @@ const CARIBBEAN_HAZARD_TYPES = [
     warningTime: 'hours',
     geographicScope: 'localized',
     cascadingRisks: JSON.stringify(['infrastructure_damage', 'road_blockage']),
-    isActive: true
-  },
-  {
-    hazardId: 'high_winds',
-    name: 'High Winds',
-    category: 'natural',
-    description: 'Strong winds that can damage structures and infrastructure',
-    defaultFrequency: 'possible',
-    defaultImpact: 'minor',
-    seasonalPattern: 'year-round',
-    peakMonths: JSON.stringify(['6', '7', '8', '9', '10', '11']),
-    warningTime: 'hours',
-    geographicScope: 'regional',
-    cascadingRisks: JSON.stringify(['power_outage', 'structural_damage']),
-    isActive: true
-  },
-  {
-    hazardId: 'tsunami',
-    name: 'Tsunami',
-    category: 'natural',
-    description: 'Large ocean wave caused by earthquake, volcanic eruption, or underwater landslide',
-    defaultFrequency: 'rare',
-    defaultImpact: 'catastrophic',
-    seasonalPattern: 'year-round',
-    peakMonths: null,
-    warningTime: 'minutes',
-    geographicScope: 'coastal',
-    cascadingRisks: JSON.stringify(['flooding', 'infrastructure_damage', 'contaminated_water']),
     isActive: true
   },
 
@@ -119,34 +91,6 @@ const CARIBBEAN_HAZARD_TYPES = [
     isActive: true
   },
   {
-    hazardId: 'water_shortage',
-    name: 'Water Shortage',
-    category: 'technological',
-    description: 'Interruption or reduction in water supply',
-    defaultFrequency: 'possible',
-    defaultImpact: 'moderate',
-    seasonalPattern: 'year-round',
-    peakMonths: JSON.stringify(['2', '3', '4', '7', '8']),
-    warningTime: 'hours',
-    geographicScope: 'localized',
-    cascadingRisks: JSON.stringify(['sanitation_issues', 'business_interruption']),
-    isActive: true
-  },
-  {
-    hazardId: 'internet_outage',
-    name: 'Internet / Communication Outage',
-    category: 'technological',
-    description: 'Loss of internet connectivity or telecommunications',
-    defaultFrequency: 'possible',
-    defaultImpact: 'moderate',
-    seasonalPattern: 'year-round',
-    peakMonths: null,
-    warningTime: 'none',
-    geographicScope: 'localized',
-    cascadingRisks: JSON.stringify(['payment_system_failure', 'communication_loss']),
-    isActive: true
-  },
-  {
     hazardId: 'fire',
     name: 'Fire',
     category: 'technological',
@@ -158,20 +102,6 @@ const CARIBBEAN_HAZARD_TYPES = [
     warningTime: 'minutes',
     geographicScope: 'localized',
     cascadingRisks: JSON.stringify(['structural_damage', 'smoke_damage', 'business_closure']),
-    isActive: true
-  },
-  {
-    hazardId: 'equipment_failure',
-    name: 'Critical Equipment Failure',
-    category: 'technological',
-    description: 'Breakdown of essential business equipment (refrigeration, HVAC, machinery)',
-    defaultFrequency: 'possible',
-    defaultImpact: 'moderate',
-    seasonalPattern: 'year-round',
-    peakMonths: null,
-    warningTime: 'none',
-    geographicScope: 'localized',
-    cascadingRisks: JSON.stringify(['inventory_loss', 'business_interruption']),
     isActive: true
   },
   {
@@ -205,10 +135,10 @@ const CARIBBEAN_HAZARD_TYPES = [
     isActive: true
   },
   {
-    hazardId: 'theft_vandalism',
-    name: 'Theft / Vandalism / Break-in',
+    hazardId: 'break_in_theft',
+    name: 'Break-ins & Theft',
     category: 'human',
-    description: 'Criminal activity targeting business property or assets',
+    description: 'Criminal activity targeting business property or assets including break-ins, theft, and vandalism',
     defaultFrequency: 'possible',
     defaultImpact: 'minor',
     seasonalPattern: 'year-round',
@@ -230,20 +160,6 @@ const CARIBBEAN_HAZARD_TYPES = [
     warningTime: 'days',
     geographicScope: 'regional',
     cascadingRisks: JSON.stringify(['staff_shortage', 'supply_disruption', 'business_closure', 'customer_loss']),
-    isActive: true
-  },
-  {
-    hazardId: 'key_person_loss',
-    name: 'Loss of Key Personnel',
-    category: 'human',
-    description: 'Sudden loss of critical staff member (illness, injury, resignation)',
-    defaultFrequency: 'possible',
-    defaultImpact: 'moderate',
-    seasonalPattern: 'year-round',
-    peakMonths: null,
-    warningTime: 'none',
-    geographicScope: 'individual',
-    cascadingRisks: JSON.stringify(['knowledge_loss', 'business_interruption', 'customer_service_decline']),
     isActive: true
   },
 
@@ -274,20 +190,6 @@ const CARIBBEAN_HAZARD_TYPES = [
     warningTime: 'weeks',
     geographicScope: 'regional',
     cascadingRisks: JSON.stringify(['revenue_loss', 'staff_reduction', 'business_closure']),
-    isActive: true
-  },
-  {
-    hazardId: 'currency_crisis',
-    name: 'Currency Devaluation / Financial Crisis',
-    category: 'economic',
-    description: 'Rapid currency devaluation or financial market instability',
-    defaultFrequency: 'unlikely',
-    defaultImpact: 'major',
-    seasonalPattern: 'year-round',
-    peakMonths: null,
-    warningTime: 'days',
-    geographicScope: 'regional',
-    cascadingRisks: JSON.stringify(['purchasing_power_loss', 'supply_cost_increase', 'customer_spending_decline']),
     isActive: true
   }
 ]

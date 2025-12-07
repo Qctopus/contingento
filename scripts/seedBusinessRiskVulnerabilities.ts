@@ -91,7 +91,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['power', 'gas', 'refrigeration']
       },
       {
-        riskType: 'water_shortage',
+        riskType: 'drought',
         vulnerabilityLevel: 9,
         impactSeverity: 8,
         recoveryTime: 'hours',
@@ -153,7 +153,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['suppliers', 'transportation', 'customs']
       },
       {
-        riskType: 'theft_vandalism',
+        riskType: 'break_in_theft',
         vulnerabilityLevel: 8,
         impactSeverity: 8,
         recoveryTime: 'days',
@@ -222,7 +222,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['power']
       },
       {
-        riskType: 'water_shortage',
+        riskType: 'drought',
         vulnerabilityLevel: 9,
         impactSeverity: 8,
         recoveryTime: 'hours',
@@ -251,7 +251,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
     businessTypeId: 'it_services',
     vulnerabilities: [
       {
-        riskType: 'internet_outage',
+        riskType: 'cybersecurity_incident',
         vulnerabilityLevel: 9,
         impactSeverity: 8,
         recoveryTime: 'hours',
@@ -262,7 +262,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['internet', 'power']
       },
       {
-        riskType: 'equipment_failure',
+        riskType: 'power_outage',
         vulnerabilityLevel: 7,
         impactSeverity: 6,
         recoveryTime: 'days',
@@ -313,7 +313,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['suppliers', 'ingredients']
       },
       {
-        riskType: 'equipment_failure',
+        riskType: 'power_outage',
         vulnerabilityLevel: 9,
         impactSeverity: 8,
         recoveryTime: 'days',
@@ -393,7 +393,7 @@ const BUSINESS_RISK_VULNERABILITIES: VulnerabilityMapping[] = [
         criticalDependencies: ['economy', 'disposable_income']
       },
       {
-        riskType: 'theft_vandalism',
+        riskType: 'break_in_theft',
         vulnerabilityLevel: 7,
         impactSeverity: 6,
         recoveryTime: 'days',
@@ -490,6 +490,9 @@ if (require.main === module) {
 }
 
 export { seedBusinessRiskVulnerabilities }
+
+
+
 
 
 

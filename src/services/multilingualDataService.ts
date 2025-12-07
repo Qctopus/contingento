@@ -10,15 +10,15 @@ export class MultilingualDataService {
         const businessTypes = await this.prismaClient.businessType.findMany({
             where: { isActive: true },
             include: {
-                translations: {
+                BusinessTypeTranslation: {
                     where: { locale: this.locale }
                 },
-                riskVulnerabilities: true
+                BusinessRiskVulnerability: true
             }
         })
 
         return businessTypes.map(bt => {
-            const translation = bt.translations[0] || {}
+            const translation = bt.BusinessTypeTranslation?.[0] || {}
             return {
                 ...bt,
                 name: translation.name || '',
@@ -28,7 +28,8 @@ export class MultilingualDataService {
                 exampleKeyPersonnel: translation.exampleKeyPersonnel || [],
                 exampleCustomerBase: translation.exampleCustomerBase || [],
                 minimumEquipment: translation.minimumEquipment || [],
-                translations: undefined
+                BusinessTypeTranslation: undefined,
+                BusinessRiskVulnerability: undefined
             }
         })
     }
@@ -37,14 +38,14 @@ export class MultilingualDataService {
         const bt = await this.prismaClient.businessType.findUnique({
             where: { businessTypeId: id },
             include: {
-                translations: { where: { locale: this.locale } },
-                riskVulnerabilities: true
+                BusinessTypeTranslation: { where: { locale: this.locale } },
+                BusinessRiskVulnerability: true
             }
         })
 
         if (!bt) return null
 
-        const translation = bt.translations[0] || {}
+        const translation = bt.BusinessTypeTranslation?.[0] || {}
         return {
             ...bt,
             name: translation.name || '',
@@ -54,7 +55,8 @@ export class MultilingualDataService {
             exampleKeyPersonnel: translation.exampleKeyPersonnel || [],
             exampleCustomerBase: translation.exampleCustomerBase || [],
             minimumEquipment: translation.minimumEquipment || [],
-            translations: undefined
+            BusinessTypeTranslation: undefined,
+            BusinessRiskVulnerability: undefined
         }
     }
 
@@ -73,20 +75,20 @@ export class MultilingualDataService {
         const strategies = await this.prismaClient.riskMitigationStrategy.findMany({
             where,
             include: {
-                translations: {
+                StrategyTranslation: {
                     where: { locale: this.locale }
                 },
-                actionSteps: {
+                ActionStep: {
                     orderBy: {
                         sortOrder: 'asc'
                     },
                     include: {
-                        translations: {
+                        ActionStepTranslation: {
                             where: { locale: this.locale }
                         },
-                        itemCosts: {
+                        ActionStepItemCost: {
                             include: {
-                                item: true
+                                CostItem: true
                             }
                         }
                     }
@@ -95,7 +97,7 @@ export class MultilingualDataService {
         })
 
         return strategies.map(strategy => {
-            const t = strategy.translations[0] || {}
+            const t = strategy.StrategyTranslation?.[0] || {}
             return {
                 ...strategy,
                 name: t.name || '',
@@ -110,8 +112,8 @@ export class MultilingualDataService {
                 whyImportant: t.whyImportant || '',
                 lowBudgetAlternative: t.lowBudgetAlternative || '',
 
-                actionSteps: strategy.actionSteps.map(step => {
-                    const st = step.translations[0] || {}
+                actionSteps: (strategy.ActionStep || []).map(step => {
+                    const st = step.ActionStepTranslation?.[0] || {}
                     return {
                         ...step,
                         title: st.title || '',
@@ -125,10 +127,30 @@ export class MultilingualDataService {
                         freeAlternative: st.freeAlternative || '',
                         lowTechOption: st.lowTechOption || '',
                         commonMistakesForStep: st.commonMistakesForStep || [],
-                        translations: undefined
+                        // Keep cost items for cost calculation
+                        itemCosts: (step.ActionStepItemCost || []).map((ic: any) => ({
+                            id: ic.id,
+                            itemId: ic.itemId,
+                            quantity: ic.quantity || 1,
+                            customNotes: ic.customNotes,
+                            item: ic.CostItem ? {
+                                itemId: ic.CostItem.itemId,
+                                name: ic.CostItem.name,
+                                description: ic.CostItem.description,
+                                category: ic.CostItem.category,
+                                baseUSD: ic.CostItem.baseUSD,
+                                baseUSDMin: ic.CostItem.baseUSDMin,
+                                baseUSDMax: ic.CostItem.baseUSDMax,
+                                unit: ic.CostItem.unit,
+                                complexity: ic.CostItem.complexity
+                            } : null
+                        })),
+                        ActionStepTranslation: undefined,
+                        ActionStepItemCost: undefined
                     }
                 }),
-                translations: undefined
+                StrategyTranslation: undefined,
+                ActionStep: undefined
             }
         })
     }
@@ -137,23 +159,23 @@ export class MultilingualDataService {
         const multipliers = await this.prismaClient.riskMultiplier.findMany({
             where: { isActive: true },
             include: {
-                translations: {
+                RiskMultiplierTranslation: {
                     where: { locale: this.locale }
                 }
             }
         })
 
         return multipliers.map(m => {
-            const t = m.translations[0] || {}
+            const t = m.RiskMultiplierTranslation?.[0] || {}
             return {
                 ...m,
-                name: t.name || m.name, // Fallback to admin name if no translation
-                description: t.description || m.description,
-                reasoning: t.reasoning || m.reasoning,
+                name: t.name || '',
+                description: t.description || '',
+                reasoning: t.reasoning || '',
                 wizardQuestion: t.wizardQuestion || '',
                 wizardHelpText: t.wizardHelpText || '',
                 wizardAnswerOptions: t.wizardAnswerOptions || [],
-                translations: undefined
+                RiskMultiplierTranslation: undefined
             }
         })
     }
@@ -163,10 +185,10 @@ export class MultilingualDataService {
         return await this.prismaClient.riskMitigationStrategy.findUnique({
             where: { id: strategyId },
             include: {
-                translations: true,
-                actionSteps: {
+                StrategyTranslation: true,
+                ActionStep: {
                     include: {
-                        translations: true
+                        ActionStepTranslation: true
                     }
                 }
             }

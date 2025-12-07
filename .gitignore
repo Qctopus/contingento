@@ -98,3 +98,32 @@ workbox-*
 # /public/manifest.json 
 # Prisma generated client (contains large binary files)
 /src/generated/
+
+# Development database
+prisma/dev.db
+prisma/dev.db-journal
+
+# TypeScript build info
+tsconfig.tsbuildinfo
+
+# Vercel local
+.vercel/
+
+# Gemini AI
+.gemini/
+
+# Temporary debug/test files
+debug-*.ts
+verify-*.ts
+**/audit_report.txt
+**/audit_results.txt
+**/debug_output*.txt
+**/simple-results.txt
+**/temp_strategies_list*.txt
+**/test_output*.txt
+**/test-output.txt
+**/test-results*.txt
+**/hazard_ids.txt
+
+# Backup files
+*.backup

@@ -21,25 +21,36 @@ export function getLocalizedText(
 ): string {
   if (!content) return ''
 
-  // If content is a simple string, return it directly
+  // If content is a string, check if it's JSON that needs parsing
   if (typeof content === 'string') {
+    // Try to parse as JSON if it looks like multilingual content
+    if (content.startsWith('{') && (content.includes('"en":') || content.includes('"es":') || content.includes('"fr":'))) {
+      try {
+        const parsed = JSON.parse(content)
+        // Recursively process the parsed object
+        return getLocalizedText(parsed, locale, fallbackLocale)
+      } catch {
+        // If parsing fails, return the original string
+        return content
+      }
+    }
     return content
   }
 
   // If content is an object, try to get the requested locale
   if (typeof content === 'object' && content !== null) {
     // Try requested locale first
-    if (content[locale]) {
+    if (content[locale] && typeof content[locale] === 'string') {
       return content[locale]
     }
 
     // Fall back to fallback locale
-    if (content[fallbackLocale]) {
+    if (content[fallbackLocale] && typeof content[fallbackLocale] === 'string') {
       return content[fallbackLocale]
     }
 
     // Fall back to English if available
-    if (content.en) {
+    if (content.en && typeof content.en === 'string') {
       return content.en
     }
 
@@ -52,8 +63,8 @@ export function getLocalizedText(
       }
       return true
     })
-    if (availableValue) {
-      return String(availableValue)
+    if (availableValue && typeof availableValue === 'string') {
+      return availableValue
     }
   }
 

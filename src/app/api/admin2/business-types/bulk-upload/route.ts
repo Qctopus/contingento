@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
           // Find existing business type
           const existingBusinessType = await prisma.businessType.findFirst({
             where: { businessTypeId },
-            include: { riskVulnerabilities: true }
+            include: { BusinessRiskVulnerability: true }
           })
 
           let businessType
@@ -238,7 +238,7 @@ export async function GET() {
       const prisma = getPrismaClient()
       return await prisma.businessType.findMany({
         where: { isActive: true },
-        include: { riskVulnerabilities: true },
+        include: { BusinessRiskVulnerability: true },
         orderBy: [
           { category: 'asc' },
           { businessTypeId: 'asc' }
@@ -268,7 +268,7 @@ export async function GET() {
     const csvRows = businessTypes.map(bt => {
       // Create vulnerability map for easy lookup
       const vulnMap: { [key: string]: any } = {}
-      bt.riskVulnerabilities.forEach(vuln => {
+      bt.BusinessRiskVulnerability.forEach(vuln => {
         vulnMap[vuln.riskType] = vuln
       })
 

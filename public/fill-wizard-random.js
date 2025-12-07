@@ -165,306 +165,391 @@
     const preFillData = await prefillResponse.json()
     console.log('✅ Prefill data generated')
     
-    // Step 6: Fill all wizard questions with sample data
-    const formData = {
-      PLAN_INFORMATION: {
-        'Company Name': `Sample ${randomBusinessType.name}`,
-        'Business Address': `123 Main Street, ${location.parish}, ${location.country}`,
-        'Plan Manager': 'John Smith, Owner',
-        'Alternate Manager': 'Jane Doe, Manager',
-        'Physical Plan Location': 'Fire-proof safe in office',
-        'Digital Plan Location': 'Cloud storage with backup',
-        'Plan Version': '1.0',
-        'Next Review Date': '2026-01-15'
-      },
-      
-      BUSINESS_OVERVIEW: {
-        'Business License Number': 'LIC-2024-001',
-        'Business Purpose': `Sample ${randomBusinessType.name} business providing quality products and services to the local community.`,
-        'Products and Services': 'Various products and services tailored to customer needs.',
-        'Service Delivery Methods': 'In-person service delivery at physical location.',
-        'Operating Hours': 'Monday to Friday, 9 AM to 5 PM',
-        'Key Personnel Involved': 'Owner, Manager, and key staff members.',
-        'Minimum Resource Requirements': 'Essential equipment, staff, and supplies needed for operations.',
-        'Customer Base': 'Local customers and community members.',
-        'Approximate Annual Revenue': '100k_500k',
-        'Total People in Business': '1-5',
-        'Years in Operation': '1-5',
-        'Service Provider BCP Status': 'none'
-      },
-      
-      ESSENTIAL_FUNCTIONS: {
-        'Business Functions': [
-          {
-            'Business Function': 'Core Operations',
-            'Description': 'Primary business operations',
-            'Priority Level': 'critical',
-            'Maximum Acceptable Downtime': '0-2h',
-            'Critical Resources Needed': 'Essential staff and equipment'
-          },
-          {
-            'Business Function': 'Customer Service',
-            'Description': 'Customer interaction and support',
-            'Priority Level': 'important',
-            'Maximum Acceptable Downtime': '2-8h',
-            'Critical Resources Needed': 'Customer service staff and communication tools'
-          }
-        ]
-      },
-      
-      FUNCTION_PRIORITIES: {
-        'Function Priorities': [
-          {
-            'Function': 'Core Operations',
-            'Priority': 'Critical',
-            'Downtime Tolerance': '0-2 hours',
-            'Recovery Time Objective': 'Immediate',
-            'Business Impact': 'Complete business shutdown if unavailable'
-          }
-        ]
-      },
-      
-      RISK_ASSESSMENT: {
-        'Risk Assessment Matrix': preFillData.preFilledFields?.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
-      },
-      
-      STRATEGIES: {
-        'Selected Strategies': preFillData.recommendedStrategies?.map((s) => s.strategyId) || [],
-        'Long Term Plan': 'Continue monitoring and improving business continuity plans.'
-      },
-      
-      ACTION_PLAN: {
-        'Emergency Team': [
-          {
-            'Name': 'John Smith',
-            'Role': 'Emergency Coordinator',
-            'Phone': '555-0101',
-            'Alternate Contact': '555-0102',
-            'Responsibilities': 'Overall emergency coordination'
-          }
-        ],
-        'Communication Plan': 'Use phone, email, and text messaging for emergency communications.',
-        'Evacuation Plan': 'Follow local emergency evacuation procedures.',
-        'Work Locations': [
-          {
-            'Location Name': 'Primary Location',
-            'Address': `123 Main Street, ${location.parish}`,
-            'Contact': '555-0101',
-            'Capacity': 'Full operations',
-            'Notes': 'Main business location'
-          }
-        ]
-      },
-      
-      CONTACTS_AND_INFORMATION: {
-        'Staff Contact Information': [
-          {
-            'Name': 'John Smith',
-            'Position': 'Owner/Manager',
-            'Phone Number': '555-0101',
-            'Email Address': 'john@example.com',
-            'Emergency Contact': 'Jane Doe - 555-0102'
-          },
-          {
-            'Name': 'Jane Doe',
-            'Position': 'Assistant Manager',
-            'Phone Number': '555-0102',
-            'Email Address': 'jane@example.com',
-            'Emergency Contact': 'John Smith - 555-0101'
-          }
-        ],
-        'Key Customer Contacts': [
-          {
-            'Customer Name': 'Primary Customer',
-            'Type/Notes': 'Main customer - regular orders',
-            'Phone Number': '555-0301',
-            'Email Address': 'customer@example.com',
-            'Special Requirements': 'Priority service required'
-          }
-        ],
-        'Supplier Information': [
-          {
-            'Supplier Name': 'Main Supplier',
-            'Goods/Services Supplied': 'Primary supplies and materials',
-            'Phone Number': '555-0201',
-            'Email Address': 'supplier@example.com',
-            'Backup Supplier': 'Backup Supplier - 555-0202'
-          },
-          {
-            'Supplier Name': 'Equipment Supplier',
-            'Goods/Services Supplied': 'Business equipment and maintenance',
-            'Phone Number': '555-0203',
-            'Email Address': 'equipment@example.com',
-            'Backup Supplier': 'Alternative Equipment Co. - 555-0204'
-          }
-        ],
-        'Emergency Services and Utilities': [
-          {
-            'Service Type': 'Emergency Services',
-            'Organization Name': 'Local Emergency Services',
-            'Phone Number': '911',
-            'Email Address': 'emergency@local.gov',
-            'Account Number': 'N/A'
-          },
-          {
-            'Service Type': 'Fire Department',
-            'Organization Name': 'Local Fire Department',
-            'Phone Number': '911',
-            'Email Address': 'fire@local.gov',
-            'Account Number': 'N/A'
-          },
-          {
-            'Service Type': 'Police',
-            'Organization Name': 'Local Police Department',
-            'Phone Number': '911',
-            'Email Address': 'police@local.gov',
-            'Account Number': 'N/A'
-          },
-          {
-            'Service Type': 'Medical Emergency',
-            'Organization Name': 'Local Hospital',
-            'Phone Number': '911',
-            'Email Address': 'emergency@hospital.local',
-            'Account Number': 'N/A'
-          },
-          {
-            'Service Type': 'Electricity',
-            'Organization Name': 'Local Power Company',
-            'Phone Number': '555-1001',
-            'Email Address': 'service@power.local',
-            'Account Number': 'ACC-12345'
-          },
-          {
-            'Service Type': 'Water',
-            'Organization Name': 'Local Water Authority',
-            'Phone Number': '555-1002',
-            'Email Address': 'service@water.local',
-            'Account Number': 'ACC-67890'
-          }
-        ],
-        'Critical Business Information': `Business Registration: REG-2024-001; Property: Owned/Leased at ${location.parish}; Insurance: Policy #INS-12345; Banking: Main Account #ACC-123456; Tax ID: TAX-123456789; Licenses: Business License #LIC-2024-001; Critical Contracts: Supplier agreements, equipment leases; Employee Records: HR system with backup; Customer Database: Cloud-based with daily backups.`,
-        'Plan Distribution List': [
-          {
-            'Name/Position': 'John Smith (Owner)',
-            'Format Received': 'Electronic + Hard copy',
-            'Date Provided': new Date().toISOString().split('T')[0],
-            'Version Number': '1.0',
-            'Acknowledgment': 'Signed and filed'
-          }
-        ]
-      },
-      
-      VITAL_RECORDS: {
-        'Vital Records Inventory': [
-          {
-            'Record Type': 'Financial Records',
-            'Primary Location': 'Secure office safe',
-            'Backup Location': 'Cloud storage + Accountant office',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Employee Records',
-            'Primary Location': 'HR office + Digital system',
-            'Backup Location': 'Cloud backup + External drive in safe',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Business Registration and Licenses',
-            'Primary Location': 'Office safe',
-            'Backup Location': 'Cloud storage + Attorney office',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Insurance Policies',
-            'Primary Location': 'Office safe',
-            'Backup Location': 'Cloud storage + Insurance agent',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Customer Database',
-            'Primary Location': 'Cloud-based system',
-            'Backup Location': 'Daily automated backups + Weekly offline backup',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Supplier Contracts',
-            'Primary Location': 'Digital storage + Physical copies',
-            'Backup Location': 'Cloud backup',
-            'Recovery Priority': 'MEDIUM'
-          },
-          {
-            'Record Type': 'Emergency Contact Lists',
-            'Primary Location': 'Digital + Physical in emergency kits',
-            'Backup Location': 'Cloud backup + Printed copies',
-            'Recovery Priority': 'HIGH'
-          },
-          {
-            'Record Type': 'Tax Records',
-            'Primary Location': 'Office files + Digital',
-            'Backup Location': 'Accountant office + Cloud storage',
-            'Recovery Priority': 'HIGH'
-          }
-        ]
-      },
-      
-      TESTING_AND_MAINTENANCE: {
-        'Plan Testing Schedule': [
-          {
-            'Test Type': 'Tabletop exercise',
-            'What is Tested': 'Emergency response coordination',
-            'Frequency': 'Quarterly',
-            'Next Test Date': new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            'Success Criteria': 'All team members respond within 30 minutes, key decisions made',
-            'Responsible Person': 'John Smith (Owner)'
-          },
-          {
-            'Test Type': 'Communication test',
-            'What is Tested': 'Emergency notification system',
-            'Frequency': 'Monthly',
-            'Next Test Date': new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            'Success Criteria': '95% of staff respond within 20 minutes',
-            'Responsible Person': 'Jane Doe (Assistant Manager)'
-          },
-          {
-            'Test Type': 'Full simulation',
-            'What is Tested': 'Complete emergency scenario',
-            'Frequency': 'Annual',
-            'Next Test Date': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            'Success Criteria': 'All procedures followed correctly',
-            'Responsible Person': 'John Smith (Owner)'
-          }
-        ],
-        'Plan Revision History': [
-          {
-            'Version': '1.0',
-            'Date Updated': new Date().toISOString().split('T')[0],
-            'Changes Made': 'Initial business continuity plan creation',
-            'Updated By': 'John Smith (Owner)',
-            'Reason for Update': 'New comprehensive business continuity plan'
-          }
-        ],
-        'Training Schedule': [
-          {
-            'Training Topic': 'Emergency Procedures',
-            'Who Needs Training': 'All staff',
-            'Frequency': 'Annual',
-            'Next Training Date': new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            'Training Method': 'In-person workshop',
-            'Responsible Person': 'John Smith (Owner)'
-          },
-          {
-            'Training Topic': 'Business Continuity Basics',
-            'Who Needs Training': 'Management team',
-            'Frequency': 'Semi-annual',
-            'Next Training Date': new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            'Training Method': 'Online course + discussion',
-            'Responsible Person': 'Jane Doe (Assistant Manager)'
-          }
-        ],
-        'Metrics and KPIs': 'Track recovery time objectives (RTO), recovery point objectives (RPO), business impact assessments, plan effectiveness, staff response times, and testing completion rates.',
-        'Improvement Plan': 'Regular review after each test to identify gaps and improvements. Update procedures based on lessons learned. Ensure all staff are aware of changes.',
-        'Review Process': 'Annual comprehensive review of business continuity plan. Quarterly review of testing results and metrics. Monthly review of contact information updates.'
+    // Step 6: Build full form data, starting with backend pre-fill (includes computed risks/strategies/action plan)
+    // Clone to avoid mutating the original preFillData structure
+    const formData = JSON.parse(JSON.stringify(preFillData.preFilledFields || {}))
+
+    const ensureStep = (step) => {
+      if (!formData[step]) formData[step] = {}
+    }
+
+    // Ensure steps exist before assigning fields
+    ['PLAN_INFORMATION', 'BUSINESS_OVERVIEW', 'ESSENTIAL_FUNCTIONS', 'FUNCTION_PRIORITIES', 'RISK_ASSESSMENT', 'STRATEGIES', 'CONTACTS_AND_INFORMATION', 'VITAL_RECORDS', 'TESTING_AND_MAINTENANCE'].forEach(ensureStep)
+
+    // PLAN INFORMATION
+    formData.PLAN_INFORMATION = {
+      ...formData.PLAN_INFORMATION,
+      'Company Name': `Sample ${randomBusinessType.name}`,
+      'Business Address': `123 Main Street, ${location.parish}, ${location.country}`,
+      'Plan Manager': 'John Smith, Owner',
+      'Alternate Manager': 'Jane Doe, Manager',
+      'Physical Plan Location': 'Fire-proof safe in office',
+      'Digital Plan Location': 'Cloud storage with backup',
+      'Plan Version': '1.0',
+      'Next Review Date': '2026-01-15'
+    }
+
+    // BUSINESS OVERVIEW
+    formData.BUSINESS_OVERVIEW = {
+      ...formData.BUSINESS_OVERVIEW,
+      'Business License Number': 'LIC-2024-001',
+      'Business Purpose': `Sample ${randomBusinessType.name} business providing quality products and services to the local community.`,
+      'Products and Services': 'Various products and services tailored to customer needs.',
+      'Service Delivery Methods': 'In-person service delivery at physical location.',
+      'Operating Hours': 'Monday to Friday, 9 AM to 5 PM',
+      'Key Personnel Involved': 'Owner, Manager, and key staff members.',
+      'Minimum Resource Requirements': 'Essential equipment, staff, and supplies needed for operations.',
+      'Customer Base': 'Local customers and community members.',
+      'Approximate Annual Revenue': '100k_500k',
+      'Total People in Business': '1-5',
+      'Years in Operation': '1-5',
+      'Service Provider BCP Status': 'none'
+    }
+
+    // ESSENTIAL FUNCTIONS
+    formData.ESSENTIAL_FUNCTIONS = {
+      ...formData.ESSENTIAL_FUNCTIONS,
+      'Business Functions': [
+        {
+          'Business Function': 'Core Operations',
+          'Description': 'Primary business operations',
+          'Priority Level': 'critical',
+          'Maximum Acceptable Downtime': '0-2h',
+          'Critical Resources Needed': 'Essential staff and equipment'
+        },
+        {
+          'Business Function': 'Customer Service',
+          'Description': 'Customer interaction and support',
+          'Priority Level': 'important',
+          'Maximum Acceptable Downtime': '2-8h',
+          'Critical Resources Needed': 'Customer service staff and communication tools'
+        }
+      ]
+    }
+
+    // FUNCTION PRIORITIES
+    formData.FUNCTION_PRIORITIES = {
+      ...formData.FUNCTION_PRIORITIES,
+      'Function Priorities': [
+        {
+          'Function': 'Core Operations',
+          'Priority': 'Critical',
+          'Downtime Tolerance': '0-2 hours',
+          'Recovery Time Objective': 'Immediate',
+          'Business Impact': 'Complete business shutdown if unavailable'
+        }
+      ]
+    }
+
+    // RISK ASSESSMENT (use backend-computed matrix)
+    const riskMatrix = preFillData.preFilledFields?.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
+
+    // Ensure risks are marked as selected for auto-populate so strategies filter correctly
+    const normalizedRiskMatrix = riskMatrix.map((risk) => {
+      const isHigh = (risk.riskTier && risk.riskTier <= 2) || (risk.riskScore && risk.riskScore >= 5)
+      const isPreSelected = risk.isPreSelected === true || isHigh
+      return {
+        ...risk,
+        isPreSelected,
+        isSelected: isPreSelected,
+        isAvailable: true
       }
+    })
+
+    formData.RISK_ASSESSMENT = {
+      ...formData.RISK_ASSESSMENT,
+      'Risk Assessment Matrix': normalizedRiskMatrix
+    }
+
+    // Keep preFillData.hazards in sync so downstream components see selected risks
+    if (Array.isArray(preFillData.hazards)) {
+      preFillData.hazards = normalizedRiskMatrix.map((risk) => ({
+        hazardId: risk.hazardId,
+        hazardName: risk.hazard || risk.hazardName,
+        riskLevel: risk.riskLevel,
+        frequency: risk.frequency || 'possible',
+        impact: risk.impact || (risk.severity > 5 ? 'major' : 'moderate'),
+        likelihood: risk.likelihood,
+        severity: risk.severity,
+        riskScore: risk.riskScore,
+        isPreSelected: risk.isPreSelected,
+        isAvailable: risk.isAvailable,
+        reasoning: risk.reasoning,
+        isCalculated: risk.isCalculated,
+        baseScore: risk.baseScore,
+        appliedMultipliers: risk.appliedMultipliers,
+        initialTier: risk.initialTier,
+        initialRiskScore: risk.initialRiskScore,
+        riskTier: risk.riskTier,
+        riskCategory: risk.riskCategory,
+        isSelected: risk.isSelected
+      }))
+    }
+
+    // STRATEGIES (prefer backend pre-fill; also keep recommended IDs for backward compat)
+    formData.STRATEGIES = {
+      ...formData.STRATEGIES,
+      'Business Continuity Strategies': preFillData.preFilledFields?.STRATEGIES?.['Business Continuity Strategies'] || [],
+      'Long-term Risk Reduction Measures': preFillData.preFilledFields?.STRATEGIES?.['Long-term Risk Reduction Measures'] || [],
+      'Selected Strategies': preFillData.recommendedStrategies?.map((s) => s.strategyId) || []
+    }
+
+    // ACTION PLAN (if backend provided, keep it; otherwise add minimal)
+    formData.ACTION_PLAN = {
+      ...formData.ACTION_PLAN,
+      ...(preFillData.preFilledFields?.ACTION_PLAN || {}),
+      'Emergency Team': preFillData.preFilledFields?.ACTION_PLAN?.['Emergency Team'] || [
+        {
+          'Name': 'John Smith',
+          'Role': 'Emergency Coordinator',
+          'Phone': '555-0101',
+          'Alternate Contact': '555-0102',
+          'Responsibilities': 'Overall emergency coordination'
+        }
+      ],
+      'Communication Plan': preFillData.preFilledFields?.ACTION_PLAN?.['Communication Plan'] || 'Use phone, email, and text messaging for emergency communications.',
+      'Evacuation Plan': preFillData.preFilledFields?.ACTION_PLAN?.['Evacuation Plan'] || 'Follow local emergency evacuation procedures.',
+      'Work Locations': preFillData.preFilledFields?.ACTION_PLAN?.['Work Locations'] || [
+        {
+          'Location Name': 'Primary Location',
+          'Address': `123 Main Street, ${location.parish}`,
+          'Contact': '555-0101',
+          'Capacity': 'Full operations',
+          'Notes': 'Main business location'
+        }
+      ]
+    }
+
+    // CONTACTS AND INFORMATION
+    formData.CONTACTS_AND_INFORMATION = {
+      ...formData.CONTACTS_AND_INFORMATION,
+      'Staff Contact Information': [
+        {
+          'Name': 'John Smith',
+          'Position': 'Owner/Manager',
+          'Phone Number': '555-0101',
+          'Email Address': 'john@example.com',
+          'Emergency Contact': 'Jane Doe - 555-0102'
+        },
+        {
+          'Name': 'Jane Doe',
+          'Position': 'Assistant Manager',
+          'Phone Number': '555-0102',
+          'Email Address': 'jane@example.com',
+          'Emergency Contact': 'John Smith - 555-0101'
+        }
+      ],
+      'Key Customer Contacts': [
+        {
+          'Customer Name': 'Primary Customer',
+          'Type/Notes': 'Main customer - regular orders',
+          'Phone Number': '555-0301',
+          'Email Address': 'customer@example.com',
+          'Special Requirements': 'Priority service required'
+        }
+      ],
+      'Supplier Information': [
+        {
+          'Supplier Name': 'Main Supplier',
+          'Goods/Services Supplied': 'Primary supplies and materials',
+          'Phone Number': '555-0201',
+          'Email Address': 'supplier@example.com',
+          'Backup Supplier': 'Backup Supplier - 555-0202'
+        },
+        {
+          'Supplier Name': 'Equipment Supplier',
+          'Goods/Services Supplied': 'Business equipment and maintenance',
+          'Phone Number': '555-0203',
+          'Email Address': 'equipment@example.com',
+          'Backup Supplier': 'Alternative Equipment Co. - 555-0204'
+        }
+      ],
+      'Emergency Services and Utilities': [
+        {
+          'Service Type': 'Emergency Services',
+          'Organization Name': 'Local Emergency Services',
+          'Phone Number': '911',
+          'Email Address': 'emergency@local.gov',
+          'Account Number': 'N/A'
+        },
+        {
+          'Service Type': 'Fire Department',
+          'Organization Name': 'Local Fire Department',
+          'Phone Number': '911',
+          'Email Address': 'fire@local.gov',
+          'Account Number': 'N/A'
+        },
+        {
+          'Service Type': 'Police',
+          'Organization Name': 'Local Police Department',
+          'Phone Number': '911',
+          'Email Address': 'police@local.gov',
+          'Account Number': 'N/A'
+        },
+        {
+          'Service Type': 'Medical Emergency',
+          'Organization Name': 'Local Hospital',
+          'Phone Number': '911',
+          'Email Address': 'emergency@hospital.local',
+          'Account Number': 'N/A'
+        },
+        {
+          'Service Type': 'Electricity',
+          'Organization Name': 'Local Power Company',
+          'Phone Number': '555-1001',
+          'Email Address': 'service@power.local',
+          'Account Number': 'ACC-12345'
+        },
+        {
+          'Service Type': 'Water',
+          'Organization Name': 'Local Water Authority',
+          'Phone Number': '555-1002',
+          'Email Address': 'service@water.local',
+          'Account Number': 'ACC-67890'
+        }
+      ],
+      'Critical Business Information': `Business Registration: REG-2024-001; Property: Owned/Leased at ${location.parish}; Insurance: Policy #INS-12345; Banking: Main Account #ACC-123456; Tax ID: TAX-123456789; Licenses: Business License #LIC-2024-001; Critical Contracts: Supplier agreements, equipment leases; Employee Records: HR system with backup; Customer Database: Cloud-based with daily backups.`,
+      'Plan Distribution List': [
+        {
+          'Name/Position': 'John Smith (Owner)',
+          'Format Received': 'Electronic + Hard copy',
+          'Date Provided': new Date().toISOString().split('T')[0],
+          'Version Number': '1.0',
+          'Acknowledgment': 'Signed and filed'
+        }
+      ]
+    }
+
+    // VITAL RECORDS
+    formData.VITAL_RECORDS = {
+      ...formData.VITAL_RECORDS,
+      'Vital Records Inventory': [
+        {
+          'Record Type': 'Financial Records',
+          'Primary Location': 'Secure office safe',
+          'Backup Location': 'Cloud storage + Accountant office',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Employee Records',
+          'Primary Location': 'HR office + Digital system',
+          'Backup Location': 'Cloud backup + External drive in safe',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Business Registration and Licenses',
+          'Primary Location': 'Office safe',
+          'Backup Location': 'Cloud storage + Attorney office',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Insurance Policies',
+          'Primary Location': 'Office safe',
+          'Backup Location': 'Cloud storage + Insurance agent',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Customer Database',
+          'Primary Location': 'Cloud-based system',
+          'Backup Location': 'Daily automated backups + Weekly offline backup',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Supplier Contracts',
+          'Primary Location': 'Digital storage + Physical copies',
+          'Backup Location': 'Cloud backup',
+          'Recovery Priority': 'MEDIUM'
+        },
+        {
+          'Record Type': 'Emergency Contact Lists',
+          'Primary Location': 'Digital + Physical in emergency kits',
+          'Backup Location': 'Cloud backup + Printed copies',
+          'Recovery Priority': 'HIGH'
+        },
+        {
+          'Record Type': 'Tax Records',
+          'Primary Location': 'Office files + Digital',
+          'Backup Location': 'Accountant office + Cloud storage',
+          'Recovery Priority': 'HIGH'
+        }
+      ]
+    }
+
+    // TESTING AND MAINTENANCE (align labels with wizard)
+    formData.TESTING_AND_MAINTENANCE = {
+      ...formData.TESTING_AND_MAINTENANCE,
+      'Plan Testing Schedule': [
+        {
+          'Test Type': 'Tabletop exercise',
+          'What is Tested': 'Emergency response coordination',
+          'Frequency': 'Quarterly',
+          'Next Test Date': new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Success Criteria': 'All team members respond within 30 minutes, key decisions made',
+          'Responsible Person': 'John Smith (Owner)'
+        },
+        {
+          'Test Type': 'Communication test',
+          'What is Tested': 'Emergency notification system',
+          'Frequency': 'Monthly',
+          'Next Test Date': new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Success Criteria': '95% of staff respond within 20 minutes',
+          'Responsible Person': 'Jane Doe (Assistant Manager)'
+        },
+        {
+          'Test Type': 'Full simulation',
+          'What is Tested': 'Complete emergency scenario',
+          'Frequency': 'Annual',
+          'Next Test Date': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Success Criteria': 'All procedures followed correctly',
+          'Responsible Person': 'John Smith (Owner)'
+        }
+      ],
+      'Plan Revision History': [
+        {
+          'Version': '1.0',
+          'Date Updated': new Date().toISOString().split('T')[0],
+          'Changes Made': 'Initial business continuity plan creation',
+          'Updated By': 'John Smith (Owner)',
+          'Reason for Update': 'New comprehensive business continuity plan'
+        }
+      ],
+      'Training Schedule': [
+        {
+          'Training Topic': 'Emergency Procedures',
+          'Who Needs Training': 'All staff',
+          'Frequency': 'Annual',
+          'Next Training Date': new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Training Method': 'In-person workshop',
+          'Responsible Person': 'John Smith (Owner)'
+        },
+        {
+          'Training Topic': 'Business Continuity Basics',
+          'Who Needs Training': 'Management team',
+          'Frequency': 'Semi-annual',
+          'Next Training Date': new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Training Method': 'Online course + discussion',
+          'Responsible Person': 'Jane Doe (Assistant Manager)'
+        }
+      ],
+      'Performance Metrics': [
+        {
+          'Metric': 'Recovery Time Objective (RTO)',
+          'Target/Threshold': 'Critical functions < 2 hours',
+          'Responsible Person': 'Ops Manager',
+          'Data Source': 'Incident logs',
+          'Review Frequency': 'Quarterly',
+          'Last Updated': new Date().toISOString().split('T')[0]
+        }
+      ],
+      'Improvement Tracking': [
+        {
+          'Improvement Area': 'Communication drills',
+          'Action Items': 'Increase drill frequency; add SMS fallback',
+          'Owner': 'Emergency Coordinator',
+          'Target Date': new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          'Status/Notes': 'In progress'
+        }
+      ]
     }
     
     // Step 7: Save to localStorage

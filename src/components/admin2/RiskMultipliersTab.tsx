@@ -24,7 +24,7 @@ export default function RiskMultipliersTab() {
   // Language labels and flags
   const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
   const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
-  
+
   // Helper to parse multilingual JSON
   const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
     if (!value) return { en: '', es: '', fr: '' }
@@ -37,7 +37,7 @@ export default function RiskMultipliersTab() {
     }
     return value || { en: '', es: '', fr: '' }
   }
-  
+
   // Helper to update multilingual field
   const updateMultilingualField = (field: keyof MultiplierFormData, lang: 'en' | 'es' | 'fr', value: string) => {
     const current = parseMultilingual(formData[field])
@@ -70,10 +70,14 @@ export default function RiskMultipliersTab() {
       const response = await fetch('/api/admin2/multipliers')
       const data = await response.json()
       if (data.success) {
-        setMultipliers(data.multipliers)
+        // API returns data.data, but support data.multipliers for backwards compatibility
+        setMultipliers(data.data || data.multipliers || [])
+      } else {
+        setMultipliers([]) // Ensure we always have an array
       }
     } catch (error) {
       console.error('Error fetching multipliers:', error)
+      setMultipliers([]) // Ensure we always have an array on error
     } finally {
       setLoading(false)
     }
@@ -81,20 +85,20 @@ export default function RiskMultipliersTab() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       const url = '/api/admin2/multipliers'
       const method = editingId ? 'PATCH' : 'POST'
       const body = editingId ? { ...formData, id: editingId } : formData
-      
+
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMultipliers()
         resetForm()
@@ -109,26 +113,26 @@ export default function RiskMultipliersTab() {
 
   const handleEdit = (multiplier: RiskMultiplier) => {
     setEditingId(multiplier.id)
-    
+
     // Parse applicableHazards safely - it might be a string or already an array
     let hazards: string[] = []
     try {
-      hazards = typeof multiplier.applicableHazards === 'string' 
+      hazards = typeof multiplier.applicableHazards === 'string'
         ? JSON.parse(multiplier.applicableHazards)
         : multiplier.applicableHazards || []
     } catch (error) {
       console.error('Error parsing applicableHazards:', error)
       hazards = []
     }
-    
+
     // Parse multilingual fields
     let wizardQuestion: any = undefined
     let wizardAnswerOptions: any = undefined
     let wizardHelpText: any = undefined
-    
+
     try {
       if (multiplier.wizardQuestion) {
-        wizardQuestion = typeof multiplier.wizardQuestion === 'string' 
+        wizardQuestion = typeof multiplier.wizardQuestion === 'string'
           ? JSON.parse(multiplier.wizardQuestion)
           : multiplier.wizardQuestion
       }
@@ -145,7 +149,7 @@ export default function RiskMultipliersTab() {
     } catch (error) {
       console.error('Error parsing multilingual fields:', error)
     }
-    
+
     setFormData({
       name: multiplier.name,
       description: multiplier.description,
@@ -163,10 +167,10 @@ export default function RiskMultipliersTab() {
       wizardHelpText: wizardHelpText ? JSON.stringify(wizardHelpText) : undefined,
       isActive: multiplier.isActive
     })
-    
+
     // Ensure form is shown
     setShowForm(true)
-    
+
     // Scroll to form after render - use requestAnimationFrame for better timing
     requestAnimationFrame(() => {
       setTimeout(() => {
@@ -185,14 +189,14 @@ export default function RiskMultipliersTab() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this multiplier?')) return
-    
+
     try {
       const response = await fetch(`/api/admin2/multipliers?id=${id}`, {
         method: 'DELETE'
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMultipliers()
       } else {
@@ -217,9 +221,9 @@ export default function RiskMultipliersTab() {
           isActive: !currentStatus
         })
       })
-      
+
       const data = await response.json()
-      
+
       if (data.success) {
         await fetchMultipliers()
       } else {
@@ -311,12 +315,12 @@ export default function RiskMultipliersTab() {
   const handleCharacteristicChange = (characteristicType: string) => {
     const defaults = DEFAULT_WIZARD_QUESTIONS[characteristicType]
     const selectedType = CHARACTERISTIC_TYPES.find(ct => ct.value === characteristicType)
-    
+
     // Always update wizard questions when characteristic type changes
     // If admin is changing the characteristic, they want the questions for that characteristic!
     const newQuestion = defaults ? JSON.stringify(defaults.question) : ''
     const newHelp = defaults ? JSON.stringify(defaults.help) : ''
-    
+
     setFormData(prev => ({
       ...prev,
       characteristicType,
@@ -360,7 +364,7 @@ export default function RiskMultipliersTab() {
           <h3 className="text-lg font-semibold mb-4">
             {editingId ? 'Edit Multiplier' : 'Create New Multiplier'}
           </h3>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Info - Admin Only (English) */}
             <div className="grid grid-cols-2 gap-4">
@@ -378,7 +382,7 @@ export default function RiskMultipliersTab() {
                 />
                 <p className="text-xs text-gray-500 mt-1">For admin reference only - not shown to users</p>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Multiplier Factor *
@@ -416,7 +420,7 @@ export default function RiskMultipliersTab() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Business Characteristic * 
+                  Business Characteristic *
                   <span className="text-xs text-gray-500 ml-2">(What business data does this check?)</span>
                 </label>
                 <select
@@ -432,7 +436,7 @@ export default function RiskMultipliersTab() {
                     </option>
                   ))}
                 </select>
-                
+
                 {/* Show characteristic info */}
                 {selectedCharType && (
                   <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -455,8 +459,8 @@ export default function RiskMultipliersTab() {
                 </label>
                 <select
                   value={formData.conditionType}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
                     conditionType: e.target.value as 'boolean' | 'threshold' | 'range'
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -480,9 +484,9 @@ export default function RiskMultipliersTab() {
                   type="number"
                   step="0.1"
                   value={formData.thresholdValue || ''}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    thresholdValue: parseFloat(e.target.value) 
+                  onChange={(e) => setFormData(prev => ({
+                    ...prev,
+                    thresholdValue: parseFloat(e.target.value)
                   }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
@@ -504,9 +508,9 @@ export default function RiskMultipliersTab() {
                     type="number"
                     step="0.1"
                     value={formData.minValue || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      minValue: parseFloat(e.target.value) 
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      minValue: parseFloat(e.target.value)
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
@@ -520,9 +524,9 @@ export default function RiskMultipliersTab() {
                     type="number"
                     step="0.1"
                     value={formData.maxValue || ''}
-                    onChange={(e) => setFormData(prev => ({ 
-                      ...prev, 
-                      maxValue: parseFloat(e.target.value) 
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      maxValue: parseFloat(e.target.value)
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
@@ -538,7 +542,7 @@ export default function RiskMultipliersTab() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {HAZARD_TYPES.map(hazard => (
-                  <label 
+                  <label
                     key={hazard}
                     className="flex items-center space-x-2 p-2 border border-gray-200 rounded hover:bg-gray-50 cursor-pointer"
                   >
@@ -570,7 +574,7 @@ export default function RiskMultipliersTab() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-              
+
               <div className="flex items-center">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -589,7 +593,7 @@ export default function RiskMultipliersTab() {
               <h4 className="text-md font-semibold text-gray-900 mb-4">
                 🧙 Wizard Question (User-Facing - Multilingual)
               </h4>
-              
+
               {/* Language Selector */}
               <div className="flex space-x-2 mb-4">
                 {(['en', 'es', 'fr'] as const).map(lang => (
@@ -597,11 +601,10 @@ export default function RiskMultipliersTab() {
                     key={lang}
                     type="button"
                     onClick={() => setActiveLanguage(lang)}
-                    className={`px-4 py-2 rounded-lg font-medium text-sm ${
-                      activeLanguage === lang
+                    className={`px-4 py-2 rounded-lg font-medium text-sm ${activeLanguage === lang
                         ? 'bg-purple-100 text-purple-700 border-2 border-purple-500'
                         : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {languageFlags[lang]} {languageLabels[lang]}
                   </button>
@@ -714,147 +717,144 @@ export default function RiskMultipliersTab() {
                 </div>
                 <div className="grid gap-3">
                   {multipliers.filter(m => m.isActive).map(multiplier => {
-              // Parse applicableHazards safely
-              let hazards: string[] = []
-              try {
-                hazards = typeof multiplier.applicableHazards === 'string' 
-                  ? JSON.parse(multiplier.applicableHazards)
-                  : multiplier.applicableHazards || []
-              } catch (error) {
-                console.error('Error parsing applicableHazards for display:', error)
-                hazards = []
-              }
-              
-              // Filter to only show valid risks (remove old/invalid risk types)
-              const validRiskKeys = RISK_TYPES.map(rt => rt.key)
-              const validHazards = hazards.filter(hazard => {
-                const normalizedHazard = hazard.replace(/_/g, '').toLowerCase()
-                return validRiskKeys.some(key => key.toLowerCase() === normalizedHazard)
-              })
-              
-              const charType = CHARACTERISTIC_TYPES.find(ct => ct.value === multiplier.characteristicType)
-              
-              return (
-                <div 
-                  key={multiplier.id}
-                  className={`bg-white border rounded-lg p-4 ${
-                    multiplier.isActive ? 'border-gray-300' : 'border-gray-200 opacity-60'
-                  }`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          {multiplier.name}
-                        </h4>
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${
-                          multiplier.isActive 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {multiplier.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                          ×{multiplier.multiplierFactor}
-                        </span>
-                        <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
-                          Priority: {multiplier.priority}
-                        </span>
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mb-2">
-                        {multiplier.description}
-                      </p>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium text-gray-700">Characteristic:</span>{' '}
-                          <span className="text-gray-600">{charType?.label || multiplier.characteristicType}</span>
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-700">Condition:</span>{' '}
-                          <span className="text-gray-600">
-                            {multiplier.conditionType === 'boolean' && 'Yes/No'}
-                            {multiplier.conditionType === 'threshold' && `≥ ${multiplier.thresholdValue}`}
-                            {multiplier.conditionType === 'range' && `${multiplier.minValue}-${multiplier.maxValue}`}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Wizard Question Mapping */}
-                      {charType && (
-                        <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                          <div className="flex items-start">
-                            <span className="text-blue-600 mr-2">📋</span>
-                            <div className="flex-1">
-                              <p className="font-medium text-blue-900">Wizard Question:</p>
-                              <p className="text-blue-800 mt-1">"{charType.wizardQuestion}"</p>
-                              <p className="text-xs text-blue-700 mt-1">
-                                Answers: {charType.wizardAnswers}
-                              </p>
+                    // Parse applicableHazards safely
+                    let hazards: string[] = []
+                    try {
+                      hazards = typeof multiplier.applicableHazards === 'string'
+                        ? JSON.parse(multiplier.applicableHazards)
+                        : multiplier.applicableHazards || []
+                    } catch (error) {
+                      console.error('Error parsing applicableHazards for display:', error)
+                      hazards = []
+                    }
+
+                    // Filter to only show valid risks (remove old/invalid risk types)
+                    const validRiskKeys = RISK_TYPES.map(rt => rt.key)
+                    const validHazards = hazards.filter(hazard => {
+                      const normalizedHazard = hazard.replace(/_/g, '').toLowerCase()
+                      return validRiskKeys.some(key => key.toLowerCase() === normalizedHazard)
+                    })
+
+                    const charType = CHARACTERISTIC_TYPES.find(ct => ct.value === multiplier.characteristicType)
+
+                    return (
+                      <div
+                        key={multiplier.id}
+                        className={`bg-white border rounded-lg p-4 ${multiplier.isActive ? 'border-gray-300' : 'border-gray-200 opacity-60'
+                          }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h4 className="text-lg font-semibold text-gray-900">
+                                {multiplier.name}
+                              </h4>
+                              <span className={`px-2 py-1 text-xs font-medium rounded ${multiplier.isActive
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                {multiplier.isActive ? 'Active' : 'Inactive'}
+                              </span>
+                              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                                ×{multiplier.multiplierFactor}
+                              </span>
+                              <span className="px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded">
+                                Priority: {multiplier.priority}
+                              </span>
                             </div>
+
+                            <p className="text-sm text-gray-600 mb-2">
+                              {multiplier.description}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              <div>
+                                <span className="font-medium text-gray-700">Characteristic:</span>{' '}
+                                <span className="text-gray-600">{charType?.label || multiplier.characteristicType}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium text-gray-700">Condition:</span>{' '}
+                                <span className="text-gray-600">
+                                  {multiplier.conditionType === 'boolean' && 'Yes/No'}
+                                  {multiplier.conditionType === 'threshold' && `≥ ${multiplier.thresholdValue}`}
+                                  {multiplier.conditionType === 'range' && `${multiplier.minValue}-${multiplier.maxValue}`}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Wizard Question Mapping */}
+                            {charType && (
+                              <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                                <div className="flex items-start">
+                                  <span className="text-blue-600 mr-2">📋</span>
+                                  <div className="flex-1">
+                                    <p className="font-medium text-blue-900">Wizard Question:</p>
+                                    <p className="text-blue-800 mt-1">"{charType.wizardQuestion}"</p>
+                                    <p className="text-xs text-blue-700 mt-1">
+                                      Answers: {charType.wizardAnswers}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="mt-2">
+                              <span className="text-sm font-medium text-gray-700">Applies to Risks:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {validHazards.length > 0 ? (
+                                  validHazards.map((hazard: string) => {
+                                    // Find the matching risk type to get the proper display name
+                                    const riskType = RISK_TYPES.find(rt =>
+                                      rt.key.toLowerCase() === hazard.replace(/_/g, '').toLowerCase()
+                                    )
+                                    return (
+                                      <span
+                                        key={hazard}
+                                        className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded flex items-center gap-1"
+                                      >
+                                        {riskType?.icon} {riskType?.name || hazard}
+                                      </span>
+                                    )
+                                  })
+                                ) : (
+                                  <span className="text-xs text-gray-500 italic">No valid risks selected</span>
+                                )}
+                              </div>
+                            </div>
+
+                            {multiplier.reasoning && (
+                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600 italic">
+                                💡 {multiplier.reasoning}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col space-y-2 ml-4">
+                            <button
+                              onClick={() => toggleActive(multiplier.id, multiplier.isActive)}
+                              className={`px-3 py-1 text-sm rounded transition-colors ${multiplier.isActive
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+                                }`}
+                              title={multiplier.isActive ? 'Click to deactivate' : 'Click to activate'}
+                            >
+                              {multiplier.isActive ? '❌ Deactivate' : '✅ Activate'}
+                            </button>
+                            <button
+                              onClick={() => handleEdit(multiplier)}
+                              className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(multiplier.id)}
+                              className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+                            >
+                              Delete
+                            </button>
                           </div>
                         </div>
-                      )}
-                      
-                      <div className="mt-2">
-                        <span className="text-sm font-medium text-gray-700">Applies to Risks:</span>
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {validHazards.length > 0 ? (
-                            validHazards.map((hazard: string) => {
-                              // Find the matching risk type to get the proper display name
-                              const riskType = RISK_TYPES.find(rt => 
-                                rt.key.toLowerCase() === hazard.replace(/_/g, '').toLowerCase()
-                              )
-                              return (
-                                <span 
-                                  key={hazard}
-                                  className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded flex items-center gap-1"
-                                >
-                                  {riskType?.icon} {riskType?.name || hazard}
-                                </span>
-                              )
-                            })
-                          ) : (
-                            <span className="text-xs text-gray-500 italic">No valid risks selected</span>
-                          )}
-                        </div>
                       </div>
-                      
-                      {multiplier.reasoning && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-sm text-gray-600 italic">
-                          💡 {multiplier.reasoning}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <button
-                        onClick={() => toggleActive(multiplier.id, multiplier.isActive)}
-                        className={`px-3 py-1 text-sm rounded transition-colors ${
-                          multiplier.isActive 
-                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                        title={multiplier.isActive ? 'Click to deactivate' : 'Click to activate'}
-                      >
-                        {multiplier.isActive ? '❌ Deactivate' : '✅ Activate'}
-                      </button>
-                      <button
-                        onClick={() => handleEdit(multiplier)}
-                        className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(multiplier.id)}
-                        className="px-3 py-1 text-sm bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
                     )
                   })}
                 </div>
@@ -875,25 +875,25 @@ export default function RiskMultipliersTab() {
                     // Parse applicableHazards safely
                     let hazards: string[] = []
                     try {
-                      hazards = typeof multiplier.applicableHazards === 'string' 
+                      hazards = typeof multiplier.applicableHazards === 'string'
                         ? JSON.parse(multiplier.applicableHazards)
                         : multiplier.applicableHazards || []
                     } catch (error) {
                       console.error('Error parsing applicableHazards for display:', error)
                       hazards = []
                     }
-                    
+
                     // Filter to only show valid risks (remove old/invalid risk types)
                     const validRiskKeys = RISK_TYPES.map(rt => rt.key)
                     const validHazards = hazards.filter(hazard => {
                       const normalizedHazard = hazard.replace(/_/g, '').toLowerCase()
                       return validRiskKeys.some(key => key.toLowerCase() === normalizedHazard)
                     })
-                    
+
                     const charType = CHARACTERISTIC_TYPES.find(ct => ct.value === multiplier.characteristicType)
-                    
+
                     return (
-                      <div 
+                      <div
                         key={multiplier.id}
                         className="bg-white border border-gray-200 rounded-lg p-4 opacity-60"
                       >
@@ -913,11 +913,11 @@ export default function RiskMultipliersTab() {
                                 Priority: {multiplier.priority}
                               </span>
                             </div>
-                            
+
                             <p className="text-sm text-gray-600 mb-2">
                               {multiplier.description}
                             </p>
-                            
+
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
                                 <span className="font-medium text-gray-700">Characteristic:</span>{' '}
@@ -932,17 +932,17 @@ export default function RiskMultipliersTab() {
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div className="mt-2">
                               <span className="text-sm font-medium text-gray-700">Applies to Risks:</span>
                               <div className="flex flex-wrap gap-1 mt-1">
                                 {validHazards.length > 0 ? (
                                   validHazards.map((hazard: string) => {
-                                    const riskType = RISK_TYPES.find(rt => 
+                                    const riskType = RISK_TYPES.find(rt =>
                                       rt.key.toLowerCase() === hazard.replace(/_/g, '').toLowerCase()
                                     )
                                     return (
-                                      <span 
+                                      <span
                                         key={hazard}
                                         className="px-2 py-0.5 text-xs bg-orange-100 text-orange-800 rounded flex items-center gap-1"
                                       >
@@ -956,15 +956,14 @@ export default function RiskMultipliersTab() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex flex-col space-y-2 ml-4">
                             <button
                               onClick={() => toggleActive(multiplier.id, multiplier.isActive)}
-                              className={`px-3 py-1 text-sm rounded transition-colors ${
-                                multiplier.isActive 
-                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                              className={`px-3 py-1 text-sm rounded transition-colors ${multiplier.isActive
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                   : 'bg-green-100 text-green-700 hover:bg-green-200'
-                              }`}
+                                }`}
                               title={multiplier.isActive ? 'Click to deactivate' : 'Click to activate'}
                             >
                               {multiplier.isActive ? '❌ Deactivate' : '✅ Activate'}

@@ -35,7 +35,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Maintain customer trust by being prepared'
     ]),
     realWorldExample: 'After Hurricane Gilbert in 1988, Kingston hardware store "Tools Plus" reopened in 3 days because they had storm shutters installed and moved inventory to high ground. Their competitor across the street took 6 weeks to reopen due to flooding and wind damage, losing most of their customer base.',
-    applicableRisks: JSON.stringify(['hurricane', 'tropical_storm', 'high_winds', 'flooding']),
+    applicableRisks: JSON.stringify(['hurricane', 'flooding']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'essential',
     implementationCost: 'medium',
@@ -85,7 +85,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Maintain security systems during outages'
     ]),
     realWorldExample: 'In August 2023, Spanish Town pharmacy "HealthCare Plus" was the only pharmacy open during a 3-day outage. Their J$280,000 generator paid for itself in one month from customers who couldn\'t get medications elsewhere. They also saved J$150,000 in refrigerated inventory.',
-    applicableRisks: JSON.stringify(['power_outage', 'hurricane', 'equipment_failure']),
+    applicableRisks: JSON.stringify(['power_outage', 'hurricane']),
     applicableBusinessTypes: JSON.stringify(['grocery_store', 'pharmacy', 'restaurant', 'medical_clinic', 'bakery']),
     selectionTier: 'recommended',
     implementationCost: 'high',
@@ -135,7 +135,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Restore operations quickly after disaster'
     ]),
     realWorldExample: 'Montego Bay clothing boutique "Island Style" lost everything in a 2022 fire - except their data. Because they used cloud backup (J$2,500/month), they had all customer contacts, supplier info, and 3 years of sales records. They reopened in a new location within 3 weeks and contacted all their regular customers.',
-    applicableRisks: JSON.stringify(['fire', 'flooding', 'theft_vandalism', 'equipment_failure', 'cybersecurity_incident']),
+    applicableRisks: JSON.stringify(['fire', 'flooding', 'break_in_theft', 'cybersecurity_incident']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'essential',
     implementationCost: 'low',
@@ -185,7 +185,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Protect staff and customers from injury'
     ]),
     realWorldExample: 'In 2021, Half Way Tree restaurant "Tasty Bites" had an oil fire in the kitchen. Their staff used the fire extinguisher immediately (cost: J$8,500) and put it out in 30 seconds. Total damage: J$15,000. The restaurant next door without an extinguisher burned completely - J$4 million loss and never reopened.',
-    applicableRisks: JSON.stringify(['fire', 'equipment_failure']),
+    applicableRisks: JSON.stringify(['fire']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'essential',
     implementationCost: 'low',
@@ -235,7 +235,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Reopen faster after heavy rain'
     ]),
     realWorldExample: 'Port Antonio shop "Caribbean Goods" is in a flood-prone area. After flooding twice (J$200,000 damage each time), they spent J$35,000 on raised shelving and keep 50 sandbags ready. In 2023 heavy rains, water came in but stayed below shelf level. Zero inventory loss. Shop reopened same day after sweeping water out.',
-    applicableRisks: JSON.stringify(['flooding', 'hurricane', 'heavy_rain']),
+    applicableRisks: JSON.stringify(['flooding', 'hurricane']),
     applicableBusinessTypes: JSON.stringify(['grocery_store', 'pharmacy', 'retail', 'warehouse']),
     selectionTier: 'recommended',
     implementationCost: 'low',
@@ -285,7 +285,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Continue operating when others can\'t get supplies'
     ]),
     realWorldExample: 'Ocho Rios corner shop "Daily Needs" lost their main supplier when that company went bankrupt in 2022. They had no backup - shelves were half-empty for 2 months and lost 40% of customers. Nearby competitor "Corner Store" had 3 suppliers. When one failed, they switched to the others within 2 days. No disruption, gained customers.',
-    applicableRisks: JSON.stringify(['supply_disruption', 'economic_downturn', 'transportation_issues']),
+    applicableRisks: JSON.stringify(['supply_disruption', 'economic_downturn']),
     applicableBusinessTypes: JSON.stringify(['grocery_store', 'pharmacy', 'restaurant', 'retail', 'convenience_store']),
     selectionTier: 'recommended',
     implementationCost: 'low',
@@ -439,7 +439,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Give staff confidence they can handle emergencies'
     ]),
     realWorldExample: 'In 2019, Kingston shop "Downtown Deals" had a gas leak. Their practiced evacuation took 45 seconds - all 8 staff and 12 customers out safely. Shop across the street had no plan when similar leak happened in 2020. Chaos, injuries, one person hospitalized. Fire Department praised first shop, fined second shop J$50,000.',
-    applicableRisks: JSON.stringify(['fire', 'earthquake', 'gas_leak', 'civil_unrest', 'building_emergency']),
+    applicableRisks: JSON.stringify(['fire', 'earthquake', 'civil_unrest']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'essential',
     implementationCost: 'low',
@@ -493,7 +493,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Get repairs funded faster'
     ]),
     realWorldExample: 'After 2022 flooding, Portmore shop "Style & Grace" got J$850,000 insurance payment in 3 weeks because owner took 200+ photos, had inventory list with receipts, and called agent within 6 hours. Neighbor shop got only J$200,000 (took weeks, no documentation). Both had similar damage. Documentation made J$650,000 difference.',
-    applicableRisks: JSON.stringify(['hurricane', 'flooding', 'fire', 'theft_vandalism', 'earthquake']),
+    applicableRisks: JSON.stringify(['hurricane', 'flooding', 'fire', 'break_in_theft', 'earthquake']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'recommended',
     implementationCost: 'low',
@@ -543,7 +543,7 @@ const COMPREHENSIVE_STRATEGIES = [
       'Start earning money again quickly'
     ]),
     realWorldExample: 'After Hurricane Dean in 2007, Mandeville restaurant "Chicken Palace" reopened in 8 days. They: 1) Fixed roof immediately (tarp first day). 2) Cleaned and sanitized (3 days). 3) Got limited menu items (suppliers prioritized them because they called first). 4) Opened with 50% seating. Full reopening in 3 weeks. Competitors took 6-8 weeks.',
-    applicableRisks: JSON.stringify(['hurricane', 'flooding', 'fire', 'equipment_failure']),
+    applicableRisks: JSON.stringify(['hurricane', 'flooding', 'fire']),
     applicableBusinessTypes: null, // All businesses
     selectionTier: 'essential',
     implementationCost: 'variable',

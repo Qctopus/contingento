@@ -1,3 +1,4 @@
+     
 import { NextRequest, NextResponse } from 'next/server'
 import {
   getPrismaClient,
@@ -6,7 +7,6 @@ import {
   handleApiError
 } from '@/lib/admin2/api-utils'
 import { transformBusinessTypeForApi } from '@/lib/admin2/transformers'
-import { localizeBusinessType } from '@/utils/localizationUtils'
 import type { Locale } from '@/i18n/config'
 
 export const dynamic = 'force-dynamic'
@@ -20,14 +20,17 @@ export async function GET(request: NextRequest) {
 
     const businessTypes = await withDatabase(async () => {
       const prisma = getPrismaClient()
+      
+      const includeQuery: any = {
+        BusinessRiskVulnerability: true,
+        BusinessTypeTranslation: raw 
+          ? true // If raw, fetch ALL translations (for editor)
+          : { where: { locale } } // If not raw, fetch only specific locale
+      }
+
       return await prisma.businessType.findMany({
         where: { isActive: true },
-        include: {
-          BusinessRiskVulnerability: true,
-          BusinessTypeTranslation: {
-            where: { locale }
-          }
-        } as any,
+        include: includeQuery,
         orderBy: [
           { category: 'asc' },
           { businessTypeId: 'asc' }
@@ -37,7 +40,9 @@ export async function GET(request: NextRequest) {
 
     // Transform database data to match frontend expectations
     // The transformer handles flattening translations
-    const transformedBusinessTypes = businessTypes.map(transformBusinessTypeForApi)
+    const transformedBusinessTypes = businessTypes.map((bt: any) => 
+      transformBusinessTypeForApi(bt, raw)
+    )
 
     console.log(`🏢 Business Types GET API: Successfully fetched ${businessTypes.length} business types (locale: ${locale}, raw: ${raw})`)
     return createSuccessResponse(transformedBusinessTypes)

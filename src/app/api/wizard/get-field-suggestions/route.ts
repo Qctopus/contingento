@@ -14,20 +14,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Get business type with all relevant data from the BusinessType table
-    const businessType = await (prisma as any).businessType.findUnique({
+    const businessTypeRaw = await (prisma as any).businessType.findUnique({
       where: { businessTypeId },
       include: {
-        riskVulnerabilities: {
+        BusinessRiskVulnerability: {
           where: { isActive: true }
+        },
+        BusinessTypeTranslation: {
+          where: { locale }
         }
       }
     })
 
-    if (!businessType) {
+    if (!businessTypeRaw) {
       return NextResponse.json(
         { error: 'Business type not found' },
         { status: 404 }
       )
+    }
+
+    // Merge translation data if available
+    const translation = businessTypeRaw.BusinessTypeTranslation?.[0] || {}
+    const businessType = {
+      ...businessTypeRaw,
+      name: translation.name || businessTypeRaw.name,
+      description: translation.description || businessTypeRaw.description,
+      exampleBusinessPurposes: translation.exampleBusinessPurposes || businessTypeRaw.exampleBusinessPurposes,
+      exampleProducts: translation.exampleProducts || businessTypeRaw.exampleProducts,
+      exampleKeyPersonnel: translation.exampleKeyPersonnel || businessTypeRaw.exampleKeyPersonnel,
+      exampleCustomerBase: translation.exampleCustomerBase || businessTypeRaw.exampleCustomerBase,
+      minimumEquipment: translation.minimumEquipment || businessTypeRaw.minimumEquipment
     }
 
     // Get location data if provided
@@ -96,7 +112,7 @@ export async function POST(request: NextRequest) {
     // Handle different field types and steps
     console.log('[DEBUG] Step:', step, 'Field:', fieldName, 'Locale:', locale)
     console.log('[DEBUG] BusinessType:', businessType.businessTypeId, 'Has purposes:', !!businessType.exampleBusinessPurposes)
-    
+
     switch (step) {
       case 'BUSINESS_OVERVIEW':
         const suggestions_raw = getBusinessOverviewSuggestions(normalizeLabel(fieldName), businessType, normalizeLocation(location), getLocalizedArray, locale)
@@ -177,29 +193,29 @@ function dedupe(arr: string[] = []): string[] {
 }
 function getBusinessOverviewSuggestions(fieldName: string, businessType: any, location: any, getLocalizedArray: Function, locale: string): string[] {
   const examples: string[] = []
-  
+
   switch (fieldName) {
     case 'Business Purpose':
       const purposes = getLocalizedArray(businessType.exampleBusinessPurposes, locale)
       examples.push(...purposes.slice(0, 3))
       break
-      
+
     case 'Products and Services':
     case 'Products/Services':
       const products = getLocalizedArray(businessType.exampleProducts, locale)
       examples.push(...products.slice(0, 3))
       break
-      
+
     case 'Key Personnel Involved':
     case 'Key Personnel':
       const personnel = getLocalizedArray(businessType.exampleKeyPersonnel, locale)
       examples.push(...personnel.slice(0, 3))
       break
-      
+
     case 'Customer Base':
       const customers = getLocalizedArray(businessType.exampleCustomerBase, locale)
       examples.push(...customers.slice(0, 3))
-      
+
       // Add location-specific variations
       if (location) {
         if (location.isCoastal) {
@@ -210,7 +226,7 @@ function getBusinessOverviewSuggestions(fieldName: string, businessType: any, lo
         }
       }
       break
-      
+
     case 'Operating Hours':
       if (businessType.operatingHours) {
         examples.push(businessType.operatingHours)
@@ -228,7 +244,7 @@ function getBusinessOverviewSuggestions(fieldName: string, businessType: any, lo
       examples.push(...equipment.slice(0, 3))
       break
   }
-  
+
   return examples.filter(Boolean)
 }
 
@@ -237,15 +253,15 @@ function getBusinessOverviewPreFill(fieldName: string, businessType: any, getLoc
     case 'Business Purpose':
       const purposes = getLocalizedArray(businessType.exampleBusinessPurposes, locale)
       return purposes.length > 0 ? purposes[0] : null
-      
+
     case 'Products and Services':
     case 'Products/Services':
       const products = getLocalizedArray(businessType.exampleProducts, locale)
       return products.length > 0 ? products[0] : null
-      
+
     case 'Operating Hours':
       return businessType.operatingHours || null
-      
+
     default:
       return null
   }
@@ -253,7 +269,7 @@ function getBusinessOverviewPreFill(fieldName: string, businessType: any, getLoc
 
 function getEssentialFunctionsSuggestions(fieldName: string, businessType: any, parseJsonField: Function): string[] {
   const essentialFunctions = parseJsonField(businessType.essentialFunctions)
-  
+
   if (fieldName === 'Core Functions') {
     return essentialFunctions.core || []
   } else if (fieldName === 'Support Functions') {
@@ -261,13 +277,13 @@ function getEssentialFunctionsSuggestions(fieldName: string, businessType: any, 
   } else if (fieldName === 'Administrative Functions') {
     return essentialFunctions.administrative || []
   }
-  
+
   return []
 }
 
 function getEssentialFunctionsPreFill(fieldName: string, businessType: any, parseJsonField: Function): any {
   const essentialFunctions = parseJsonField(businessType.essentialFunctions)
-  
+
   if (fieldName === 'Essential Functions' && essentialFunctions) {
     return {
       core: essentialFunctions.core || [],
@@ -275,16 +291,16 @@ function getEssentialFunctionsPreFill(fieldName: string, businessType: any, pars
       administrative: essentialFunctions.administrative || []
     }
   }
-  
+
   return null
 }
 
 function getRiskAssessmentSuggestions(fieldName: string, businessType: any, location: any): string[] {
   const suggestions: string[] = []
-  
+
   if (fieldName === 'Planning Measures') {
     // Get common planning measures for this business type
-    const vulnerabilities = businessType.riskVulnerabilities || []
+    const vulnerabilities = businessType.BusinessRiskVulnerability || []
     vulnerabilities.forEach((rv: any) => {
       if (rv.vulnerabilityLevel >= 7) {
         const riskName = rv.riskType.replace(/([A-Z])/g, ' $1').trim().toLowerCase()
@@ -293,7 +309,7 @@ function getRiskAssessmentSuggestions(fieldName: string, businessType: any, loca
       }
     })
   }
-  
+
   return suggestions.slice(0, 3)
 }
 
@@ -305,9 +321,9 @@ function getRiskAssessmentPreFill(fieldName: string, businessType: any): any {
 
 function getStrategiesSuggestions(fieldName: string, businessType: any, location: any): string[] {
   const suggestions: string[] = []
-  
+
   // Get strategies based on business type vulnerabilities
-  const vulnerabilities = businessType.riskVulnerabilities || []
+  const vulnerabilities = businessType.BusinessRiskVulnerability || []
   vulnerabilities.forEach((rv: any) => {
     if (rv.vulnerabilityLevel >= 7) {
       const riskName = rv.riskType.replace(/([A-Z])/g, ' $1').trim().toLowerCase()
@@ -315,13 +331,13 @@ function getStrategiesSuggestions(fieldName: string, businessType: any, location
       suggestions.push(`Create response plan for ${riskName} incidents`)
     }
   })
-  
+
   return suggestions.slice(0, 3)
 }
 
 function getResourcesSuggestions(fieldName: string, businessType: any, getLocalizedArray: Function, locale: string): string[] {
   const minimumEquipment = getLocalizedArray(businessType.minimumEquipment, locale)
-  
+
   switch (fieldName) {
     case 'Equipment':
     case 'Minimum Resource Requirements':
@@ -363,20 +379,20 @@ function getGeneralSuggestions(fieldName: string, businessType: any, getLocalize
 
 function getLocationContext(fieldName: string, location: any, businessType: any): string | null {
   const context: string[] = []
-  
+
   if (location.isCoastal) {
     context.push('coastal area considerations')
   }
-  
+
   if (location.isUrban) {
     context.push('urban business environment')
   }
-  
+
   if (location.parish) {
     context.push(`${location.parish} specific factors`)
   }
-  
-  return context.length > 0 
+
+  return context.length > 0
     ? `Consider ${context.join(', ')} for ${businessType.name} operations`
     : null
 }   

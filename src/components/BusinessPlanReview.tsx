@@ -11,7 +11,7 @@ interface BusinessPlanReviewProps {
   formData: any
   riskSummary?: any
   onBack: () => void
-  onExportPDF: (mode: 'formal' | 'workbook') => void
+  onExportPDF: (mode: 'formal' | 'workbook', strategies: any[], risks: any[]) => void
 }
 
 // ============================================================================
@@ -512,10 +512,10 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               ← Back to Edit
             </button>
             <button
-              onClick={() => onExportPDF(exportMode)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              onClick={() => onExportPDF(exportMode, selectedStrategies, selectedRisks)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
-              📄 Export PDF
+              📄 Export Word Document
             </button>
             </div>
           </div>
@@ -623,23 +623,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
       {/* Main Content - Browser Preview (NO PDF YET) */}
       <div className="max-w-6xl mx-auto px-4 py-6">
         {exportMode === 'formal' ? (
-          <>
-            {/* DEBUG: Log what we're passing to preview */}
-            {(() => {
-              console.log('[BusinessPlanReview] Passing to FormalBCPPreview:', {
-                strategiesCount: selectedStrategies.length,
-                risksCount: selectedRisks.length,
-                countryCode: countryCode,
-                strategiesWithCosts: selectedStrategies.filter(s => s.calculatedCostLocal > 0).length,
-                sampleStrategy: selectedStrategies[0] ? {
-                  name: selectedStrategies[0].name,
-                  calculatedCostLocal: selectedStrategies[0].calculatedCostLocal,
-                  currencySymbol: selectedStrategies[0].currencySymbol,
-                  applicableRisks: selectedStrategies[0].applicableRisks
-                } : null
-              })
-              return null
-            })()}
+          <div id="bcp-preview-content">
             <FormalBCPPreview 
               formData={formData}
               strategies={selectedStrategies}
@@ -647,33 +631,17 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               countryCode={countryCode}
               locale={locale}
             />
-          </>
+          </div>
         ) : (
-          <>
-            {/* DEBUG: Log what we're passing to WorkbookPreview */}
-            {(() => {
-              console.log('[BusinessPlanReview] Passing to WorkbookPreview:', {
-                strategiesCount: selectedStrategies.length,
-                strategiesWithCosts: selectedStrategies.filter(s => s.calculatedCostLocal > 0).length,
-                sampleStrategy: selectedStrategies[0] ? {
-                  name: selectedStrategies[0].name,
-                  calculatedCostLocal: selectedStrategies[0].calculatedCostLocal,
-                  currencySymbol: selectedStrategies[0].currencySymbol,
-                  applicableRisks: selectedStrategies[0].applicableRisks,
-                  category: selectedStrategies[0].category,
-                  actionStepsCount: selectedStrategies[0].actionSteps?.length
-                } : null,
-                allStrategiesApplicableRisks: selectedStrategies.flatMap(s => s.applicableRisks || [])
-              })
-              return null
-            })()}
+          <div id="bcp-preview-content">
             <WorkbookPreview
               formData={formData}
               riskSummary={formData.RISK_ASSESSMENT || riskSummary}
               strategies={selectedStrategies}
               totalInvestment={totalInvestment}
+              locale={locale}
             />
-          </>
+          </div>
         )}
       </div>
 

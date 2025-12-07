@@ -4,6 +4,15 @@ import React from 'react'
 import { AdminUnit, RISK_TYPES } from '../../types/admin'
 
 interface AdminUnitWithRisk extends AdminUnit {
+  AdminUnitRisk?: {
+    hurricaneLevel: number
+    floodLevel: number
+    earthquakeLevel: number
+    droughtLevel: number
+    landslideLevel: number
+    powerOutageLevel: number
+    riskProfileJson: string
+  }
   adminUnitRisk?: {
     hurricaneLevel: number
     floodLevel: number
@@ -37,11 +46,12 @@ export function AdminUnitRiskMatrix({ adminUnits, onEditUnit }: AdminUnitRiskMat
   }
 
   const getRiskLevel = (unit: AdminUnitWithRisk, riskKey: string): number => {
-    if (!unit.adminUnitRisk) return 0
+    const riskData = unit.AdminUnitRisk || unit.adminUnitRisk
+    if (!riskData) return 0
     
     // First, try to get from JSON profile (supports all risk types including dynamic ones)
     try {
-      const profile = JSON.parse(unit.adminUnitRisk.riskProfileJson || '{}')
+      const profile = JSON.parse(riskData.riskProfileJson || '{}')
       if (profile[riskKey]?.level !== undefined) {
         return profile[riskKey].level
       }
@@ -54,7 +64,7 @@ export function AdminUnitRiskMatrix({ adminUnits, onEditUnit }: AdminUnitRiskMat
     }
     
     // Fallback to direct fields for core risks (backward compatibility)
-    const riskMap: Record<string, keyof typeof unit.adminUnitRisk> = {
+    const riskMap: Record<string, keyof typeof riskData> = {
       hurricane: 'hurricaneLevel',
       flood: 'floodLevel',
       earthquake: 'earthquakeLevel',
@@ -64,8 +74,8 @@ export function AdminUnitRiskMatrix({ adminUnits, onEditUnit }: AdminUnitRiskMat
     }
     
     const field = riskMap[riskKey]
-    if (field && typeof unit.adminUnitRisk[field] === 'number') {
-      return unit.adminUnitRisk[field] as number
+    if (field && typeof riskData[field] === 'number') {
+      return riskData[field] as number
     }
     
     return 0

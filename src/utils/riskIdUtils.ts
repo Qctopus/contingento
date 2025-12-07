@@ -1,52 +1,49 @@
-// NEW FILE: /src/utils/riskIdUtils.ts
-// Replace the riskIdMapping.ts with this simpler, cleaner approach
+/**
+ * Canonical Risk ID Utility
+ * 
+ * IMPORTANT: These IDs MUST match exactly what is in the AdminHazardType database table.
+ * This is the SINGLE SOURCE OF TRUTH for risk IDs throughout the app.
+ * 
+ * NO MAPPING OR NORMALIZATION - all code must use these exact IDs.
+ */
 
 /**
- * Canonical risk IDs used throughout the system
- * ALL IDs should be in snake_case format
+ * Canonical risk IDs - matches AdminHazardType database table exactly
+ * ALL code throughout the app MUST use these exact IDs
  */
 export const CANONICAL_RISK_IDS = [
     // Natural Hazards
     'hurricane',
-    'flood',
-    'earthquake',
+    'flooding',
     'drought',
+    'earthquake',
     'landslide',
 
-    // Technical Hazards
+    // Technological Hazards
     'power_outage',
     'fire',
-    'equipment_failure',
+    'cybersecurity_incident',
 
     // Human/Social Hazards
-    'cyber_attack',
-    'terrorism',
-    'pandemic',
-    'economic_downturn',
-    'supply_chain_disruption',
     'civil_unrest',
-    'theft',
-    'crime'
+    'break_in_theft',
+    'health_emergency',
+
+    // Economic Hazards
+    'supply_disruption',
+    'economic_downturn'
 ] as const
 
 export type CanonicalRiskId = typeof CANONICAL_RISK_IDS[number]
 
 /**
- * Normalize any risk ID variant to snake_case
- * This should only be needed during data migration/import
- * Once the database is cleaned up, this shouldn't be necessary
+ * Convert to snake_case - NO MAPPING
+ * This only converts format (camelCase to snake_case), it does NOT change the ID itself
  */
 export function normalizeRiskId(riskId: string): string {
     if (!riskId || typeof riskId !== 'string') return ''
 
-    // Special case: "flooding" should map to "flood"
-    if (riskId.toLowerCase() === 'flooding') return 'flood'
-    if (riskId === 'pandemicDisease') return 'pandemic'
-    if (riskId === 'cybersecurity_incident') return 'cyber_attack' // New mapping
-    if (riskId === 'health_emergency') return 'pandemic' // New mapping
-    if (riskId === 'supply_disruption') return 'supply_chain_disruption' // New mapping
-
-    // Convert to snake_case
+    // Just convert to snake_case - no ID remapping
     return riskId
         .replace(/([a-z])([A-Z])/g, '$1_$2')
         .toLowerCase()
@@ -57,11 +54,11 @@ export function normalizeRiskId(riskId: string): string {
 }
 
 /**
- * Check if two risk IDs refer to the same risk
- * After database cleanup, this should just be a simple equality check
+ * Check if two risk IDs are exactly the same
+ * With canonical IDs, this is just a simple equality check
  */
 export function riskIdsMatch(id1: string, id2: string): boolean {
-    return normalizeRiskId(id1) === normalizeRiskId(id2)
+    return id1 === id2
 }
 
 /**
@@ -73,27 +70,31 @@ export function isCanonicalRiskId(riskId: string): boolean {
 
 /**
  * Get display name for a risk ID
+ * These names match AdminHazardType database table
  */
 export function getRiskDisplayName(riskId: string): string {
     const displayNames: Record<string, string> = {
-        'hurricane': 'Hurricane',
-        'flood': 'Flood',
-        'earthquake': 'Earthquake',
+        // Natural Hazards
+        'hurricane': 'Hurricane / Tropical Storm',
+        'flooding': 'Flooding',
         'drought': 'Drought',
-        'landslide': 'Landslide',
+        'earthquake': 'Earthquake',
+        'landslide': 'Landslide / Mudslide',
+        
+        // Technological Hazards
         'power_outage': 'Power Outage',
         'fire': 'Fire',
-        'equipment_failure': 'Equipment Failure',
-        'cyber_attack': 'Cyber Attack',
-        'terrorism': 'Security Threats',
-        'pandemic': 'Pandemic',
-        'economic_downturn': 'Economic Downturn',
-        'supply_chain_disruption': 'Supply Chain Disruption',
-        'civil_unrest': 'Civil Unrest',
-        'theft': 'Theft',
-        'crime': 'Crime'
+        'cybersecurity_incident': 'Cybersecurity Incident / Data Breach',
+        
+        // Human/Social Hazards
+        'civil_unrest': 'Civil Unrest / Protests',
+        'break_in_theft': 'Break-ins & Theft',
+        'health_emergency': 'Health Emergency / Pandemic',
+        
+        // Economic Hazards
+        'supply_disruption': 'Supply Chain Disruption',
+        'economic_downturn': 'Economic Downturn / Tourism Decline'
     }
 
-    const normalized = normalizeRiskId(riskId)
-    return displayNames[normalized] || riskId
+    return displayNames[riskId] || riskId
 }

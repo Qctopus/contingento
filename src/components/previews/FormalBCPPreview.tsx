@@ -9,6 +9,27 @@ import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionSte
 import { getLocalizedText } from '@/utils/localizationUtils'
 import type { Locale } from '@/i18n/config'
 
+// Import translation messages for UI labels
+import enMessages from '@/messages/en.json'
+import esMessages from '@/messages/es.json'
+import frMessages from '@/messages/fr.json'
+
+// Translation helper for UI labels
+const getUIText = (key: string, locale: Locale): string => {
+  const messages = locale === 'es' ? esMessages : locale === 'fr' ? frMessages : enMessages
+  // Navigate nested key path (e.g., "common.name" or "preview.businessOverview")
+  const keys = key.split('.')
+  let value: any = messages
+  for (const k of keys) {
+    if (value && typeof value === 'object') {
+      value = value[k]
+    } else {
+      return key // Return key if translation not found
+    }
+  }
+  return typeof value === 'string' ? value : key
+}
+
 interface FormalBCPPreviewProps {
   formData: any
   strategies: any[]
@@ -832,16 +853,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>1</div>
-            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Business Overview</h2>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.businessOverview', currentLocale)}</h2>
           </div>
           
           {/* Business Information - Efficient 3-Column Grid */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>1.1 Business Information</h3>
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>1.1 {getUIText('bcpPreview.formalBcp.businessInformation', currentLocale)}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2.5">
                 <div>
-                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Business Name</div>
+                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.businessName', currentLocale)}</div>
                   <div className="text-sm" style={{ color: undpColors.gray[700] }}>{companyName}</div>
                 </div>
                 {businessAddress && (
@@ -1029,7 +1050,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>2</div>
-            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Risk Assessment</h2>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.riskAssessment', currentLocale)}</h2>
           </div>
           
           {/* Overview Summary */}
@@ -1192,7 +1213,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>3</div>
-            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>Continuity Strategies</h2>
+            <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.continuityStrategies', currentLocale)}</h2>
           </div>
           
           <div className="mb-4">
@@ -1487,7 +1508,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                         if (uniqueItems.length > 0) {
                           return (
                             <div className="mb-2.5 mt-2.5 pt-2.5 border-t" style={{ borderColor: undpColors.gray[300] }}>
-                              <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>Items to Purchase:</div>
+                              <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.itemsToPurchase', currentLocale)}:</div>
                               <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                                 {uniqueItems.map((item, itemIdx) => (
                                   <div key={itemIdx} className="text-xs leading-relaxed" style={{ color: undpColors.gray[700] }}>
@@ -1556,7 +1577,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         <section>
           <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">4</div>
-            <h2 className="text-xl font-bold text-slate-900">Emergency Response & Contacts</h2>
+            <h2 className="text-xl font-bold text-slate-900">{getUIText('bcpPreview.formalBcp.emergencyResponse', currentLocale)}</h2>
           </div>
           
           <div className="mb-4">
