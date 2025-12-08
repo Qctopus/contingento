@@ -2079,6 +2079,7 @@
     "version": "Version 1.0",
     "backToEdit": "← Retour à l'Édition",
     "exportWordDocument": "📄 Exporter Document Word",
+    "generatingDocument": "Génération...",
     "chooseDocumentFormat": "Choisissez le Format du Document :",
     "formalBcpTitle": "🏦 PCA Formel (Demande de Prêt)",
     "formalBcpDescription": "Document professionnel pour prêts bancaires et demandes d'assurance",
