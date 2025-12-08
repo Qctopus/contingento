@@ -431,7 +431,7 @@ export default function RiskCalculatorTab() {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-6 rounded-lg">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">🧮 Risk Calculator & Simulator</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Risk Calculator & Simulator</h2>
         <p className="text-sm text-gray-600">
           Test the risk calculation system by simulating different user profiles and seeing which risks are preselected and which strategies are recommended.
         </p>

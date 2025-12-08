@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { randomUUID } from 'crypto'
 
 export async function POST(req: Request) {
   try {
@@ -29,12 +30,20 @@ export async function POST(req: Request) {
       return String(data)
     }
 
+    // Generate IDs for all records (Prisma schema requires explicit IDs)
+    const planId = randomUUID()
+
     // Create a new plan in the database - only including models that exist in schema
+    // Note: Prisma relation names use PascalCase (e.g., PlanInformation, not planInformation)
     const plan = await prisma.businessContinuityPlan.create({
       data: {
+        id: planId,
+        updatedAt: new Date(),
+        
         // Plan Information
-        planInformation: {
+        PlanInformation: {
           create: {
+            id: randomUUID(),
             companyName: safeString(planData.PLAN_INFORMATION?.['Company Name']),
             planManager: safeString(planData.PLAN_INFORMATION?.['Plan Manager']),
             alternateManager: safeString(planData.PLAN_INFORMATION?.['Alternate Manager']),
@@ -44,8 +53,9 @@ export async function POST(req: Request) {
         },
 
         // Business Overview
-        businessOverview: {
+        BusinessOverview: {
           create: {
+            id: randomUUID(),
             businessLicenseNumber: safeString(planData.BUSINESS_OVERVIEW?.['Business License Number']),
             businessPurpose: safeString(planData.BUSINESS_OVERVIEW?.['Business Purpose']),
             productsAndServices: safeString(planData.BUSINESS_OVERVIEW?.['Products and Services']),
@@ -59,8 +69,9 @@ export async function POST(req: Request) {
         },
 
         // Essential Functions
-        essentialFunction: {
+        EssentialFunction: {
           create: {
+            id: randomUUID(),
             supplyChainManagement: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Supply Chain Management Functions']),
             staffManagement: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Staff Management Functions']),
             technology: safeStringify(planData.ESSENTIAL_FUNCTIONS?.['Technology Functions']),
@@ -72,16 +83,18 @@ export async function POST(req: Request) {
         },
 
         // Risk Assessment
-        riskAssessment: {
+        RiskAssessment: {
           create: {
+            id: randomUUID(),
             potentialHazards: safeStringify(planData.RISK_ASSESSMENT?.['Potential Hazards']),
             hazards: safeStringify(planData.RISK_ASSESSMENT?.['Risk Assessment Matrix']),
           },
         },
 
         // Strategies
-        strategy: {
+        Strategy: {
           create: {
+            id: randomUUID(),
             preventionStrategies: safeStringify(planData.STRATEGIES?.['Prevention Strategies (Before Emergencies)']),
             responseStrategies: safeStringify(planData.STRATEGIES?.['Response Strategies (During Emergencies)']),
             recoveryStrategies: safeStringify(planData.STRATEGIES?.['Recovery Strategies (After Emergencies)']),
@@ -90,8 +103,9 @@ export async function POST(req: Request) {
         },
 
         // Action Plans
-        actionPlan: {
+        ActionPlan: {
           create: {
+            id: randomUUID(),
             actionPlanByRisk: safeStringify(planData.ACTION_PLAN?.['Action Plan by Risk Level']),
             implementationTimeline: safeString(planData.ACTION_PLAN?.['Implementation Timeline']),
             resourceRequirements: safeString(planData.ACTION_PLAN?.['Resource Requirements']),

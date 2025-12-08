@@ -215,3 +215,4 @@ export type WithTranslations<TEntity, TTranslation> = TEntity & {
 export type Localized<TEntity, TTranslation extends { locale: string }> = 
   Omit<TEntity, keyof TTranslation> & Omit<TTranslation, 'locale' | 'id'>
 
+

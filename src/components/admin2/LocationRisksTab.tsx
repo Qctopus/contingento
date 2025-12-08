@@ -13,7 +13,7 @@ export function LocationRisksTab() {
     <div className="space-y-6">
       {/* Section Header with better spacing */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">📍 Location & Risk Management</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">📍 Location & Risk Management</h2>
         <p className="text-gray-600">Manage countries, administrative units, and their location-based risk profiles</p>
       </div>
 

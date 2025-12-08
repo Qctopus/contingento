@@ -351,19 +351,24 @@ export default function RiskMultipliersTab() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 rounded-lg p-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Risk Multipliers</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span>🧩</span>
+            <span>Risk Multipliers</span>
+          </h2>
+          <p className="text-sm text-amber-900/80 mt-1">
             Define how business characteristics amplify risk scores
           </p>
         </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          {showForm ? 'Cancel' : '+ Add Multiplier'}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            {showForm ? 'Cancel' : '+ Add Multiplier'}
+          </button>
+        </div>
       </div>
 
       {/* Form */}

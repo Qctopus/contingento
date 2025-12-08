@@ -11,11 +11,14 @@ export function CurrencyManagementTab() {
   const [subTab, setSubTab] = useState<SubTab>('items')
   
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-lg p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-2">💰 Currency & Cost Management</h2>
-        <p className="text-gray-600">
+      <div className="bg-gradient-to-r from-emerald-50 to-green-50 border-l-4 border-emerald-500 rounded-lg p-6">
+        <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <span>💰</span>
+          <span>Currency & Cost Management</span>
+        </h2>
+        <p className="text-emerald-900/80">
           Manage cost items, country multipliers, and exchange rates for automatic multi-currency pricing across the Caribbean region.
         </p>
       </div>

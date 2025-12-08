@@ -87,7 +87,7 @@ function SaveToast({
   )
 }
 
-// Subtle Save Status Component for Header
+// Save Status Component - Compact and subtle
 function SaveStatus({ 
   saveState, 
   onManualSave 
@@ -103,59 +103,71 @@ function SaveStatus({
   }
 
   return (
-    <div className="flex items-center space-x-2 text-xs">
+    <div className="flex items-center gap-2 text-xs">
       {/* Saving indicator */}
       {(saveState.status === 'saving' || saveState.status === 'retrying') && (
-        <div className="flex items-center space-x-1 text-blue-600">
+        <span className="flex items-center gap-1.5 text-blue-600">
           <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <span>
-            {saveState.status === 'retrying' 
-              ? `${t('common.retrying')} (${saveState.retryCount}/3)`
-              : t('common.saving')
-            }
-          </span>
-        </div>
+          {saveState.status === 'retrying' 
+            ? `${t('common.retrying')} (${saveState.retryCount}/3)`
+            : t('common.saving')
+          }
+        </span>
       )}
       
-      {/* Last saved time - only show when idle and saved recently */}
-      {saveState.status === 'idle' && saveState.lastSaveTime && (
-        <span className="text-gray-500">
+      {/* Saved confirmation */}
+      {saveState.status === 'saved' && (
+        <span className="flex items-center gap-1 text-green-600">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          {t('common.saved')}
+        </span>
+      )}
+      
+      {/* Idle state: show last saved time if no unsaved changes */}
+      {saveState.status === 'idle' && !saveState.hasUnsavedChanges && saveState.lastSaveTime && (
+        <span className="text-gray-400">
           {t('common.lastSaved')}: {formatTime(saveState.lastSaveTime)}
         </span>
       )}
       
-      {/* Unsaved changes indicator */}
-      {saveState.hasUnsavedChanges && saveState.status === 'idle' && (
-        <div className="flex items-center space-x-1 text-orange-600">
-          <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-          <span>{t('common.unsavedChanges')}</span>
-        </div>
+      {/* Idle with unsaved changes */}
+      {saveState.status === 'idle' && saveState.hasUnsavedChanges && (
+        <>
+          {saveState.lastSaveTime && (
+            <span className="text-gray-400">
+              {formatTime(saveState.lastSaveTime)}
+            </span>
+          )}
+          <span className="text-gray-300">•</span>
+          <span className="flex items-center gap-1 text-amber-600">
+            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+            {t('common.unsavedChanges')}
+          </span>
+          <button
+            onClick={onManualSave}
+            className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
+          >
+            {t('common.saveNow')}
+          </button>
+        </>
       )}
       
-      {/* Error indicator with manual save option */}
+      {/* Error state */}
       {saveState.status === 'error' && (
-        <div className="flex items-center space-x-2">
+        <>
           <span className="text-red-600">{t('common.saveFailed')}</span>
           <button
             onClick={onManualSave}
-            className="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs font-medium transition-colors"
+            className="text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors"
           >
             {t('common.retry')}
           </button>
-        </div>
-      )}
-      
-      {/* Manual save button - only show when there are unsaved changes */}
-      {saveState.hasUnsavedChanges && saveState.status !== 'saving' && saveState.status !== 'retrying' && (
-        <button
-          onClick={onManualSave}
-          className="bg-primary-100 hover:bg-primary-200 text-primary-700 px-2 py-1 rounded text-xs font-medium transition-colors"
-        >
-          {t('common.saveNow')}
-        </button>
+        </>
       )}
     </div>
   )
@@ -223,14 +235,13 @@ export function BusinessContinuityForm() {
       
       // Update state on successful save
       lastFormDataRef.current = currentFormDataString
-      setSaveState(prev => ({
-        ...prev,
+      setSaveState({
         status: 'saved',
         lastSaveTime: new Date(),
         retryCount: 0,
         errorMessage: null,
         hasUnsavedChanges: false
-      }))
+      })
 
       // Show success toast briefly for manual saves
       if (isManualSave) {
@@ -241,10 +252,17 @@ export function BusinessContinuityForm() {
         }, 3000)
       }
 
-      // Auto-hide saved status after 10 seconds
+      // Transition to idle after 3 seconds (keeping hasUnsavedChanges: false)
       setTimeout(() => {
-        setSaveState(prev => prev.status === 'saved' ? { ...prev, status: 'idle' } : prev)
-      }, 10000)
+        setSaveState(prev => {
+          // Only transition to idle if we're still in 'saved' status
+          // and no new unsaved changes have occurred
+          if (prev.status === 'saved') {
+            return { ...prev, status: 'idle' }
+          }
+          return prev
+        })
+      }, 3000)
 
       devLog('Save successful', { isManualSave, dataSize: currentFormDataString.length })
       return true
@@ -274,16 +292,20 @@ export function BusinessContinuityForm() {
   }
 
   // Auto-save with retry logic
-  const scheduleAutoSave = async () => {
+  const scheduleAutoSave = () => {
     // Clear existing timeout
     if (autoSaveTimeoutRef.current) {
       clearTimeout(autoSaveTimeoutRef.current)
     }
 
-    // Mark as having unsaved changes
-    setSaveState(prev => ({ ...prev, hasUnsavedChanges: true }))
+    const currentFormDataString = JSON.stringify(formData)
+    
+    // Only mark as unsaved if data actually changed from last saved version
+    if (currentFormDataString !== lastFormDataRef.current) {
+      setSaveState(prev => ({ ...prev, hasUnsavedChanges: true }))
+    }
 
-    // Schedule auto-save after 2 seconds
+    // Schedule auto-save after 2 seconds of no changes
     autoSaveTimeoutRef.current = setTimeout(async () => {
       if (isManualSaveRef.current) {
         isManualSaveRef.current = false
@@ -379,10 +401,15 @@ export function BusinessContinuityForm() {
   }, [t])
 
   // Auto-save trigger when form data changes
+  // Only schedule auto-save if data actually changed from what we have saved
   useEffect(() => {
-    if (Object.keys(formData).length > 0) {
-      scheduleAutoSave()
-    }
+    const currentFormDataString = JSON.stringify(formData)
+    
+    // Skip if no data or if data matches last saved version (e.g., just loaded from storage)
+    if (Object.keys(formData).length === 0) return
+    if (currentFormDataString === lastFormDataRef.current) return
+    
+    scheduleAutoSave()
     
     return () => {
       if (autoSaveTimeoutRef.current) {
@@ -522,49 +549,9 @@ export function BusinessContinuityForm() {
     }
   }
 
-  // Load saved data on component mount
-  useEffect(() => {
-    try {
-      const savedData = localStorage.getItem('bcp-draft')
-      if (savedData) {
-        const parsed = JSON.parse(savedData)
-        setFormData(parsed)
-      }
-    } catch (error) {
-      console.error('Failed to load saved data:', error)
-    }
-  }, [])
-
-  // Auto-save functionality with session integration
-  useEffect(() => {
-    const autoSave = async () => {
-      if (Object.keys(formData).length === 0) return
-      
-      setSaveState(prev => ({ ...prev, status: 'saving' }))
-      try {
-        // Save to localStorage (existing functionality)
-        localStorage.setItem('bcp-draft', JSON.stringify(formData))
-        
-        // Also save to anonymous session
-        anonymousSessionService.savePlanData(formData)
-        
-        setSaveState(prev => ({ ...prev, status: 'saved' }))
-        
-        setTimeout(() => {
-          setSaveState(prev => prev.status === 'saved' ? { ...prev, status: 'idle' } : prev)
-        }, 2000)
-      } catch (error) {
-        console.error('Auto-save failed:', error)
-        setSaveState(prev => ({ ...prev, status: 'error' }))
-        setTimeout(() => {
-          setSaveState(prev => prev.status === 'error' ? { ...prev, status: 'idle' } : prev)
-        }, 3000)
-      }
-    }
-
-    const timeoutId = setTimeout(autoSave, 2000)
-    return () => clearTimeout(timeoutId)
-  }, [formData])
+  // NOTE: Load saved data is handled in the earlier useEffect (lines ~337-372)
+  // Auto-save is handled by scheduleAutoSave() triggered by formData changes (lines ~374-385)
+  // DO NOT add duplicate save/load logic here!
 
   const handleInputComplete = (step: string, label: string, value: any) => {
     // Create a unique key for this input
@@ -894,15 +881,16 @@ export function BusinessContinuityForm() {
       {/* Navigation Sidebar - wider to accommodate longer translations (French/Spanish) */}
       <div className="w-80 lg:w-96 bg-white border-r flex flex-col overflow-hidden">
         <div className="overflow-y-auto flex-1">
+        {/* Sidebar Header */}
+        <div className="px-4 py-3 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-1.5">{t('common.businessContinuityPlan')}</h2>
+          <SaveStatus 
+            saveState={saveState}
+            onManualSave={handleManualSave}
+          />
+        </div>
+        
         <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">{t('common.businessContinuityPlan')}</h2>
-            {/* Integrated Save Status */}
-            <SaveStatus 
-              saveState={saveState}
-              onManualSave={handleManualSave}
-            />
-          </div>
 
           {/* Industry Information Display */}
           {hasSelectedIndustry && preFillData && (

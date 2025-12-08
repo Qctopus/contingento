@@ -320,6 +320,24 @@ export default function StrategySelectionStep({
   console.log('Strategy IDs:', relevantStrategies.map(s => s.id || s.strategyId).join(', '))
 
   // Group strategies by risk with primary/cross-reference logic
+  // IMPORTANT: Each strategy appears ONCE as a full card under its primary risk
+  // For secondary risks, we only store a cross-reference (not the full strategy)
+  
+  type StrategyWithRelation = Strategy & { 
+    relationshipType: 'primary' | 'crossReference' | 'general'
+  }
+  
+  type CrossReference = {
+    strategyId: string
+    strategyName: string
+    primaryRisk: string
+    primaryRiskName: string
+    relationshipType: 'crossReference'
+    isCrossReferenceOnly: true
+  }
+  
+  type RiskGroupEntry = StrategyWithRelation | CrossReference
+  
   const strategiesByRisk = relevantStrategies.reduce((acc, strategy) => {
     // Parse applicableRisks safely
     let risks: string[] = []
@@ -336,23 +354,45 @@ export default function StrategySelectionStep({
       acc['general'].push({
         ...strategy,
         relationshipType: 'general' as const
-      })
+      } as StrategyWithRelation)
       return acc
     }
 
-    // For each applicable risk, determine if this strategy is primary or cross-reference
-    risks.forEach((risk: string, index: number) => {
+    // IMPORTANT: Find the first risk that is actually SELECTED by the user
+    // This becomes the "effective primary" where the full card is shown
+    const selectedRisks = risks.filter(risk => validHazardIds.has(risk))
+    
+    if (selectedRisks.length === 0) {
+      // No matching risks selected - this shouldn't happen after filtering, but handle gracefully
+      return acc
+    }
+    
+    // The first SELECTED risk is where we show the full card
+    const effectivePrimaryRisk = selectedRisks[0]
+    if (!acc[effectivePrimaryRisk]) acc[effectivePrimaryRisk] = []
+    acc[effectivePrimaryRisk].push({
+      ...strategy,
+      relationshipType: 'primary' as const
+    } as StrategyWithRelation)
+    
+    // For ALL OTHER SELECTED risks, only store a cross-reference link
+    // This avoids showing the same strategy card multiple times
+    selectedRisks.slice(1).forEach((risk: string) => {
       if (!acc[risk]) acc[risk] = []
-
-      const isPrimary = index === 0 // First risk is primary
+      
+      // Add a cross-reference entry pointing to the effective primary (which IS selected)
       acc[risk].push({
-        ...strategy,
-        relationshipType: isPrimary ? 'primary' as const : 'crossReference' as const
-      })
+        strategyId: strategy.id || strategy.strategyId || '',
+        strategyName: strategy.smeTitle || strategy.name,
+        primaryRisk: effectivePrimaryRisk,
+        primaryRiskName: translateRisk(effectivePrimaryRisk),
+        relationshipType: 'crossReference' as const,
+        isCrossReferenceOnly: true
+      } as CrossReference)
     })
 
     return acc
-  }, {} as Record<string, Array<Strategy & { relationshipType: 'primary' | 'crossReference' | 'general' }>>)
+  }, {} as Record<string, RiskGroupEntry[]>)
 
   // Debug: Log all risk groups before filtering
   console.log(`[StrategySelectionStep] Risk groups before filtering:`, Object.keys(strategiesByRisk))
@@ -422,29 +462,53 @@ export default function StrategySelectionStep({
     ))
   }
 
+  // Helper to check if entry is a cross-reference only (not a full strategy)
+  const isCrossRefOnly = (entry: RiskGroupEntry): entry is CrossReference => {
+    return 'isCrossReferenceOnly' in entry && entry.isCrossReferenceOnly === true
+  }
+  
+  // Helper to check if entry is a full strategy
+  const isFullStrategy = (entry: RiskGroupEntry): entry is StrategyWithRelation => {
+    return !isCrossRefOnly(entry)
+  }
+
   // Sort risk groups by priority (essential strategies first, then others)
   const sortedRiskGroups = Object.entries(strategiesByRisk)
-    .map(([risk, riskStrategies]) => ({
+    .map(([risk, riskEntries]) => ({
       risk,
-      strategies: riskStrategies.sort((a, b) => {
-        // Sort by relationship type first (primary before cross-reference)
-        if (a.relationshipType !== b.relationshipType) {
-          if (a.relationshipType === 'primary') return -1
-          if (b.relationshipType === 'primary') return 1
-          if (a.relationshipType === 'crossReference') return -1
-          if (b.relationshipType === 'crossReference') return 1
+      strategies: riskEntries.sort((a, b) => {
+        // Cross-references always go after full strategies
+        const aIsCrossRef = isCrossRefOnly(a)
+        const bIsCrossRef = isCrossRefOnly(b)
+        if (aIsCrossRef && !bIsCrossRef) return 1
+        if (!aIsCrossRef && bIsCrossRef) return -1
+        
+        // If both are cross-references, sort by name
+        if (aIsCrossRef && bIsCrossRef) {
+          return (a.strategyName || '').localeCompare(b.strategyName || '')
+        }
+        
+        // Both are full strategies - sort by relationship type then priority tier
+        const stratA = a as StrategyWithRelation
+        const stratB = b as StrategyWithRelation
+        
+        if (stratA.relationshipType !== stratB.relationshipType) {
+          if (stratA.relationshipType === 'primary') return -1
+          if (stratB.relationshipType === 'primary') return 1
         }
         // Then by priority tier
         const tierOrder = { essential: 0, recommended: 1, optional: 2 }
-        const aTier = tierOrder[a.priorityTier as keyof typeof tierOrder] ?? 3
-        const bTier = tierOrder[b.priorityTier as keyof typeof tierOrder] ?? 3
+        const aTier = tierOrder[stratA.priorityTier as keyof typeof tierOrder] ?? 3
+        const bTier = tierOrder[stratB.priorityTier as keyof typeof tierOrder] ?? 3
         if (aTier !== bTier) return aTier - bTier
         // Finally by name
-        return (a.name || '').localeCompare(b.name || '')
+        return (stratA.name || '').localeCompare(stratB.name || '')
       }),
-      hasPrimaryStrategies: riskStrategies.some(s => s.relationshipType === 'primary'),
-      primaryCount: riskStrategies.filter(s => s.relationshipType === 'primary').length,
-      crossReferenceCount: riskStrategies.filter(s => s.relationshipType === 'crossReference').length
+      // Count full primary strategies (not cross-references)
+      hasPrimaryStrategies: riskEntries.some(s => isFullStrategy(s) && s.relationshipType === 'primary'),
+      primaryCount: riskEntries.filter(s => isFullStrategy(s) && s.relationshipType === 'primary').length,
+      // Count cross-reference entries
+      crossReferenceCount: riskEntries.filter(s => isCrossRefOnly(s)).length
     }))
     .sort((a, b) => {
       // Sort by whether it has primary strategies first
@@ -576,33 +640,58 @@ export default function StrategySelectionStep({
                     </div>
                   </div>
 
-                  {riskStrategies.map(strategy => (
-                    <StrategyCard
-                      key={`${strategy.id}-${risk}`}
-                      strategy={strategy}
-                      isSelected={selectedStrategies.includes(strategy.id)}
-                      isExpanded={expandedStrategy === strategy.id}
-                      onToggle={() => handleToggle(strategy.id, strategy.priorityTier || 'optional')}
-                      onExpand={() => setExpandedStrategy(
-                        expandedStrategy === strategy.id ? null : strategy.id
-                      )}
-                      tierColor={
-                        strategy.priorityTier === 'essential' ? 'red' :
-                          strategy.priorityTier === 'recommended' ? 'yellow' : 'green'
-                      }
-                      t={t}
-                      locale={locale}
-                      translateRisk={translateRisk}
-                      translateLevel={translateLevel}
-                      translateReasoning={translateReasoning}
-                      translateTime={translateTime}
-                      strategyCosts={strategyCosts}
-                      currencyInfo={currencyInfo}
-                      countryCode={countryCode}
-                      relationshipType={strategy.relationshipType}
-                      validHazards={validHazards}
-                    />
-                  ))}
+                  {riskStrategies.map(entry => {
+                    // DEBUG: Log each entry to see if cross-references are being identified
+                    console.log(`[Render] Risk "${risk}" entry:`, {
+                      isCrossRef: 'isCrossReferenceOnly' in entry,
+                      type: 'isCrossReferenceOnly' in entry ? 'CrossReference' : 'Strategy',
+                      name: 'strategyName' in entry ? entry.strategyName : ('name' in entry ? entry.name : 'unknown')
+                    })
+                    
+                    // Check if this is a cross-reference link (not a full strategy)
+                    if ('isCrossReferenceOnly' in entry && entry.isCrossReferenceOnly) {
+                      const crossRef = entry as CrossReference
+                      console.log(`[Render] Rendering CrossReferenceCard for "${crossRef.strategyName}" → primary: ${crossRef.primaryRiskName}`)
+                      return (
+                        <CrossReferenceCard
+                          key={`crossref-${crossRef.strategyId}-${risk}`}
+                          strategyName={crossRef.strategyName}
+                          primaryRiskName={crossRef.primaryRiskName}
+                          t={t}
+                        />
+                      )
+                    }
+                    
+                    // It's a full strategy - render the full card
+                    const strategy = entry as StrategyWithRelation
+                    return (
+                      <StrategyCard
+                        key={`${strategy.id}-${risk}`}
+                        strategy={strategy}
+                        isSelected={selectedStrategies.includes(strategy.id)}
+                        isExpanded={expandedStrategy === strategy.id}
+                        onToggle={() => handleToggle(strategy.id, strategy.priorityTier || 'optional')}
+                        onExpand={() => setExpandedStrategy(
+                          expandedStrategy === strategy.id ? null : strategy.id
+                        )}
+                        tierColor={
+                          strategy.priorityTier === 'essential' ? 'red' :
+                            strategy.priorityTier === 'recommended' ? 'yellow' : 'green'
+                        }
+                        t={t}
+                        locale={locale}
+                        translateRisk={translateRisk}
+                        translateLevel={translateLevel}
+                        translateReasoning={translateReasoning}
+                        translateTime={translateTime}
+                        strategyCosts={strategyCosts}
+                        currencyInfo={currencyInfo}
+                        countryCode={countryCode}
+                        relationshipType={strategy.relationshipType}
+                        validHazards={validHazards}
+                      />
+                    )
+                  })}
                 </div>
               )
             })}
@@ -620,22 +709,28 @@ export default function StrategySelectionStep({
                     <span className="text-gray-600">🎯 Primary Strategies</span>
                     <span className="font-medium">
                       {sortedRiskGroups.reduce((sum, group) =>
-                        sum + group.strategies.filter(s => s.relationshipType === 'primary' && selectedStrategies.includes(s.id)).length, 0
+                        sum + group.strategies.filter(s => 
+                          isFullStrategy(s) && 
+                          s.relationshipType === 'primary' && 
+                          selectedStrategies.includes(s.id)
+                        ).length, 0
                       )} / {sortedRiskGroups.reduce((sum, group) => sum + group.primaryCount, 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">🔗 Cross-Reference Strategies</span>
                     <span className="font-medium">
-                      {sortedRiskGroups.reduce((sum, group) =>
-                        sum + group.strategies.filter(s => s.relationshipType === 'crossReference' && selectedStrategies.includes(s.id)).length, 0
-                      )} / {sortedRiskGroups.reduce((sum, group) => sum + group.crossReferenceCount, 0)}
+                      {sortedRiskGroups.reduce((sum, group) => sum + group.crossReferenceCount, 0)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">🛡️ Risk Categories Covered</span>
                     <span className="font-medium">
-                      {sortedRiskGroups.filter(group => group.strategies.some(s => selectedStrategies.includes(s.id))).length} / {sortedRiskGroups.length}
+                      {sortedRiskGroups.filter(group => 
+                        group.strategies.some(s => 
+                          isFullStrategy(s) && selectedStrategies.includes(s.id)
+                        )
+                      ).length} / {sortedRiskGroups.length}
                     </span>
                   </div>
                 </div>
@@ -1168,6 +1263,34 @@ function StrategyCard({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// Cross-Reference Card Component - Compact card that links to the primary risk section
+function CrossReferenceCard({
+  strategyName,
+  primaryRiskName,
+  t
+}: {
+  strategyName: string
+  primaryRiskName: string
+  t: any
+}) {
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+      <div className="flex items-start space-x-3">
+        <span className="text-lg">🔗</span>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-700">
+            {strategyName}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            {t('steps.strategySelection.seeUnderRisk') || 'See this strategy under'}{' '}
+            <span className="font-medium text-blue-600">🛡️ {primaryRiskName}</span>
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
