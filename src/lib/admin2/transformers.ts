@@ -32,18 +32,18 @@ export function transformParishForApi(parish: any): any {
   })
 
   // Override with actual data from database
-  if (parish.parishRisk) {
+  if (parish.ParishRisk) {
     // Merge basic 6 hardcoded risks
-    const basicRisks = buildBasicRiskProfile(parish.parishRisk)
+    const basicRisks = buildBasicRiskProfile(parish.ParishRisk)
     Object.assign(riskProfile, basicRisks)
 
     // CRITICAL: Merge in ALL dynamic risks from riskProfileJson
     // This includes: fire, cyberAttack, terrorism, pandemicDisease, etc.
-    if (parish.parishRisk.riskProfileJson) {
+    if (parish.ParishRisk.riskProfileJson) {
       try {
-        const dynamicRisks = typeof parish.parishRisk.riskProfileJson === 'string'
-          ? JSON.parse(parish.parishRisk.riskProfileJson)
-          : parish.parishRisk.riskProfileJson
+        const dynamicRisks = typeof parish.ParishRisk.riskProfileJson === 'string'
+          ? JSON.parse(parish.ParishRisk.riskProfileJson)
+          : parish.ParishRisk.riskProfileJson
 
         if (dynamicRisks && typeof dynamicRisks === 'object') {
           // Merge ALL risks from JSON (including overwriting hardcoded ones if they exist)
@@ -69,8 +69,8 @@ export function transformParishForApi(parish: any): any {
   }
 
   // Ensure metadata is always present
-  riskProfile.lastUpdated = parish.parishRisk?.lastUpdated?.toISOString() || new Date().toISOString()
-  riskProfile.updatedBy = parish.parishRisk?.updatedBy || 'system'
+  riskProfile.lastUpdated = parish.ParishRisk?.lastUpdated?.toISOString() || new Date().toISOString()
+  riskProfile.updatedBy = parish.ParishRisk?.updatedBy || 'system'
 
   return {
     id: parish.id,

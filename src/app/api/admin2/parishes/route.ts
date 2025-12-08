@@ -14,7 +14,7 @@ export async function GET() {
       return await prisma.parish.findMany({
         where: { isActive: true },
         include: {
-          parishRisk: true
+          ParishRisk: true
         },
         orderBy: [
           { region: 'asc' },

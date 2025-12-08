@@ -37,33 +37,33 @@ export async function GET(
       population: parish.population,
       riskProfile: {
         hurricane: {
-          level: parish.parishRisk?.hurricaneLevel || 0,
-          notes: parish.parishRisk?.hurricaneNotes || ''
+          level: parish.ParishRisk?.hurricaneLevel || 0,
+          notes: parish.ParishRisk?.hurricaneNotes || ''
         },
         flood: {
-          level: parish.parishRisk?.floodLevel || 0,
-          notes: parish.parishRisk?.floodNotes || ''
+          level: parish.ParishRisk?.floodLevel || 0,
+          notes: parish.ParishRisk?.floodNotes || ''
         },
         earthquake: {
-          level: parish.parishRisk?.earthquakeLevel || 0,
-          notes: parish.parishRisk?.earthquakeNotes || ''
+          level: parish.ParishRisk?.earthquakeLevel || 0,
+          notes: parish.ParishRisk?.earthquakeNotes || ''
         },
         drought: {
-          level: parish.parishRisk?.droughtLevel || 0,
-          notes: parish.parishRisk?.droughtNotes || ''
+          level: parish.ParishRisk?.droughtLevel || 0,
+          notes: parish.ParishRisk?.droughtNotes || ''
         },
         landslide: {
-          level: parish.parishRisk?.landslideLevel || 0,
-          notes: parish.parishRisk?.landslideNotes || ''
+          level: parish.ParishRisk?.landslideLevel || 0,
+          notes: parish.ParishRisk?.landslideNotes || ''
         },
         powerOutage: {
-          level: parish.parishRisk?.powerOutageLevel || 0,
-          notes: parish.parishRisk?.powerOutageNotes || ''
+          level: parish.ParishRisk?.powerOutageLevel || 0,
+          notes: parish.ParishRisk?.powerOutageNotes || ''
         },
-        lastUpdated: parish.parishRisk?.lastUpdated.toISOString() || new Date().toISOString(),
-        updatedBy: parish.parishRisk?.updatedBy || 'system'
+        lastUpdated: parish.ParishRisk?.lastUpdated.toISOString() || new Date().toISOString(),
+        updatedBy: parish.ParishRisk?.updatedBy || 'system'
       },
-      changeHistory: parish.parishRisk?.changeLogs || []
+      changeHistory: parish.ParishRisk?.changeLogs || []
     }
 
     return NextResponse.json(transformedParish)
@@ -87,7 +87,7 @@ export async function PUT(
     // Get current parish and risk data for comparison
     const currentParish = await prisma.parish.findUnique({
       where: { id: params.id },
-      include: { parishRisk: true }
+      include: { ParishRisk: true }
     })
 
     if (!currentParish) {
@@ -117,7 +117,7 @@ export async function PUT(
 
     // Create change logs for modified risks
     const changeLogs = []
-    if (currentParish.parishRisk) {
+    if (currentParish.ParishRisk) {
       const riskTypes = [
         { key: 'hurricane', levelField: 'hurricaneLevel', notesField: 'hurricaneNotes' },
         { key: 'flood', levelField: 'floodLevel', notesField: 'floodNotes' },
@@ -128,14 +128,14 @@ export async function PUT(
       ]
 
       for (const riskType of riskTypes) {
-        const oldLevel = currentParish.parishRisk[riskType.levelField as keyof typeof currentParish.parishRisk] as number
+        const oldLevel = currentParish.ParishRisk[riskType.levelField as keyof typeof currentParish.ParishRisk] as number
         const newLevel = riskUpdates[riskType.levelField as keyof typeof riskUpdates] as number
-        const oldNotes = currentParish.parishRisk[riskType.notesField as keyof typeof currentParish.parishRisk] as string
+        const oldNotes = currentParish.ParishRisk[riskType.notesField as keyof typeof currentParish.ParishRisk] as string
         const newNotes = riskUpdates[riskType.notesField as keyof typeof riskUpdates] as string
 
         if (oldLevel !== newLevel || oldNotes !== newNotes) {
           changeLogs.push({
-            parishRiskId: currentParish.parishRisk.id,
+            parishRiskId: currentParish.ParishRisk.id,
             riskType: riskType.key,
             oldLevel,
             newLevel,

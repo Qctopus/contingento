@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
           // Find existing parish by name
           const existingParish = await prisma.parish.findFirst({
             where: { name: parishName },
-            include: { parishRisk: true }
+            include: { ParishRisk: true }
           })
 
           if (existingParish) {
@@ -185,9 +185,9 @@ export async function POST(request: NextRequest) {
             })
 
             // Update or create parish risk
-            if (existingParish.parishRisk) {
+            if (existingParish.ParishRisk) {
               await prisma.parishRisk.update({
-                where: { id: existingParish.parishRisk.id },
+                where: { id: existingParish.ParishRisk.id },
                 data: riskData
               })
             } else {
@@ -250,7 +250,7 @@ export async function GET() {
       const prisma = getPrismaClient()
       return await prisma.parish.findMany({
         where: { isActive: true },
-        include: { parishRisk: true },
+        include: { ParishRisk: true },
         orderBy: [
           { region: 'asc' },
           { name: 'asc' }
@@ -279,7 +279,7 @@ export async function GET() {
 
     // Generate CSV rows
     const csvRows = parishes.map(parish => {
-      const risk = parish.parishRisk
+      const risk = parish.ParishRisk
       
       // Parse riskProfileJson to get additional risk types
       let additionalRisks: Record<string, any> = {}

@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
           ]
         },
         include: {
-          parishRisk: true
+          ParishRisk: true
         }
       })
       
@@ -173,8 +173,8 @@ export async function POST(request: NextRequest) {
       if (!businessTypeHazard) {
         // Check if we have parish risk data for this hazard (including DYNAMIC risk types)
         let parishRiskLevel = 0
-        if (parishData?.parishRisk) {
-          const parishRisk = parishData.parishRisk
+        if (parishData?.ParishRisk) {
+          const parishRisk = parishData.ParishRisk
           
           // FIRST: Try hardcoded fields for backward compatibility
           switch (hazardId) {
@@ -282,8 +282,8 @@ export async function POST(request: NextRequest) {
       let locationModifier = ''
       let parishRiskLevel = 0
       
-      if (parishData?.parishRisk) {
-        const parishRisk = parishData.parishRisk
+      if (parishData?.ParishRisk) {
+        const parishRisk = parishData.ParishRisk
         
         // Map hazardId to parishRisk field (0-10 scale)
         switch (hazardId) {
@@ -379,7 +379,7 @@ export async function POST(request: NextRequest) {
       if (!businessTypeHazard.frequency || !businessTypeHazard.impact) {
         confidence = 'medium'
       }
-      if (!parishData?.parishRisk || parishRiskLevel === 0) {
+      if (!parishData?.ParishRisk || parishRiskLevel === 0) {
         confidence = 'medium' // Lower confidence when no parish risk data
       }
 

@@ -30,28 +30,28 @@ export async function POST(request: NextRequest) {
       population: parish.population,
       riskProfile: {
         hurricane: {
-          level: parish.parishRisk?.hurricaneLevel || 0,
-          notes: parish.parishRisk?.hurricaneNotes || ''
+          level: parish.ParishRisk?.hurricaneLevel || 0,
+          notes: parish.ParishRisk?.hurricaneNotes || ''
         },
         flood: {
-          level: parish.parishRisk?.floodLevel || 0,
-          notes: parish.parishRisk?.floodNotes || ''
+          level: parish.ParishRisk?.floodLevel || 0,
+          notes: parish.ParishRisk?.floodNotes || ''
         },
         earthquake: {
-          level: parish.parishRisk?.earthquakeLevel || 0,
-          notes: parish.parishRisk?.earthquakeNotes || ''
+          level: parish.ParishRisk?.earthquakeLevel || 0,
+          notes: parish.ParishRisk?.earthquakeNotes || ''
         },
         drought: {
-          level: parish.parishRisk?.droughtLevel || 0,
-          notes: parish.parishRisk?.droughtNotes || ''
+          level: parish.ParishRisk?.droughtLevel || 0,
+          notes: parish.ParishRisk?.droughtNotes || ''
         },
         landslide: {
-          level: parish.parishRisk?.landslideLevel || 0,
-          notes: parish.parishRisk?.landslideNotes || ''
+          level: parish.ParishRisk?.landslideLevel || 0,
+          notes: parish.ParishRisk?.landslideNotes || ''
         },
         powerOutage: {
-          level: parish.parishRisk?.powerOutageLevel || 0,
-          notes: parish.parishRisk?.powerOutageNotes || ''
+          level: parish.ParishRisk?.powerOutageLevel || 0,
+          notes: parish.ParishRisk?.powerOutageNotes || ''
         }
       }
     }))
