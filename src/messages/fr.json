@@ -1742,7 +1742,19 @@
     "skipManual": "Ignorer et créer un plan manuellement",
     "continueButton": "Continuer",
     "loadingAdminUnits": "Chargement des unités administratives...",
-    "noAdminUnits": "Aucune unité administrative trouvée pour ce pays"
+    "noAdminUnits": "Aucune unité administrative trouvée pour ce pays",
+    "scaleOptions": {
+      "notAtAll": "Pas du tout",
+      "notAtAllDesc": "0% - Ne s'applique pas à mon entreprise",
+      "slightly": "Légèrement",
+      "slightlyDesc": "~25% - Facteur mineur dans les opérations",
+      "moderately": "Modérément",
+      "moderatelyDesc": "~50% - Significatif mais pas dominant",
+      "very": "Très",
+      "veryDesc": "~75% - Facteur majeur dans les opérations",
+      "completely": "Totalement",
+      "completelyDesc": "100% - Critique/Essentiel"
+    }
   },
   "industryProfiles": {
     "grocery_store": {

@@ -1694,7 +1694,19 @@
     "skipManual": "Omitir y crear plan manualmente",
     "continueButton": "Continuar",
     "loadingAdminUnits": "Cargando unidades administrativas...",
-    "noAdminUnits": "No se encontraron unidades administrativas para este país"
+    "noAdminUnits": "No se encontraron unidades administrativas para este país",
+    "scaleOptions": {
+      "notAtAll": "Para nada",
+      "notAtAllDesc": "0% - No aplica a mi negocio",
+      "slightly": "Un poco",
+      "slightlyDesc": "~25% - Factor menor en las operaciones",
+      "moderately": "Moderadamente",
+      "moderatelyDesc": "~50% - Significativo pero no dominante",
+      "very": "Muy",
+      "veryDesc": "~75% - Factor importante en las operaciones",
+      "completely": "Completamente",
+      "completelyDesc": "100% - Crítico/Esencial"
+    }
   },
   "industryProfiles": {
     "grocery_store": {

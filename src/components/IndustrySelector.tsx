@@ -698,36 +698,57 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                                 )
                               })
                             ) : (
-                              // Fallback: Numeric input for threshold values without predefined options
-                              <div className="space-y-3">
-                                <div className="flex items-center space-x-4">
-                                  <input
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    value={typeof currentValue === 'number' ? currentValue : ''}
-                                    onChange={(e) => {
-                                      const value = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
-                                      setBusinessCharacteristics(prev => ({
-                                        ...prev,
-                                        [charType]: value
-                                      }))
-                                    }}
-                                    placeholder={t('enterValue') || 'Enter value'}
-                                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                  />
-                                  {multiplier.conditionValue && (
-                                    <span className="text-sm text-gray-600">
-                                      {t('thresholdHint', { threshold: multiplier.conditionValue }) || `(threshold: ${multiplier.conditionValue})`}
-                                    </span>
-                                  )}
-                                </div>
-                                {multiplier.conditionValue && (
-                                  <p className="text-xs text-gray-500">
-                                    {t('multiplierAppliesWhen', { threshold: multiplier.conditionValue }) || 
-                                      `Multiplier applies when value ≥ ${multiplier.conditionValue}`}
-                                  </p>
-                                )}
+                              // Fallback: User-friendly scale options for threshold values
+                              <div className="space-y-2">
+                                {[
+                                  { value: 0, label: t('scaleOptions.notAtAll') || 'Not at all', description: t('scaleOptions.notAtAllDesc') || '0% - Does not apply to my business' },
+                                  { value: 25, label: t('scaleOptions.slightly') || 'Slightly', description: t('scaleOptions.slightlyDesc') || '~25% - Minor factor' },
+                                  { value: 50, label: t('scaleOptions.moderately') || 'Moderately', description: t('scaleOptions.moderatelyDesc') || '~50% - Significant factor' },
+                                  { value: 75, label: t('scaleOptions.very') || 'Very', description: t('scaleOptions.veryDesc') || '~75% - Major factor' },
+                                  { value: 100, label: t('scaleOptions.completely') || 'Completely', description: t('scaleOptions.completelyDesc') || '100% - Critical/Essential' }
+                                ].map((option) => {
+                                  const isSelected = currentValue === option.value
+                                  return (
+                                    <label
+                                      key={option.value}
+                                      className={`
+                                        group relative flex items-start p-3 rounded-xl cursor-pointer transition-all duration-200
+                                        ${isSelected
+                                          ? 'bg-blue-50 border-2 border-blue-500 shadow-md'
+                                          : 'bg-white border-2 border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                                        }
+                                      `}
+                                    >
+                                      <div className="flex items-center h-5">
+                                        <input
+                                          type="radio"
+                                          name={`${charType}-scale`}
+                                          checked={isSelected}
+                                          onChange={() => {
+                                            setBusinessCharacteristics(prev => ({
+                                              ...prev,
+                                              [charType]: option.value
+                                            }))
+                                          }}
+                                          className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                        />
+                                      </div>
+                                      <div className="ml-3 flex-1">
+                                        <div className={`font-medium text-sm ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
+                                          {option.label}
+                                        </div>
+                                        <div className={`text-xs mt-0.5 ${isSelected ? 'text-blue-600' : 'text-gray-500'}`}>
+                                          {option.description}
+                                        </div>
+                                      </div>
+                                      {isSelected && (
+                                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                      )}
+                                    </label>
+                                  )
+                                })}
                               </div>
                             )}
                           </div>
