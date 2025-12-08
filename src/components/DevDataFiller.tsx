@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useParams } from 'next/navigation'
 
 /**
  * Development-only component for filling wizard with sample data
@@ -10,6 +11,8 @@ import { useState } from 'react'
 export function DevDataFiller() {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const params = useParams()
+  const locale = (params?.locale as string) || 'en'
 
   // Only show in development
   if (process.env.NODE_ENV !== 'development') {
@@ -27,9 +30,13 @@ export function DevDataFiller() {
         throw new Error(`Failed to load script: ${script.status}`)
       }
       const scriptText = await script.text()
-      
+
       // Wrap in try-catch to handle async errors
       try {
+        // Pass locale to the script via global variable
+        // @ts-ignore
+        window.__WIZARD_LOCALE__ = locale
+
         // Execute the script - it's an async IIFE that will handle its own errors
         eval(scriptText)
         // Give it a moment to start, then check for errors
@@ -72,7 +79,7 @@ export function DevDataFiller() {
       >
         {isLoading ? 'Loading...' : '🎲 Fill with Random Data'}
       </button>
-      
+
       <button
         onClick={clearData}
         className="px-4 py-2 bg-red-600 text-white rounded-lg shadow-lg hover:bg-red-700 transition-colors text-sm font-medium"
@@ -81,9 +88,8 @@ export function DevDataFiller() {
       </button>
 
       {message && (
-        <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium ${
-          message.startsWith('✅') ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-        }`}>
+        <div className={`px-4 py-2 rounded-lg shadow-lg text-sm font-medium ${message.startsWith('✅') ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+          }`}>
           {message}
         </div>
       )}

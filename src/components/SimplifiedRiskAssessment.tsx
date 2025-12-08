@@ -70,7 +70,12 @@ export function SimplifiedRiskAssessment({
     if (!riskName) return riskName
 
     // Convert camelCase to snake_case
-    const snakeCase = riskName.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '')
+    const snakeCase = riskName
+      .replace(/ /g, '_')
+      .replace(/([A-Z])/g, '_$1')
+      .toLowerCase()
+      .replace(/^_/, '')
+      .replace(/_+/g, '_')
 
     // Try to get translation
     const translationKey = `steps.riskAssessment.hazardLabels.${snakeCase}`
@@ -559,25 +564,25 @@ export function SimplifiedRiskAssessment({
       <div
         key={risk.hazardId}
         className={`bg-white border-2 rounded-lg overflow-hidden transition-all duration-300 ${risk.isSelected
-            ? currentTier === 1
-              ? 'border-red-400 shadow-lg ring-2 ring-red-200'
+          ? currentTier === 1
+            ? 'border-red-400 shadow-lg ring-2 ring-red-200'
+            : currentTier === 2
+              ? 'border-orange-400 shadow-lg ring-2 ring-orange-200'
+              : 'border-blue-500 shadow-md'
+          : isAvailable
+            ? 'border-gray-200 hover:border-gray-300'
+            : currentTier === 1
+              ? 'border-red-200 hover:border-red-300'
               : currentTier === 2
-                ? 'border-orange-400 shadow-lg ring-2 ring-orange-200'
-                : 'border-blue-500 shadow-md'
-            : isAvailable
-              ? 'border-gray-200 hover:border-gray-300'
-              : currentTier === 1
-                ? 'border-red-200 hover:border-red-300'
-                : currentTier === 2
-                  ? 'border-orange-200 hover:border-orange-300'
-                  : 'border-gray-200 hover:border-gray-300'
+                ? 'border-orange-200 hover:border-orange-300'
+                : 'border-gray-200 hover:border-gray-300'
           }`}
       >
         {/* Risk Header */}
         <div className={`p-4 transition-colors duration-300 ${risk.isSelected && currentTier === 1 ? 'bg-red-50' :
-            risk.isSelected && currentTier === 2 ? 'bg-orange-50' :
-              risk.isSelected && currentTier === 3 ? 'bg-gray-50' :
-                risk.isSelected ? 'bg-blue-50' : ''
+          risk.isSelected && currentTier === 2 ? 'bg-orange-50' :
+            risk.isSelected && currentTier === 3 ? 'bg-gray-50' :
+              risk.isSelected ? 'bg-blue-50' : ''
           }`}>
           <div className="flex items-start space-x-3">
             <label className="flex items-center mt-1 cursor-pointer group">
@@ -586,8 +591,8 @@ export function SimplifiedRiskAssessment({
                 checked={risk.isSelected}
                 onChange={(e) => updateRiskItem(actualIndex, 'isSelected', e.target.checked)}
                 className={`h-6 w-6 border-2 rounded focus:ring-2 transition-all duration-300 ${currentTier === 1 ? 'text-red-600 border-red-300 focus:ring-red-500' :
-                    currentTier === 2 ? 'text-orange-600 border-orange-300 focus:ring-orange-500' :
-                      'text-blue-600 border-gray-300 focus:ring-blue-500'
+                  currentTier === 2 ? 'text-orange-600 border-orange-300 focus:ring-orange-500' :
+                    'text-blue-600 border-gray-300 focus:ring-blue-500'
                   }`}
               />
             </label>
@@ -602,8 +607,8 @@ export function SimplifiedRiskAssessment({
                   {!isAvailable && risk.riskScore > 0 && (
                     <div className="text-sm text-gray-600 mb-1">
                       <span className={`font-bold transition-colors duration-300 ${currentTier === 1 ? 'text-red-700' :
-                          currentTier === 2 ? 'text-orange-700' :
-                            'text-gray-700'
+                        currentTier === 2 ? 'text-orange-700' :
+                          'text-gray-700'
                         }`}>{risk.riskScore?.toFixed(1)}/10</span> {t('riskScoreLabel')}
                     </div>
                   )}

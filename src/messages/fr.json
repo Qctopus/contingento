@@ -1,57 +1,71 @@
 {
-    "common": {
-      "loading": "Chargement...",
-      "save": "Enregistrer",
-      "next": "Suivant",
-      "previous": "Précédent",
-      "skip": "Ignorer pour l'instant",
-      "examples": "Exemples :",
-      "required": "Obligatoire",
-      "optional": "Optionnel",
-      "step": "Étape {current} sur {total}",
-      "actionStep": "Étape",
-      "completePlan": "Plan Complet",
-      "congratulations": "Félicitations !",
-      "planCompleted": "Votre Plan de Continuité d'Activité a été complété avec succès.",
-      "exportPdf": "Exporter Document",
-      "clearDraft": "Effacer le Brouillon",
-      "confirm": "Confirmer",
-      "cancel": "Annuler",
-      "confirmClear": "Êtes-vous sûr de vouloir effacer toutes les données et recommencer ? Cette action ne peut pas être annulée.",
-      "exportPDF": "Exporter Document",
-      "question": "Question",
-      "of": "sur",
-      "clearDraftConfirm": "Êtes-vous sûr de vouloir effacer votre brouillon ? Cette action ne peut pas être annulée.",
-      "yes": "Oui",
-      "no": "Non",
-      "planCompleteDescription": "Vous pouvez maintenant exporter votre plan en PDF ou continuer à affiner vos réponses.",
-      "needHelp": "Besoin d'aide ? Cet outil suit la méthodologie CARICHAM pour la planification de continuité d'activité.",
-      "automaticallySaved": "Votre progression est automatiquement sauvegardée",
-      "businessContinuityPlan": "Plan de Continuité d'Activité",
-      "saving": "Enregistrement...",
-      "saved": "Enregistré",
-      "saveFailed": "Échec de l'enregistrement",
-      "retrying": "Nouvelle tentative",
-      "saveNow": "Enregistrer Maintenant",
-      "retry": "Réessayer",
-      "lastSaved": "Dernière sauvegarde",
-      "unsavedChanges": "Modifications non sauvegardées",
-      "allSaved": "Tout sauvegardé",
-      "autoSaveTip": "Les modifications sont automatiquement sauvegardées toutes les 2 secondes",
-      "loadFailed": "Échec du chargement des données sauvegardées",
-      "industryProfile": "Profil d'Industrie",
-      "industry": "Industrie",
-      "location": "Emplacement",
-      "actions": "Actions",
-      "currentValue": "Valeur actuelle",
-      "typeAnswerHere": "Tapez votre réponse ici",
-      "addRow": "Ajouter une ligne",
-      "deleteRows": "Supprimer {count} lignes",
-      "noHazardsSelected": "Aucun danger sélectionné",
-      "selectHazardsPrompt": "Veuillez sélectionner des dangers à l'étape précédente pour créer votre matrice d'évaluation des risques",
-      "riskOverview": "Aperçu de l'évaluation des risques",
-      "assessmentProgress": "Progression de l'évaluation",
-      "completed": "terminé",
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "skip": "Ignorer pour l'instant",
+    "examples": "Exemples :",
+    "required": "Obligatoire",
+    "optional": "Optionnel",
+    "step": "Étape {current} sur {total}",
+    "actionStep": "Étape",
+    "completePlan": "Plan Complet",
+    "congratulations": "Félicitations !",
+    "planCompleted": "Votre Plan de Continuité d'Activité a été complété avec succès.",
+    "exportPdf": "Exporter Document",
+    "clearDraft": "Effacer le Brouillon",
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "confirmClear": "Êtes-vous sûr de vouloir effacer toutes les données et recommencer ? Cette action ne peut pas être annulée.",
+    "exportPDF": "Exporter Document",
+    "question": "Question",
+    "of": "sur",
+    "clearDraftConfirm": "Êtes-vous sûr de vouloir effacer votre brouillon ? Cette action ne peut pas être annulée.",
+    "yes": "Oui",
+    "no": "Non",
+    "planCompleteDescription": "Vous pouvez maintenant exporter votre plan en PDF ou continuer à affiner vos réponses.",
+    "needHelp": "Besoin d'aide ? Cet outil suit la méthodologie CARICHAM pour la planification de continuité d'activité.",
+    "automaticallySaved": "Votre progression est automatiquement sauvegardée",
+    "businessContinuityPlan": "Plan de Continuité d'Activité",
+    "saving": "Enregistrement...",
+    "saved": "Enregistré",
+    "saveFailed": "Échec de l'enregistrement",
+    "retrying": "Nouvelle tentative",
+    "saveNow": "Enregistrer Maintenant",
+    "retry": "Réessayer",
+    "lastSaved": "Dernière sauvegarde",
+    "unsavedChanges": "Modifications non sauvegardées",
+    "allSaved": "Tout sauvegardé",
+    "autoSaveTip": "Les modifications sont automatiquement sauvegardées toutes les 2 secondes",
+    "loadFailed": "Échec du chargement des données sauvegardées",
+    "industryProfile": "Profil d'Industrie",
+    "industry": "Industrie",
+    "location": "Emplacement",
+    "uploadFromExcel": "Télécharger depuis Excel",
+    "uploadExcelFile": "Télécharger un fichier Excel",
+    "uploadExcelDescription": "Téléchargez un fichier Excel (.xlsx ou .xls) contenant vos données.",
+    "expectedColumns": "Colonnes attendues",
+    "processing": "Traitement...",
+    "chooseExcelFile": "Choisir un fichier Excel",
+    "maximumFileSize": "Taille maximale du fichier : 5 Mo",
+    "uploadError": "Erreur de téléchargement",
+    "uploadSuccessful": "Téléchargement réussi",
+    "previewImportedData": "Aperçu des données importées",
+    "rows": "lignes",
+    "reviewDataBeforeImporting": "Vérifiez les données ci-dessous avant d'importer.",
+    "andMoreRows": "...et {count} lignes supplémentaires",
+    "importRows": "Importer {count} lignes",
+    "actions": "Actions",
+    "currentValue": "Valeur actuelle",
+    "typeAnswerHere": "Tapez votre réponse ici",
+    "addRow": "Ajouter une ligne",
+    "deleteRows": "Supprimer {count} lignes",
+    "noHazardsSelected": "Aucun danger sélectionné",
+    "selectHazardsPrompt": "Veuillez sélectionner des dangers à l'étape précédente pour créer votre matrice d'évaluation des risques",
+    "riskOverview": "Aperçu de l'évaluation des risques",
+    "assessmentProgress": "Progression de l'évaluation",
+    "completed": "terminé",
     "hazardSelection": "Sélection des Dangers",
     "riskAssessment": "Évaluation des Risques",
     "showAdvanced": "Afficher Outils Avancés",
@@ -63,129 +77,129 @@
     "advancedRiskMatrix": "Matrice de Risque Avancée",
     "advancedMatrixDescription": "Vue traditionnelle de matrice de risque pour analyse détaillée",
     "of": "de",
-      "riskMatrix": "Matrice de risque CARICHAM",
-      "severity": "GRAVITÉ",
-      "likelihood": "PROBABILITÉ",
-      "individualRiskAssessments": "Évaluations individuelles des risques",
-      "likelihoodAssessment": "Évaluation de la probabilité",
-      "severityAssessment": "Évaluation de la gravité",
-      "calculatedRiskLevel": "Niveau de risque calculé :",
-      "riskScore": "Score",
-      "riskScoreLabel": "Score de Risque",
-      "planningMeasures": "Mesures de planification",
-      "planningMeasuresPlaceholder": "Décrivez les mesures spécifiques que vous prendrez pour traiter ce risque...",
-      "planningMeasuresHelp": "Considérez les mesures de prévention, les procédures de réponse et les stratégies de récupération.",
-      "loadingRiskAssessment": "Chargement de l'Évaluation des Risques",
-      "analyzingRisks": "Analyse des risques pour votre entreprise...",
-      "noRisksLoaded": "Aucun Risque Chargé",
-      "riskAssessmentAutoLoaded": "L'évaluation des risques devrait se charger automatiquement depuis votre profil d'entreprise.",
-      "preFillAvailable": "Données pré-remplies disponibles",
-      "unknownBusiness": "Entreprise inconnue",
-      "unknownLocation": "Emplacement inconnu",
-      "noHazardsInPrefill": "Mais aucun danger trouvé dans les données pré-remplies. Cela pourrait indiquer un problème avec le calcul des risques.",
-      "noPreFillData": "Aucune donnée pré-remplie disponible",
-      "selectedHazards": "Dangers sélectionnés",
-      "likelihoodOccurrence": "Probabilité d'Occurrence (1-10)",
-      "fromLocationData": "Des données de localisation",
-      "impactSeverity": "Gravité de l'Impact (1-10)",
-      "businessImpact": "Impact commercial - peut ajuster",
-      "howBadlyAffect": "À quel point cela affecterait-il VOS opérations commerciales spécifiques ?",
-      "calculatedRiskScore": "Score de Risque Calculé",
-      "basedOn": "Basé sur votre entreprise {businessType} à {location}",
-      "progressLabel": "Progrès",
-      "smartAnalysisActive": "Analyse intelligente active - risques présélectionnés selon l'emplacement et le type d'entreprise",
-      "reviewYourRisks": "Examinez Votre Évaluation des Risques",
-      "reviewRisksDescription": "Selon votre emplacement et profil commercial, nous avons identifié et catégorisé les risques potentiels. Examinez chaque risque et ajustez la gravité de l'impact selon vos besoins pour votre situation spécifique.",
-      "criticalPriorityLabel": "Critique",
-      "criticalPriorityDescription": "Nécessite une attention immédiate",
-      "importantLabel": "Important",
-      "importantDescription": "Doit être traité",
-      "optionalLabel": "Optionnel",
-      "optionalDescription": "Ajouter si pertinent",
-      "criticalPriorityRisks": "Risques de Priorité Critique",
-      "highestThreatLevel": "Niveau de menace le plus élevé - nécessite une attention immédiate",
-      "importantRisks": "Risques Importants à Préparer",
-      "significantRisks": "Risques significatifs nécessitant des mesures de préparation",
-      "otherAvailableRisks": "Autres Risques Disponibles",
-      "lowerPriorityRisks": "Priorité inférieure - développer pour voir et ajouter si pertinent",
-      "clickToCollapse": "Cliquer pour réduire",
-      "availableCount": "disponibles",
-      "availableRisksNote": "Ces risques ont une priorité calculée inférieure pour votre type d'entreprise et emplacement spécifiques. Ajoutez-les uniquement si vous avez des préoccupations ou vulnérabilités spécifiques non capturées dans l'évaluation standard.",
-      "assessmentSummary": "Résumé de l'Évaluation",
-      "selectedRisksCount": "Risques Sélectionnés",
-      "fullyAssessed": "Entièrement Évalué",
-      "highPriorityCount": "Haute Priorité",
-      "highPriorityIdentified": "Risques de Haute Priorité Identifiés",
-      "highPriorityDescription": "Vous avez {count} risque(s) de haute priorité nécessitant une attention immédiate",
-      "completeAssessmentNote": "Complétez l'évaluation en notant tous les risques sélectionnés, puis procédez à la création de plans d'action pour vos risques identifiés.",
-      "autoCalculated": "Calculé automatiquement",
-      "whyRiskMatters": "Pourquoi ce risque est important",
-      "howRiskCalculated": "Comment Ce Risque a Été Calculé",
-      "notSignificantInLocation": "Non significatif à {location}. Ajoutez si applicable à votre situation spécifique.",
-      "basedOnParishData": "Basé sur les données de risque paroissial pour {parish}",
-      "preFilledFromLocation": "Pré-rempli depuis votre emplacement",
-      "basedOnYourLocation": "Basé sur votre emplacement: {location}",
-      "preFilled": "Pré-rempli",
-      "preFilledForYou": "Cette valeur a été calculée automatiquement selon votre emplacement commercial et type",
-      "personalizedForYourBusiness": "Personnalisé pour votre entreprise",
-      "yourRiskLevel": "Votre Niveau de Risque",
-      "additionalFactors": "Facteurs supplémentaires qui augmentent votre risque",
-      "basedOnAdminData": "Basé sur les données administratives",
-      "likelihoodRanges": {
-        "rare": "Rare",
-        "possible": "Possible",
-        "likely": "Probable",
-        "certain": "Certain"
-      },
-      "severityRanges": {
-        "minor": "Mineur",
-        "moderate": "Modéré",
-        "major": "Majeur",
-        "severe": "Sévère"
-      },
-      "assessmentSummary": "Résumé de l'évaluation et recommandations",
-      "extremePriority": "Priorité extrême :",
-      "extremePriorityText": "Vous avez {count} risque(s) extrême(s) qui nécessitent une attention immédiate et des stratégies d'atténuation complètes.",
-      "highPriority": "Priorité élevée :",
-      "highPriorityText": "Vous avez {count} risque(s) élevé(s) qui devraient être traités avec des mesures de planification robustes.",
-      "nextSteps": "Prochaines étapes :",
-      "nextStepsText": "Concentrez-vous d'abord sur le développement de stratégies complètes pour vos éléments à risque le plus élevé. Considérez les mesures de planification que vous avez identifiées et assurez-vous qu'elles sont réalistes et réalisables.",
-      "ongoingProcess": "Rappelez-vous que l'évaluation des risques est un processus continu. Révisez et mettez à jour ces évaluations régulièrement, surtout lorsque votre environnement commercial change.",
-      "highlyRecommended": "HAUTEMENT RECOMMANDÉ",
-      "recommendedRisk": "RECOMMANDÉ",
-      "riskRequiresAttention": "Ce risque nécessite votre attention",
-      "criticalPriorityForPlan": "Priorité critique pour votre plan de continuité d'activité",
-      "importantForStrategy": "Important à inclure dans votre stratégie de préparation",
-      "locationRiskLabel": "Risque de Localisation",
-      "businessImpactLabel": "Impact Commercial",
-      "baseScoreLabel": "Score de Base",
-      "multipliersApplied": "Multiplicateurs Appliqués (de votre profil d'entreprise)",
-      "finalScoreLabel": "Score Final",
-      "noMultipliersApplied": "aucun multiplicateur appliqué",
-      "fromAdminData": "des données administratives",
-      "veryUnlikely": "Très improbable (1)",
-      "veryUnlikelyDesc": "Ne se produira que dans des circonstances exceptionnelles",
-      "unlikely": "Improbable (2)",
-      "unlikelyDesc": "Peu susceptible de se produire dans les 3 prochaines années",
-      "likely": "Probable (3)",
-      "likelyDesc": "Susceptible de se produire dans les 2 prochaines années",
-      "veryLikely": "Très probable (4)",
-      "veryLikelyDesc": "Très susceptible de se produire dans la prochaine année",
-      "insignificant": "Insignifiant (1)",
-      "insignificantDesc": "Aucune mesure spéciale requise",
-      "minor": "Mineur (2)",
-      "minorDesc": "Perturbations courtes, dommages à court terme",
-      "serious": "Grave (3)",
-      "seriousDesc": "Quelques dommages à l'infrastructure, impact à moyen terme",
-      "major": "Majeur (4)",
-      "majorDesc": "Dommages à grande échelle, impact commercial à long terme",
-      "lowRisk": "Faible",
-      "mediumRisk": "Moyen",
-      "highRisk": "Élevé",
-      "extremeRisk": "Extrême",
-      "riskText": "Risque",
-      "incomplete": "Incomplet",
-          "assessments": "Évaluations",
+    "riskMatrix": "Matrice de risque CARICHAM",
+    "severity": "GRAVITÉ",
+    "likelihood": "PROBABILITÉ",
+    "individualRiskAssessments": "Évaluations individuelles des risques",
+    "likelihoodAssessment": "Évaluation de la probabilité",
+    "severityAssessment": "Évaluation de la gravité",
+    "calculatedRiskLevel": "Niveau de risque calculé :",
+    "riskScore": "Score",
+    "riskScoreLabel": "Score de Risque",
+    "planningMeasures": "Mesures de planification",
+    "planningMeasuresPlaceholder": "Décrivez les mesures spécifiques que vous prendrez pour traiter ce risque...",
+    "planningMeasuresHelp": "Considérez les mesures de prévention, les procédures de réponse et les stratégies de récupération.",
+    "loadingRiskAssessment": "Chargement de l'Évaluation des Risques",
+    "analyzingRisks": "Analyse des risques pour votre entreprise...",
+    "noRisksLoaded": "Aucun Risque Chargé",
+    "riskAssessmentAutoLoaded": "L'évaluation des risques devrait se charger automatiquement depuis votre profil d'entreprise.",
+    "preFillAvailable": "Données pré-remplies disponibles",
+    "unknownBusiness": "Entreprise inconnue",
+    "unknownLocation": "Emplacement inconnu",
+    "noHazardsInPrefill": "Mais aucun danger trouvé dans les données pré-remplies. Cela pourrait indiquer un problème avec le calcul des risques.",
+    "noPreFillData": "Aucune donnée pré-remplie disponible",
+    "selectedHazards": "Dangers sélectionnés",
+    "likelihoodOccurrence": "Probabilité d'Occurrence (1-10)",
+    "fromLocationData": "Des données de localisation",
+    "impactSeverity": "Gravité de l'Impact (1-10)",
+    "businessImpact": "Impact commercial - peut ajuster",
+    "howBadlyAffect": "À quel point cela affecterait-il VOS opérations commerciales spécifiques ?",
+    "calculatedRiskScore": "Score de Risque Calculé",
+    "basedOn": "Basé sur votre entreprise {businessType} à {location}",
+    "progressLabel": "Progrès",
+    "smartAnalysisActive": "Analyse intelligente active - risques présélectionnés selon l'emplacement et le type d'entreprise",
+    "reviewYourRisks": "Examinez Votre Évaluation des Risques",
+    "reviewRisksDescription": "Selon votre emplacement et profil commercial, nous avons identifié et catégorisé les risques potentiels. Examinez chaque risque et ajustez la gravité de l'impact selon vos besoins pour votre situation spécifique.",
+    "criticalPriorityLabel": "Critique",
+    "criticalPriorityDescription": "Nécessite une attention immédiate",
+    "importantLabel": "Important",
+    "importantDescription": "Doit être traité",
+    "optionalLabel": "Optionnel",
+    "optionalDescription": "Ajouter si pertinent",
+    "criticalPriorityRisks": "Risques de Priorité Critique",
+    "highestThreatLevel": "Niveau de menace le plus élevé - nécessite une attention immédiate",
+    "importantRisks": "Risques Importants à Préparer",
+    "significantRisks": "Risques significatifs nécessitant des mesures de préparation",
+    "otherAvailableRisks": "Autres Risques Disponibles",
+    "lowerPriorityRisks": "Priorité inférieure - développer pour voir et ajouter si pertinent",
+    "clickToCollapse": "Cliquer pour réduire",
+    "availableCount": "disponibles",
+    "availableRisksNote": "Ces risques ont une priorité calculée inférieure pour votre type d'entreprise et emplacement spécifiques. Ajoutez-les uniquement si vous avez des préoccupations ou vulnérabilités spécifiques non capturées dans l'évaluation standard.",
+    "assessmentSummary": "Résumé de l'Évaluation",
+    "selectedRisksCount": "Risques Sélectionnés",
+    "fullyAssessed": "Entièrement Évalué",
+    "highPriorityCount": "Haute Priorité",
+    "highPriorityIdentified": "Risques de Haute Priorité Identifiés",
+    "highPriorityDescription": "Vous avez {count} risque(s) de haute priorité nécessitant une attention immédiate",
+    "completeAssessmentNote": "Complétez l'évaluation en notant tous les risques sélectionnés, puis procédez à la création de plans d'action pour vos risques identifiés.",
+    "autoCalculated": "Calculé automatiquement",
+    "whyRiskMatters": "Pourquoi ce risque est important",
+    "howRiskCalculated": "Comment Ce Risque a Été Calculé",
+    "notSignificantInLocation": "Non significatif à {location}. Ajoutez si applicable à votre situation spécifique.",
+    "basedOnParishData": "Basé sur les données de risque paroissial pour {parish}",
+    "preFilledFromLocation": "Pré-rempli depuis votre emplacement",
+    "basedOnYourLocation": "Basé sur votre emplacement: {location}",
+    "preFilled": "Pré-rempli",
+    "preFilledForYou": "Cette valeur a été calculée automatiquement selon votre emplacement commercial et type",
+    "personalizedForYourBusiness": "Personnalisé pour votre entreprise",
+    "yourRiskLevel": "Votre Niveau de Risque",
+    "additionalFactors": "Facteurs supplémentaires qui augmentent votre risque",
+    "basedOnAdminData": "Basé sur les données administratives",
+    "likelihoodRanges": {
+      "rare": "Rare",
+      "possible": "Possible",
+      "likely": "Probable",
+      "certain": "Certain"
+    },
+    "severityRanges": {
+      "minor": "Mineur",
+      "moderate": "Modéré",
+      "major": "Majeur",
+      "severe": "Sévère"
+    },
+    "assessmentSummary": "Résumé de l'évaluation et recommandations",
+    "extremePriority": "Priorité extrême :",
+    "extremePriorityText": "Vous avez {count} risque(s) extrême(s) qui nécessitent une attention immédiate et des stratégies d'atténuation complètes.",
+    "highPriority": "Priorité élevée :",
+    "highPriorityText": "Vous avez {count} risque(s) élevé(s) qui devraient être traités avec des mesures de planification robustes.",
+    "nextSteps": "Prochaines étapes :",
+    "nextStepsText": "Concentrez-vous d'abord sur le développement de stratégies complètes pour vos éléments à risque le plus élevé. Considérez les mesures de planification que vous avez identifiées et assurez-vous qu'elles sont réalistes et réalisables.",
+    "ongoingProcess": "Rappelez-vous que l'évaluation des risques est un processus continu. Révisez et mettez à jour ces évaluations régulièrement, surtout lorsque votre environnement commercial change.",
+    "highlyRecommended": "HAUTEMENT RECOMMANDÉ",
+    "recommendedRisk": "RECOMMANDÉ",
+    "riskRequiresAttention": "Ce risque nécessite votre attention",
+    "criticalPriorityForPlan": "Priorité critique pour votre plan de continuité d'activité",
+    "importantForStrategy": "Important à inclure dans votre stratégie de préparation",
+    "locationRiskLabel": "Risque de Localisation",
+    "businessImpactLabel": "Impact Commercial",
+    "baseScoreLabel": "Score de Base",
+    "multipliersApplied": "Multiplicateurs Appliqués (de votre profil d'entreprise)",
+    "finalScoreLabel": "Score Final",
+    "noMultipliersApplied": "aucun multiplicateur appliqué",
+    "fromAdminData": "des données administratives",
+    "veryUnlikely": "Très improbable (1)",
+    "veryUnlikelyDesc": "Ne se produira que dans des circonstances exceptionnelles",
+    "unlikely": "Improbable (2)",
+    "unlikelyDesc": "Peu susceptible de se produire dans les 3 prochaines années",
+    "likely": "Probable (3)",
+    "likelyDesc": "Susceptible de se produire dans les 2 prochaines années",
+    "veryLikely": "Très probable (4)",
+    "veryLikelyDesc": "Très susceptible de se produire dans la prochaine année",
+    "insignificant": "Insignifiant (1)",
+    "insignificantDesc": "Aucune mesure spéciale requise",
+    "minor": "Mineur (2)",
+    "minorDesc": "Perturbations courtes, dommages à court terme",
+    "serious": "Grave (3)",
+    "seriousDesc": "Quelques dommages à l'infrastructure, impact à moyen terme",
+    "major": "Majeur (4)",
+    "majorDesc": "Dommages à grande échelle, impact commercial à long terme",
+    "lowRisk": "Faible",
+    "mediumRisk": "Moyen",
+    "highRisk": "Élevé",
+    "extremeRisk": "Extrême",
+    "riskText": "Risque",
+    "incomplete": "Incomplet",
+    "assessments": "Évaluations",
     "deselectAll": "Désélectionner Tout",
     "expand": "Développer",
     "collapse": "Réduire",
@@ -425,352 +439,411 @@
     "andMoreRows": "... et {count} lignes de plus",
     "importRows": "Importer {count} lignes",
     "orEnterManually": "OU saisir manuellement les données"
+  },
+  "steps": {
+    "planInformation": {
+      "title": "Informations du Plan",
+      "description": "Commençons par recueillir quelques informations de base sur votre entreprise et ce plan de continuité.",
+      "inputs": {
+        "planName": {
+          "label": "Nom du Plan",
+          "prompt": "Comment aimeriez-vous nommer ce plan de continuité d'activité ?",
+          "examples": [
+            "Plan de Continuité d'Activité du Restaurant Caribbean Breeze",
+            "Plan de Réponse d'Urgence d'Island Tech Solutions",
+            "Plan de Récupération après Sinistre de Paradise Tours & Travel"
+          ]
+        },
+        "businessName": {
+          "label": "Nom de l'Entreprise",
+          "prompt": "Quel est le nom officiel de votre entreprise ?",
+          "examples": [
+            "Caribbean Breeze Restaurant Ltd.",
+            "Island Tech Solutions",
+            "Paradise Tours & Travel Co."
+          ]
+        },
+        "businessAddress": {
+          "label": "Adresse de l'Entreprise",
+          "prompt": "Quelle est l'adresse physique de votre établissement principal ?",
+          "examples": [
+            "123 Harbor View Drive, Montego Bay, St. James, Jamaïque",
+            "45 Technology Park, Kingston 10, Jamaïque",
+            "Ocean Front Plaza, Unité 12, Negril, Westmoreland, Jamaïque"
+          ]
+        },
+        "businessDescription": {
+          "label": "Description de l'Entreprise",
+          "prompt": "Fournissez une brève description de ce que fait votre entreprise et qui vous servez.",
+          "examples": [
+            "Restaurant familial servant une cuisine caribéenne authentique aux habitants et aux touristes, établi en 2015, 25 employés, spécialisé dans les fruits de mer et les plats jamaïcains traditionnels",
+            "Entreprise de conseil technologique fournissant un support informatique et des services de développement logiciel aux petites et moyennes entreprises à travers la Jamaïque, 12 employés, fondée en 2018",
+            "Opérateur de tours offrant des excursions culturelles et d'aventure à travers la Jamaïque, servant les touristes internationaux et les passagers de navires de croisière, 8 employés à temps plein plus des guides saisonniers"
+          ]
+        },
+        "keyPersonnel": {
+          "label": "Personnel Clé",
+          "prompt": "Qui sont les personnes clés responsables des opérations commerciales et de la réponse d'urgence ?",
+          "examples": [
+            "Propriétaire/Gérant : John Smith (876-555-0123), Gérant Adjoint : Maria Rodriguez (876-555-0124), Chef Cuisinier : David Williams (876-555-0125)",
+            "PDG : Sarah Johnson (876-555-0130), Directeur IT : Michael Brown (876-555-0131), Directeur des Opérations : Lisa Davis (876-555-0132)",
+            "Propriétaire : Robert Taylor (876-555-0140), Coordinateur de Tours : Angela Thompson (876-555-0141), Agent de Sécurité : Marcus Clarke (876-555-0142)"
+          ]
+        },
+        "planPreparedBy": {
+          "label": "Plan Préparé Par",
+          "prompt": "Qui prépare ce plan de continuité d'activité ?",
+          "examples": [
+            "John Smith, Propriétaire d'Entreprise, avec l'assistance du bureau local de gestion des urgences",
+            "Comité de Planification d'Urgence : Sarah Johnson (PDG), Michael Brown (Directeur IT), Lisa Davis (Opérations)",
+            "Robert Taylor (Propriétaire) et Marcus Clarke (Agent de Sécurité)"
+          ]
+        },
+        "preparationDate": {
+          "label": "Date de Préparation",
+          "prompt": "Quand ce plan est-il préparé ?",
+          "examples": [
+            "15 janvier 2024",
+            "Mars 2024",
+            "Préparé pendant la Saison des Ouragans 2024"
+          ]
+        },
+        "companyName": {
+          "label": "Nom de l'Entreprise",
+          "prompt": "Quel est le nom de votre entreprise ?",
+          "examples": [
+            "Tienda ABC",
+            "Delicias du Caraïbe",
+            "Services Insulaires S.A."
+          ]
+        },
+        "planManager": {
+          "label": "Responsable du Plan",
+          "prompt": "Qui est la personne responsable de ce plan de continuité d'activité ? Cette personne doit avoir l'autorité pour prendre des décisions.",
+          "examples": [
+            "Jean Perez, Propriétaire",
+            "Maria Rodriguez, Directrice des Opérations",
+            "David Thompson, Directeur Général"
+          ]
+        },
+        "alternateManager": {
+          "label": "Responsable Alternatif (Optionnel)",
+          "prompt": "Qui est la personne alternative responsable si le responsable principal n'est pas disponible ? Ce champ est optionnel - si vous n'avez pas de responsable alternatif, vous pouvez le laisser vide ou écrire \"N/A\". Considérez désigner un employé de confiance, un membre de la famille ou un partenaire commercial qui peut prendre des décisions de base pendant les urgences.",
+          "examples": [
+            "Sara Johnson, Directrice Adjointe",
+            "Michel Brown, Superviseur",
+            "Lisa Williams, Personnel Senior",
+            "N/A - Se fiera uniquement au responsable principal",
+            "Désignera quand l'entreprise grandira",
+            "Contact d'urgence : Association commerciale locale"
+          ]
+        },
+        "physicalPlanLocation": {
+          "label": "Emplacement Physique du Plan",
+          "prompt": "Où seront stockées les copies physiques de ce plan de continuité d'activité ? Choisissez des emplacements sécurisés et accessibles auxquels plusieurs personnes peuvent accéder.",
+          "examples": [
+            "Armoire ignifuge dans le bureau du responsable",
+            "Coffre-fort dans la zone de réception",
+            "Classeur verrouillé dans le bureau d'administration",
+            "Coffre-fort à la banque locale"
+          ]
+        },
+        "digitalPlanLocation": {
+          "label": "Emplacement Numérique du Plan",
+          "prompt": "Où seront stockées les copies numériques ? Ceci est optionnel - si vous n'avez pas d'internet fiable ou de stockage numérique, vous pouvez omettre ce champ.",
+          "examples": [
+            "Serveur de l'entreprise avec sauvegardes quotidiennes",
+            "Google Drive partagé avec l'équipe de gestion",
+            "Stockage cloud avec sauvegarde sur disque externe",
+            "Copies par email envoyées au personnel clé"
+          ]
+        },
+        "planVersion": {
+          "label": "Version du Plan",
+          "prompt": "Quel numéro de version ce plan devrait-il avoir ? Commencez par 1.0 pour votre premier plan.",
+          "examples": [
+            "1.0",
+            "1.1",
+            "2.0"
+          ]
+        },
+        "nextReviewDate": {
+          "label": "Prochaine Date de Révision",
+          "prompt": "Quand ce plan devrait-il être révisé ? Considérez vos cycles d'affaires et votre environnement de risques.",
+          "examples": [
+            "Janvier 2026",
+            "Juin 2025",
+            "Décembre 2025"
+          ]
+        }
+      }
     },
-    "steps": {
-      "planInformation": {
-        "title": "Informations du Plan",
-        "description": "Commençons par recueillir quelques informations de base sur votre entreprise et ce plan de continuité.",
-        "inputs": {
-          "planName": {
-            "label": "Nom du Plan",
-            "prompt": "Comment aimeriez-vous nommer ce plan de continuité d'activité ?",
-            "examples": [
-              "Plan de Continuité d'Activité du Restaurant Caribbean Breeze",
-              "Plan de Réponse d'Urgence d'Island Tech Solutions",
-              "Plan de Récupération après Sinistre de Paradise Tours & Travel"
-            ]
-          },
-          "businessName": {
-            "label": "Nom de l'Entreprise",
-            "prompt": "Quel est le nom officiel de votre entreprise ?",
-            "examples": [
-              "Caribbean Breeze Restaurant Ltd.",
-              "Island Tech Solutions",
-              "Paradise Tours & Travel Co."
-            ]
-          },
-          "businessAddress": {
-            "label": "Adresse de l'Entreprise",
-            "prompt": "Quelle est l'adresse physique de votre établissement principal ?",
-            "examples": [
-              "123 Harbor View Drive, Montego Bay, St. James, Jamaïque",
-              "45 Technology Park, Kingston 10, Jamaïque",
-              "Ocean Front Plaza, Unité 12, Negril, Westmoreland, Jamaïque"
-            ]
-          },
-          "businessDescription": {
-            "label": "Description de l'Entreprise",
-            "prompt": "Fournissez une brève description de ce que fait votre entreprise et qui vous servez.",
-            "examples": [
-              "Restaurant familial servant une cuisine caribéenne authentique aux habitants et aux touristes, établi en 2015, 25 employés, spécialisé dans les fruits de mer et les plats jamaïcains traditionnels",
-              "Entreprise de conseil technologique fournissant un support informatique et des services de développement logiciel aux petites et moyennes entreprises à travers la Jamaïque, 12 employés, fondée en 2018",
-              "Opérateur de tours offrant des excursions culturelles et d'aventure à travers la Jamaïque, servant les touristes internationaux et les passagers de navires de croisière, 8 employés à temps plein plus des guides saisonniers"
-            ]
-          },
-          "keyPersonnel": {
-            "label": "Personnel Clé",
-            "prompt": "Qui sont les personnes clés responsables des opérations commerciales et de la réponse d'urgence ?",
-            "examples": [
-              "Propriétaire/Gérant : John Smith (876-555-0123), Gérant Adjoint : Maria Rodriguez (876-555-0124), Chef Cuisinier : David Williams (876-555-0125)",
-              "PDG : Sarah Johnson (876-555-0130), Directeur IT : Michael Brown (876-555-0131), Directeur des Opérations : Lisa Davis (876-555-0132)",
-              "Propriétaire : Robert Taylor (876-555-0140), Coordinateur de Tours : Angela Thompson (876-555-0141), Agent de Sécurité : Marcus Clarke (876-555-0142)"
-            ]
-          },
-          "planPreparedBy": {
-            "label": "Plan Préparé Par",
-            "prompt": "Qui prépare ce plan de continuité d'activité ?",
-            "examples": [
-              "John Smith, Propriétaire d'Entreprise, avec l'assistance du bureau local de gestion des urgences",
-              "Comité de Planification d'Urgence : Sarah Johnson (PDG), Michael Brown (Directeur IT), Lisa Davis (Opérations)",
-              "Robert Taylor (Propriétaire) et Marcus Clarke (Agent de Sécurité)"
-            ]
-          },
-          "preparationDate": {
-            "label": "Date de Préparation",
-            "prompt": "Quand ce plan est-il préparé ?",
-            "examples": [
-              "15 janvier 2024",
-              "Mars 2024",
-              "Préparé pendant la Saison des Ouragans 2024"
-            ]
-          },
-          "companyName": {
-            "label": "Nom de l'Entreprise",
-            "prompt": "Quel est le nom de votre entreprise ?",
-            "examples": [
-              "Tienda ABC",
-              "Delicias du Caraïbe",
-              "Services Insulaires S.A."
-            ]
-          },
-          "planManager": {
-            "label": "Responsable du Plan",
-            "prompt": "Qui est la personne responsable de ce plan de continuité d'activité ? Cette personne doit avoir l'autorité pour prendre des décisions.",
-            "examples": [
-              "Jean Perez, Propriétaire",
-              "Maria Rodriguez, Directrice des Opérations",
-              "David Thompson, Directeur Général"
-            ]
-          },
-          "alternateManager": {
-            "label": "Responsable Alternatif (Optionnel)",
-            "prompt": "Qui est la personne alternative responsable si le responsable principal n'est pas disponible ? Ce champ est optionnel - si vous n'avez pas de responsable alternatif, vous pouvez le laisser vide ou écrire \"N/A\". Considérez désigner un employé de confiance, un membre de la famille ou un partenaire commercial qui peut prendre des décisions de base pendant les urgences.",
-            "examples": [
-              "Sara Johnson, Directrice Adjointe",
-              "Michel Brown, Superviseur",
-              "Lisa Williams, Personnel Senior",
-              "N/A - Se fiera uniquement au responsable principal",
-              "Désignera quand l'entreprise grandira",
-              "Contact d'urgence : Association commerciale locale"
-            ]
-          },
-          "physicalPlanLocation": {
-            "label": "Emplacement Physique du Plan",
-            "prompt": "Où seront stockées les copies physiques de ce plan de continuité d'activité ? Choisissez des emplacements sécurisés et accessibles auxquels plusieurs personnes peuvent accéder.",
-            "examples": [
-              "Armoire ignifuge dans le bureau du responsable",
-              "Coffre-fort dans la zone de réception",
-              "Classeur verrouillé dans le bureau d'administration",
-              "Coffre-fort à la banque locale"
-            ]
-          },
-          "digitalPlanLocation": {
-            "label": "Emplacement Numérique du Plan",
-            "prompt": "Où seront stockées les copies numériques ? Ceci est optionnel - si vous n'avez pas d'internet fiable ou de stockage numérique, vous pouvez omettre ce champ.",
-            "examples": [
-              "Serveur de l'entreprise avec sauvegardes quotidiennes",
-              "Google Drive partagé avec l'équipe de gestion",
-              "Stockage cloud avec sauvegarde sur disque externe",
-              "Copies par email envoyées au personnel clé"
-            ]
-          },
-          "planVersion": {
-            "label": "Version du Plan",
-            "prompt": "Quel numéro de version ce plan devrait-il avoir ? Commencez par 1.0 pour votre premier plan.",
-            "examples": ["1.0", "1.1", "2.0"]
-          },
-          "nextReviewDate": {
-            "label": "Prochaine Date de Révision",
-            "prompt": "Quand ce plan devrait-il être révisé ? Considérez vos cycles d'affaires et votre environnement de risques.",
-            "examples": ["Janvier 2026", "Juin 2025", "Décembre 2025"]
-          }
+    "businessOverview": {
+      "title": "Aperçu de l'Entreprise",
+      "description": "Aidez-nous à comprendre vos opérations commerciales, dépendances et ce qui fait votre succès.",
+      "inputs": {
+        "businessHours": {
+          "label": "Heures d'Ouverture",
+          "prompt": "Quand votre entreprise est-elle normalement ouverte ? Incluez les variations saisonnières si applicable.",
+          "examples": [
+            "Lundi-Samedi 11h00 - 22h00, Dimanche 12h00 - 21h00. Heures prolongées pendant la saison des navires de croisière (Novembre-Avril).",
+            "Lundi-Vendredi 8h00 - 18h00, Support d'urgence disponible 24h/7j pour les clients existants",
+            "Tours quotidiens 8h00 - 18h00 toute l'année, avec tours supplémentaires au coucher du soleil pendant la haute saison (Décembre-Avril)"
+          ]
+        },
+        "peakSeasons": {
+          "label": "Saisons de Pointe",
+          "prompt": "Quand sont vos périodes les plus chargées de l'année ? Comment cela affecte-t-il vos opérations ?",
+          "examples": [
+            "Saison touristique (Décembre-Avril) : augmentation de 200% des clients, nécessite du personnel supplémentaire et des heures prolongées. Saison des ouragans (Juin-Novembre) : activité plus lente mais nécessite une préparation d'urgence supplémentaire.",
+            "Fin d'année fiscale (Mars-Mai) : augmentation de 50% des projets clients et demandes de support. La saison des ouragans nécessite des sauvegardes de données spéciales et des préparations pour le travail à distance.",
+            "Haute saison touristique (Décembre-Avril) et vacances d'été (Juin-Août) : tours complets, personnel au maximum, revenus les plus élevés. Saison des ouragans (Juin-Novembre) : réservations réduites, annulations accrues."
+          ]
+        },
+        "criticalSuppliers": {
+          "label": "Fournisseurs Critiques",
+          "prompt": "Qui sont vos fournisseurs ou prestataires de services les plus importants ? Que se passerait-il s'ils étaient perturbés ?",
+          "examples": [
+            "Fournisseurs alimentaires : Caribbean Foods Ltd (produits frais quotidiens), Island Seafood Co (livraison de poisson 3x/semaine), Island Beverages (hebdomadaire). Les pannes de courant affectent la sécurité alimentaire ; la perturbation des fournisseurs signifie des changements de menu ou la fermeture.",
+            "Fournisseur de services Internet : Flow Jamaica (critique pour toutes les opérations), Microsoft Office 365 (email et productivité), Amazon Web Services (hébergement de données clients). Toute perturbation arrête la plupart des opérations commerciales.",
+            "Partenaires de transport terrestre : Island Express Tours (flotte de véhicules), Paradise Car Rentals (véhicules de secours), divers hôtels (lieux de prise en charge). L'indisponibilité des véhicules limite la capacité des tours."
+          ]
+        },
+        "customerBase": {
+          "label": "Base de Clientèle",
+          "prompt": "Qui sont vos principaux clients ? Comment vous trouvent-ils et vous contactent-ils ?",
+          "examples": [
+            "60% touristes (sans rendez-vous, références d'hôtels, passagers de croisière), 30% habitants (clients fidèles, bouche-à-oreille), 10% événements spéciaux (mariages, entreprises). Contact via téléphone, email, médias sociaux, sans rendez-vous.",
+            "Petites entreprises (20-100 employés) à travers la Jamaïque : 40% région de Kingston, 35% autres paroisses, 25% clients à distance. Contact via site web, références, médias sociaux, événements de l'industrie.",
+            "Touristes internationaux : 70% Amérique du Nord, 20% Europe, 10% autres Caraïbes. Réservations via site web, agents de voyage, concierges d'hôtels, partenariats avec navires de croisière."
+          ]
+        },
+        "revenueStreams": {
+          "label": "Sources de Revenus",
+          "prompt": "Quelles sont vos principales sources de revenus ? Lesquelles sont les plus critiques ?",
+          "examples": [
+            "Ventes alimentaires (70% - critique), ventes de boissons (20% - important), services traiteur (10% - supplémentaire). La perturbation des ventes alimentaires menacerait la survie de l'entreprise.",
+            "Contrats de support IT (60% - critique), projets de développement logiciel (25% - important), services de formation (15% - supplémentaire). La perte des contrats de support nécessiterait une action immédiate.",
+            "Tours réguliers (50% - critique), tours personnalisés/privés (30% - important), services de transport (20% - supplémentaire). La perturbation des tours réguliers impacterait significativement les revenus."
+          ]
+        },
+        "keyAssets": {
+          "label": "Actifs Clés",
+          "prompt": "Quels sont vos actifs physiques, équipements ou systèmes les plus importants ?",
+          "examples": [
+            "Équipement de cuisine (50 000$), systèmes de réfrigération (15 000$), système de caisse et ordinateurs (8 000$), mobilier et aménagements (20 000$), générateur (5 000$). La panne de l'équipement de cuisine arrête la production alimentaire.",
+            "Équipement serveur (25 000$), ordinateurs employés (15 000$), licences logicielles spécialisées (10 000$), infrastructure réseau (8 000$). La panne du serveur arrête tous les services clients.",
+            "Flotte de véhicules (200 000$), ordinateurs de bureau (10 000$), équipement de communication (5 000$), équipement de sécurité (8 000$). La panne de véhicule réduit la capacité des tours."
+          ]
+        },
+        "businessLicense": {
+          "label": "Numéro de Licence Commerciale",
+          "prompt": "Quel est votre numéro de licence commerciale ? Ceci se trouve généralement sur vos documents d'enregistrement d'entreprise.",
+          "examples": [
+            "LC-12345",
+            "REG-2023-789",
+            "LIC-456789"
+          ]
+        },
+        "businessPurpose": {
+          "label": "But de l'Entreprise",
+          "prompt": "Quel est le but principal de votre entreprise ? Pensez à pourquoi vous avez créé cette entreprise et quel problème elle résout pour vos clients.",
+          "examples": [
+            "Fournir des produits locaux frais à la communauté de St. George's",
+            "Offrir des services de réparation de maison abordables à la Barbade",
+            "Créer une cuisine caribéenne authentique pour les touristes et les locaux à Montego Bay"
+          ]
+        },
+        "productsAndServices": {
+          "label": "Produits et Services",
+          "prompt": "Quels produits et services fournissez-vous ? Qu'est-ce qui rend votre entreprise spéciale ou unique ?",
+          "examples": [
+            "Nous vendons des fruits, légumes et épices locaux frais. Notre spécialité est la sauce piquante maison faite avec des piments locaux.",
+            "Nous fournissons des services de plomberie et d'électricité. Notre particularité est notre service d'urgence 24/7 et les réparations le jour même.",
+            "Nous proposons une cuisine caribéenne authentique avec une touche moderne. Notre spécialité est notre recette familiale de poulet jerk transmise depuis trois générations."
+          ]
+        },
+        "serviceDeliveryMethods": {
+          "label": "Méthodes de Livraison de Service",
+          "prompt": "Comment et où fournissez-vous vos produits et services ? Considérez votre emplacement physique, vos méthodes de livraison et toute présence en ligne.",
+          "examples": [
+            "Magasin physique au centre-ville de Kingston avec livraison dans les paroisses voisines. Les clients peuvent commander via notre site web ou WhatsApp.",
+            "Nous opérons depuis notre atelier mais fournissons des services chez les clients. Nous avons une camionnette de service mobile pour les appels d'urgence.",
+            "Restaurant à Bridgetown avec plats à emporter et livraison. Nous proposons également un service traiteur pour les événements et avons un food truck pour les festivals."
+          ]
+        },
+        "operatingHours": {
+          "label": "Heures d'Ouverture",
+          "prompt": "Quelles sont vos heures et jours d'ouverture ? Incluez toute variation saisonnière ou horaire spécial.",
+          "examples": [
+            "Lundi à samedi, 8h à 18h. Fermé les dimanches et jours fériés. Horaires prolongés pendant la saison du Carnaval.",
+            "24/7 pour les services d'urgence. Heures normales du lundi au vendredi, 9h à 17h.",
+            "Mardi à dimanche, 11h à 22h. Horaires prolongés pendant la saison touristique (décembre à avril)."
+          ]
+        },
+        "keyPersonnel": {
+          "label": "Personnel Clé Impliqué",
+          "prompt": "Qui sont les personnes clés impliquées dans la gestion de votre entreprise ? Incluez les employés, fournisseurs clés et sous-traitants.",
+          "examples": [
+            "3 employés à temps plein, 2 à temps partiel, fournisseur principal (Caribbean Foods Ltd), sous-traitant de livraison",
+            "Propriétaire-opérateur, 1 assistant, apprenti électricien, fournisseur régulier de pièces (Island Hardware)",
+            "Chef principal, 2 cuisiniers, 3 serveurs, gérant, agriculteurs locaux pour les produits, fournisseur de fruits de mer"
+          ]
+        },
+        "minimumResources": {
+          "label": "Ressources Minimales Nécessaires",
+          "prompt": "Quelles sont les ressources minimales absolues (personnel, équipement, dossiers) nécessaires pour maintenir votre entreprise en activité ?",
+          "examples": [
+            "1 caissier, caisse enregistreuse, réfrigération pour les denrées périssables, inventaire de base, dossiers de paiement des clients",
+            "1 technicien qualifié, kit d'outils de base, fourgonnette de travail, liste de contacts clients, documents de licence",
+            "1 cuisinier, équipement de cuisine de base, ingrédients principaux du menu, places pour 20 clients, certificats de sécurité alimentaire"
+          ]
+        },
+        "customerBase": {
+          "label": "Base de Clientèle",
+          "prompt": "Qui sont vos clients ? Décrivez vos principaux groupes de clients et tout client spécial qui dépend de vous.",
+          "examples": [
+            "Familles locales, petits restaurants, clients âgés qui dépendent de la livraison, touristes",
+            "Propriétaires de maisons en banlieue, petites entreprises, sociétés de gestion immobilière, appels de service d'urgence",
+            "Touristes (60%), résidents locaux (30%), clients d'événements spéciaux et de traiteur (10%)"
+          ]
+        },
+        "serviceProviderBCP": {
+          "label": "Statut PCA des Fournisseurs de Services",
+          "prompt": "Vos principaux fournisseurs de services (fournisseurs, vendeurs, sous-traitants) ont-ils des plans de continuité d'activité en place ?",
+          "options": [
+            {
+              "label": "Oui - La plupart de nos fournisseurs clés ont partagé leurs plans de continuité avec nous",
+              "value": "yes"
+            },
+            {
+              "label": "Non - Nous n'avons pas demandé à nos fournisseurs leurs plans de continuité",
+              "value": "no"
+            },
+            {
+              "label": "Partiellement - Certains fournisseurs ont des plans, d'autres non",
+              "value": "partial"
+            },
+            {
+              "label": "Inconnu - Nous ne savons pas si nos fournisseurs ont des plans de continuité",
+              "value": "unknown"
+            }
+          ]
         }
-      },
-      "businessOverview": {
-        "title": "Aperçu de l'Entreprise",
-        "description": "Aidez-nous à comprendre vos opérations commerciales, dépendances et ce qui fait votre succès.",
-        "inputs": {
-          "businessHours": {
-            "label": "Heures d'Ouverture",
-            "prompt": "Quand votre entreprise est-elle normalement ouverte ? Incluez les variations saisonnières si applicable.",
-            "examples": [
-              "Lundi-Samedi 11h00 - 22h00, Dimanche 12h00 - 21h00. Heures prolongées pendant la saison des navires de croisière (Novembre-Avril).",
-              "Lundi-Vendredi 8h00 - 18h00, Support d'urgence disponible 24h/7j pour les clients existants",
-              "Tours quotidiens 8h00 - 18h00 toute l'année, avec tours supplémentaires au coucher du soleil pendant la haute saison (Décembre-Avril)"
-            ]
-          },
-          "peakSeasons": {
-            "label": "Saisons de Pointe",
-            "prompt": "Quand sont vos périodes les plus chargées de l'année ? Comment cela affecte-t-il vos opérations ?",
-            "examples": [
-              "Saison touristique (Décembre-Avril) : augmentation de 200% des clients, nécessite du personnel supplémentaire et des heures prolongées. Saison des ouragans (Juin-Novembre) : activité plus lente mais nécessite une préparation d'urgence supplémentaire.",
-              "Fin d'année fiscale (Mars-Mai) : augmentation de 50% des projets clients et demandes de support. La saison des ouragans nécessite des sauvegardes de données spéciales et des préparations pour le travail à distance.",
-              "Haute saison touristique (Décembre-Avril) et vacances d'été (Juin-Août) : tours complets, personnel au maximum, revenus les plus élevés. Saison des ouragans (Juin-Novembre) : réservations réduites, annulations accrues."
-            ]
-          },
-          "criticalSuppliers": {
-            "label": "Fournisseurs Critiques",
-            "prompt": "Qui sont vos fournisseurs ou prestataires de services les plus importants ? Que se passerait-il s'ils étaient perturbés ?",
-            "examples": [
-              "Fournisseurs alimentaires : Caribbean Foods Ltd (produits frais quotidiens), Island Seafood Co (livraison de poisson 3x/semaine), Island Beverages (hebdomadaire). Les pannes de courant affectent la sécurité alimentaire ; la perturbation des fournisseurs signifie des changements de menu ou la fermeture.",
-              "Fournisseur de services Internet : Flow Jamaica (critique pour toutes les opérations), Microsoft Office 365 (email et productivité), Amazon Web Services (hébergement de données clients). Toute perturbation arrête la plupart des opérations commerciales.",
-              "Partenaires de transport terrestre : Island Express Tours (flotte de véhicules), Paradise Car Rentals (véhicules de secours), divers hôtels (lieux de prise en charge). L'indisponibilité des véhicules limite la capacité des tours."
-            ]
-          },
-          "customerBase": {
-            "label": "Base de Clientèle",
-            "prompt": "Qui sont vos principaux clients ? Comment vous trouvent-ils et vous contactent-ils ?",
-            "examples": [
-              "60% touristes (sans rendez-vous, références d'hôtels, passagers de croisière), 30% habitants (clients fidèles, bouche-à-oreille), 10% événements spéciaux (mariages, entreprises). Contact via téléphone, email, médias sociaux, sans rendez-vous.",
-              "Petites entreprises (20-100 employés) à travers la Jamaïque : 40% région de Kingston, 35% autres paroisses, 25% clients à distance. Contact via site web, références, médias sociaux, événements de l'industrie.",
-              "Touristes internationaux : 70% Amérique du Nord, 20% Europe, 10% autres Caraïbes. Réservations via site web, agents de voyage, concierges d'hôtels, partenariats avec navires de croisière."
-            ]
-          },
-          "revenueStreams": {
-            "label": "Sources de Revenus",
-            "prompt": "Quelles sont vos principales sources de revenus ? Lesquelles sont les plus critiques ?",
-            "examples": [
-              "Ventes alimentaires (70% - critique), ventes de boissons (20% - important), services traiteur (10% - supplémentaire). La perturbation des ventes alimentaires menacerait la survie de l'entreprise.",
-              "Contrats de support IT (60% - critique), projets de développement logiciel (25% - important), services de formation (15% - supplémentaire). La perte des contrats de support nécessiterait une action immédiate.",
-              "Tours réguliers (50% - critique), tours personnalisés/privés (30% - important), services de transport (20% - supplémentaire). La perturbation des tours réguliers impacterait significativement les revenus."
-            ]
-          },
-          "keyAssets": {
-            "label": "Actifs Clés",
-            "prompt": "Quels sont vos actifs physiques, équipements ou systèmes les plus importants ?",
-            "examples": [
-              "Équipement de cuisine (50 000$), systèmes de réfrigération (15 000$), système de caisse et ordinateurs (8 000$), mobilier et aménagements (20 000$), générateur (5 000$). La panne de l'équipement de cuisine arrête la production alimentaire.",
-              "Équipement serveur (25 000$), ordinateurs employés (15 000$), licences logicielles spécialisées (10 000$), infrastructure réseau (8 000$). La panne du serveur arrête tous les services clients.",
-              "Flotte de véhicules (200 000$), ordinateurs de bureau (10 000$), équipement de communication (5 000$), équipement de sécurité (8 000$). La panne de véhicule réduit la capacité des tours."
-            ]
-          },
-          "businessLicense": {
-            "label": "Numéro de Licence Commerciale",
-            "prompt": "Quel est votre numéro de licence commerciale ? Ceci se trouve généralement sur vos documents d'enregistrement d'entreprise.",
-            "examples": [
-              "LC-12345",
-              "REG-2023-789",
-              "LIC-456789"
-            ]
-          },
-          "businessPurpose": {
-            "label": "But de l'Entreprise",
-            "prompt": "Quel est le but principal de votre entreprise ? Pensez à pourquoi vous avez créé cette entreprise et quel problème elle résout pour vos clients.",
-            "examples": [
-              "Fournir des produits locaux frais à la communauté de St. George's",
-              "Offrir des services de réparation de maison abordables à la Barbade",
-              "Créer une cuisine caribéenne authentique pour les touristes et les locaux à Montego Bay"
-            ]
-          },
-          "productsAndServices": {
-            "label": "Produits et Services",
-            "prompt": "Quels produits et services fournissez-vous ? Qu'est-ce qui rend votre entreprise spéciale ou unique ?",
-            "examples": [
-              "Nous vendons des fruits, légumes et épices locaux frais. Notre spécialité est la sauce piquante maison faite avec des piments locaux.",
-              "Nous fournissons des services de plomberie et d'électricité. Notre particularité est notre service d'urgence 24/7 et les réparations le jour même.",
-              "Nous proposons une cuisine caribéenne authentique avec une touche moderne. Notre spécialité est notre recette familiale de poulet jerk transmise depuis trois générations."
-            ]
-          },
-          "serviceDeliveryMethods": {
-            "label": "Méthodes de Livraison de Service",
-            "prompt": "Comment et où fournissez-vous vos produits et services ? Considérez votre emplacement physique, vos méthodes de livraison et toute présence en ligne.",
-            "examples": [
-              "Magasin physique au centre-ville de Kingston avec livraison dans les paroisses voisines. Les clients peuvent commander via notre site web ou WhatsApp.",
-              "Nous opérons depuis notre atelier mais fournissons des services chez les clients. Nous avons une camionnette de service mobile pour les appels d'urgence.",
-              "Restaurant à Bridgetown avec plats à emporter et livraison. Nous proposons également un service traiteur pour les événements et avons un food truck pour les festivals."
-            ]
-          },
-          "operatingHours": {
-            "label": "Heures d'Ouverture",
-            "prompt": "Quelles sont vos heures et jours d'ouverture ? Incluez toute variation saisonnière ou horaire spécial.",
-            "examples": [
-              "Lundi à samedi, 8h à 18h. Fermé les dimanches et jours fériés. Horaires prolongés pendant la saison du Carnaval.",
-              "24/7 pour les services d'urgence. Heures normales du lundi au vendredi, 9h à 17h.",
-              "Mardi à dimanche, 11h à 22h. Horaires prolongés pendant la saison touristique (décembre à avril)."
-            ]
-          },
-          "keyPersonnel": {
-            "label": "Personnel Clé Impliqué",
-            "prompt": "Qui sont les personnes clés impliquées dans la gestion de votre entreprise ? Incluez les employés, fournisseurs clés et sous-traitants.",
-            "examples": [
-              "3 employés à temps plein, 2 à temps partiel, fournisseur principal (Caribbean Foods Ltd), sous-traitant de livraison",
-              "Propriétaire-opérateur, 1 assistant, apprenti électricien, fournisseur régulier de pièces (Island Hardware)",
-              "Chef principal, 2 cuisiniers, 3 serveurs, gérant, agriculteurs locaux pour les produits, fournisseur de fruits de mer"
-            ]
-          },
-          "minimumResources": {
-            "label": "Ressources Minimales Nécessaires",
-            "prompt": "Quelles sont les ressources minimales absolues (personnel, équipement, dossiers) nécessaires pour maintenir votre entreprise en activité ?",
-            "examples": [
-              "1 caissier, caisse enregistreuse, réfrigération pour les denrées périssables, inventaire de base, dossiers de paiement des clients",
-              "1 technicien qualifié, kit d'outils de base, fourgonnette de travail, liste de contacts clients, documents de licence",
-              "1 cuisinier, équipement de cuisine de base, ingrédients principaux du menu, places pour 20 clients, certificats de sécurité alimentaire"
-            ]
-          },
-          "customerBase": {
-            "label": "Base de Clientèle",
-            "prompt": "Qui sont vos clients ? Décrivez vos principaux groupes de clients et tout client spécial qui dépend de vous.",
-            "examples": [
-              "Familles locales, petits restaurants, clients âgés qui dépendent de la livraison, touristes",
-              "Propriétaires de maisons en banlieue, petites entreprises, sociétés de gestion immobilière, appels de service d'urgence",
-              "Touristes (60%), résidents locaux (30%), clients d'événements spéciaux et de traiteur (10%)"
-            ]
-          },
-          "serviceProviderBCP": {
-            "label": "Statut PCA des Fournisseurs de Services",
-            "prompt": "Vos principaux fournisseurs de services (fournisseurs, vendeurs, sous-traitants) ont-ils des plans de continuité d'activité en place ?",
-            "options": [
-              { "label": "Oui - La plupart de nos fournisseurs clés ont partagé leurs plans de continuité avec nous", "value": "yes" },
-              { "label": "Non - Nous n'avons pas demandé à nos fournisseurs leurs plans de continuité", "value": "no" },
-              { "label": "Partiellement - Certains fournisseurs ont des plans, d'autres non", "value": "partial" },
-              { "label": "Inconnu - Nous ne savons pas si nos fournisseurs ont des plans de continuité", "value": "unknown" }
-            ]
-          }
+      }
+    },
+    "essentialFunctions": {
+      "title": "Fonctions Essentielles",
+      "description": "Identifions et priorisons les fonctions clés qui maintiennent votre entreprise en marche.",
+      "inputs": {
+        "businessFunctions": {
+          "label": "Fonctions de l'Entreprise",
+          "prompt": "Listez toutes les principales fonctions de votre entreprise. Pour chaque fonction, évaluez son caractère critique et le temps d'arrêt que vous pouvez tolérer.",
+          "tableColumns": [
+            "Fonction de l'Entreprise",
+            "Description",
+            "Niveau de Priorité",
+            "Temps d'Arrêt Maximum Acceptable",
+            "Ressources Critiques Nécessaires"
+          ],
+          "tableRowsPromptPartial": "Pensez à toutes les activités que votre entreprise effectue quotidiennement",
+          "priorityOptions": [
+            {
+              "label": "Critique - L'entreprise ne peut pas fonctionner sans cela",
+              "value": "critical"
+            },
+            {
+              "label": "Important - Causerait des problèmes significatifs si arrêté",
+              "value": "important"
+            },
+            {
+              "label": "Utile - Bien d'avoir mais pas essentiel",
+              "value": "useful"
+            },
+            {
+              "label": "Reportable - Peut être reporté si nécessaire",
+              "value": "deferrable"
+            }
+          ],
+          "downtimeOptions": [
+            {
+              "label": "0-2 heures",
+              "value": "0-2h"
+            },
+            {
+              "label": "2-8 heures",
+              "value": "2-8h"
+            },
+            {
+              "label": "8-24 heures",
+              "value": "8-24h"
+            },
+            {
+              "label": "1-3 jours",
+              "value": "1-3d"
+            },
+            {
+              "label": "3-7 jours",
+              "value": "3-7d"
+            },
+            {
+              "label": "1-2 semaines",
+              "value": "1-2w"
+            },
+            {
+              "label": "Plus de 2 semaines",
+              "value": "2w+"
+            }
+          ],
+          "examples": [
+            "Ventes - Traiter les commandes clients - Critique - 0-2 heures - Caissier, système de paiement, inventaire",
+            "Comptabilité - Enregistrer les transactions - Important - 1-3 jours - Comptable, logiciel comptable, reçus",
+            "Marketing - Gestion des médias sociaux - Utile - 3-7 jours - Personnel marketing, accès internet"
+          ]
         }
-      },
-      "essentialFunctions": {
-        "title": "Fonctions Essentielles",
-        "description": "Identifions et priorisons les fonctions clés qui maintiennent votre entreprise en marche.",
-        "inputs": {
-          "businessFunctions": {
-            "label": "Fonctions de l'Entreprise",
-            "prompt": "Listez toutes les principales fonctions de votre entreprise. Pour chaque fonction, évaluez son caractère critique et le temps d'arrêt que vous pouvez tolérer.",
-            "tableColumns": ["Fonction de l'Entreprise", "Description", "Niveau de Priorité", "Temps d'Arrêt Maximum Acceptable", "Ressources Critiques Nécessaires"],
-            "tableRowsPromptPartial": "Pensez à toutes les activités que votre entreprise effectue quotidiennement",
-            "priorityOptions": [
-              { "label": "Critique - L'entreprise ne peut pas fonctionner sans cela", "value": "critical" },
-              { "label": "Important - Causerait des problèmes significatifs si arrêté", "value": "important" },
-              { "label": "Utile - Bien d'avoir mais pas essentiel", "value": "useful" },
-              { "label": "Reportable - Peut être reporté si nécessaire", "value": "deferrable" }
-            ],
-            "downtimeOptions": [
-              { "label": "0-2 heures", "value": "0-2h" },
-              { "label": "2-8 heures", "value": "2-8h" },
-              { "label": "8-24 heures", "value": "8-24h" },
-              { "label": "1-3 jours", "value": "1-3d" },
-              { "label": "3-7 jours", "value": "3-7d" },
-              { "label": "1-2 semaines", "value": "1-2w" },
-              { "label": "Plus de 2 semaines", "value": "2w+" }
-            ],
-            "examples": [
-              "Ventes - Traiter les commandes clients - Critique - 0-2 heures - Caissier, système de paiement, inventaire",
-              "Comptabilité - Enregistrer les transactions - Important - 1-3 jours - Comptable, logiciel comptable, reçus",
-              "Marketing - Gestion des médias sociaux - Utile - 3-7 jours - Personnel marketing, accès internet"
-            ]
-          }
-        }
-      },
-      "riskAssessment": {
-        "title": "Évaluation des Risques",
-        "description": "Identifions et évaluons les risques qui pourraient perturber vos opérations commerciales.",
-        "hazardLabels": {
-          "earthquake": "Tremblement de terre",
-          "hurricane": "Ouragan/Tempête tropicale",
-          "flood": "Inondation",
-          "coastal_flood": "Inondation côtière",
-          "flash_flood": "Inondation soudaine",
-          "landslide": "Glissement de terrain",
-          "tsunami": "Tsunami",
-          "volcanic": "Activité volcanique",
-          "drought": "Sécheresse",
-          "epidemic": "Épidémie (foyer de maladie locale)",
-          "pandemic": "Pandémie (maladie généralisée)",
-          "power_outage": "Panne de courant prolongée",
-          "telecom_failure": "Panne des télécommunications",
-          "cyber_attack": "Attaques Internet/Cybernétiques",
-          "fire": "Incendie",
-          "crime": "Crime/Vol/Effraction",
-          "civil_disorder": "Désordre civil/Troubles",
-          "terrorism": "Terrorisme",
-          "supply_disruption": "Perturbation de la chaîne d'approvisionnement",
-          "supply_chain_disruption": "Perturbation de la chaîne d'approvisionnement",
-          "staff_unavailable": "Indisponibilité du personnel clé",
-          "economic_downturn": "Ralentissement économique",
-          "urban_flooding": "Inondation urbaine",
-          "traffic_disruption": "Perturbation du trafic/Transport",
-          "storm_surge": "Onde de tempête",
-          "coastal_erosion": "Érosion côtière",
-          "infrastructure_failure": "Défaillance de l'infrastructure",
-          "crowd_management": "Problèmes de gestion de foule",
-          "river_flooding": "Inondation fluviale",
-          "urban_congestion": "Congestion urbaine/Trafic",
-          "water_shortage": "Pénurie d'eau",
-          "industrial_accident": "Accident industriel",
-          "air_pollution": "Pollution atmosphérique",
-          "tourism_disruption": "Perturbation du tourisme",
-          "oil_spill": "Déversement de pétrole",
-          "sargassum": "Impact des algues sargasses",
-                  "waste_management": "Problèmes de gestion des déchets",
+      }
+    },
+    "riskAssessment": {
+      "title": "Évaluation des Risques",
+      "description": "Identifions et évaluons les risques qui pourraient perturber vos opérations commerciales.",
+      "hazardLabels": {
+        "earthquake": "Tremblement de terre",
+        "hurricane": "Ouragan/Tempête tropicale",
+        "flood": "Inondation",
+        "coastal_flood": "Inondation côtière",
+        "flash_flood": "Inondation soudaine",
+        "landslide": "Glissement de terrain",
+        "tsunami": "Tsunami",
+        "volcanic": "Activité volcanique",
+        "drought": "Sécheresse",
+        "epidemic": "Épidémie (foyer de maladie locale)",
+        "pandemic": "Pandémie (maladie généralisée)",
+        "power_outage": "Panne de courant prolongée",
+        "telecom_failure": "Panne des télécommunications",
+        "cyber_attack": "Attaques Internet/Cybernétiques",
+        "fire": "Incendie",
+        "crime": "Crime/Vol/Effraction",
+        "civil_disorder": "Désordre civil/Troubles",
+        "terrorism": "Terrorisme",
+        "supply_disruption": "Perturbation de la chaîne d'approvisionnement",
+        "supply_chain_disruption": "Perturbation de la chaîne d'approvisionnement",
+        "staff_unavailable": "Indisponibilité du personnel clé",
+        "economic_downturn": "Ralentissement économique",
+        "urban_flooding": "Inondation urbaine",
+        "traffic_disruption": "Perturbation du trafic/Transport",
+        "storm_surge": "Onde de tempête",
+        "coastal_erosion": "Érosion côtière",
+        "infrastructure_failure": "Défaillance de l'infrastructure",
+        "crowd_management": "Problèmes de gestion de foule",
+        "river_flooding": "Inondation fluviale",
+        "urban_congestion": "Congestion urbaine/Trafic",
+        "water_shortage": "Pénurie d'eau",
+        "industrial_accident": "Accident industriel",
+        "air_pollution": "Pollution atmosphérique",
+        "tourism_disruption": "Perturbation du tourisme",
+        "oil_spill": "Déversement de pétrole",
+        "sargassum": "Impact des algues sargasses",
+        "waste_management": "Problèmes de gestion des déchets",
         "chemical_spill": "Déversement chimique",
         "environmental_contamination": "Contamination environnementale",
         "waste_management_failure": "Défaillance de gestion des déchets",
@@ -786,630 +859,924 @@
         "data_loss": "Perte de données",
         "internet_cyber_attacks": "Attaques Internet/Cybernétiques",
         "equipment_failure_breakdown": "Panne/défaillance d'équipement"
+      },
+      "inputs": {
+        "potentialHazards": {
+          "label": "Dangers Potentiels",
+          "prompt": "Sélectionnez tous les dangers qui peuvent affecter votre entreprise. Considérez à la fois les catastrophes naturelles et les risques causés par l'homme qui sont pertinents pour votre localisation et votre industrie.",
+          "options": [
+            {
+              "label": "Tremblement de terre",
+              "value": "earthquake"
+            },
+            {
+              "label": "Ouragan/Tempête tropicale",
+              "value": "hurricane"
+            },
+            {
+              "label": "Inondation côtière",
+              "value": "coastal_flood"
+            },
+            {
+              "label": "Inondation soudaine",
+              "value": "flash_flood"
+            },
+            {
+              "label": "Glissement de terrain",
+              "value": "landslide"
+            },
+            {
+              "label": "Tsunami",
+              "value": "tsunami"
+            },
+            {
+              "label": "Activité volcanique",
+              "value": "volcanic"
+            },
+            {
+              "label": "Sécheresse",
+              "value": "drought"
+            },
+            {
+              "label": "Épidémie (épidémie de maladie locale)",
+              "value": "epidemic"
+            },
+            {
+              "label": "Pandémie (maladie généralisée)",
+              "value": "pandemic"
+            },
+            {
+              "label": "Panne de courant prolongée",
+              "value": "power_outage"
+            },
+            {
+              "label": "Panne de télécommunications",
+              "value": "telecom_failure"
+            },
+            {
+              "label": "Attaques Internet/Cyber",
+              "value": "cyber_attack"
+            },
+            {
+              "label": "Incendie",
+              "value": "fire"
+            },
+            {
+              "label": "Crime/Vol/Effraction",
+              "value": "crime"
+            },
+            {
+              "label": "Désordre civil/Troubles",
+              "value": "civil_disorder"
+            },
+            {
+              "label": "Terrorisme",
+              "value": "terrorism"
+            },
+            {
+              "label": "Perturbation de la chaîne d'approvisionnement",
+              "value": "supply_disruption"
+            },
+            {
+              "label": "Indisponibilité du personnel clé",
+              "value": "staff_unavailable"
+            },
+            {
+              "label": "Ralentissement économique",
+              "value": "economic_downturn"
+            },
+            {
+              "label": "Déversement chimique",
+              "value": "chemical_spill"
+            },
+            {
+              "label": "Contamination environnementale",
+              "value": "environmental_contamination"
+            },
+            {
+              "label": "Événement de pollution atmosphérique",
+              "value": "air_pollution"
+            },
+            {
+              "label": "Contamination de l'eau",
+              "value": "water_contamination"
+            },
+            {
+              "label": "Accident industriel",
+              "value": "industrial_accident"
+            },
+            {
+              "label": "Défaillance de la gestion des déchets",
+              "value": "waste_management_failure"
+            },
+            {
+              "label": "Déversement de pétrole",
+              "value": "oil_spill"
+            },
+            {
+              "label": "Impact des algues sargasses",
+              "value": "sargassum"
+            },
+            {
+              "label": "Problèmes de gestion de foule",
+              "value": "crowd_management"
+            },
+            {
+              "label": "Problèmes de gestion des déchets",
+              "value": "waste_management"
+            }
+          ],
+          "examples": [
+            "Entreprise côtière : Ouragan, Inondation côtière, Tsunami, Panne de courant",
+            "Entreprise technologique : Panne de courant, Attaque cyber, Panne télécommunications",
+            "Commerce de détail : Crime, Incendie, Panne de courant, Perturbation approvisionnement"
+          ]
         },
-        "inputs": {
-          "potentialHazards": {
-            "label": "Dangers Potentiels",
-            "prompt": "Sélectionnez tous les dangers qui peuvent affecter votre entreprise. Considérez à la fois les catastrophes naturelles et les risques causés par l'homme qui sont pertinents pour votre localisation et votre industrie.",
-            "options": [
-              { "label": "Tremblement de terre", "value": "earthquake" },
-              { "label": "Ouragan/Tempête tropicale", "value": "hurricane" },
-              { "label": "Inondation côtière", "value": "coastal_flood" },
-              { "label": "Inondation soudaine", "value": "flash_flood" },
-              { "label": "Glissement de terrain", "value": "landslide" },
-              { "label": "Tsunami", "value": "tsunami" },
-              { "label": "Activité volcanique", "value": "volcanic" },
-              { "label": "Sécheresse", "value": "drought" },
-              { "label": "Épidémie (épidémie de maladie locale)", "value": "epidemic" },
-              { "label": "Pandémie (maladie généralisée)", "value": "pandemic" },
-              { "label": "Panne de courant prolongée", "value": "power_outage" },
-              { "label": "Panne de télécommunications", "value": "telecom_failure" },
-              { "label": "Attaques Internet/Cyber", "value": "cyber_attack" },
-              { "label": "Incendie", "value": "fire" },
-              { "label": "Crime/Vol/Effraction", "value": "crime" },
-              { "label": "Désordre civil/Troubles", "value": "civil_disorder" },
-              { "label": "Terrorisme", "value": "terrorism" },
-              { "label": "Perturbation de la chaîne d'approvisionnement", "value": "supply_disruption" },
-              { "label": "Indisponibilité du personnel clé", "value": "staff_unavailable" },
-              { "label": "Ralentissement économique", "value": "economic_downturn" },
-              { "label": "Déversement chimique", "value": "chemical_spill" },
-              { "label": "Contamination environnementale", "value": "environmental_contamination" },
-              { "label": "Événement de pollution atmosphérique", "value": "air_pollution" },
-              { "label": "Contamination de l'eau", "value": "water_contamination" },
-              { "label": "Accident industriel", "value": "industrial_accident" },
-              { "label": "Défaillance de la gestion des déchets", "value": "waste_management_failure" },
-              { "label": "Déversement de pétrole", "value": "oil_spill" },
-              { "label": "Impact des algues sargasses", "value": "sargassum" },
-              { "label": "Problèmes de gestion de foule", "value": "crowd_management" },
-              { "label": "Problèmes de gestion des déchets", "value": "waste_management" }
-            ],
-            "examples": [
-              "Entreprise côtière : Ouragan, Inondation côtière, Tsunami, Panne de courant",
-              "Entreprise technologique : Panne de courant, Attaque cyber, Panne télécommunications",
-              "Commerce de détail : Crime, Incendie, Panne de courant, Perturbation approvisionnement"
-            ]
-          },
-          "riskMatrix": {
-            "label": "Matrice d'Évaluation des Risques",
-            "prompt": "Pour chaque danger que vous avez sélectionné, évaluez la probabilité et la gravité potentielle de l'impact sur votre entreprise.",
-            "examples": [
-              "Ouragan - Probable (3) - Grave (3) - Élevé (9) - Acheter assurance, préparer volets, sécuriser inventaire",
-              "Panne de Courant - Très Probable (4) - Mineur (2) - Moyen (8) - Installer générateur de secours, UPS pour ordinateurs",
-              "Incendie - Improbable (2) - Majeur (4) - Moyen (8) - Installer alarmes incendie, système sprinkler, extincteurs"
-            ]
-          }
-        }
-      },
-      "strategySelection": {
-        "selectStrategiesDescription": "Sélectionnez les stratégies que votre entreprise mettra en œuvre pour prévenir, répondre et se remettre des urgences. Les stratégies marquées avec ✨ sont spécifiquement recommandées en fonction de votre type d'entreprise et des risques identifiés.",
-        "headerTitle": "Vos Actions Recommandées",
-        "headerDescription": "En fonction de vos risques sélectionnés, nous avons choisi {count} stratégies qui protégeront votre entreprise.",
-        "selectionInstructions": "✅ = Inclure dans votre plan • ⬜ = Ignorer celle-ci",
-        "essentialTitle": "ESSENTIEL (Obligatoire)",
-        "essentialDescription": "Nous recommandons fortement que vous incluiez ces éléments",
-        "recommendedTitle": "RECOMMANDÉ (Devrait Avoir)",
-        "recommendedDescription": "Ceux-ci ajoutent une bonne protection",
-        "optionalTitle": "OPTIONNEL (Bon à Avoir)",
-        "optionalDescription": "Considérez si vous avez le temps et les ressources",
-        "whyLabel": "Pourquoi:",
-        "whatYouGetLabel": "Ce Que Vous Obtenez:",
-        "protectsAgainstLabel": "Protège contre:",
-        "seeFullDetails": "Voir Tous les Détails",
-        "hideDetails": "Masquer les Détails",
-        "quickWin": "Victoire Rapide",
-        "realSuccessStory": "Histoire de Succès Réelle",
-        "lowBudgetAlternative": "Alternative à Petit Budget",
-        "diyApproach": "Approche Faites-le Vous-même",
-        "planSummaryTitle": "Résumé de Votre Plan:",
-        "essentialStrategies": "Stratégies essentielles:",
-        "recommendedStrategies": "Stratégies recommandées:",
-        "optionalStrategies": "Stratégies optionnelles:",
-        "totalStrategies": "Total des stratégies:",
-        "totalTime": "Temps total:",
-        "totalCost": "Coût total",
-        "unselectWarningTitle": "Êtes-vous sûr?",
-        "unselectWarningMessage": "Vous avez décoché une stratégie ESSENTIELLE. Ceci est important pour la sécurité de votre entreprise. Êtes-vous sûr de vouloir la supprimer?",
-        "unselectConfirm": "Oui, la supprimer",
-        "unselectCancel": "La garder (Recommandé)",
-        "whatYouNeedToDo": "Ce Que Vous Devez Faire",
-        "whyThisMatters": "Pourquoi c'est important",
-        "doneWhen": "Terminé quand",
-        "freeOption": "Option gratuite",
-        "helpfulTips": "Conseils Utiles",
-        "commonMistakes": "Erreurs Courantes à Éviter"
-      },
-      "strategies": {
-        "title": "Stratégies de Continuité d'Activité",
-        "description": "Développons maintenant des stratégies complètes pour prévenir, répondre et récupérer des risques que vous avez identifiés.",
-        "inputs": {
-          "preventionStrategies": {
-            "label": "Stratégies de Prévention (Avant les Urgences)",
-            "prompt": "Quelles stratégies de prévention allez-vous mettre en œuvre pour réduire la probabilité ou l'impact des risques ? Sélectionnez tout ce qui s'applique.",
-            "options": [
-              { "label": "Maintenance régulière des équipements et installations", "value": "maintenance" },
-              { "label": "Systèmes de sécurité physique (alarmes, caméras, serrures)", "value": "physical_security" },
-              { "label": "Mesures de cybersécurité et protection des données", "value": "cybersecurity" },
-              { "label": "Couverture d'assurance complète", "value": "insurance" },
-              { "label": "Formation des employés et préparation aux urgences", "value": "employee_training" },
-              { "label": "Diversification des fournisseurs et fournisseurs de secours", "value": "supplier_diversity" },
-              { "label": "Réserves financières et fonds d'urgence", "value": "financial_reserves" },
-              { "label": "Sauvegarde régulière des données et stockage hors site", "value": "data_backup" },
-              { "label": "Modifications de bâtiment pour résistance aux catastrophes", "value": "building_upgrades" },
-              { "label": "Stockage de fournitures et équipements d'urgence", "value": "emergency_supplies" },
-              { "label": "Évaluations régulières des risques et mises à jour du plan", "value": "risk_monitoring" },
-              { "label": "Partenariats communautaires et accords d'aide mutuelle", "value": "community_partnerships" }
-            ],
-            "examples": [
-              "Magasin de détail : Sécurité physique, Assurance, Formation employés, Fournitures d'urgence",
-              "Entreprise technologique : Cybersécurité, Sauvegarde données, Formation employés, Réserves financières",
-              "Restaurant : Maintenance, Assurance, Fournitures d'urgence, Améliorations bâtiment"
-            ]
-          },
-          "responseStrategies": {
-            "label": "Stratégies de Réponse (Pendant les Urgences)",
-            "prompt": "Quelles stratégies de réponse allez-vous mettre en œuvre pendant une urgence ? Sélectionnez tout ce qui s'applique.",
-            "options": [
-              { "label": "Activation de l'équipe de réponse d'urgence", "value": "emergency_team" },
-              { "label": "Procédures de sécurité du personnel et des clients", "value": "safety_procedures" },
-              { "label": "Plan de communication d'urgence", "value": "emergency_communication" },
-              { "label": "Lieux de travail alternatifs", "value": "alternative_locations" },
-              { "label": "Travail à distance et opérations virtuelles", "value": "remote_work" },
-              { "label": "Gestion d'urgence des stocks et approvisionnements", "value": "emergency_inventory" },
-              { "label": "Procédures de continuité du service client", "value": "customer_continuity" },
-              { "label": "Gestion des médias et relations publiques", "value": "media_management" },
-              { "label": "Procédures financières d'urgence", "value": "emergency_finance" },
-              { "label": "Coordination avec les services d'urgence", "value": "emergency_services" },
-              { "label": "Procédures de fermeture temporaire et sécurisation", "value": "closure_procedures" },
-              { "label": "Opérations de services essentiels uniquement", "value": "essential_operations" }
-            ],
-            "examples": [
-              "Entreprise de services : Équipe d'urgence, Travail à distance, Continuité client, Communication d'urgence",
-              "Commerce de détail : Procédures sécurité, Inventaire d'urgence, Procédures fermeture, Services d'urgence",
-              "Fabrication : Équipe d'urgence, Lieux alternatifs, Opérations essentielles, Finance d'urgence"
-            ]
-          },
-          "recoveryStrategies": {
-            "label": "Stratégies de Récupération (Après les Urgences)",
-            "prompt": "Quelles stratégies de récupération vous aideront à restaurer les opérations normales après une urgence ? Sélectionnez tout ce qui s'applique.",
-            "options": [
-              { "label": "Évaluation et documentation des dommages", "value": "damage_assessment" },
-              { "label": "Réclamations d'assurance et récupération financière", "value": "insurance_claims" },
-              { "label": "Procédures de reprise et redémarrage d'activité", "value": "business_resumption" },
-              { "label": "Programmes de soutien et conseil aux employés", "value": "employee_support" },
-              { "label": "Stratégies de rétention et reconquête clients", "value": "customer_retention" },
-              { "label": "Restauration des relations fournisseurs", "value": "supplier_restoration" },
-              { "label": "Marketing et gestion de la réputation", "value": "reputation_management" },
-              { "label": "Assistance financière et demandes de prêt", "value": "financial_assistance" },
-              { "label": "Réparation et reconstruction d'installations", "value": "facility_repair" },
-              { "label": "Remplacement et améliorations d'équipement", "value": "equipment_replacement" },
-              { "label": "Leçons apprises et améliorations du plan", "value": "lessons_learned" },
-              { "label": "Soutien et collaboration communautaires", "value": "community_support" }
-            ],
-            "examples": [
-              "Petite entreprise : Réclamations assurance, Reprise activité, Rétention clients, Assistance financière",
-              "Entreprise de services : Soutien employés, Rétention clients, Gestion réputation, Leçons apprises",
-              "Fabrication : Évaluation dommages, Réparation installations, Remplacement équipement, Restauration fournisseurs"
-            ]
-          },
-          "longTermMeasures": {
-            "label": "Mesures de Réduction des Risques à Long Terme",
-            "prompt": "Quelles mesures à long terme allez-vous implémenter pour réduire les risques futurs ? Considérez l'adaptation climatique, les pratiques durables et la construction de résilience au fil du temps.",
-            "examples": [
-              "Installer panneaux solaires pour indépendance énergétique, relocaliser équipement critique au-dessus des niveaux d'inondation, diversifier chaînes d'approvisionnement sur plusieurs îles",
-              "Implémenter gestion durable des déchets, utiliser fournisseurs locaux pour réduire risques transport, construire partenariats communautaires plus forts",
-              "Investir dans matériaux de construction résistants au climat, développer programmes formation croisée personnel, établir fonds d'urgence équivalent à 3 mois coûts opérationnels"
-            ]
-          }
-        }
-      },
-      "actionPlan": {
-        "title": "Plan d'Action de Mise en Œuvre",
-        "description": "Finalement, créons un plan d'action détaillé pour implémenter vos stratégies de continuité d'activité.",
-        "inputs": {
-          "actionPlanByRisk": {
-            "label": "Plan d'Action par Niveau de Risque",
-            "prompt": "Pour vos risques de plus haute priorité, créez des plans d'action spécifiques avec calendriers et responsabilités.",
-            "tableColumns": ["Danger/Risque", "Actions Immédiates (0-24 heures)", "Actions Court Terme (1-7 jours)", "Actions Moyen Terme (1-4 semaines)", "Personne Responsable"],
-            "tableRowsPrompt": "Nous nous concentrerons sur vos dangers à risque élevé et moyen. Pour chacun, pensez à ce qui doit se passer immédiatement, dans la première semaine, et dans le premier mois.",
-            "examples": [
-              "Ouragan - Sécuriser bâtiment, activer équipe urgence - Contacter personnel et clients, évaluer dommages - Déposer réclamations assurance, reprendre opérations - Directeur Opérations",
-              "Panne Courant - Passer à alimentation secours, sécuriser caisses - Contacter compagnie électricité, implémenter processus manuels - Évaluer besoins alimentation secours, commander équipement - Gestionnaire Installations"
-            ]
-          },
-          "implementationTimeline": {
-            "label": "Calendrier de Mise en Œuvre",
-            "prompt": "Quel est votre calendrier global pour implémenter ce plan de continuité d'activité ? Considérez vos cycles d'affaires, contraintes budgétaires et risques prioritaires.",
-            "examples": [
-              "Phase 1 (Immédiat - 1 mois) : Implémenter mesures prévention haute priorité et procédures d'urgence. Phase 2 (1-3 mois) : Compléter formation personnel et installation systèmes secours. Phase 3 (3-6 mois) : Finaliser toutes stratégies et conduire premier test complet.",
-              "Commencer implémantation immédiatement avec saison ouragans approchant. Compléter mesures critiques dans 6 semaines, implémantation complète dans 3 mois.",
-              "Commencer après fin saison chargée en avril. Implémenter éléments haute priorité d'ici juin, compléter plan entier d'ici décembre avant prochaine saison touristique."
-            ]
-          },
-          "resourceRequirements": {
-            "label": "Exigences de Ressources",
-            "prompt": "Quelles ressources (financières, humaines, techniques) aurez-vous besoin pour implémenter votre plan ? Soyez spécifique sur les coûts et temps personnel.",
-            "examples": [
-              "Budget : 15 000$ pour système sécurité (8 000$), générateur (5 000$), formation (2 000$). Personnel : 20 heures/semaine du gérant pendant 2 mois, 4 heures/semaine de chaque employé.",
-              "Financier : 25 000$ total - infrastructure IT (15 000$), augmentations assurance (3 000$/an), fournitures urgence (2 000$), formation (5 000$). Humain : consultant IT (40 heures), temps gestion (2 jours/semaine pendant 3 mois).",
-              "Budget équipement : 10 000$ pour systèmes secours. Budget formation : 3 000$ pour certification personnel. Investissement temps : 1 jour par semaine des chefs département pendant 4 mois."
-            ]
-          },
-          "responsibleParties": {
-            "label": "Parties Responsables et Rôles",
-            "prompt": "Qui sera responsable d'implémenter et maintenir différents aspects du plan ? Assignez rôles spécifiques et responsabilités de secours.",
-            "examples": [
-              "Coordinateur Plan : Directeur Général (secours : Superviseur Opérations). Systèmes IT : Gestionnaire IT (secours : Consultant externe). Formation Personnel : Gestionnaire RH (secours : Superviseur Senior). Réponse Urgence : Directeur Opérations (secours : Gérant Adjoint).",
-              "Implémantation Globale : Propriétaire Entreprise (secours : Gestionnaire Bureau). Prévention Risques : Gestionnaire Installations (secours : Personnel Maintenance). Communication : Gestionnaire Service Client (secours : Personnel Réception). Financier : Comptable (secours : Gestionnaire Bureau).",
-              "Équipe Continuité Activité : 3 membres personnel senior avec leadership rotatif. Implémantation Départementale : Chaque chef département responsable de son domaine. Relations Externes : Gestionnaire Marketing pour médias, Gestionnaire Admin pour gouvernement/assurance."
-            ]
-          },
-          "reviewSchedule": {
-            "label": "Calendrier de Révision et Mise à Jour",
-            "prompt": "À quelle fréquence allez-vous réviser et mettre à jour votre plan de continuité d'activité ? Incluez révisions régulières et événements déclencheurs pour mises à jour.",
-            "examples": [
-              "Révisions trimestrielles de l'évaluation des risques et informations de contact. Mise à jour annuelle complète du plan. Révision immédiate après tout événement d'urgence ou changement d'affaires significatif.",
-              "Vérifications mensuelles pendant saison ouragans (Juin-Novembre). Révisions complètes bi-annuelles en janvier et juillet. Mise à jour plan chaque fois que nous changeons fournisseurs, déménageons, ou changeons personnel clé.",
-              "Surveillance continue : mises à jour mensuelles évaluation risques. Révisions formelles : réunions équipe trimestrielles. Mises à jour majeures : annuellement et après tout événement urgence, expansion entreprise, ou changements réglementaires."
-            ]
-          },
-          "testingPlan": {
-            "label": "Plan de Test et Évaluation",
-            "prompt": "Comment allez-vous tester votre plan de continuité d'activité pour vous assurer qu'il fonctionne efficacement ?",
-            "tableColumns": ["Type de Test", "Fréquence", "Participants", "Critères de Succès", "Personne Responsable"],
-            "tableRowsPrompt": "Planifiez différents types de tests pour valider votre plan de continuité d'activité.",
-            "examples": [
-              "Test Communication - Mensuel - Tout le personnel - Chacun reçoit et répond au message d'urgence dans les 2 heures - Gestionnaire Communications",
-              "Exercice Évacuation - Trimestriel - Tout personnel et clients - Bâtiment évacué en sécurité dans les 5 minutes - Agent Sécurité",
-              "Test Système Secours - Mensuel - Personnel IT - Tous systèmes basculent vers alimentation/internet secours avec succès - Gestionnaire IT",
-              "Exercice Plan Complet - Annuel - Tout personnel clé - Exercice scénario complet terminé avec succès - Coordinateur Plan"
-            ]
-          }
-        },
-        "examples": {
-          "autoRecommended": "Les stratégies sont automatiquement recommandées en fonction de votre évaluation des risques",
-          "prevention": "Les stratégies de prévention aident à réduire la probabilité d'urgences",
-          "response": "Les stratégies de réponse guident vos actions pendant les urgences",
-          "recovery": "Les stratégies de récupération aident à restaurer les opérations normales après"
-        }
-      },
-      "contactsAndInformation": {
-        "title": "Contacts et Informations Critiques",
-        "description": "Compilons toutes les informations de contact importantes et détails dont vous aurez besoin pendant une urgence.",
-        "inputs": {
-          "staffContacts": {
-            "label": "Informations de Contact du Personnel",
-            "prompt": "Fournissez les informations de contact pour tous les membres du personnel.",
-            "tableColumns": ["Nom", "Poste", "Numéro de Téléphone", "Adresse Email", "Contact d'Urgence"],
-            "tableRowsPrompt": "Incluez tous les employés, gérants et personnel clé qui devraient être contactés pendant une urgence.",
-            "examples": [
-              "John Smith - Gérant - 876-555-0123 - j.smith@company.com - Épouse : 876-555-0124",
-              "Maria Rodriguez - Caissière - 876-555-0125 - m.rodriguez@company.com - Sœur : 876-555-0126",
-              "David Thompson - Cuisinier - 876-555-0127 - d.thompson@company.com - Mère : 876-555-0128"
-            ]
-          },
-          "keyCustomers": {
-            "label": "Contacts Clients Clés",
-            "prompt": "Listez vos clients les plus importants qui auraient besoin d'attention spéciale pendant une urgence.",
-            "tableColumns": ["Nom Client", "Type/Notes", "Numéro de Téléphone", "Adresse Email", "Exigences Spéciales"],
-            "tableRowsPrompt": "Concentrez-vous sur les clients qui dépendent de vous pour des services essentiels ou ont des besoins spéciaux.",
-            "examples": [
-              "Mme James - Cliente âgée (livraison domicile) - 876-555-0130 - - Dépend de livraison épicerie hebdomadaire",
-              "Paradise Resort - Client majeur - 876-555-0131 - orders@paradiseresort.com - Livraison quotidienne produits frais",
-              "Hôpital Municipal - Fournitures urgence - 876-555-0132 - procurement@cityhospital.gov - Fournitures médicales critiques"
-            ]
-          },
-          "supplierInfo": {
-            "label": "Informations Fournisseurs",
-            "prompt": "Listez vos principaux fournisseurs et au moins un fournisseur de secours pour les biens/services clés.",
-            "tableColumns": ["Nom Fournisseur", "Biens/Services Fournis", "Numéro de Téléphone", "Adresse Email", "Fournisseur Secours"],
-            "tableRowsPrompt": "Incluez fournisseurs principaux et identifiez options secours pour approvisionnements critiques.",
-            "examples": [
-              "Caribbean Foods Ltd - Produits frais - 876-555-0140 - orders@caribbeanfoods.com - Island Fresh Co.",
-              "Island Hardware - Outils et fournitures - 876-555-0141 - sales@islandhardware.com - Tools & More Ltd.",
-              "Power Solutions Inc - Maintenance générateur - 876-555-0142 - service@powersolutions.com - Electric Pro Services"
-            ]
-          },
-          "emergencyServices": {
-            "label": "Services d'Urgence et Utilités",
-            "prompt": "Compilez les informations de contact pour services d'urgence et fournisseurs d'utilités.",
-            "tableColumns": ["Type de Service", "Nom Organisation", "Numéro de Téléphone", "Adresse Email", "Numéro de Compte"],
-            "tableRowsPrompt": "Incluez tous les services essentiels que vous pourriez avoir besoin de contacter pendant une urgence.",
-            "examples": [
-              "Police - Force Royale de Police - 911 / 876-555-0150 - - N/A",
-              "Pompiers - Brigade Incendie Kingston - 911 / 876-555-0151 - - N/A",
-              "Électricité - Jamaica Public Service - 876-555-0152 - customer@jps.com.jm - Compte : JPS123456",
-              "Eau - Commission Nationale de l'Eau - 876-555-0153 - service@nwc.com.jm - Compte : NWC789012",
-              "Internet - Flow Jamaica - 876-555-0154 - support@flow.com - Compte : FLOW345678",
-              "Assurance - Guardian Life - 876-555-0155 - claims@guardian.com - Police : GL901234"
-            ]
-          },
-          "criticalBusinessInfo": {
-            "label": "Informations Critiques de l'Entreprise",
-            "prompt": "Fournissez d'autres informations critiques de l'entreprise nécessaires pendant les urgences.",
-            "examples": [
-              "Licence d'Entreprise : BL-2023-0456, Police d'Assurance : GL-789012 (Guardian Life), Compte Bancaire : Scotia Bank #123456789, Emplacement Dossiers Critiques : Coffre-fort ignifuge bureau gérant, Dossiers Secours : Stockage nuage (Google Drive) + disque externe domicile propriétaire",
-              "Numéro Enregistrement : REG-2022-0789, Assurance : Police Sagicor #SG-456789, Banque : First Caribbean #987654321, Documents Importants : Coffre bancaire, Copies Numériques : Compte Dropbox partagé avec comptable"
-            ]
-          },
-          "planDistribution": {
-            "label": "Liste de Distribution du Plan",
-            "prompt": "Suivez qui a reçu des copies de ce plan de continuité d'activité.",
-            "tableColumns": ["Nom/Poste", "Format Reçu", "Date Fournie", "Numéro Version", "Accusé Réception"],
-            "tableRowsPrompt": "Documentez tous ceux qui devraient avoir accès au plan.",
-            "examples": [
-              "John Smith (Gérant) - Électronique + Copie papier - 2024-01-15 - Version 1.0 - Signé",
-              "Maria Rodriguez (Gérant Adjoint) - Électronique - 2024-01-15 - Version 1.0 - Email confirmé",
-              "Guardian Life Insurance - Électronique - 2024-01-20 - Version 1.0 - Soumis avec demande"
-            ]
-          }
-        }
-      },
-      "vitalRecords": {
-        "title": "Inventaire des Documents Vitaux",
-        "description": "Identifions et documentons l'emplacement des documents commerciaux critiques nécessaires à la reprise.",
-        "inputs": {
-          "vitalRecordsInventory": {
-            "label": "Inventaire des Documents Vitaux",
-            "prompt": "Listez vos documents commerciaux les plus importants, où ils sont stockés et où les sauvegardes sont conservées.",
-            "tableColumns": ["Type de Document", "Emplacement Principal", "Emplacement de Sauvegarde", "Priorité de Récupération"],
-            "tableRowsPrompt": "Pensez aux documents dont vous auriez besoin pour redémarrer votre entreprise après un sinistre.",
-            "examples": [
-              "Contrats Clients - SharePoint - AWS Cloud - HAUTE",
-              "Documents Financiers - QuickBooks Cloud - Sauvegarde locale - HAUTE",
-              "Polices d'Assurance - Coffre-fort ignifuge - Copies numériques - HAUTE",
-              "Dossiers d'Employés - Système RH - Sécurisé hors site - MOYENNE",
-              "Licences Logicielles - Gestionnaire de mots de passe - Copies imprimées - HAUTE"
-            ]
-          }
-        }
-      },
-      "testingAndMaintenance": {
-        "title": "Tests et Maintenance",
-        "description": "Établissez des procédures pour maintenir votre plan de continuité d'activité actuel et efficace.",
-        "inputs": {
-          "testingSchedule": {
-            "label": "Calendrier de Test du Plan",
-            "prompt": "Créez un calendrier complet pour tester régulièrement différents aspects de votre plan de continuité d'activité.",
-            "tableColumns": ["Type de Test", "Ce qui est Testé", "Fréquence", "Prochaine Date de Test", "Critères de Succès", "Personne Responsable"],
-            "tableRowsPrompt": "Planifiez différents types de tests pour vous assurer que votre plan fonctionne quand nécessaire.",
-            "examples": [
-              "Test Communication - Procédures contact d'urgence - Mensuel - 2025-02-15 - Tout le personnel répond en 2 heures - Gestionnaire Bureau",
-              "Systèmes Secours - Générateur et alimentation secours - Trimestriel - 2025-03-15 - Systèmes fonctionnent 8+ heures sans problème - Personnel Maintenance",
-              "Exercice Évacuation - Procédures évacuation d'urgence - Semi-annuel - 2025-06-15 - Bâtiment évacué en moins de 5 minutes - Agent Sécurité",
-              "Test Sauvegarde Données - Récupération données critiques - Mensuel - 2025-02-28 - Toutes les données restaurées avec succès - Gestionnaire TI",
-              "Test Contact Fournisseurs - Activation fournisseur alternatif - Trimestriel - 2025-04-15 - Fournisseurs de secours répondent en 4 heures - Gestionnaire Achats",
-              "Exercice Plan Complet - Scénario urgence complet - Annuel - 2025-12-15 - Toutes les procédures exécutées avec succès - Directeur Général"
-            ]
-          },
-          "trainingSchedule": {
-            "label": "Calendrier de Formation",
-            "prompt": "Planifiez des sessions de formation régulières pour vous assurer que tout le personnel comprend ses rôles dans le plan de continuité d'activité.",
-            "tableColumns": ["Type de Formation", "Public Cible", "Fréquence", "Prochaine Date de Formation", "Fournisseur de Formation", "Critères d'Achèvement"],
-            "tableRowsPrompt": "Incluez à la fois la formation de sensibilisation générale et la formation spécifique au rôle.",
-            "examples": [
-              "Aperçu BCP - Tout le personnel - Annuel - 2025-03-01 - Directeur Général - Tout le personnel termine le module de formation",
-              "Réponse d'Urgence - Équipe de gestion - Semi-annuel - 2025-02-15 - Consultant externe - Exercices de jeu de rôle complétés",
-              "Sécurité Incendie - Tout le personnel - Annuel - 2025-04-01 - Service d'incendie - Participation à l'exercice d'incendie",
-              "Récupération Données - Personnel TI - Trimestriel - 2025-02-01 - Gestionnaire TI - Démonstration réussie de récupération de données",
-              "Communication Client - Personnel service client - Semi-annuel - 2025-05-01 - Gestionnaire Communications - Scénarios de communication de crise"
-            ]
-          },
-          "performanceMetrics": {
-            "label": "Métriques de Performance",
-            "prompt": "Définissez des indicateurs clés de performance pour mesurer l'efficacité de votre plan de continuité d'activité.",
-            "tableColumns": ["Nom de la Métrique", "Valeur Cible", "Méthode de Mesure", "Fréquence de Révision", "Statut Actuel", "Personne Responsable"],
-            "tableRowsPrompt": "Incluez des mesures quantitatives et qualitatives de l'efficacité du plan.",
-            "examples": [
-              "Temps de Réponse d'Urgence - Moins de 30 minutes - Registres de chronométrage d'exercices - Mensuel - Pas encore mesuré - Coordinateur d'Urgence",
-              "Taux de Succès de Contact du Personnel - 95% en 2 heures - Résultats de test de communication - Mensuel - Pas encore mesuré - Gestionnaire RH",
-              "Temps de Récupération de Données - Moins de 4 heures - Registres de test de sauvegarde - Trimestriel - Pas encore mesuré - Gestionnaire TI",
-              "Temps de Notification Client - Moins d'1 heure - Journaux de communication - Par incident - Pas encore mesuré - Gestionnaire Service Client",
-              "Temps de Reprise d'Activité - Moins de 48 heures - Registres d'incidents - Par incident - Pas encore mesuré - Gestionnaire des Opérations"
-            ]
-          },
-          "revisionHistory": {
-            "label": "Historique des Révisions du Plan",
-            "prompt": "Suivez les changements et mises à jour de votre plan de continuité d'activité au fil du temps.",
-            "tableColumns": ["Version", "Date Mise à Jour", "Changements Effectués", "Mis à Jour Par", "Raison de la Mise à Jour"],
-            "tableRowsPrompt": "Commencez avec Version 1.0 et planifiez les futures mises à jour.",
-            "examples": [
-              "Version 1.0 - 2024-01-15 - Création plan initial - John Smith (Gérant) - Nouveau plan continuité d'activité",
-              "Version 1.1 - 2024-03-15 - Contacts fournisseurs mis à jour - Maria Rodriguez - Fournisseur changé numéros téléphone",
-              "Version 2.0 - 2024-07-15 - Révision majeure après exercice ouragan - John Smith (Gérant) - Leçons apprises des tests"
-            ]
-          },
-          "improvementTracking": {
-            "label": "Suivi des Améliorations",
-            "prompt": "Suivez les améliorations et éléments d'action identifiés par les tests et événements réels.",
-            "tableColumns": ["Problème Identifié", "Action d'Amélioration", "Niveau Priorité", "Achèvement Ciblé", "Statut"],
-            "tableRowsPrompt": "Utilisez ceci pour suivre les améliorations continues de votre plan.",
-            "examples": [
-              "Personnel trop lent à répondre appel urgence - Améliorer formation personnel procédures urgence - Élevé - 2024-02-28 - En Cours",
-              "Générateur secours échec démarrage - Programmer test et maintenance mensuel générateur - Élevé - 2024-01-30 - Terminé",
-              "Liste contact client obsolète - Implémenter révision contact client trimestrielle - Moyen - 2024-03-31 - Planifié"
-            ]
-          },
-          "annualReview": {
-            "label": "Processus de Révision Annuelle",
-            "prompt": "Décrivez votre processus pour conduire des révisions annuelles complètes du plan de continuité d'activité.",
-            "examples": [
-              "Chaque janvier : 1) Réviser toutes informations contact et mettre à jour si nécessaire, 2) Évaluer nouveaux risques basés sur événements année précédente, 3) Mettre à jour informations assurance et financières, 4) Réviser besoins formation personnel, 5) Mettre à jour inventaire fournitures urgence, 6) Programmer activités test de l'année.",
-              "Réunion révision annuelle en décembre avec tout personnel clé : Réviser incidents et tests année passée, mettre à jour évaluation risques basée sur changements climat/affaires, vérifier toutes informations contact, évaluer budget améliorations année prochaine, planifier calendrier formation, mettre à jour listes fournitures urgence.",
-              "Processus révision annuelle complète : 1) Collecte commentaires parties prenantes, 2) Évaluation environnement risques, 3) Évaluation efficacité plan, 4) Révision exigences ressources, 5) Évaluation programme formation, 6) Évaluation système communication, 7) Mises à jour documentation."
-            ]
-          },
-          "triggerEvents": {
-            "label": "Événements Déclencheurs pour Mises à Jour Plan",
-            "prompt": "Quels événements ou changements déclencheraient une mise à jour immédiate de votre plan de continuité d'activité ?",
-            "examples": [
-              "Mises à jour immédiates requises pour : 1) Toute urgence ou catastrophe réelle affectant l'entreprise, 2) Changements personnel clé ou direction, 3) Déménagement nouveau lieu ou changements installations majeurs, 4) Changements fournisseurs majeurs ou prestataires services, 5) Nouveaux risques significatifs identifiés, 6) Changements couverture assurance ou exigences légales.",
-              "Mises à jour plan déclenchées par : Changements personnel majeurs, déménagements lieu, nouvel équipement/technologie, changements fournisseurs, changements police assurance, changements réglementation gouvernement, mises à jour plan urgence communautaire, leçons apprises urgences réelles.",
-              "Déclencheurs mise à jour : Expansion ou réduction entreprise, implémantation nouvelle technologie, changements base clientèle, changements réglementaires, événements catastrophes naturelles (même si entreprise pas directement affectée), changements services urgence locaux, activités fusion ou acquisition."
-            ]
-          }
+        "riskMatrix": {
+          "label": "Matrice d'Évaluation des Risques",
+          "prompt": "Pour chaque danger que vous avez sélectionné, évaluez la probabilité et la gravité potentielle de l'impact sur votre entreprise.",
+          "examples": [
+            "Ouragan - Probable (3) - Grave (3) - Élevé (9) - Acheter assurance, préparer volets, sécuriser inventaire",
+            "Panne de Courant - Très Probable (4) - Mineur (2) - Moyen (8) - Installer générateur de secours, UPS pour ordinateurs",
+            "Incendie - Improbable (2) - Majeur (4) - Moyen (8) - Installer alarmes incendie, système sprinkler, extincteurs"
+          ]
         }
       }
     },
-    "validation": {
-      "required": "Ce champ est obligatoire",
-      "invalidEmail": "Veuillez entrer une adresse email valide",
-      "minLength": "Doit contenir au moins {min} caractères",
-      "maxLength": "Doit contenir au maximum {max} caractères"
+    "strategySelection": {
+      "selectStrategiesDescription": "Sélectionnez les stratégies que votre entreprise mettra en œuvre pour prévenir, répondre et se remettre des urgences. Les stratégies marquées avec ✨ sont spécifiquement recommandées en fonction de votre type d'entreprise et des risques identifiés.",
+      "headerTitle": "Vos Actions Recommandées",
+      "headerDescription": "En fonction de vos risques sélectionnés, nous avons choisi {count} stratégies qui protégeront votre entreprise.",
+      "selectionInstructions": "✅ = Inclure dans votre plan • ⬜ = Ignorer celle-ci",
+      "essentialTitle": "ESSENTIEL (Obligatoire)",
+      "essentialDescription": "Nous recommandons fortement que vous incluiez ces éléments",
+      "recommendedTitle": "RECOMMANDÉ (Devrait Avoir)",
+      "recommendedDescription": "Ceux-ci ajoutent une bonne protection",
+      "optionalTitle": "OPTIONNEL (Bon à Avoir)",
+      "optionalDescription": "Considérez si vous avez le temps et les ressources",
+      "whyLabel": "Pourquoi:",
+      "whatYouGetLabel": "Ce Que Vous Obtenez:",
+      "protectsAgainstLabel": "Protège contre:",
+      "seeFullDetails": "Voir Tous les Détails",
+      "hideDetails": "Masquer les Détails",
+      "quickWin": "Victoire Rapide",
+      "realSuccessStory": "Histoire de Succès Réelle",
+      "lowBudgetAlternative": "Alternative à Petit Budget",
+      "diyApproach": "Approche Faites-le Vous-même",
+      "planSummaryTitle": "Résumé de Votre Plan:",
+      "essentialStrategies": "Stratégies essentielles:",
+      "recommendedStrategies": "Stratégies recommandées:",
+      "optionalStrategies": "Stratégies optionnelles:",
+      "totalStrategies": "Total des stratégies:",
+      "totalTime": "Temps total:",
+      "totalCost": "Coût total",
+      "unselectWarningTitle": "Êtes-vous sûr?",
+      "unselectWarningMessage": "Vous avez décoché une stratégie ESSENTIELLE. Ceci est important pour la sécurité de votre entreprise. Êtes-vous sûr de vouloir la supprimer?",
+      "unselectConfirm": "Oui, la supprimer",
+      "unselectCancel": "La garder (Recommandé)",
+      "whatYouNeedToDo": "Ce Que Vous Devez Faire",
+      "whyThisMatters": "Pourquoi c'est important",
+      "doneWhen": "Terminé quand",
+      "freeOption": "Option gratuite",
+      "helpfulTips": "Conseils Utiles",
+      "commonMistakes": "Erreurs Courantes à Éviter"
     },
-    "pdf": {
-      "title": "Plan de Continuité d'Activité",
-      "generatedOn": "Généré le {date}",
-      "companyInfo": "Informations de l'Entreprise",
-      "planDetails": "Détails du Plan"
+    "strategies": {
+      "title": "Stratégies de Continuité d'Activité",
+      "description": "Développons maintenant des stratégies complètes pour prévenir, répondre et récupérer des risques que vous avez identifiés.",
+      "examples": {
+        "autoRecommended": "Les stratégies sont automatiquement recommandées en fonction de votre évaluation des risques",
+        "prevention": "Les stratégies de prévention aident à réduire la probabilité d'urgences",
+        "response": "Les stratégies de réponse guident vos actions pendant les urgences",
+        "recovery": "Les stratégies de récupération aident à restaurer les opérations normales après"
+      },
+      "inputs": {
+        "preventionStrategies": {
+          "label": "Stratégies de Prévention (Avant les Urgences)",
+          "prompt": "Quelles stratégies de prévention allez-vous mettre en œuvre pour réduire la probabilité ou l'impact des risques ? Sélectionnez tout ce qui s'applique.",
+          "options": [
+            {
+              "label": "Maintenance régulière des équipements et installations",
+              "value": "maintenance"
+            },
+            {
+              "label": "Systèmes de sécurité physique (alarmes, caméras, serrures)",
+              "value": "physical_security"
+            },
+            {
+              "label": "Mesures de cybersécurité et protection des données",
+              "value": "cybersecurity"
+            },
+            {
+              "label": "Couverture d'assurance complète",
+              "value": "insurance"
+            },
+            {
+              "label": "Formation des employés et préparation aux urgences",
+              "value": "employee_training"
+            },
+            {
+              "label": "Diversification des fournisseurs et fournisseurs de secours",
+              "value": "supplier_diversity"
+            },
+            {
+              "label": "Réserves financières et fonds d'urgence",
+              "value": "financial_reserves"
+            },
+            {
+              "label": "Sauvegarde régulière des données et stockage hors site",
+              "value": "data_backup"
+            },
+            {
+              "label": "Modifications de bâtiment pour résistance aux catastrophes",
+              "value": "building_upgrades"
+            },
+            {
+              "label": "Stockage de fournitures et équipements d'urgence",
+              "value": "emergency_supplies"
+            },
+            {
+              "label": "Évaluations régulières des risques et mises à jour du plan",
+              "value": "risk_monitoring"
+            },
+            {
+              "label": "Partenariats communautaires et accords d'aide mutuelle",
+              "value": "community_partnerships"
+            }
+          ],
+          "examples": [
+            "Magasin de détail : Sécurité physique, Assurance, Formation employés, Fournitures d'urgence",
+            "Entreprise technologique : Cybersécurité, Sauvegarde données, Formation employés, Réserves financières",
+            "Restaurant : Maintenance, Assurance, Fournitures d'urgence, Améliorations bâtiment"
+          ]
+        },
+        "responseStrategies": {
+          "label": "Stratégies de Réponse (Pendant les Urgences)",
+          "prompt": "Quelles stratégies de réponse allez-vous mettre en œuvre pendant une urgence ? Sélectionnez tout ce qui s'applique.",
+          "options": [
+            {
+              "label": "Activation de l'équipe de réponse d'urgence",
+              "value": "emergency_team"
+            },
+            {
+              "label": "Procédures de sécurité du personnel et des clients",
+              "value": "safety_procedures"
+            },
+            {
+              "label": "Plan de communication d'urgence",
+              "value": "emergency_communication"
+            },
+            {
+              "label": "Lieux de travail alternatifs",
+              "value": "alternative_locations"
+            },
+            {
+              "label": "Travail à distance et opérations virtuelles",
+              "value": "remote_work"
+            },
+            {
+              "label": "Gestion d'urgence des stocks et approvisionnements",
+              "value": "emergency_inventory"
+            },
+            {
+              "label": "Procédures de continuité du service client",
+              "value": "customer_continuity"
+            },
+            {
+              "label": "Gestion des médias et relations publiques",
+              "value": "media_management"
+            },
+            {
+              "label": "Procédures financières d'urgence",
+              "value": "emergency_finance"
+            },
+            {
+              "label": "Coordination avec les services d'urgence",
+              "value": "emergency_services"
+            },
+            {
+              "label": "Procédures de fermeture temporaire et sécurisation",
+              "value": "closure_procedures"
+            },
+            {
+              "label": "Opérations de services essentiels uniquement",
+              "value": "essential_operations"
+            }
+          ],
+          "examples": [
+            "Entreprise de services : Équipe d'urgence, Travail à distance, Continuité client, Communication d'urgence",
+            "Commerce de détail : Procédures sécurité, Inventaire d'urgence, Procédures fermeture, Services d'urgence",
+            "Fabrication : Équipe d'urgence, Lieux alternatifs, Opérations essentielles, Finance d'urgence"
+          ]
+        },
+        "recoveryStrategies": {
+          "label": "Stratégies de Récupération (Après les Urgences)",
+          "prompt": "Quelles stratégies de récupération vous aideront à restaurer les opérations normales après une urgence ? Sélectionnez tout ce qui s'applique.",
+          "options": [
+            {
+              "label": "Évaluation et documentation des dommages",
+              "value": "damage_assessment"
+            },
+            {
+              "label": "Réclamations d'assurance et récupération financière",
+              "value": "insurance_claims"
+            },
+            {
+              "label": "Procédures de reprise et redémarrage d'activité",
+              "value": "business_resumption"
+            },
+            {
+              "label": "Programmes de soutien et conseil aux employés",
+              "value": "employee_support"
+            },
+            {
+              "label": "Stratégies de rétention et reconquête clients",
+              "value": "customer_retention"
+            },
+            {
+              "label": "Restauration des relations fournisseurs",
+              "value": "supplier_restoration"
+            },
+            {
+              "label": "Marketing et gestion de la réputation",
+              "value": "reputation_management"
+            },
+            {
+              "label": "Assistance financière et demandes de prêt",
+              "value": "financial_assistance"
+            },
+            {
+              "label": "Réparation et reconstruction d'installations",
+              "value": "facility_repair"
+            },
+            {
+              "label": "Remplacement et améliorations d'équipement",
+              "value": "equipment_replacement"
+            },
+            {
+              "label": "Leçons apprises et améliorations du plan",
+              "value": "lessons_learned"
+            },
+            {
+              "label": "Soutien et collaboration communautaires",
+              "value": "community_support"
+            }
+          ],
+          "examples": [
+            "Petite entreprise : Réclamations assurance, Reprise activité, Rétention clients, Assistance financière",
+            "Entreprise de services : Soutien employés, Rétention clients, Gestion réputation, Leçons apprises",
+            "Fabrication : Évaluation dommages, Réparation installations, Remplacement équipement, Restauration fournisseurs"
+          ]
+        },
+        "longTermMeasures": {
+          "label": "Mesures de Réduction des Risques à Long Terme",
+          "prompt": "Quelles mesures à long terme allez-vous implémenter pour réduire les risques futurs ? Considérez l'adaptation climatique, les pratiques durables et la construction de résilience au fil du temps.",
+          "examples": [
+            "Installer panneaux solaires pour indépendance énergétique, relocaliser équipement critique au-dessus des niveaux d'inondation, diversifier chaînes d'approvisionnement sur plusieurs îles",
+            "Implémenter gestion durable des déchets, utiliser fournisseurs locaux pour réduire risques transport, construire partenariats communautaires plus forts",
+            "Investir dans matériaux de construction résistants au climat, développer programmes formation croisée personnel, établir fonds d'urgence équivalent à 3 mois coûts opérationnels"
+          ]
+        }
+      }
     },
-    "industrySelector": {
-      "businessTypeTitle": "Quel type d'entreprise exploitez-vous ?",
-      "businessTypeDescription": "Sélectionnez votre type d'entreprise pour obtenir des recommandations personnalisées et du contenu intelligent pré-rempli pour votre Plan de Continuité d'Activité.",
-      "locationTitle": "Où se situe votre entreprise ?",
-      "locationDescription": "Aidez-nous à comprendre les risques spécifiques à votre localisation et fournir des recommandations ciblées.",
-      "skipSetup": "Ignorer cette étape et commencer avec un formulaire vierge",
-      "backToBusiness": "Retour à la sélection d'entreprise",
-      "backToLocation": "Retour à l'Emplacement",
-      "countryLabel": "Pays/Territoire",
-      "countryPlaceholder": "Sélectionnez votre pays",
-      "parishLabel": "Paroisse/Région",
-      "parishPlaceholder": "Sélectionnez la paroisse/région (optionnel)",
-      "regionLabel": "Zone/Quartier spécifique",
-      "regionPlaceholder": "ex. Centre-ville, Zone industrielle, District commercial",
-      "locationCharacteristics": "Caractéristiques de l'emplacement",
-      "nearCoast": "Près de la côte ou du front de mer",
-      "nearCoastDescription": "À moins de 3 km de l'océan, d'une rivière importante ou d'un grand plan d'eau",
-      "urbanArea": "Zone urbaine/centre-ville",
-      "urbanAreaDescription": "Forte densité de population, district commercial ou centre-ville",
-      "generatePlan": "Générer un Plan Intelligent Pré-rempli",
-      "skipSetupAction": "Ignorer la Configuration",
-      "selectedBusiness": "Type d'Entreprise Sélectionné :",
-      "retailCommerce": "Commerce de Détail",
-      "foodHospitality": "Alimentation et Hôtellerie",
-      "personalServices": "Services Personnels",
-      "tourismRecreation": "Tourisme et Loisirs",
-      "agricultureFishing": "Agriculture et Pêche",
-      "manufacturingProduction": "Fabrication et Production",
+    "actionPlan": {
+      "title": "Plan d'Action de Mise en Œuvre",
+      "description": "Finalement, créons un plan d'action détaillé pour implémenter vos stratégies de continuité d'activité.",
+      "inputs": {
+        "actionPlanByRisk": {
+          "label": "Plan d'Action par Niveau de Risque",
+          "prompt": "Pour vos risques de plus haute priorité, créez des plans d'action spécifiques avec calendriers et responsabilités.",
+          "tableColumns": [
+            "Danger/Risque",
+            "Actions Immédiates (0-24 heures)",
+            "Actions Court Terme (1-7 jours)",
+            "Actions Moyen Terme (1-4 semaines)",
+            "Personne Responsable"
+          ],
+          "tableRowsPrompt": "Nous nous concentrerons sur vos dangers à risque élevé et moyen. Pour chacun, pensez à ce qui doit se passer immédiatement, dans la première semaine, et dans le premier mois.",
+          "examples": [
+            "Ouragan - Sécuriser bâtiment, activer équipe urgence - Contacter personnel et clients, évaluer dommages - Déposer réclamations assurance, reprendre opérations - Directeur Opérations",
+            "Panne Courant - Passer à alimentation secours, sécuriser caisses - Contacter compagnie électricité, implémenter processus manuels - Évaluer besoins alimentation secours, commander équipement - Gestionnaire Installations"
+          ]
+        },
+        "implementationTimeline": {
+          "label": "Calendrier de Mise en Œuvre",
+          "prompt": "Quel est votre calendrier global pour implémenter ce plan de continuité d'activité ? Considérez vos cycles d'affaires, contraintes budgétaires et risques prioritaires.",
+          "examples": [
+            "Phase 1 (Immédiat - 1 mois) : Implémenter mesures prévention haute priorité et procédures d'urgence. Phase 2 (1-3 mois) : Compléter formation personnel et installation systèmes secours. Phase 3 (3-6 mois) : Finaliser toutes stratégies et conduire premier test complet.",
+            "Commencer implémantation immédiatement avec saison ouragans approchant. Compléter mesures critiques dans 6 semaines, implémantation complète dans 3 mois.",
+            "Commencer après fin saison chargée en avril. Implémenter éléments haute priorité d'ici juin, compléter plan entier d'ici décembre avant prochaine saison touristique."
+          ]
+        },
+        "resourceRequirements": {
+          "label": "Exigences de Ressources",
+          "prompt": "Quelles ressources (financières, humaines, techniques) aurez-vous besoin pour implémenter votre plan ? Soyez spécifique sur les coûts et temps personnel.",
+          "examples": [
+            "Budget : 15 000$ pour système sécurité (8 000$), générateur (5 000$), formation (2 000$). Personnel : 20 heures/semaine du gérant pendant 2 mois, 4 heures/semaine de chaque employé.",
+            "Financier : 25 000$ total - infrastructure IT (15 000$), augmentations assurance (3 000$/an), fournitures urgence (2 000$), formation (5 000$). Humain : consultant IT (40 heures), temps gestion (2 jours/semaine pendant 3 mois).",
+            "Budget équipement : 10 000$ pour systèmes secours. Budget formation : 3 000$ pour certification personnel. Investissement temps : 1 jour par semaine des chefs département pendant 4 mois."
+          ]
+        },
+        "responsibleParties": {
+          "label": "Parties Responsables et Rôles",
+          "prompt": "Qui sera responsable d'implémenter et maintenir différents aspects du plan ? Assignez rôles spécifiques et responsabilités de secours.",
+          "examples": [
+            "Coordinateur Plan : Directeur Général (secours : Superviseur Opérations). Systèmes IT : Gestionnaire IT (secours : Consultant externe). Formation Personnel : Gestionnaire RH (secours : Superviseur Senior). Réponse Urgence : Directeur Opérations (secours : Gérant Adjoint).",
+            "Implémantation Globale : Propriétaire Entreprise (secours : Gestionnaire Bureau). Prévention Risques : Gestionnaire Installations (secours : Personnel Maintenance). Communication : Gestionnaire Service Client (secours : Personnel Réception). Financier : Comptable (secours : Gestionnaire Bureau).",
+            "Équipe Continuité Activité : 3 membres personnel senior avec leadership rotatif. Implémantation Départementale : Chaque chef département responsable de son domaine. Relations Externes : Gestionnaire Marketing pour médias, Gestionnaire Admin pour gouvernement/assurance."
+          ]
+        },
+        "reviewSchedule": {
+          "label": "Calendrier de Révision et Mise à Jour",
+          "prompt": "À quelle fréquence allez-vous réviser et mettre à jour votre plan de continuité d'activité ? Incluez révisions régulières et événements déclencheurs pour mises à jour.",
+          "examples": [
+            "Révisions trimestrielles de l'évaluation des risques et informations de contact. Mise à jour annuelle complète du plan. Révision immédiate après tout événement d'urgence ou changement d'affaires significatif.",
+            "Vérifications mensuelles pendant saison ouragans (Juin-Novembre). Révisions complètes bi-annuelles en janvier et juillet. Mise à jour plan chaque fois que nous changeons fournisseurs, déménageons, ou changeons personnel clé.",
+            "Surveillance continue : mises à jour mensuelles évaluation risques. Révisions formelles : réunions équipe trimestrielles. Mises à jour majeures : annuellement et après tout événement urgence, expansion entreprise, ou changements réglementaires."
+          ]
+        },
+        "testingPlan": {
+          "label": "Plan de Test et Évaluation",
+          "prompt": "Comment allez-vous tester votre plan de continuité d'activité pour vous assurer qu'il fonctionne efficacement ?",
+          "tableColumns": [
+            "Type de Test",
+            "Fréquence",
+            "Participants",
+            "Critères de Succès",
+            "Personne Responsable"
+          ],
+          "tableRowsPrompt": "Planifiez différents types de tests pour valider votre plan de continuité d'activité.",
+          "examples": [
+            "Test Communication - Mensuel - Tout le personnel - Chacun reçoit et répond au message d'urgence dans les 2 heures - Gestionnaire Communications",
+            "Exercice Évacuation - Trimestriel - Tout personnel et clients - Bâtiment évacué en sécurité dans les 5 minutes - Agent Sécurité",
+            "Test Système Secours - Mensuel - Personnel IT - Tous systèmes basculent vers alimentation/internet secours avec succès - Gestionnaire IT",
+            "Exercice Plan Complet - Annuel - Tout personnel clé - Exercice scénario complet terminé avec succès - Coordinateur Plan"
+          ]
+        }
+      },
+      "examples": {
+        "autoRecommended": "Les stratégies sont automatiquement recommandées en fonction de votre évaluation des risques",
+        "prevention": "Les stratégies de prévention aident à réduire la probabilité d'urgences",
+        "response": "Les stratégies de réponse guident vos actions pendant les urgences",
+        "recovery": "Les stratégies de récupération aident à restaurer les opérations normales après"
+      }
+    },
+    "strategies": {
+      "title": "Stratégies de Continuité",
+      "description": "Développons des stratégies pour gérer vos risques identifiés.",
+      "examples": {
+        "autoRecommended": "Les stratégies sont automatiquement recommandées en fonction de votre évaluation des risques",
+        "prevention": "Les stratégies de prévention aident à réduire la probabilité d'urgences",
+        "response": "Les stratégies de réponse guident vos actions pendant les urgences",
+        "recovery": "Les stratégies de récupération aident à restaurer les opérations normales après"
+      }
+    },
+    "contactsAndInformation": {
+      "title": "Contacts et Informations Critiques",
+      "description": "Compilons toutes les informations de contact importantes et détails dont vous aurez besoin pendant une urgence.",
+      "inputs": {
+        "staffContacts": {
+          "label": "Informations de Contact du Personnel",
+          "prompt": "Fournissez les informations de contact pour tous les membres du personnel.",
+          "tableColumns": [
+            "Nom",
+            "Poste",
+            "Numéro de Téléphone",
+            "Adresse Email",
+            "Contact d'Urgence"
+          ],
+          "tableRowsPrompt": "Incluez tous les employés, gérants et personnel clé qui devraient être contactés pendant une urgence.",
+          "examples": [
+            "John Smith - Gérant - 876-555-0123 - j.smith@company.com - Épouse : 876-555-0124",
+            "Maria Rodriguez - Caissière - 876-555-0125 - m.rodriguez@company.com - Sœur : 876-555-0126",
+            "David Thompson - Cuisinier - 876-555-0127 - d.thompson@company.com - Mère : 876-555-0128"
+          ]
+        },
+        "keyCustomers": {
+          "label": "Contacts Clients Clés",
+          "prompt": "Listez vos clients les plus importants qui auraient besoin d'attention spéciale pendant une urgence.",
+          "tableColumns": [
+            "Nom Client",
+            "Type/Notes",
+            "Numéro de Téléphone",
+            "Adresse Email",
+            "Exigences Spéciales"
+          ],
+          "tableRowsPrompt": "Concentrez-vous sur les clients qui dépendent de vous pour des services essentiels ou ont des besoins spéciaux.",
+          "examples": [
+            "Mme James - Cliente âgée (livraison domicile) - 876-555-0130 - - Dépend de livraison épicerie hebdomadaire",
+            "Paradise Resort - Client majeur - 876-555-0131 - orders@paradiseresort.com - Livraison quotidienne produits frais",
+            "Hôpital Municipal - Fournitures urgence - 876-555-0132 - procurement@cityhospital.gov - Fournitures médicales critiques"
+          ]
+        },
+        "supplierInfo": {
+          "label": "Informations Fournisseurs",
+          "prompt": "Listez vos principaux fournisseurs et au moins un fournisseur de secours pour les biens/services clés.",
+          "tableColumns": [
+            "Nom Fournisseur",
+            "Biens/Services Fournis",
+            "Numéro de Téléphone",
+            "Adresse Email",
+            "Fournisseur Secours"
+          ],
+          "tableRowsPrompt": "Incluez fournisseurs principaux et identifiez options secours pour approvisionnements critiques.",
+          "examples": [
+            "Caribbean Foods Ltd - Produits frais - 876-555-0140 - orders@caribbeanfoods.com - Island Fresh Co.",
+            "Island Hardware - Outils et fournitures - 876-555-0141 - sales@islandhardware.com - Tools & More Ltd.",
+            "Power Solutions Inc - Maintenance générateur - 876-555-0142 - service@powersolutions.com - Electric Pro Services"
+          ]
+        },
+        "emergencyServices": {
+          "label": "Services d'Urgence et Utilités",
+          "prompt": "Compilez les informations de contact pour services d'urgence et fournisseurs d'utilités.",
+          "tableColumns": [
+            "Type de Service",
+            "Nom Organisation",
+            "Numéro de Téléphone",
+            "Adresse Email",
+            "Numéro de Compte"
+          ],
+          "tableRowsPrompt": "Incluez tous les services essentiels que vous pourriez avoir besoin de contacter pendant une urgence.",
+          "examples": [
+            "Police - Force Royale de Police - 911 / 876-555-0150 - - N/A",
+            "Pompiers - Brigade Incendie Kingston - 911 / 876-555-0151 - - N/A",
+            "Électricité - Jamaica Public Service - 876-555-0152 - customer@jps.com.jm - Compte : JPS123456",
+            "Eau - Commission Nationale de l'Eau - 876-555-0153 - service@nwc.com.jm - Compte : NWC789012",
+            "Internet - Flow Jamaica - 876-555-0154 - support@flow.com - Compte : FLOW345678",
+            "Assurance - Guardian Life - 876-555-0155 - claims@guardian.com - Police : GL901234"
+          ]
+        },
+        "criticalBusinessInfo": {
+          "label": "Informations Critiques de l'Entreprise",
+          "prompt": "Fournissez d'autres informations critiques de l'entreprise nécessaires pendant les urgences.",
+          "examples": [
+            "Licence d'Entreprise : BL-2023-0456, Police d'Assurance : GL-789012 (Guardian Life), Compte Bancaire : Scotia Bank #123456789, Emplacement Dossiers Critiques : Coffre-fort ignifuge bureau gérant, Dossiers Secours : Stockage nuage (Google Drive) + disque externe domicile propriétaire",
+            "Numéro Enregistrement : REG-2022-0789, Assurance : Police Sagicor #SG-456789, Banque : First Caribbean #987654321, Documents Importants : Coffre bancaire, Copies Numériques : Compte Dropbox partagé avec comptable"
+          ]
+        },
+        "planDistribution": {
+          "label": "Liste de Distribution du Plan",
+          "prompt": "Suivez qui a reçu des copies de ce plan de continuité d'activité.",
+          "tableColumns": [
+            "Nom/Poste",
+            "Format Reçu",
+            "Date Fournie",
+            "Numéro Version",
+            "Accusé Réception"
+          ],
+          "tableRowsPrompt": "Documentez tous ceux qui devraient avoir accès au plan.",
+          "examples": [
+            "John Smith (Gérant) - Électronique + Copie papier - 2024-01-15 - Version 1.0 - Signé",
+            "Maria Rodriguez (Gérant Adjoint) - Électronique - 2024-01-15 - Version 1.0 - Email confirmé",
+            "Guardian Life Insurance - Électronique - 2024-01-20 - Version 1.0 - Soumis avec demande"
+          ]
+        }
+      }
+    },
+    "vitalRecords": {
+      "title": "Inventaire des Documents Vitaux",
+      "description": "Identifions et documentons l'emplacement des documents commerciaux critiques nécessaires à la reprise.",
+      "inputs": {
+        "vitalRecordsInventory": {
+          "label": "Inventaire des Documents Vitaux",
+          "prompt": "Listez vos documents commerciaux les plus importants, où ils sont stockés et où les sauvegardes sont conservées.",
+          "tableColumns": [
+            "Type de Document",
+            "Emplacement Principal",
+            "Emplacement de Sauvegarde",
+            "Priorité de Récupération"
+          ],
+          "tableRowsPrompt": "Pensez aux documents dont vous auriez besoin pour redémarrer votre entreprise après un sinistre.",
+          "examples": [
+            "Contrats Clients - SharePoint - AWS Cloud - HAUTE",
+            "Documents Financiers - QuickBooks Cloud - Sauvegarde locale - HAUTE",
+            "Polices d'Assurance - Coffre-fort ignifuge - Copies numériques - HAUTE",
+            "Dossiers d'Employés - Système RH - Sécurisé hors site - MOYENNE",
+            "Licences Logicielles - Gestionnaire de mots de passe - Copies imprimées - HAUTE"
+          ]
+        }
+      }
+    },
+    "testingAndMaintenance": {
+      "title": "Tests et Maintenance",
+      "description": "Établissez des procédures pour maintenir votre plan de continuité d'activité actuel et efficace.",
+      "inputs": {
+        "testingSchedule": {
+          "label": "Calendrier de Test du Plan",
+          "prompt": "Créez un calendrier complet pour tester régulièrement différents aspects de votre plan de continuité d'activité.",
+          "tableColumns": [
+            "Type de Test",
+            "Ce qui est Testé",
+            "Fréquence",
+            "Prochaine Date de Test",
+            "Critères de Succès",
+            "Personne Responsable"
+          ],
+          "tableRowsPrompt": "Planifiez différents types de tests pour vous assurer que votre plan fonctionne quand nécessaire.",
+          "examples": [
+            "Test Communication - Procédures contact d'urgence - Mensuel - 2025-02-15 - Tout le personnel répond en 2 heures - Gestionnaire Bureau",
+            "Systèmes Secours - Générateur et alimentation secours - Trimestriel - 2025-03-15 - Systèmes fonctionnent 8+ heures sans problème - Personnel Maintenance",
+            "Exercice Évacuation - Procédures évacuation d'urgence - Semi-annuel - 2025-06-15 - Bâtiment évacué en moins de 5 minutes - Agent Sécurité",
+            "Test Sauvegarde Données - Récupération données critiques - Mensuel - 2025-02-28 - Toutes les données restaurées avec succès - Gestionnaire TI",
+            "Test Contact Fournisseurs - Activation fournisseur alternatif - Trimestriel - 2025-04-15 - Fournisseurs de secours répondent en 4 heures - Gestionnaire Achats",
+            "Exercice Plan Complet - Scénario urgence complet - Annuel - 2025-12-15 - Toutes les procédures exécutées avec succès - Directeur Général"
+          ]
+        },
+        "trainingSchedule": {
+          "label": "Calendrier de Formation",
+          "prompt": "Planifiez des sessions de formation régulières pour vous assurer que tout le personnel comprend ses rôles dans le plan de continuité d'activité.",
+          "tableColumns": [
+            "Type de Formation",
+            "Public Cible",
+            "Fréquence",
+            "Prochaine Date de Formation",
+            "Fournisseur de Formation",
+            "Critères d'Achèvement"
+          ],
+          "tableRowsPrompt": "Incluez à la fois la formation de sensibilisation générale et la formation spécifique au rôle.",
+          "examples": [
+            "Aperçu BCP - Tout le personnel - Annuel - 2025-03-01 - Directeur Général - Tout le personnel termine le module de formation",
+            "Réponse d'Urgence - Équipe de gestion - Semi-annuel - 2025-02-15 - Consultant externe - Exercices de jeu de rôle complétés",
+            "Sécurité Incendie - Tout le personnel - Annuel - 2025-04-01 - Service d'incendie - Participation à l'exercice d'incendie",
+            "Récupération Données - Personnel TI - Trimestriel - 2025-02-01 - Gestionnaire TI - Démonstration réussie de récupération de données",
+            "Communication Client - Personnel service client - Semi-annuel - 2025-05-01 - Gestionnaire Communications - Scénarios de communication de crise"
+          ]
+        },
+        "performanceMetrics": {
+          "label": "Métriques de Performance",
+          "prompt": "Définissez des indicateurs clés de performance pour mesurer l'efficacité de votre plan de continuité d'activité.",
+          "tableColumns": [
+            "Nom de la Métrique",
+            "Valeur Cible",
+            "Méthode de Mesure",
+            "Fréquence de Révision",
+            "Statut Actuel",
+            "Personne Responsable"
+          ],
+          "tableRowsPrompt": "Incluez des mesures quantitatives et qualitatives de l'efficacité du plan.",
+          "examples": [
+            "Temps de Réponse d'Urgence - Moins de 30 minutes - Registres de chronométrage d'exercices - Mensuel - Pas encore mesuré - Coordinateur d'Urgence",
+            "Taux de Succès de Contact du Personnel - 95% en 2 heures - Résultats de test de communication - Mensuel - Pas encore mesuré - Gestionnaire RH",
+            "Temps de Récupération de Données - Moins de 4 heures - Registres de test de sauvegarde - Trimestriel - Pas encore mesuré - Gestionnaire TI",
+            "Temps de Notification Client - Moins d'1 heure - Journaux de communication - Par incident - Pas encore mesuré - Gestionnaire Service Client",
+            "Temps de Reprise d'Activité - Moins de 48 heures - Registres d'incidents - Par incident - Pas encore mesuré - Gestionnaire des Opérations"
+          ]
+        },
+        "revisionHistory": {
+          "label": "Historique des Révisions du Plan",
+          "prompt": "Suivez les changements et mises à jour de votre plan de continuité d'activité au fil du temps.",
+          "tableColumns": [
+            "Version",
+            "Date Mise à Jour",
+            "Changements Effectués",
+            "Mis à Jour Par",
+            "Raison de la Mise à Jour"
+          ],
+          "tableRowsPrompt": "Commencez avec Version 1.0 et planifiez les futures mises à jour.",
+          "examples": [
+            "Version 1.0 - 2024-01-15 - Création plan initial - John Smith (Gérant) - Nouveau plan continuité d'activité",
+            "Version 1.1 - 2024-03-15 - Contacts fournisseurs mis à jour - Maria Rodriguez - Fournisseur changé numéros téléphone",
+            "Version 2.0 - 2024-07-15 - Révision majeure après exercice ouragan - John Smith (Gérant) - Leçons apprises des tests"
+          ]
+        },
+        "improvementTracking": {
+          "label": "Suivi des Améliorations",
+          "prompt": "Suivez les améliorations et éléments d'action identifiés par les tests et événements réels.",
+          "tableColumns": [
+            "Problème Identifié",
+            "Action d'Amélioration",
+            "Niveau Priorité",
+            "Achèvement Ciblé",
+            "Statut"
+          ],
+          "tableRowsPrompt": "Utilisez ceci pour suivre les améliorations continues de votre plan.",
+          "examples": [
+            "Personnel trop lent à répondre appel urgence - Améliorer formation personnel procédures urgence - Élevé - 2024-02-28 - En Cours",
+            "Générateur secours échec démarrage - Programmer test et maintenance mensuel générateur - Élevé - 2024-01-30 - Terminé",
+            "Liste contact client obsolète - Implémenter révision contact client trimestrielle - Moyen - 2024-03-31 - Planifié"
+          ]
+        },
+        "annualReview": {
+          "label": "Processus de Révision Annuelle",
+          "prompt": "Décrivez votre processus pour conduire des révisions annuelles complètes du plan de continuité d'activité.",
+          "examples": [
+            "Chaque janvier : 1) Réviser toutes informations contact et mettre à jour si nécessaire, 2) Évaluer nouveaux risques basés sur événements année précédente, 3) Mettre à jour informations assurance et financières, 4) Réviser besoins formation personnel, 5) Mettre à jour inventaire fournitures urgence, 6) Programmer activités test de l'année.",
+            "Réunion révision annuelle en décembre avec tout personnel clé : Réviser incidents et tests année passée, mettre à jour évaluation risques basée sur changements climat/affaires, vérifier toutes informations contact, évaluer budget améliorations année prochaine, planifier calendrier formation, mettre à jour listes fournitures urgence.",
+            "Processus révision annuelle complète : 1) Collecte commentaires parties prenantes, 2) Évaluation environnement risques, 3) Évaluation efficacité plan, 4) Révision exigences ressources, 5) Évaluation programme formation, 6) Évaluation système communication, 7) Mises à jour documentation."
+          ]
+        },
+        "triggerEvents": {
+          "label": "Événements Déclencheurs pour Mises à Jour Plan",
+          "prompt": "Quels événements ou changements déclencheraient une mise à jour immédiate de votre plan de continuité d'activité ?",
+          "examples": [
+            "Mises à jour immédiates requises pour : 1) Toute urgence ou catastrophe réelle affectant l'entreprise, 2) Changements personnel clé ou direction, 3) Déménagement nouveau lieu ou changements installations majeurs, 4) Changements fournisseurs majeurs ou prestataires services, 5) Nouveaux risques significatifs identifiés, 6) Changements couverture assurance ou exigences légales.",
+            "Mises à jour plan déclenchées par : Changements personnel majeurs, déménagements lieu, nouvel équipement/technologie, changements fournisseurs, changements police assurance, changements réglementation gouvernement, mises à jour plan urgence communautaire, leçons apprises urgences réelles.",
+            "Déclencheurs mise à jour : Expansion ou réduction entreprise, implémantation nouvelle technologie, changements base clientèle, changements réglementaires, événements catastrophes naturelles (même si entreprise pas directement affectée), changements services urgence locaux, activités fusion ou acquisition."
+          ]
+        }
+      }
+    }
+  },
+  "validation": {
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Veuillez entrer une adresse email valide",
+    "minLength": "Doit contenir au moins {min} caractères",
+    "maxLength": "Doit contenir au maximum {max} caractères"
+  },
+  "pdf": {
+    "title": "Plan de Continuité d'Activité",
+    "generatedOn": "Généré le {date}",
+    "companyInfo": "Informations de l'Entreprise",
+    "planDetails": "Détails du Plan"
+  },
+  "industrySelector": {
+    "businessTypeTitle": "Quel type d'entreprise exploitez-vous ?",
+    "businessTypeDescription": "Sélectionnez votre type d'entreprise pour obtenir des recommandations personnalisées et du contenu intelligent pré-rempli pour votre Plan de Continuité d'Activité.",
+    "locationTitle": "Où se situe votre entreprise ?",
+    "locationDescription": "Aidez-nous à comprendre les risques spécifiques à votre localisation et fournir des recommandations ciblées.",
+    "skipSetup": "Ignorer cette étape et commencer avec un formulaire vierge",
+    "backToBusiness": "Retour à la sélection d'entreprise",
+    "backToLocation": "Retour à l'Emplacement",
+    "countryLabel": "Pays/Territoire",
+    "countryPlaceholder": "Sélectionnez votre pays",
+    "parishLabel": "Paroisse/Région",
+    "parishPlaceholder": "Sélectionnez la paroisse/région (optionnel)",
+    "regionLabel": "Zone/Quartier spécifique",
+    "regionPlaceholder": "ex. Centre-ville, Zone industrielle, District commercial",
+    "locationCharacteristics": "Caractéristiques de l'emplacement",
+    "nearCoast": "Près de la côte ou du front de mer",
+    "nearCoastDescription": "À moins de 3 km de l'océan, d'une rivière importante ou d'un grand plan d'eau",
+    "urbanArea": "Zone urbaine/centre-ville",
+    "urbanAreaDescription": "Forte densité de population, district commercial ou centre-ville",
+    "generatePlan": "Générer un Plan Intelligent Pré-rempli",
+    "skipSetupAction": "Ignorer la Configuration",
+    "selectedBusiness": "Type d'Entreprise Sélectionné :",
+    "retailCommerce": "Commerce de Détail",
+    "foodHospitality": "Alimentation et Hôtellerie",
+    "personalServices": "Services Personnels",
+    "tourismRecreation": "Tourisme et Loisirs",
+    "agricultureFishing": "Agriculture et Pêche",
+    "manufacturingProduction": "Fabrication et Production",
     "industrialEnvironmental": "Industriel et Environnemental",
-      "smartPreFilled": "Pré-rempli Intelligent",
-      "industrySpecific": "Spécifique à l'industrie",
-      "resetToDefaults": "Rétablir les valeurs par défaut de l'industrie",
-      "preFillIndicator": "Ce champ a été automatiquement rempli en fonction de votre sélection d'industrie",
-      "characteristicsTitle": "Parlez-Nous de Votre Entreprise",
-      "characteristicsDescription": "Questions rapides pour nous aider à calculer vos risques spécifiques (prend 30 secondes)",
-      "loadingQuestions": "Chargement des questions...",
-      "aboutLocationTitle": "À Propos de l'Emplacement de Votre Entreprise",
-      "aboutLocationDescription": "Ces détails nous aident à calculer les risques spécifiques à votre emplacement",
-      "nearCoastLabel": "Mon entreprise est près de la côte",
-      "nearCoastDetails": "Dans un rayon de 5 km de l'océan ou de la mer",
-      "urbanAreaLabel": "Mon entreprise est dans une zone urbaine/ville",
-      "urbanAreaDetails": "Dans une ville, un centre urbain ou une zone densément peuplée",
-      "backButton": "Retour",
-      "generateSmartPlan": "Générer un Plan Intelligent",
-      "preparingPlan": "Préparation de votre plan...",
-      "skipManual": "Ignorer et créer un plan manuellement",
-      "continueButton": "Continuer",
-      "loadingAdminUnits": "Chargement des unités administratives...",
-      "noAdminUnits": "Aucune unité administrative trouvée pour ce pays"
+    "smartPreFilled": "Pré-rempli Intelligent",
+    "industrySpecific": "Spécifique à l'industrie",
+    "resetToDefaults": "Rétablir les valeurs par défaut de l'industrie",
+    "preFillIndicator": "Ce champ a été automatiquement rempli en fonction de votre sélection d'industrie",
+    "characteristicsTitle": "Parlez-Nous de Votre Entreprise",
+    "characteristicsDescription": "Questions rapides pour nous aider à calculer vos risques spécifiques (prend 30 secondes)",
+    "loadingQuestions": "Chargement des questions...",
+    "aboutLocationTitle": "À Propos de l'Emplacement de Votre Entreprise",
+    "aboutLocationDescription": "Ces détails nous aident à calculer les risques spécifiques à votre emplacement",
+    "nearCoastLabel": "Mon entreprise est près de la côte",
+    "nearCoastDetails": "Dans un rayon de 5 km de l'océan ou de la mer",
+    "urbanAreaLabel": "Mon entreprise est dans une zone urbaine/ville",
+    "urbanAreaDetails": "Dans une ville, un centre urbain ou une zone densément peuplée",
+    "backButton": "Retour",
+    "generateSmartPlan": "Générer un Plan Intelligent",
+    "preparingPlan": "Préparation de votre plan...",
+    "skipManual": "Ignorer et créer un plan manuellement",
+    "continueButton": "Continuer",
+    "loadingAdminUnits": "Chargement des unités administratives...",
+    "noAdminUnits": "Aucune unité administrative trouvée pour ce pays"
+  },
+  "industryProfiles": {
+    "grocery_store": {
+      "name": "Épicerie",
+      "localName": "Épicerie Locale/Mini-Marché",
+      "businessPurpose": [
+        "Fournir des produits d'épicerie frais et des produits de première nécessité à la communauté de [NEIGHBORHOOD]",
+        "Servir les résidents locaux avec un accès pratique à la nourriture et aux articles ménagers",
+        "Soutenir les familles locales avec des produits d'épicerie abordables et des spécialités caribéennes"
+      ],
+      "productsServices": [
+        "Produits frais, viande, produits laitiers et produits de base. Spécialités locales comme les assaisonnements [ISLAND] et les aliments traditionnels",
+        "Épicerie, boissons, articles ménagers et produits locaux. Services de transfert d'argent et de paiement de factures",
+        "Produits de première nécessité, aliments congelés, collations et articles de soins personnels. Commandes spéciales pour les événements communautaires"
+      ],
+      "uniqueSellingPoints": [
+        "Focus communautaire local avec service personnalisé et crédit pour les clients de confiance",
+        "Heures prolongées et emplacement [AREA] pratique avec des produits locaux frais",
+        "Entreprise familiale avec des racines communautaires profondes et des prix compétitifs"
+      ],
+      "keyPersonnel": [
+        "Propriétaire/Gérant du magasin, Caissier, Commis aux stocks",
+        "Propriétaire, Gérant adjoint, Caissier à temps partiel",
+        "Gérant, Caissier principal, Chauffeur-livreur"
+      ],
+      "minimumResourcesExamples": [
+        "2 membres du personnel, système de point de vente de base, 1 unité de réfrigération, générateur de secours",
+        "Propriétaire + 1 employé, caisse enregistreuse, vitrine réfrigérée, caméra de sécurité",
+        "Gérant + caissier, système de point de vente moderne, chambre froide, véhicule de livraison"
+      ],
+      "customerBase": [
+        "Résidents locaux dans un rayon de 3 km, familles, clients âgés, petites entreprises",
+        "Familles du quartier, jeunes professionnels, touristes séjournant dans [AREA]",
+        "Membres de la communauté, restaurants locaux, parents en visite de résidents"
+      ]
     },
-    "industryProfiles": {
-      "grocery_store": {
-        "name": "Épicerie",
-        "localName": "Épicerie Locale/Mini-Marché",
-        "businessPurpose": [
-          "Fournir des produits d'épicerie frais et des produits de première nécessité à la communauté de [NEIGHBORHOOD]",
-          "Servir les résidents locaux avec un accès pratique à la nourriture et aux articles ménagers",
-          "Soutenir les familles locales avec des produits d'épicerie abordables et des spécialités caribéennes"
-        ],
-        "productsServices": [
-          "Produits frais, viande, produits laitiers et produits de base. Spécialités locales comme les assaisonnements [ISLAND] et les aliments traditionnels",
-          "Épicerie, boissons, articles ménagers et produits locaux. Services de transfert d'argent et de paiement de factures",
-          "Produits de première nécessité, aliments congelés, collations et articles de soins personnels. Commandes spéciales pour les événements communautaires"
-        ],
-        "uniqueSellingPoints": [
-          "Focus communautaire local avec service personnalisé et crédit pour les clients de confiance",
-          "Heures prolongées et emplacement [AREA] pratique avec des produits locaux frais",
-          "Entreprise familiale avec des racines communautaires profondes et des prix compétitifs"
-        ],
-        "keyPersonnel": [
-          "Propriétaire/Gérant du magasin, Caissier, Commis aux stocks",
-          "Propriétaire, Gérant adjoint, Caissier à temps partiel",
-          "Gérant, Caissier principal, Chauffeur-livreur"
-        ],
-        "minimumResourcesExamples": [
-          "2 membres du personnel, système de point de vente de base, 1 unité de réfrigération, générateur de secours",
-          "Propriétaire + 1 employé, caisse enregistreuse, vitrine réfrigérée, caméra de sécurité",
-          "Gérant + caissier, système de point de vente moderne, chambre froide, véhicule de livraison"
-        ],
-        "customerBase": [
-          "Résidents locaux dans un rayon de 3 km, familles, clients âgés, petites entreprises",
-          "Familles du quartier, jeunes professionnels, touristes séjournant dans [AREA]",
-          "Membres de la communauté, restaurants locaux, parents en visite de résidents"
-        ]
-      },
-      "chemical_processing": {
-        "name": "Usine de Traitement Chimique",
-        "localName": "Installation Chimique/Pétrochimique"
-      },
-      "waste_management": {
-        "name": "Installation de Gestion des Déchets",
-        "localName": "Centre de Traitement/Recyclage des Déchets"
-      },
-      "water_treatment": {
-        "name": "Station de Traitement de l'Eau",
-        "localName": "Installation de Traitement de l'Eau/Eaux Usées"
-      },
-      "restaurant": {
-        "name": "Restaurant",
-        "localName": "Restaurant Local/Établissement de Restauration",
-        "businessPurpose": [
-          "Servir une cuisine authentique [ISLAND] et offrir une expérience culinaire accueillante",
-          "Offrir des repas frais d'origine locale qui célèbrent les saveurs et la culture caribéennes",
-          "Créer un lieu de rassemblement communautaire centré sur la bonne nourriture et l'hospitalité"
-        ],
-        "productsServices": [
-          "Plats traditionnels [ISLAND], fruits de mer frais, boissons tropicales. Traiteur pour événements spéciaux",
-          "Cuisine fusion caribéenne, spécialités locales, cocktails artisanaux. Services de plats à emporter et de livraison",
-          "Cuisine familiale, spéciaux du jour, options végétariennes. Salle à manger privée et traiteur pour fêtes"
-        ],
-        "uniqueSellingPoints": [
-          "Recettes familiales transmises de génération en génération avec des ingrédients d'origine locale",
-          "Atmosphère authentique [ISLAND] avec musique live et vues magnifiques sur [AREA]",
-          "Chef primé spécialisé dans la cuisine caribéenne moderne avec des racines traditionnelles"
-        ],
-        "keyPersonnel": [
-          "Chef principal, Gérant de restaurant, Serveurs, Personnel de cuisine",
-          "Propriétaire/Chef, Gérant adjoint, Personnel de service, Cuisinier préparateur",
-          "Chef exécutif, Gérant de salle, Barman, Équipe de cuisine"
-        ],
-        "minimumResourcesExamples": [
-          "Chef + 2 serveurs, installation de cuisine de base, 3 tables, comptoir de plats à emporter",
-          "Propriétaire + cuisinier + serveur, cuisine complète, 8 tables de salle à manger, petit bar",
-          "Personnel de cuisine complet, salle à manger de 15 tables, bar, terrasse extérieure"
-        ],
-        "customerBase": [
-          "Résidents locaux, employés de bureau pendant le déjeuner, touristes explorant [AREA]",
-          "Familles célébrant des occasions spéciales, réunions d'affaires pour le déjeuner, dîneurs du week-end",
-          "Amateurs de gastronomie, clients d'hôtel, couples cherchant un dîner romantique, professionnels locaux"
-        ]
-      },
-      "beauty_salon": {
-        "name": "Salon de Beauté",
-        "localName": "Salon de Coiffure/Institut de Beauté",
-        "businessPurpose": [
-          "Fournir des services professionnels de soins capillaires et de beauté aux résidents de [NEIGHBORHOOD]",
-          "Aider les clients à paraître et se sentir au mieux avec des soins de coiffure et des traitements de beauté experts",
-          "Créer un environnement relaxant où les clients peuvent profiter de soins et de détente"
-        ],
-        "productsServices": [
-          "Coupes de cheveux, coiffure, coloration et traitements. Manucures, pédicures et services de sourcils",
-          "Soins capillaires professionnels, coiffure pour occasions spéciales, forfaits mariée. Produits capillaires de détail",
-          "Salon complet offrant coupes, couleur, permanentes et traitements thérapeutiques pour tous types de cheveux"
-        ],
-        "uniqueSellingPoints": [
-          "Spécialisé dans les textures de cheveux caribéens avec des stylistes certifiés et des produits de qualité",
-          "Service personnalisé dans une atmosphère confortable et amicale avec horaires flexibles",
-          "Dernières tendances et techniques combinées avec les méthodes de coiffure traditionnelles [ISLAND]"
-        ],
-        "keyPersonnel": [
-          "Styliste Principal/Propriétaire, Esthéticienne licenciée, Réceptionniste",
-          "Propriétaire du salon, Styliste senior, Styliste junior, Assistant à temps partiel",
-          "Styliste principal, Technicienne en ongles, Styliste apprenti"
-        ],
-        "minimumResourcesExamples": [
-          "Propriétaire-styliste + 1 employé, 2 postes de coiffure, équipement de base",
-          "2 stylistes, 3 postes, zone manucure, gamme complète de produits, système de rendez-vous",
-          "Personnel complet de 3, 4 postes de coiffure, zone de lavage, section de vente au détail, équipement moderne"
-        ],
-        "customerBase": [
-          "Femmes et hommes locaux, clients réguliers hebdomadaires/mensuels, clients pour occasions spéciales",
-          "Résidents de [AREA], mariées et groupes de mariage, professionnels nécessitant un entretien régulier",
-          "Membres de la communauté, touristes, clients célébrant des événements spéciaux, clients fidèles réguliers"
-        ]
-      }
+    "chemical_processing": {
+      "name": "Usine de Traitement Chimique",
+      "localName": "Installation Chimique/Pétrochimique"
     },
-    "welcome": {
-      "title": "Générateur de Plan de Continuité d'Activité",
-      "subtitle": "Powered by CARICHAM Methodology",
-      "whatIsThis": "Qu'est-ce que cet outil ?",
-      "description": "Cet outil interactif aide les petites et moyennes entreprises à créer des plans complets de préparation aux urgences. En utilisant la méthodologie CARICHAM éprouvée, il vous guide à travers l'identification des risques, la planification des réponses et la construction de la résilience pour votre entreprise.",
-      "howItWorks": "Comment ça marche :",
-      "step1": "Parlez-nous de votre type d'entreprise et de votre emplacement pour des recommandations personnalisées",
-      "step2": "Répondez aux questions guidées avec des exemples et suggestions spécifiques à l'industrie",
-      "step3": "Téléchargez votre plan complet et professionnel de continuité d'activité en PDF",
-      "whatYouNeed": "Ce dont vous aurez besoin :",
-      "timeRequired": "30-45 minutes de votre temps",
-      "businessInfo": "Informations de base sur les opérations de votre entreprise",
-      "saveProgress": "Vous pouvez sauvegarder vos progrès et revenir à tout moment",
-      "youWillGet": "Ce que vous recevrez :",
-      "comprehensivePlan": "Un plan complet et professionnel de continuité d'activité",
-      "industrySpecific": "Recommandations adaptées à votre type d'entreprise",
-      "pdfDownload": "PDF téléchargeable prêt pour les banques, assureurs et parties prenantes",
-      "dataSecure": "Vos données sont sécurisées et privées",
-      "privacyNote": "Toutes les informations sont stockées localement et chiffrées. Aucune donnée personnelle n'est requise.",
-      "getStarted": "Commencer avec la Sélection d'Industrie",
-      "skipIntro": "Ignorer l'Introduction et Commencer la Planification"
-      },
+    "waste_management": {
+      "name": "Installation de Gestion des Déchets",
+      "localName": "Centre de Traitement/Recyclage des Déchets"
+    },
+    "water_treatment": {
+      "name": "Station de Traitement de l'Eau",
+      "localName": "Installation de Traitement de l'Eau/Eaux Usées"
+    },
+    "restaurant": {
+      "name": "Restaurant",
+      "localName": "Restaurant Local/Établissement de Restauration",
+      "businessPurpose": [
+        "Servir une cuisine authentique [ISLAND] et offrir une expérience culinaire accueillante",
+        "Offrir des repas frais d'origine locale qui célèbrent les saveurs et la culture caribéennes",
+        "Créer un lieu de rassemblement communautaire centré sur la bonne nourriture et l'hospitalité"
+      ],
+      "productsServices": [
+        "Plats traditionnels [ISLAND], fruits de mer frais, boissons tropicales. Traiteur pour événements spéciaux",
+        "Cuisine fusion caribéenne, spécialités locales, cocktails artisanaux. Services de plats à emporter et de livraison",
+        "Cuisine familiale, spéciaux du jour, options végétariennes. Salle à manger privée et traiteur pour fêtes"
+      ],
+      "uniqueSellingPoints": [
+        "Recettes familiales transmises de génération en génération avec des ingrédients d'origine locale",
+        "Atmosphère authentique [ISLAND] avec musique live et vues magnifiques sur [AREA]",
+        "Chef primé spécialisé dans la cuisine caribéenne moderne avec des racines traditionnelles"
+      ],
+      "keyPersonnel": [
+        "Chef principal, Gérant de restaurant, Serveurs, Personnel de cuisine",
+        "Propriétaire/Chef, Gérant adjoint, Personnel de service, Cuisinier préparateur",
+        "Chef exécutif, Gérant de salle, Barman, Équipe de cuisine"
+      ],
+      "minimumResourcesExamples": [
+        "Chef + 2 serveurs, installation de cuisine de base, 3 tables, comptoir de plats à emporter",
+        "Propriétaire + cuisinier + serveur, cuisine complète, 8 tables de salle à manger, petit bar",
+        "Personnel de cuisine complet, salle à manger de 15 tables, bar, terrasse extérieure"
+      ],
+      "customerBase": [
+        "Résidents locaux, employés de bureau pendant le déjeuner, touristes explorant [AREA]",
+        "Familles célébrant des occasions spéciales, réunions d'affaires pour le déjeuner, dîneurs du week-end",
+        "Amateurs de gastronomie, clients d'hôtel, couples cherchant un dîner romantique, professionnels locaux"
+      ]
+    },
+    "beauty_salon": {
+      "name": "Salon de Beauté",
+      "localName": "Salon de Coiffure/Institut de Beauté",
+      "businessPurpose": [
+        "Fournir des services professionnels de soins capillaires et de beauté aux résidents de [NEIGHBORHOOD]",
+        "Aider les clients à paraître et se sentir au mieux avec des soins de coiffure et des traitements de beauté experts",
+        "Créer un environnement relaxant où les clients peuvent profiter de soins et de détente"
+      ],
+      "productsServices": [
+        "Coupes de cheveux, coiffure, coloration et traitements. Manucures, pédicures et services de sourcils",
+        "Soins capillaires professionnels, coiffure pour occasions spéciales, forfaits mariée. Produits capillaires de détail",
+        "Salon complet offrant coupes, couleur, permanentes et traitements thérapeutiques pour tous types de cheveux"
+      ],
+      "uniqueSellingPoints": [
+        "Spécialisé dans les textures de cheveux caribéens avec des stylistes certifiés et des produits de qualité",
+        "Service personnalisé dans une atmosphère confortable et amicale avec horaires flexibles",
+        "Dernières tendances et techniques combinées avec les méthodes de coiffure traditionnelles [ISLAND]"
+      ],
+      "keyPersonnel": [
+        "Styliste Principal/Propriétaire, Esthéticienne licenciée, Réceptionniste",
+        "Propriétaire du salon, Styliste senior, Styliste junior, Assistant à temps partiel",
+        "Styliste principal, Technicienne en ongles, Styliste apprenti"
+      ],
+      "minimumResourcesExamples": [
+        "Propriétaire-styliste + 1 employé, 2 postes de coiffure, équipement de base",
+        "2 stylistes, 3 postes, zone manucure, gamme complète de produits, système de rendez-vous",
+        "Personnel complet de 3, 4 postes de coiffure, zone de lavage, section de vente au détail, équipement moderne"
+      ],
+      "customerBase": [
+        "Femmes et hommes locaux, clients réguliers hebdomadaires/mensuels, clients pour occasions spéciales",
+        "Résidents de [AREA], mariées et groupes de mariage, professionnels nécessitant un entretien régulier",
+        "Membres de la communauté, touristes, clients célébrant des événements spéciaux, clients fidèles réguliers"
+      ]
+    }
+  },
+  "welcome": {
+    "title": "Générateur de Plan de Continuité d'Activité",
+    "subtitle": "Powered by CARICHAM Methodology",
+    "whatIsThis": "Qu'est-ce que cet outil ?",
+    "description": "Cet outil interactif aide les petites et moyennes entreprises à créer des plans complets de préparation aux urgences. En utilisant la méthodologie CARICHAM éprouvée, il vous guide à travers l'identification des risques, la planification des réponses et la construction de la résilience pour votre entreprise.",
+    "howItWorks": "Comment ça marche :",
+    "step1": "Parlez-nous de votre type d'entreprise et de votre emplacement pour des recommandations personnalisées",
+    "step2": "Répondez aux questions guidées avec des exemples et suggestions spécifiques à l'industrie",
+    "step3": "Téléchargez votre plan complet et professionnel de continuité d'activité en PDF",
+    "whatYouNeed": "Ce dont vous aurez besoin :",
+    "timeRequired": "30-45 minutes de votre temps",
+    "businessInfo": "Informations de base sur les opérations de votre entreprise",
+    "saveProgress": "Vous pouvez sauvegarder vos progrès et revenir à tout moment",
+    "youWillGet": "Ce que vous recevrez :",
+    "comprehensivePlan": "Un plan complet et professionnel de continuité d'activité",
+    "industrySpecific": "Recommandations adaptées à votre type d'entreprise",
+    "pdfDownload": "PDF téléchargeable prêt pour les banques, assureurs et parties prenantes",
+    "dataSecure": "Vos données sont sécurisées et privées",
+    "privacyNote": "Toutes les informations sont stockées localement et chiffrées. Aucune donnée personnelle n'est requise.",
+    "getStarted": "Commencer avec la Sélection d'Industrie",
+    "skipIntro": "Ignorer l'Introduction et Commencer la Planification"
+  },
   "actionPlans": {
     "sectionTitle": "PLANS D'ACTION",
     "businessTypeConsiderations": "Considérations par Type d'Entreprise",
@@ -1536,132 +1903,257 @@
     "insurancePolicies": "Informations importantes d'assurance incluant numéros de police, détails de couverture et informations de contact pour accès rapide.",
     "testingSchedule": "Les tests réguliers assurent que votre plan fonctionne quand nécessaire. Incluez fréquence, qui est responsable et ce qui est testé.",
     "reviewSchedule": "Les plans ont besoin de mises à jour à mesure que votre entreprise change. Établissez des dates de révision régulières et des déclencheurs pour des mises à jour non programmées."
-    },
-    "sessionManager": {
-      "planStatus": "Statut du Plan",
-      "getStarted": "Commencer",
-      "manage": "Gérer",
-      "business": "Entreprise",
-      "cloudSaved": "☁️ Sauvé sur le Cloud",
-      "localOnly": "💾 Local Seulement",
-      "shareable": "🔗 Partageable",
-      "noActivePlan": "Aucun plan actif. Créez-en un ou chargez-en un existant.",
-      "managePlan": "Gérer Votre Plan",
-      "saveToCloud": "Sauvegarder sur le Cloud",
-      "loadPlan": "Charger le Plan",
+  },
+  "sessionManager": {
+    "planStatus": "Statut du Plan",
+    "getStarted": "Commencer",
+    "manage": "Gérer",
+    "business": "Entreprise",
+    "cloudSaved": "☁️ Sauvé sur le Cloud",
+    "localOnly": "💾 Local Seulement",
+    "shareable": "🔗 Partageable",
+    "noActivePlan": "Aucun plan actif. Créez-en un ou chargez-en un existant.",
+    "managePlan": "Gérer Votre Plan",
+    "saveToCloud": "Sauvegarder sur le Cloud",
+    "loadPlan": "Charger le Plan",
+    "businessName": "Nom de l'Entreprise",
+    "businessNameRequired": "Nom de l'Entreprise *",
+    "enterBusinessName": "Entrez le nom de votre entreprise",
+    "sixDigitPin": "PIN à 6 Chiffres",
+    "sixDigitPinRequired": "PIN à 6 Chiffres *",
+    "pinPlaceholder": "123456",
+    "pinHelp": "Utilisez ce PIN pour accéder à votre plan plus tard",
+    "emailOptional": "Email (Optionnel)",
+    "emailPlaceholder": "votre@email.com",
+    "emailHelp": "Pour la récupération seulement",
+    "allowSharing": "Générer un lien partageable (pour prêteurs/conseillers)",
+    "loading": "Chargement...",
+    "startNewPlan": "Commencer un Nouveau Plan",
+    "planSavedSuccessfully": "Plan sauvegardé avec succès!",
+    "planLoadedSuccessfully": "Plan chargé avec succès!",
+    "shareableLinkCreated": "Lien Partageable Créé:",
+    "copy": "Copier",
+    "privacySecurity": "Confidentialité et Sécurité",
+    "privacyBullet1": "• Les plans sont sauvés anonymement - aucune donnée personnelle requise",
+    "privacyBullet2": "• Votre PIN est votre clé - gardez-le en sécurité",
+    "privacyBullet3": "• Les données sont cryptées et expirent automatiquement après 30 jours d'inactivité",
+    "privacyBullet4": "• Les liens partageables permettent un accès en lecture seule pour les prêteurs/conseillers"
+  },
+  "bcpPreview": {
+    "formalBcp": {
+      "title": "Plan Formel de Continuité d'Activité",
+      "businessOverview": "Aperçu de l'Entreprise",
+      "businessInformation": "Informations sur l'Entreprise",
       "businessName": "Nom de l'Entreprise",
-      "businessNameRequired": "Nom de l'Entreprise *",
-      "enterBusinessName": "Entrez le nom de votre entreprise",
-      "sixDigitPin": "PIN à 6 Chiffres",
-      "sixDigitPinRequired": "PIN à 6 Chiffres *",
-      "pinPlaceholder": "123456",
-      "pinHelp": "Utilisez ce PIN pour accéder à votre plan plus tard",
-      "emailOptional": "Email (Optionnel)",
-      "emailPlaceholder": "votre@email.com",
-      "emailHelp": "Pour la récupération seulement",
-      "allowSharing": "Générer un lien partageable (pour prêteurs/conseillers)",
-      "loading": "Chargement...",
-      "startNewPlan": "Commencer un Nouveau Plan",
-      "planSavedSuccessfully": "Plan sauvegardé avec succès!",
-      "planLoadedSuccessfully": "Plan chargé avec succès!",
-      "shareableLinkCreated": "Lien Partageable Créé:",
-      "copy": "Copier",
-      "privacySecurity": "Confidentialité et Sécurité",
-      "privacyBullet1": "• Les plans sont sauvés anonymement - aucune donnée personnelle requise",
-      "privacyBullet2": "• Votre PIN est votre clé - gardez-le en sécurité",
-      "privacyBullet3": "• Les données sont cryptées et expirent automatiquement après 30 jours d'inactivité",
-      "privacyBullet4": "• Les liens partageables permettent un accès en lecture seule pour les prêteurs/conseillers"
-    },
-    "bcpPreview": {
-      "formalBcp": {
-        "title": "Plan Formel de Continuité d'Activité",
-        "businessOverview": "Aperçu de l'Entreprise",
-        "businessInformation": "Informations sur l'Entreprise",
-        "businessName": "Nom de l'Entreprise",
-        "physicalAddress": "Adresse Physique",
-        "businessType": "Type d'Entreprise",
-        "yearsInOperation": "Années d'Activité",
-        "totalPeople": "Nombre Total de Personnes",
-        "annualRevenue": "Chiffre d'Affaires Annuel",
-        "businessPurpose": "Objectif de l'Entreprise",
-        "keyStrengths": "Forces Clés",
-        "essentialOperations": "Opérations Essentielles",
-        "targetMarkets": "Marchés Cibles",
-        "productsServices": "Produits et Services",
-        "criticalFunctionAnalysis": "Analyse des Fonctions Critiques",
-        "riskAssessment": "Évaluation des Risques",
-        "identifiedRisks": "Risques Identifiés et État d'Atténuation",
-        "severityLevels": "Niveaux de Gravité",
-        "extreme": "EXTRÊME",
-        "high": "ÉLEVÉ",
-        "medium": "MOYEN",
-        "low": "FAIBLE",
-        "riskScore": "Score de Risque",
-        "likelihood": "Probabilité",
-        "impact": "Impact",
-        "continuityStrategies": "Stratégies de Continuité",
-        "investmentSummary": "Résumé de l'Investissement",
-        "ourStrategies": "Nos Stratégies de Préparation",
-        "timeline": "Calendrier",
-        "protectsAgainst": "Protège Contre",
-        "itemsToPurchase": "Articles à Acheter",
-        "keyActions": "Actions Clés",
-        "emergencyResponse": "Réponse d'Urgence et Contacts",
-        "emergencyLeadership": "Direction d'Urgence",
-        "staffContactRoster": "Liste des Contacts du Personnel",
-        "emergencyServices": "Services d'Urgence",
-        "utilitiesServices": "Services Publics et Essentiels",
-        "supplierDirectory": "Répertoire des Fournisseurs",
-        "insuranceBanking": "Assurances et Partenaires Bancaires",
-        "vitalRecords": "Documents Vitaux et Protection des Données",
-        "planMaintenance": "Maintenance et Tests du Plan",
-        "testingSchedule": "Calendrier des Tests et Exercices",
-        "trainingPrograms": "Programmes de Formation",
-        "identifiedImprovements": "Améliorations Identifiées",
-        "planApproval": "Approbation du Plan",
-        "investmentBreakdown": "Répartition de l'Investissement",
-        "prevention": "Prévention et Atténuation",
-        "response": "Capacités de Réponse",
-        "recovery": "Ressources de Récupération"
+      "physicalAddress": "Adresse Physique",
+      "businessType": "Type d'Entreprise",
+      "yearsInOperation": "Années d'Activité",
+      "totalPeople": "Nombre Total de Personnes",
+      "annualRevenue": "Chiffre d'Affaires Annuel",
+      "businessPurpose": "Objectif de l'Entreprise",
+      "keyStrengths": "Forces Clés",
+      "essentialOperations": "Opérations Essentielles",
+      "targetMarkets": "Marchés Cibles",
+      "productsServices": "Produits et Services",
+      "criticalFunctionAnalysis": "Analyse des Fonctions Critiques",
+      "riskAssessment": "Évaluation des Risques",
+      "identifiedRisks": "Risques Identifiés et État d'Atténuation",
+      "severityLevels": "Niveaux de Gravité",
+      "extreme": "EXTRÊME",
+      "high": "ÉLEVÉ",
+      "medium": "MOYEN",
+      "low": "FAIBLE",
+      "riskScore": "Score de Risque",
+      "likelihood": "Probabilité",
+      "impact": "Impact",
+      "continuityStrategies": "Stratégies de Continuité",
+      "investmentSummary": "Résumé de l'Investissement",
+      "ourStrategies": "Nos Stratégies de Préparation",
+      "timeline": "Calendrier",
+      "protectsAgainst": "Protège Contre",
+      "itemsToPurchase": "Articles à Acheter",
+      "keyActions": "Actions Clés",
+      "emergencyResponse": "Réponse d'Urgence et Contacts",
+      "emergencyLeadership": "Direction d'Urgence",
+      "staffContactRoster": "Liste des Contacts du Personnel",
+      "emergencyServices": "Services d'Urgence",
+      "utilitiesServices": "Services Publics et Essentiels",
+      "supplierDirectory": "Répertoire des Fournisseurs",
+      "insuranceBanking": "Assurances et Partenaires Bancaires",
+      "vitalRecords": "Documents Vitaux et Protection des Données",
+      "planMaintenance": "Maintenance et Tests du Plan",
+      "testingSchedule": "Calendrier des Tests et Exercices",
+      "trainingPrograms": "Programmes de Formation",
+      "identifiedImprovements": "Améliorations Identifiées",
+      "planApproval": "Approbation du Plan",
+      "investmentBreakdown": "Répartition de l'Investissement",
+      "prevention": "Prévention et Atténuation",
+      "response": "Capacités de Réponse",
+      "recovery": "Ressources de Récupération",
+      "hospitalityTourism": "Hospitalité et Tourisme",
+      "foodBeverage": "Alimentation et Boissons",
+      "retail": "Commerce de Détail",
+      "smallBusiness": "Petite Entreprise",
+      "version": "Version",
+      "preparedWithSupport": "Préparé avec le soutien technique de : PNUD Caraïbes | Programme de Soutien aux Entreprises CARICHAM",
+      "costTbd": "Coût à Déterminer",
+      "browserPreviewNote": "Ceci est un aperçu navigateur. Vous pouvez faire défiler toutes les sections pour revoir votre plan avant de le télécharger.",
+      "criticalFunctionsDesc": "Ces fonctions sont critiques pour maintenir notre entreprise en activité :",
+      "criticalFunctionAnalysisDesc": "Niveaux de priorité, temps d'arrêt maximum acceptable et objectifs de récupération pour nos fonctions commerciales les plus critiques.",
+      "priority": "Priorité",
+      "maxDowntime": "Temps d'Arrêt Max",
+      "rto": "OTR",
+      "rpo": "OPR",
+      "impactIfDisrupted": "Impact si Perturbé",
+      "recoveryStrategy": "Stratégie de Récupération",
+      "riskCountDesc": "Nous avons identifié et évalué {count} risques significatifs qui pourraient perturber nos opérations commerciales.",
+      "outOfTen": "sur 10",
+      "metrics": "Métriques",
+      "investmentDesc": "Nous investissons {amount} dans des mesures de continuité d'activité pour protéger nos opérations, actifs et capacité à servir les clients pendant les perturbations.",
+      "strategyCountDesc": "Ces {count} stratégies ont été sélectionnées en fonction de vos besoins commerciaux, risques de localisation et exigences opérationnelles.",
+      "investment": "Investissement",
+      "essential": "ESSENTIEL",
+      "recommended": "RECOMMANDÉ",
+      "optional": "OPTIONNEL",
+      "quickWin": "GAIN RAPIDE",
+      "moreActions": "+... plus d'actions",
+      "role": "Rôle",
+      "person": "Personne",
+      "contact": "Contact",
+      "staffContactDesc": "Informations de contact pour tous les membres de l'équipe pendant les urgences.",
+      "name": "Nom",
+      "position": "Poste",
+      "phone": "Téléphone",
+      "email": "Email",
+      "emergencyContact": "Contact d'Urgence",
+      "emergencyLabel": "Urgence :",
+      "service": "Service",
+      "provider": "Fournisseur",
+      "accountNumber": "N° de Compte :",
+      "supplierCountDesc": "Tous les {count} fournisseurs listés avec informations de contact complètes.",
+      "supplierName": "Nom du Fournisseur",
+      "contactPerson": "Personne à Contacter",
+      "productService": "Produit/Service",
+      "company": "Entreprise",
+      "bank": "Banque",
+      "accountPolicyNumber": "Compte/Police #",
+      "vitalRecordsDesc": "Les documents et données critiques doivent être protégés, sauvegardés régulièrement et récupérables rapidement pour assurer la continuité des activités. Les documents suivants sont essentiels à nos opérations et ont des procédures de protection et de récupération établies.",
+      "recordType": "Type de Document",
+      "primaryLocation": "Emplacement Principal",
+      "backupLocation": "Emplacement de Sauvegarde",
+      "updateFrequency": "Fréquence de Mise à Jour",
+      "responsiblePerson": "Personne Responsable",
+      "retentionPeriod": "Période de Rétention",
+      "recoveryTime": "Temps de Récupération",
+      "backupProcedure": "Procédure de Sauvegarde",
+      "maintenanceDesc": "Nous testons régulièrement notre préparation pour assurer que ce plan fonctionne quand nécessaire. Ce plan est révisé {frequency} et mis à jour chaque fois que les circonstances commerciales changent.",
+      "planUpdatesWhen": "Mises à Jour du Plan Quand :",
+      "updateTrigger1": "Nous déménageons ou apportons des changements majeurs aux installations",
+      "updateTrigger2": "Changement de personnel clé",
+      "updateTrigger3": "Après toute urgence ou perturbation réelle",
+      "updateTrigger4": "Changements de relations avec fournisseurs, assurances ou banques",
+      "updateTrigger5": "Au moins une fois par an indépendamment des changements",
+      "responsibility": "Responsabilité :",
+      "responsibilityDesc": "{name} est responsable d'assurer que le plan reste actuel et de mener des tests réguliers.",
+      "testingScheduleDesc": "Tests programmés pour vérifier la préparation et identifier les améliorations nécessaires.",
+      "trainingProgramsDesc": "La formation du personnel assure que chacun connaît son rôle dans la réponse d'urgence et la récupération.",
+      "identifiedImprovementsDesc": "Domaines d'amélioration identifiés par des tests, exercices ou incidents réels.",
+      "testType": "Type de Test",
+      "frequency": "Fréquence",
+      "participants": "Participants",
+      "nextTest": "Prochain Test",
+      "responsible": "Responsable",
+      "trainingTopic": "Sujet de Formation",
+      "duration": "Durée",
+      "nextSession": "Prochaine Session",
+      "trainer": "Formateur",
+      "topicsCovered": "Sujets Couverts",
+      "issueIdentified": "Problème Identifié",
+      "actionRequired": "Action Requise",
+      "dueDate": "Date d'Échéance",
+      "status": "Statut",
+      "approvalDesc": "Ce Plan de Continuité d'Activité a été préparé le {date} et est approuvé pour mise en œuvre :",
+      "businessOwnerManager": "Propriétaire/Gérant d'Entreprise :",
+      "signatureDate": "Signature et Date",
+      "planManagerContact": "Contact du Gestionnaire du Plan :",
+      "technicalAssistance": "Assistance Technique Fournie Par :",
+      "industryStandards": "Normes Industrielles Référencées :",
+      "preventionDesc": "Réduire la probabilité des risques",
+      "responseDesc": "Gérer efficacement les urgences",
+      "recoveryDesc": "Rétablir rapidement les opérations",
+      "notSpecified": "Non spécifié",
+      "contactPending": "Contact en attente",
+      "costTbd": "Coût à déterminer",
+      "emergencyLeadership": "4.1 Leadership d'Urgence",
+      "footerNote": "📄 Ceci est un aperçu. Vous pouvez faire défiler toutes les sections pour revoir votre plan avant de le télécharger.",
+      "time": {
+        "tbd": "À déterminer",
+        "lessThanOneHour": "Moins d'une heure",
+        "oneHour": "1 heure",
+        "hours": "~{count}h",
+        "day": "~{count} jour",
+        "days": "~{count} jours",
+        "week": "~{count} semaine",
+        "weeks": "~{count} semaines",
+        "month": "~{count} mois",
+        "months": "~{count} mois"
       },
-      "workbook": {
-        "title": "Cahier d'Action",
-        "emergencyContacts": "CONTACTS D'URGENCE",
-        "whatsInside": "Contenu",
-        "quickReferenceGuide": "Guide de Référence Rapide",
-        "riskActionPlans": "Plans d'Action par Risque",
-        "implementationChecklists": "Listes de Vérification de Mise en Œuvre",
-        "contactDirectory": "Répertoire des Contacts",
-        "documentLocator": "Localisateur de Documents",
-        "incidentLog": "Journal des Incidents",
-        "planManager": "Gestionnaire du Plan",
-        "dateCreated": "Date de Création",
-        "nextReview": "Prochaine Révision",
-        "ourBusiness": "NOTRE ENTREPRISE",
-        "purpose": "Objectif",
-        "whatWeDo": "Ce Que Nous Faisons",
-        "operatingHours": "Heures d'Ouverture",
-        "teamSize": "Taille de l'Équipe",
-        "criticalOperations": "Opérations Critiques (À Restaurer en Premier)",
-        "ensureSafety": "ASSURER LA SÉCURITÉ D'ABORD",
-        "assessSituation": "ÉVALUER LA SITUATION",
-        "activateResponse": "ACTIVER LE PLAN DE RÉPONSE",
-        "protectOperations": "PROTÉGER LES OPÉRATIONS CRITIQUES",
-        "generalRiskMitigation": "ATTÉNUATION GÉNÉRALE DES RISQUES ET PRÉVENTION",
-        "beforePreparation": "AVANT: Prévention et Préparation",
-        "duringResponse": "PENDANT: Réponse d'Urgence",
-        "afterRecovery": "APRÈS: Récupération et Retour",
-        "itemsToPurchase": "Articles à Acheter",
-        "itemsNeeded": "Articles Nécessaires",
-        "itemsForRecovery": "Articles pour la Récupération",
-        "actionSteps": "Étapes d'Action",
-        "whyLabel": "POURQUOI",
-        "ifSkipped": "SI OMIS",
-        "doneWhen": "TERMINÉ QUAND",
-        "example": "EXEMPLE",
-        "alternatives": "ALTERNATIVES",
-        "freeLowCost": "Gratuit/Peu Coûteux",
-        "lowTech": "Faible Technologie"
+      "frequency": {
+        "quarterly": "Trimestriel",
+        "monthly": "Mensuel",
+        "annual": "Annuel",
+        "semiannual": "Semestriel",
+        "weekly": "Hebdomadaire",
+        "daily": "Quotidien",
+        "asScheduled": "Comme prévu"
+      },
+      "revenue": {
+        "under_1m": "Moins de {currency} 1 million",
+        "1m_3m": "{currency} 1-3 millions",
+        "3m_10m": "{currency} 3-10 millions",
+        "10m_20m": "{currency} 10-20 millions",
+        "over_20m": "Plus de {currency} 20 millions",
+        "not_disclosed": "Non divulgué"
       }
+    },
+    "workbook": {
+      "title": "Cahier d'Action",
+      "emergencyContacts": "CONTACTS D'URGENCE",
+      "whatsInside": "Contenu",
+      "quickReferenceGuide": "Guide de Référence Rapide",
+      "riskActionPlans": "Plans d'Action par Risque",
+      "implementationChecklists": "Listes de Vérification de Mise en Œuvre",
+      "contactDirectory": "Répertoire des Contacts",
+      "documentLocator": "Localisateur de Documents",
+      "incidentLog": "Journal des Incidents",
+      "planManager": "Gestionnaire du Plan",
+      "dateCreated": "Date de Création",
+      "nextReview": "Prochaine Révision",
+      "ourBusiness": "NOTRE ENTREPRISE",
+      "purpose": "Objectif",
+      "whatWeDo": "Ce Que Nous Faisons",
+      "operatingHours": "Heures d'Ouverture",
+      "teamSize": "Taille de l'Équipe",
+      "criticalOperations": "Opérations Critiques (À Restaurer en Premier)",
+      "ensureSafety": "ASSURER LA SÉCURITÉ D'ABORD",
+      "assessSituation": "ÉVALUER LA SITUATION",
+      "activateResponse": "ACTIVER LE PLAN DE RÉPONSE",
+      "protectOperations": "PROTÉGER LES OPÉRATIONS CRITIQUES",
+      "generalRiskMitigation": "ATTÉNUATION GÉNÉRALE DES RISQUES ET PRÉVENTION",
+      "beforePreparation": "AVANT: Prévention et Préparation",
+      "duringResponse": "PENDANT: Réponse d'Urgence",
+      "afterRecovery": "APRÈS: Récupération et Retour",
+      "itemsToPurchase": "Articles à Acheter",
+      "itemsNeeded": "Articles Nécessaires",
+      "itemsForRecovery": "Articles pour la Récupération",
+      "actionSteps": "Étapes d'Action",
+      "whyLabel": "POURQUOI",
+      "ifSkipped": "SI OMIS",
+      "doneWhen": "TERMINÉ QUAND",
+      "example": "EXEMPLE",
+      "alternatives": "ALTERNATIVES",
+      "freeLowCost": "Gratuit/Peu Coûteux",
+      "lowTech": "Faible Technologie"
     }
   }
+}

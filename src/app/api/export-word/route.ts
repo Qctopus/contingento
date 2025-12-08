@@ -4,7 +4,7 @@
  */
 
 import { NextResponse } from 'next/server'
-import { centralDataService } from '@/services/centralDataService'
+import { MultilingualDataService } from '@/services/multilingualDataService'
 import { buildWordBuffer, WordExportOptions } from '@/utils/wordDocBuilder'
 import type { Locale } from '@/i18n/config'
 
@@ -24,7 +24,9 @@ export async function POST(req: Request) {
 
     let dbStrategies: any[] = []
     try {
-      dbStrategies = await centralDataService.getStrategies()
+      // Use server-side service instead of client-side centralDataService
+      const dataService = new MultilingualDataService(undefined, locale as Locale)
+      dbStrategies = await dataService.getStrategies()
     } catch (err) {
       console.error('[export-word] Failed to load strategies from DB:', err)
     }
@@ -62,7 +64,7 @@ export async function POST(req: Request) {
     const sanitizedName = companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
     const filename = `${sanitizedName}-${mode === 'formal' ? 'formal-bcp' : 'action-workbook'}.docx`
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as any, {
       status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

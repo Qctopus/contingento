@@ -38,6 +38,20 @@
     "automaticallySaved": "Su progreso se guarda automáticamente",
     "addRow": "Agregar Fila",
     "currentValue": "Valor Actual",
+    "uploadFromExcel": "Cargar desde Excel",
+    "uploadExcelFile": "Cargar archivo Excel",
+    "uploadExcelDescription": "Cargue un archivo Excel (.xlsx o .xls) que contenga sus datos.",
+    "expectedColumns": "Columnas esperadas",
+    "processing": "Procesando...",
+    "chooseExcelFile": "Elegir archivo Excel",
+    "maximumFileSize": "Tamaño máximo de archivo: 5 MB",
+    "uploadError": "Error de carga",
+    "uploadSuccessful": "Carga exitosa",
+    "previewImportedData": "Vista previa de datos importados",
+    "rows": "filas",
+    "reviewDataBeforeImporting": "Revise los datos a continuación antes de importar.",
+    "andMoreRows": "...y {count} filas más",
+    "importRows": "Importar {count} filas",
     "actions": "Acciones",
     "deleteRows": "Eliminar {count} filas",
     "noHazardsSelected": "No se han seleccionado peligros",
@@ -486,12 +500,20 @@
         "planVersion": {
           "label": "Versión del Plan",
           "prompt": "¿Qué número de versión debería tener este plan? Comience con 1.0 para su primer plan.",
-          "examples": ["1.0", "1.1", "2.0"]
+          "examples": [
+            "1.0",
+            "1.1",
+            "2.0"
+          ]
         },
         "nextReviewDate": {
           "label": "Próxima Fecha de Revisión",
           "prompt": "¿Cuándo debería revisarse este plan? Considere sus ciclos de negocio y el entorno de riesgos.",
-          "examples": ["Enero 2026", "Junio 2025", "Diciembre 2025"]
+          "examples": [
+            "Enero 2026",
+            "Junio 2025",
+            "Diciembre 2025"
+          ]
         }
       }
     },
@@ -575,10 +597,22 @@
           "label": "Estado del Plan de Continuidad de Proveedores",
           "prompt": "¿Sus principales proveedores de servicios (proveedores, vendedores, contratistas) tienen planes de continuidad del negocio implementados?",
           "options": [
-            { "label": "Sí - La mayoría de nuestros proveedores clave han compartido sus planes de continuidad con nosotros", "value": "yes" },
-            { "label": "No - No hemos preguntado a nuestros proveedores sobre sus planes de continuidad", "value": "no" },
-            { "label": "Parcialmente - Algunos proveedores tienen planes de continuidad, otros no", "value": "partial" },
-            { "label": "Desconocido - No estamos seguros si nuestros proveedores tienen planes de continuidad", "value": "unknown" }
+            {
+              "label": "Sí - La mayoría de nuestros proveedores clave han compartido sus planes de continuidad con nosotros",
+              "value": "yes"
+            },
+            {
+              "label": "No - No hemos preguntado a nuestros proveedores sobre sus planes de continuidad",
+              "value": "no"
+            },
+            {
+              "label": "Parcialmente - Algunos proveedores tienen planes de continuidad, otros no",
+              "value": "partial"
+            },
+            {
+              "label": "Desconocido - No estamos seguros si nuestros proveedores tienen planes de continuidad",
+              "value": "unknown"
+            }
           ]
         }
       }
@@ -590,22 +624,61 @@
         "businessFunctions": {
           "label": "Funciones del Negocio",
           "prompt": "Enumere todas las funciones principales de su negocio. Para cada función, evalúe qué tan crítica es y cuánto tiempo de inactividad puede tolerar.",
-          "tableColumns": ["Función del Negocio", "Descripción", "Nivel de Prioridad", "Tiempo Máximo de Inactividad Aceptable", "Recursos Críticos Necesarios"],
+          "tableColumns": [
+            "Función del Negocio",
+            "Descripción",
+            "Nivel de Prioridad",
+            "Tiempo Máximo de Inactividad Aceptable",
+            "Recursos Críticos Necesarios"
+          ],
           "tableRowsPromptPartial": "Piense en todas las actividades que realiza su negocio diariamente",
           "priorityOptions": [
-            { "label": "Crítica - El negocio no puede funcionar sin esto", "value": "critical" },
-            { "label": "Importante - Causaría problemas significativos si se detiene", "value": "important" },
-            { "label": "Útil - Sería bueno tener pero no esencial", "value": "useful" },
-            { "label": "Posible - Se puede aplazar si es necesario", "value": "deferrable" }
+            {
+              "label": "Crítica - El negocio no puede funcionar sin esto",
+              "value": "critical"
+            },
+            {
+              "label": "Importante - Causaría problemas significativos si se detiene",
+              "value": "important"
+            },
+            {
+              "label": "Útil - Sería bueno tener pero no esencial",
+              "value": "useful"
+            },
+            {
+              "label": "Posible - Se puede aplazar si es necesario",
+              "value": "deferrable"
+            }
           ],
           "downtimeOptions": [
-            { "label": "0-2 horas", "value": "0-2h" },
-            { "label": "2-8 horas", "value": "2-8h" },
-            { "label": "8-24 horas", "value": "8-24h" },
-            { "label": "1-3 días", "value": "1-3d" },
-            { "label": "3-7 días", "value": "3-7d" },
-            { "label": "1-2 semanas", "value": "1-2w" },
-            { "label": "Más de 2 semanas", "value": "2w+" }
+            {
+              "label": "0-2 horas",
+              "value": "0-2h"
+            },
+            {
+              "label": "2-8 horas",
+              "value": "2-8h"
+            },
+            {
+              "label": "8-24 horas",
+              "value": "8-24h"
+            },
+            {
+              "label": "1-3 días",
+              "value": "1-3d"
+            },
+            {
+              "label": "3-7 días",
+              "value": "3-7d"
+            },
+            {
+              "label": "1-2 semanas",
+              "value": "1-2w"
+            },
+            {
+              "label": "Más de 2 semanas",
+              "value": "2w+"
+            }
           ],
           "examples": [
             "Ventas - Procesar pedidos de clientes - Crítica - 0-2 horas - Cajero, sistema de pago, inventario",
@@ -677,36 +750,126 @@
           "label": "Peligros Potenciales",
           "prompt": "Seleccione todos los peligros que pueden afectar su negocio. Considere tanto desastres naturales como riesgos causados por humanos que sean relevantes para su ubicación e industria.",
           "options": [
-            { "label": "Terremoto", "value": "earthquake" },
-            { "label": "Huracán/Tormenta Tropical", "value": "hurricane" },
-            { "label": "Inundación Costera", "value": "coastal_flood" },
-            { "label": "Inundación Repentina", "value": "flash_flood" },
-            { "label": "Deslizamiento de Tierra", "value": "landslide" },
-            { "label": "Tsunami", "value": "tsunami" },
-            { "label": "Actividad Volcánica", "value": "volcanic" },
-            { "label": "Sequía", "value": "drought" },
-            { "label": "Epidemia (brote local de enfermedad)", "value": "epidemic" },
-            { "label": "Pandemia (enfermedad generalizada)", "value": "pandemic" },
-            { "label": "Corte de Energía Prolongado", "value": "power_outage" },
-            { "label": "Falla de Telecomunicaciones", "value": "telecom_failure" },
-            { "label": "Ataques de Internet/Cibernéticos", "value": "cyber_attack" },
-            { "label": "Incendio", "value": "fire" },
-            { "label": "Crimen/Robo/Allanamiento", "value": "crime" },
-            { "label": "Desorden Civil/Disturbios", "value": "civil_disorder" },
-            { "label": "Terrorismo", "value": "terrorism" },
-            { "label": "Interrupción de la Cadena de Suministro", "value": "supply_disruption" },
-            { "label": "Indisponibilidad de Personal Clave", "value": "staff_unavailable" },
-            { "label": "Recesión Económica", "value": "economic_downturn" },
-            { "label": "Derrame Químico", "value": "chemical_spill" },
-            { "label": "Contaminación Ambiental", "value": "environmental_contamination" },
-            { "label": "Evento de Contaminación del Aire", "value": "air_pollution" },
-            { "label": "Contaminación del Agua", "value": "water_contamination" },
-            { "label": "Accidente Industrial", "value": "industrial_accident" },
-            { "label": "Falla en la Gestión de Residuos", "value": "waste_management_failure" },
-            { "label": "Derrame de Petróleo", "value": "oil_spill" },
-            { "label": "Impacto de las Algas Sargazos", "value": "sargassum" },
-            { "label": "Problemas de Gestión de Multitudes", "value": "crowd_management" },
-            { "label": "Problemas de Gestión de Residuos", "value": "waste_management" }
+            {
+              "label": "Terremoto",
+              "value": "earthquake"
+            },
+            {
+              "label": "Huracán/Tormenta Tropical",
+              "value": "hurricane"
+            },
+            {
+              "label": "Inundación Costera",
+              "value": "coastal_flood"
+            },
+            {
+              "label": "Inundación Repentina",
+              "value": "flash_flood"
+            },
+            {
+              "label": "Deslizamiento de Tierra",
+              "value": "landslide"
+            },
+            {
+              "label": "Tsunami",
+              "value": "tsunami"
+            },
+            {
+              "label": "Actividad Volcánica",
+              "value": "volcanic"
+            },
+            {
+              "label": "Sequía",
+              "value": "drought"
+            },
+            {
+              "label": "Epidemia (brote local de enfermedad)",
+              "value": "epidemic"
+            },
+            {
+              "label": "Pandemia (enfermedad generalizada)",
+              "value": "pandemic"
+            },
+            {
+              "label": "Corte de Energía Prolongado",
+              "value": "power_outage"
+            },
+            {
+              "label": "Falla de Telecomunicaciones",
+              "value": "telecom_failure"
+            },
+            {
+              "label": "Ataques de Internet/Cibernéticos",
+              "value": "cyber_attack"
+            },
+            {
+              "label": "Incendio",
+              "value": "fire"
+            },
+            {
+              "label": "Crimen/Robo/Allanamiento",
+              "value": "crime"
+            },
+            {
+              "label": "Desorden Civil/Disturbios",
+              "value": "civil_disorder"
+            },
+            {
+              "label": "Terrorismo",
+              "value": "terrorism"
+            },
+            {
+              "label": "Interrupción de la Cadena de Suministro",
+              "value": "supply_disruption"
+            },
+            {
+              "label": "Indisponibilidad de Personal Clave",
+              "value": "staff_unavailable"
+            },
+            {
+              "label": "Recesión Económica",
+              "value": "economic_downturn"
+            },
+            {
+              "label": "Derrame Químico",
+              "value": "chemical_spill"
+            },
+            {
+              "label": "Contaminación Ambiental",
+              "value": "environmental_contamination"
+            },
+            {
+              "label": "Evento de Contaminación del Aire",
+              "value": "air_pollution"
+            },
+            {
+              "label": "Contaminación del Agua",
+              "value": "water_contamination"
+            },
+            {
+              "label": "Accidente Industrial",
+              "value": "industrial_accident"
+            },
+            {
+              "label": "Falla en la Gestión de Residuos",
+              "value": "waste_management_failure"
+            },
+            {
+              "label": "Derrame de Petróleo",
+              "value": "oil_spill"
+            },
+            {
+              "label": "Impacto de las Algas Sargazos",
+              "value": "sargassum"
+            },
+            {
+              "label": "Problemas de Gestión de Multitudes",
+              "value": "crowd_management"
+            },
+            {
+              "label": "Problemas de Gestión de Residuos",
+              "value": "waste_management"
+            }
           ],
           "examples": [
             "Negocio costero: Huracán, Inundación costera, Tsunami, Corte de energía",
@@ -766,23 +929,65 @@
     "strategies": {
       "title": "Estrategias de Continuidad del Negocio",
       "description": "Ahora desarrollemos estrategias integrales para prevenir, responder y recuperarse de los riesgos que ha identificado.",
+      "examples": {
+        "autoRecommended": "Las estrategias se recomiendan automáticamente según su evaluación de riesgos",
+        "prevention": "Las estrategias de prevención ayudan a reducir la probabilidad de emergencias",
+        "response": "Las estrategias de respuesta guían sus acciones durante emergencias",
+        "recovery": "Las estrategias de recuperación ayudan a restaurar las operaciones normales después"
+      },
       "inputs": {
         "preventionStrategies": {
           "label": "Estrategias de Prevención (Antes de Emergencias)",
           "prompt": "¿Qué estrategias de prevención implementará para reducir la probabilidad o impacto de los riesgos? Seleccione todas las que apliquen.",
           "options": [
-            { "label": "Mantenimiento regular de equipos e instalaciones", "value": "maintenance" },
-            { "label": "Sistemas de seguridad física (alarmas, cámaras, cerraduras)", "value": "physical_security" },
-            { "label": "Medidas de ciberseguridad y protección de datos", "value": "cybersecurity" },
-            { "label": "Cobertura de seguro integral", "value": "insurance" },
-            { "label": "Capacitación de empleados y preparación para emergencias", "value": "employee_training" },
-            { "label": "Diversificación de proveedores y proveedores de respaldo", "value": "supplier_diversity" },
-            { "label": "Reservas financieras y fondos de emergencia", "value": "financial_reserves" },
-            { "label": "Respaldo regular de datos y almacenamiento fuera del sitio", "value": "data_backup" },
-            { "label": "Modificaciones de edificios para resistencia a desastres", "value": "building_upgrades" },
-            { "label": "Almacenamiento de suministros y equipos de emergencia", "value": "emergency_supplies" },
-            { "label": "Evaluaciones regulares de riesgos y actualizaciones del plan", "value": "risk_monitoring" },
-            { "label": "Asociaciones comunitarias y acuerdos de ayuda mutua", "value": "community_partnerships" }
+            {
+              "label": "Mantenimiento regular de equipos e instalaciones",
+              "value": "maintenance"
+            },
+            {
+              "label": "Sistemas de seguridad física (alarmas, cámaras, cerraduras)",
+              "value": "physical_security"
+            },
+            {
+              "label": "Medidas de ciberseguridad y protección de datos",
+              "value": "cybersecurity"
+            },
+            {
+              "label": "Cobertura de seguro integral",
+              "value": "insurance"
+            },
+            {
+              "label": "Capacitación de empleados y preparación para emergencias",
+              "value": "employee_training"
+            },
+            {
+              "label": "Diversificación de proveedores y proveedores de respaldo",
+              "value": "supplier_diversity"
+            },
+            {
+              "label": "Reservas financieras y fondos de emergencia",
+              "value": "financial_reserves"
+            },
+            {
+              "label": "Respaldo regular de datos y almacenamiento fuera del sitio",
+              "value": "data_backup"
+            },
+            {
+              "label": "Modificaciones de edificios para resistencia a desastres",
+              "value": "building_upgrades"
+            },
+            {
+              "label": "Almacenamiento de suministros y equipos de emergencia",
+              "value": "emergency_supplies"
+            },
+            {
+              "label": "Evaluaciones regulares de riesgos y actualizaciones del plan",
+              "value": "risk_monitoring"
+            },
+            {
+              "label": "Asociaciones comunitarias y acuerdos de ayuda mutua",
+              "value": "community_partnerships"
+            }
           ],
           "examples": [
             "Tienda minorista: Seguridad física, Seguro, Capacitación de empleados, Suministros de emergencia",
@@ -794,18 +999,54 @@
           "label": "Estrategias de Respuesta (Durante Emergencias)",
           "prompt": "¿Qué estrategias de respuesta implementará durante una emergencia? Seleccione todas las que apliquen.",
           "options": [
-            { "label": "Activación del equipo de respuesta a emergencias", "value": "emergency_team" },
-            { "label": "Procedimientos de seguridad para personal y clientes", "value": "safety_procedures" },
-            { "label": "Plan de comunicación de emergencia", "value": "emergency_communication" },
-            { "label": "Ubicaciones de trabajo alternativas", "value": "alternative_locations" },
-            { "label": "Trabajo remoto y operaciones virtuales", "value": "remote_work" },
-            { "label": "Gestión de inventario y suministros de emergencia", "value": "emergency_inventory" },
-            { "label": "Procedimientos de continuidad del servicio al cliente", "value": "customer_continuity" },
-            { "label": "Gestión de medios y relaciones públicas", "value": "media_management" },
-            { "label": "Procedimientos financieros de emergencia", "value": "emergency_finance" },
-            { "label": "Coordinación con servicios de emergencia", "value": "emergency_services" },
-            { "label": "Procedimientos de cierre temporal y aseguramiento", "value": "closure_procedures" },
-            { "label": "Operaciones solo con servicios esenciales", "value": "essential_operations" }
+            {
+              "label": "Activación del equipo de respuesta a emergencias",
+              "value": "emergency_team"
+            },
+            {
+              "label": "Procedimientos de seguridad para personal y clientes",
+              "value": "safety_procedures"
+            },
+            {
+              "label": "Plan de comunicación de emergencia",
+              "value": "emergency_communication"
+            },
+            {
+              "label": "Ubicaciones de trabajo alternativas",
+              "value": "alternative_locations"
+            },
+            {
+              "label": "Trabajo remoto y operaciones virtuales",
+              "value": "remote_work"
+            },
+            {
+              "label": "Gestión de inventario y suministros de emergencia",
+              "value": "emergency_inventory"
+            },
+            {
+              "label": "Procedimientos de continuidad del servicio al cliente",
+              "value": "customer_continuity"
+            },
+            {
+              "label": "Gestión de medios y relaciones públicas",
+              "value": "media_management"
+            },
+            {
+              "label": "Procedimientos financieros de emergencia",
+              "value": "emergency_finance"
+            },
+            {
+              "label": "Coordinación con servicios de emergencia",
+              "value": "emergency_services"
+            },
+            {
+              "label": "Procedimientos de cierre temporal y aseguramiento",
+              "value": "closure_procedures"
+            },
+            {
+              "label": "Operaciones solo con servicios esenciales",
+              "value": "essential_operations"
+            }
           ],
           "examples": [
             "Negocio de servicios: Equipo de emergencia, Trabajo remoto, Continuidad del cliente, Comunicación de emergencia",
@@ -817,18 +1058,54 @@
           "label": "Estrategias de Recuperación (Después de Emergencias)",
           "prompt": "¿Qué estrategias de recuperación le ayudarán a restaurar las operaciones normales después de una emergencia? Seleccione todas las que apliquen.",
           "options": [
-            { "label": "Evaluación y documentación de daños", "value": "damage_assessment" },
-            { "label": "Reclamos de seguros y recuperación financiera", "value": "insurance_claims" },
-            { "label": "Procedimientos de reanudación y reinicio del negocio", "value": "business_resumption" },
-            { "label": "Programas de apoyo y consejería para empleados", "value": "employee_support" },
-            { "label": "Estrategias de retención y recuperación de clientes", "value": "customer_retention" },
-            { "label": "Restauración de relaciones con proveedores", "value": "supplier_restoration" },
-            { "label": "Marketing y gestión de reputación", "value": "reputation_management" },
-            { "label": "Asistencia financiera y solicitudes de préstamos", "value": "financial_assistance" },
-            { "label": "Reparación y reconstrucción de instalaciones", "value": "facility_repair" },
-            { "label": "Reemplazo y actualización de equipos", "value": "equipment_replacement" },
-            { "label": "Lecciones aprendidas y mejoras del plan", "value": "lessons_learned" },
-            { "label": "Apoyo y colaboración comunitaria", "value": "community_support" }
+            {
+              "label": "Evaluación y documentación de daños",
+              "value": "damage_assessment"
+            },
+            {
+              "label": "Reclamos de seguros y recuperación financiera",
+              "value": "insurance_claims"
+            },
+            {
+              "label": "Procedimientos de reanudación y reinicio del negocio",
+              "value": "business_resumption"
+            },
+            {
+              "label": "Programas de apoyo y consejería para empleados",
+              "value": "employee_support"
+            },
+            {
+              "label": "Estrategias de retención y recuperación de clientes",
+              "value": "customer_retention"
+            },
+            {
+              "label": "Restauración de relaciones con proveedores",
+              "value": "supplier_restoration"
+            },
+            {
+              "label": "Marketing y gestión de reputación",
+              "value": "reputation_management"
+            },
+            {
+              "label": "Asistencia financiera y solicitudes de préstamos",
+              "value": "financial_assistance"
+            },
+            {
+              "label": "Reparación y reconstrucción de instalaciones",
+              "value": "facility_repair"
+            },
+            {
+              "label": "Reemplazo y actualización de equipos",
+              "value": "equipment_replacement"
+            },
+            {
+              "label": "Lecciones aprendidas y mejoras del plan",
+              "value": "lessons_learned"
+            },
+            {
+              "label": "Apoyo y colaboración comunitaria",
+              "value": "community_support"
+            }
           ],
           "examples": [
             "Pequeña empresa: Reclamos de seguro, Reanudación del negocio, Retención de clientes, Asistencia financiera",
@@ -854,7 +1131,13 @@
         "actionPlanByRisk": {
           "label": "Plan de Acción por Nivel de Riesgo",
           "prompt": "Para sus riesgos de mayor prioridad, cree planes de acción específicos con cronogramas y responsabilidades.",
-          "tableColumns": ["Peligro/Riesgo", "Acciones Inmediatas (0-24 horas)", "Acciones a Corto Plazo (1-7 días)", "Acciones a Mediano Plazo (1-4 semanas)", "Persona Responsable"],
+          "tableColumns": [
+            "Peligro/Riesgo",
+            "Acciones Inmediatas (0-24 horas)",
+            "Acciones a Corto Plazo (1-7 días)",
+            "Acciones a Mediano Plazo (1-4 semanas)",
+            "Persona Responsable"
+          ],
           "tableRowsPrompt": "Nos enfocaremos en sus peligros de riesgo alto y medio. Para cada uno, piense en lo que debe suceder inmediatamente, en la primera semana y en el primer mes.",
           "examples": [
             "Huracán - Asegurar edificio, activar equipo de emergencia - Contactar personal y clientes, evaluar daños - Presentar reclamos de seguro, reanudar operaciones - Gerente de Operaciones",
@@ -900,7 +1183,13 @@
         "testingPlan": {
           "label": "Plan de Pruebas y Evaluación",
           "prompt": "¿Cómo probará su plan de continuidad del negocio para asegurar que funcione efectivamente?",
-          "tableColumns": ["Tipo de Prueba", "Frecuencia", "Participantes", "Criterios de Éxito", "Persona Responsable"],
+          "tableColumns": [
+            "Tipo de Prueba",
+            "Frecuencia",
+            "Participantes",
+            "Criterios de Éxito",
+            "Persona Responsable"
+          ],
           "tableRowsPrompt": "Planee diferentes tipos de pruebas para validar su plan de continuidad del negocio.",
           "examples": [
             "Prueba de Comunicación - Mensual - Todo el personal - Todos reciben y responden al mensaje de emergencia en 2 horas - Gerente de Comunicaciones",
@@ -924,7 +1213,13 @@
         "staffContacts": {
           "label": "Información de Contacto del Personal",
           "prompt": "Proporcione información de contacto para todos los miembros del personal.",
-          "tableColumns": ["Nombre", "Posición", "Número de Teléfono", "Dirección de Correo", "Contacto de Emergencia"],
+          "tableColumns": [
+            "Nombre",
+            "Posición",
+            "Número de Teléfono",
+            "Dirección de Correo",
+            "Contacto de Emergencia"
+          ],
           "tableRowsPrompt": "Incluya todos los empleados, gerentes y personal clave que necesitarían ser contactados durante una emergencia.",
           "examples": [
             "Juan Pérez - Gerente - 876-555-0123 - j.perez@empresa.com - Esposa: 876-555-0124",
@@ -935,7 +1230,13 @@
         "keyCustomers": {
           "label": "Contactos de Clientes Clave",
           "prompt": "Enumere sus clientes más importantes que necesitarían atención especial durante una emergencia.",
-          "tableColumns": ["Nombre del Cliente", "Tipo/Notas", "Número de Teléfono", "Dirección de Correo", "Requisitos Especiales"],
+          "tableColumns": [
+            "Nombre del Cliente",
+            "Tipo/Notas",
+            "Número de Teléfono",
+            "Dirección de Correo",
+            "Requisitos Especiales"
+          ],
           "tableRowsPrompt": "Enfóquese en clientes que dependen de usted para servicios esenciales o tienen necesidades especiales.",
           "examples": [
             "Sra. James - Cliente mayor (entrega a domicilio) - 876-555-0130 - - Depende de entrega semanal de comestibles",
@@ -946,7 +1247,13 @@
         "supplierInfo": {
           "label": "Información de Proveedores",
           "prompt": "Enumere sus principales proveedores y al menos un proveedor de respaldo para bienes/servicios clave.",
-          "tableColumns": ["Nombre del Proveedor", "Bienes/Servicios Suministrados", "Número de Teléfono", "Dirección de Correo", "Proveedor de Respaldo"],
+          "tableColumns": [
+            "Nombre del Proveedor",
+            "Bienes/Servicios Suministrados",
+            "Número de Teléfono",
+            "Dirección de Correo",
+            "Proveedor de Respaldo"
+          ],
           "tableRowsPrompt": "Incluya proveedores principales e identifique opciones de respaldo para suministros críticos.",
           "examples": [
             "Alimentos del Caribe Ltda - Productos frescos - 876-555-0140 - pedidos@alimentoscaribe.com - Frescos de la Isla Co.",
@@ -957,7 +1264,13 @@
         "emergencyServices": {
           "label": "Servicios de Emergencia y Servicios Públicos",
           "prompt": "Compile información de contacto para servicios de emergencia y proveedores de servicios públicos.",
-          "tableColumns": ["Tipo de Servicio", "Nombre de la Organización", "Número de Teléfono", "Dirección de Correo", "Número de Cuenta"],
+          "tableColumns": [
+            "Tipo de Servicio",
+            "Nombre de la Organización",
+            "Número de Teléfono",
+            "Dirección de Correo",
+            "Número de Cuenta"
+          ],
           "tableRowsPrompt": "Incluya todos los servicios esenciales que podría necesitar contactar durante una emergencia.",
           "examples": [
             "Policía - Fuerza Policial Real - 911 / 876-555-0150 - - N/A",
@@ -979,7 +1292,13 @@
         "planDistribution": {
           "label": "Lista de Distribución del Plan",
           "prompt": "Rastree quién ha recibido copias de este plan de continuidad del negocio.",
-          "tableColumns": ["Nombre/Posición", "Formato Recibido", "Fecha Proporcionada", "Número de Versión", "Reconocimiento"],
+          "tableColumns": [
+            "Nombre/Posición",
+            "Formato Recibido",
+            "Fecha Proporcionada",
+            "Número de Versión",
+            "Reconocimiento"
+          ],
           "tableRowsPrompt": "Documente a todos los que deberían tener acceso al plan.",
           "examples": [
             "Juan Pérez (Gerente) - Electrónico + Copia impresa - 2024-01-15 - Versión 1.0 - Firmado",
@@ -996,7 +1315,12 @@
         "vitalRecordsInventory": {
           "label": "Inventario de Registros Vitales",
           "prompt": "Liste sus registros comerciales más importantes, dónde están almacenados y dónde se guardan las copias de seguridad.",
-          "tableColumns": ["Tipo de Registro", "Ubicación Principal", "Ubicación de Respaldo", "Prioridad de Recuperación"],
+          "tableColumns": [
+            "Tipo de Registro",
+            "Ubicación Principal",
+            "Ubicación de Respaldo",
+            "Prioridad de Recuperación"
+          ],
           "tableRowsPrompt": "Piense en los documentos que necesitaría para reiniciar su negocio después de un desastre.",
           "examples": [
             "Contratos de Clientes - SharePoint - AWS Cloud - ALTA",
@@ -1015,7 +1339,14 @@
         "testingSchedule": {
           "label": "Cronograma de Pruebas del Plan",
           "prompt": "Cree un cronograma integral para probar regularmente diferentes aspectos de su plan de continuidad del negocio.",
-          "tableColumns": ["Tipo de Prueba", "Qué se Prueba", "Frecuencia", "Próxima Fecha de Prueba", "Criterios de Éxito", "Persona Responsable"],
+          "tableColumns": [
+            "Tipo de Prueba",
+            "Qué se Prueba",
+            "Frecuencia",
+            "Próxima Fecha de Prueba",
+            "Criterios de Éxito",
+            "Persona Responsable"
+          ],
           "tableRowsPrompt": "Planee diferentes tipos de pruebas para asegurar que su plan funcione cuando sea necesario.",
           "examples": [
             "Prueba de Comunicación - Procedimientos de contacto de emergencia - Mensual - 2025-02-15 - Todo el personal responde en 2 horas - Gerente de Oficina",
@@ -1029,7 +1360,14 @@
         "trainingSchedule": {
           "label": "Cronograma de Capacitación",
           "prompt": "Planifique sesiones de capacitación regulares para asegurar que todo el personal comprenda sus roles en el plan de continuidad del negocio.",
-          "tableColumns": ["Tipo de Capacitación", "Audiencia Objetivo", "Frecuencia", "Próxima Fecha de Capacitación", "Proveedor de Capacitación", "Criterios de Finalización"],
+          "tableColumns": [
+            "Tipo de Capacitación",
+            "Audiencia Objetivo",
+            "Frecuencia",
+            "Próxima Fecha de Capacitación",
+            "Proveedor de Capacitación",
+            "Criterios de Finalización"
+          ],
           "tableRowsPrompt": "Incluya tanto capacitación de concienciación general como capacitación específica de rol.",
           "examples": [
             "Descripción General del BCP - Todo el personal - Anual - 2025-03-01 - Gerente General - Todo el personal completa el módulo de capacitación",
@@ -1042,7 +1380,14 @@
         "performanceMetrics": {
           "label": "Métricas de Desempeño",
           "prompt": "Defina indicadores clave de desempeño para medir la efectividad de su plan de continuidad del negocio.",
-          "tableColumns": ["Nombre de la Métrica", "Valor Objetivo", "Método de Medición", "Frecuencia de Revisión", "Estado Actual", "Persona Responsable"],
+          "tableColumns": [
+            "Nombre de la Métrica",
+            "Valor Objetivo",
+            "Método de Medición",
+            "Frecuencia de Revisión",
+            "Estado Actual",
+            "Persona Responsable"
+          ],
           "tableRowsPrompt": "Incluya medidas tanto cuantitativas como cualitativas de la efectividad del plan.",
           "examples": [
             "Tiempo de Respuesta de Emergencia - Menos de 30 minutos - Registros de tiempo de simulacros - Mensual - No medido aún - Coordinador de Emergencias",
@@ -1055,7 +1400,13 @@
         "revisionHistory": {
           "label": "Historial de Revisiones del Plan",
           "prompt": "Rastree cambios y actualizaciones a su plan de continuidad del negocio a lo largo del tiempo.",
-          "tableColumns": ["Versión", "Fecha de Actualización", "Cambios Realizados", "Actualizado Por", "Razón de la Actualización"],
+          "tableColumns": [
+            "Versión",
+            "Fecha de Actualización",
+            "Cambios Realizados",
+            "Actualizado Por",
+            "Razón de la Actualización"
+          ],
           "tableRowsPrompt": "Comience con Versión 1.0 y planee actualizaciones futuras.",
           "examples": [
             "Versión 1.0 - 2024-01-15 - Creación inicial del plan - Juan Pérez (Gerente) - Nuevo plan de continuidad del negocio",
@@ -1066,7 +1417,13 @@
         "improvementTracking": {
           "label": "Seguimiento de Mejoras",
           "prompt": "Rastree mejoras y elementos de acción identificados a través de pruebas y eventos reales.",
-          "tableColumns": ["Problema Identificado", "Acción de Mejora", "Nivel de Prioridad", "Finalización Objetivo", "Estado"],
+          "tableColumns": [
+            "Problema Identificado",
+            "Acción de Mejora",
+            "Nivel de Prioridad",
+            "Finalización Objetivo",
+            "Estado"
+          ],
           "tableRowsPrompt": "Use esto para rastrear mejoras continuas a su plan.",
           "examples": [
             "Personal tardó mucho en responder a llamada de emergencia - Mejorar capacitación del personal en procedimientos de emergencia - Alto - 2024-02-28 - En Progreso",
@@ -1508,7 +1865,132 @@
       "investmentBreakdown": "Desglose de Inversión",
       "prevention": "Prevención y Mitigación",
       "response": "Capacidades de Respuesta",
-      "recovery": "Recursos de Recuperación"
+      "recovery": "Recursos de Recuperación",
+      "hospitalityTourism": "Hospitalidad y Turismo",
+      "foodBeverage": "Alimentos y Bebidas",
+      "retail": "Venta al por Menor",
+      "smallBusiness": "Pequeña Empresa",
+      "version": "Versión",
+      "preparedWithSupport": "Preparado con apoyo técnico de: PNUD Caribe | Programa de Apoyo Empresarial CARICHAM",
+      "costTbd": "Costo por Determinar",
+      "browserPreviewNote": "Esta es una vista previa del navegador. Puede desplazarse por todas las secciones para revisar su plan antes de descargarlo.",
+      "criticalFunctionsDesc": "Estas funciones son críticas para mantener nuestro negocio en funcionamiento:",
+      "criticalFunctionAnalysisDesc": "Niveles de prioridad, tiempo de inactividad máximo aceptable y objetivos de recuperación para nuestras funciones comerciales más críticas.",
+      "priority": "Prioridad",
+      "maxDowntime": "Tiempo de Inactividad Máx",
+      "rto": "RTO",
+      "rpo": "RPO",
+      "impactIfDisrupted": "Impacto si se Interrumpe",
+      "recoveryStrategy": "Estrategia de Recuperación",
+      "riskCountDesc": "Hemos identificado y evaluado {count} riesgos significativos que podrían interrumpir nuestras operaciones comerciales.",
+      "outOfTen": "de 10",
+      "metrics": "Métricas",
+      "investmentDesc": "Estamos invirtiendo {amount} en medidas de continuidad del negocio para proteger nuestras operaciones, activos y capacidad para servir a los clientes durante las interrupciones.",
+      "strategyCountDesc": "Estas {count} estrategias fueron seleccionadas en función de sus necesidades comerciales, riesgos de ubicación y requisitos operativos.",
+      "investment": "Inversión",
+      "essential": "ESENCIAL",
+      "recommended": "RECOMENDADO",
+      "optional": "OPCIONAL",
+      "quickWin": "VICTORIA RÁPIDA",
+      "moreActions": "+... más acciones",
+      "role": "Rol",
+      "person": "Persona",
+      "contact": "Contacto",
+      "staffContactDesc": "Información de contacto para todos los miembros del equipo durante emergencias.",
+      "name": "Nombre",
+      "position": "Posición",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "emergencyContact": "Contacto de Emergencia",
+      "emergencyLabel": "Emergencia:",
+      "service": "Servicio",
+      "provider": "Proveedor",
+      "accountNumber": "N.º de Cuenta:",
+      "supplierCountDesc": "Todos los {count} proveedores listados con información de contacto completa.",
+      "supplierName": "Nombre del Proveedor",
+      "contactPerson": "Persona de Contacto",
+      "productService": "Producto/Servicio",
+      "company": "Empresa",
+      "bank": "Banco",
+      "accountPolicyNumber": "Cuenta/Póliza #",
+      "vitalRecordsDesc": "Los registros y datos críticos deben protegerse, respaldarse regularmente y recuperarse rápidamente para garantizar la continuidad del negocio. Los siguientes registros son esenciales para nuestras operaciones y tienen procedimientos de protección y recuperación establecidos.",
+      "recordType": "Tipo de Registro",
+      "primaryLocation": "Ubicación Principal",
+      "backupLocation": "Ubicación de Respaldo",
+      "updateFrequency": "Frecuencia de Actualización",
+      "responsiblePerson": "Persona Responsable",
+      "retentionPeriod": "Período de Retención",
+      "recoveryTime": "Tiempo de Recuperación",
+      "backupProcedure": "Procedimiento de Respaldo",
+      "maintenanceDesc": "Probamos regularmente nuestra preparación para asegurar que este plan funcione cuando sea necesario. Este plan se revisa {frequency} y se actualiza cada vez que cambian las circunstancias comerciales.",
+      "planUpdatesWhen": "El Plan se Actualiza Cuando:",
+      "updateTrigger1": "Nos mudamos o hacemos cambios importantes en las instalaciones",
+      "updateTrigger2": "Cambio de personal clave",
+      "updateTrigger3": "Después de cualquier emergencia o interrupción real",
+      "updateTrigger4": "Cambian las relaciones con proveedores, seguros o bancos",
+      "updateTrigger5": "Al menos una vez al año, independientemente de los cambios",
+      "responsibility": "Responsabilidad:",
+      "responsibilityDesc": "{name} es responsable de garantizar que el plan se mantenga actualizado y de realizar pruebas periódicas.",
+      "testingScheduleDesc": "Pruebas programadas para verificar la preparación e identificar mejoras necesarias.",
+      "trainingProgramsDesc": "La capacitación del personal asegura que todos conozcan su papel en la respuesta y recuperación de emergencias.",
+      "identifiedImprovementsDesc": "Áreas de mejora identificadas a través de pruebas, ejercicios o incidentes reales.",
+      "testType": "Tipo de Prueba",
+      "frequency": "Frecuencia",
+      "participants": "Participantes",
+      "nextTest": "Próxima Prueba",
+      "responsible": "Responsable",
+      "trainingTopic": "Tema de Capacitación",
+      "duration": "Duración",
+      "nextSession": "Próxima Sesión",
+      "trainer": "Entrenador",
+      "topicsCovered": "Temas Cubiertos",
+      "issueIdentified": "Problema Identificado",
+      "actionRequired": "Acción Requerida",
+      "dueDate": "Fecha de Vencimiento",
+      "status": "Estado",
+      "approvalDesc": "Este Plan de Continuidad del Negocio fue preparado el {date} y está aprobado para su implementación:",
+      "businessOwnerManager": "Propietario/Gerente del Negocio:",
+      "signatureDate": "Firma y Fecha",
+      "planManagerContact": "Contacto del Gerente del Plan:",
+      "technicalAssistance": "Asistencia Técnica Proporcionada Por:",
+      "industryStandards": "Estándares Industriales Referenciados:",
+      "preventionDesc": "Reducir la probabilidad de riesgos",
+      "responseDesc": "Manejar emergencias eficazmente",
+      "recoveryDesc": "Restaurar operaciones rápidamente",
+      "notSpecified": "No especificado",
+      "contactPending": "Contacto pendiente",
+      "costTbd": "Costo por determinar",
+      "emergencyLeadership": "4.1 Liderazgo de Emergencia",
+      "footerNote": "📄 Esta es una vista previa. Puede desplazarse por todas las secciones para revisar su plan antes de descargarlo.",
+      "time": {
+        "tbd": "Por determinar",
+        "lessThanOneHour": "Menos de 1 hora",
+        "oneHour": "1 hora",
+        "hours": "~{count}h",
+        "day": "~{count} día",
+        "days": "~{count} días",
+        "week": "~{count} semana",
+        "weeks": "~{count} semanas",
+        "month": "~{count} mes",
+        "months": "~{count} meses"
+      },
+      "frequency": {
+        "quarterly": "Trimestral",
+        "monthly": "Mensual",
+        "annual": "Anual",
+        "semiannual": "Semestral",
+        "weekly": "Semanal",
+        "daily": "Diario",
+        "asScheduled": "Según lo programado"
+      },
+      "revenue": {
+        "under_1m": "Menos de {currency} 1 millón",
+        "1m_3m": "{currency} 1-3 millones",
+        "3m_10m": "{currency} 3-10 millones",
+        "10m_20m": "{currency} 10-20 millones",
+        "over_20m": "Más de {currency} 20 millones",
+        "not_disclosed": "No revelado"
+      }
     },
     "workbook": {
       "title": "Libro de Acción",
@@ -1550,4 +2032,4 @@
       "lowTech": "Baja Tecnología"
     }
   }
-} 
+}

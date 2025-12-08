@@ -10,8 +10,15 @@ import { AuthWrapper } from '@/components/AuthWrapper'
 import { LogoutButton } from '@/components/LogoutButton'
 import Script from 'next/script'
 import Link from 'next/link'
+import '../globals.css'
+import type { Metadata } from 'next'
 
 const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'Business Continuity Plan Generator',
+  description: 'Generate comprehensive business continuity plans',
+}
 
 // Force dynamic rendering for all locale pages
 export const dynamic = 'force-dynamic'
@@ -38,7 +45,10 @@ export default async function LocaleLayout({
   }
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <Script src="https://cdn.jsdelivr.net/npm/@undp/design-system/docs/js/init.min.js" strategy="beforeInteractive" />
+      </head>
       <body className={inter.className}>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ErrorBoundary>
@@ -57,7 +67,7 @@ export default async function LocaleLayout({
                           </h1>
                         </Link>
                       </div>
-                      
+
                       {/* Right: Controls */}
                       <div className="flex items-center space-x-4">
                         <LanguageSwitcher />
@@ -65,13 +75,13 @@ export default async function LocaleLayout({
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Secondary Header Row for Actions */}
                   <div className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex justify-between items-center">
                       {/* Left: Wizard Button */}
                       <WizardButton />
-                      
+
                       {/* Right: Session Status (Compact) */}
                       <SessionManager />
                     </div>
@@ -87,4 +97,4 @@ export default async function LocaleLayout({
       </body>
     </html>
   )
-} 
+}

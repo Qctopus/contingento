@@ -5,7 +5,7 @@
  */
 
 import React from 'react'
-import { calculateStrategyTimeFromSteps, formatHoursToDisplay, validateActionStepTimeframes } from '@/utils/timeCalculation'
+import { calculateStrategyTimeFromSteps, validateActionStepTimeframes } from '@/utils/timeCalculation'
 import { getLocalizedText } from '@/utils/localizationUtils'
 import type { Locale } from '@/i18n/config'
 
@@ -56,8 +56,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     risksCount: risks.length,
     hasFormData: !!formData
   })
-  
-  console.log('[FormalBCPPreview] Individual strategy details:', 
+
+  console.log('[FormalBCPPreview] Individual strategy details:',
     strategies.map((s, idx) => ({
       index: idx + 1,
       name: s.name || s.smeTitle || 'Unnamed',
@@ -70,23 +70,23 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       applicableRisksCount: s.applicableRisks?.length || 0
     }))
   )
-  
+
   console.log('[FormalBCPPreview] Strategy cost summary:', {
     withCalculatedCost: strategies.filter(s => s.calculatedCostLocal > 0).length,
     withCurrencyData: strategies.filter(s => s.currencySymbol && s.currencyCode).length,
     withImplementationCost: strategies.filter(s => s.implementationCost).length,
     totalStrategies: strategies.length
   })
-  
+
   // DIAGNOSTIC: Show all unique risk IDs from strategies
-  console.log('[FormalBCPPreview] All applicableRisks IDs from strategies:', 
+  console.log('[FormalBCPPreview] All applicableRisks IDs from strategies:',
     [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
   )
-  
+
   // Enhanced helper to safely extract string from multilingual or simple field
   const getStringValue = (value: any, locale: string = currentLocale): string => {
     if (!value) return ''
-    
+
     // Handle simple strings
     if (typeof value === 'string') {
       // Try to parse as JSON if it looks like multilingual content
@@ -101,7 +101,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       }
       return value
     }
-    
+
     // Handle multilingual objects
     if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       // Try requested locale first
@@ -114,15 +114,15 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       const firstValue = Object.values(value).find(v => v && typeof v === 'string')
       if (firstValue) return firstValue as string
     }
-    
+
     // Handle numbers
     if (typeof value === 'number') return String(value)
-    
+
     // Handle arrays (take first element)
     if (Array.isArray(value) && value.length > 0) {
       return getStringValue(value[0], locale)
     }
-    
+
     // Last resort
     return String(value)
   }
@@ -132,7 +132,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     // Get the country they selected in the wizard dropdown
     let countryCode = 'JM' // Default to Jamaica
     let countryName = 'Jamaica'
-    
+
     // PRIORITY 1: Use countryCode passed as prop from BusinessPlanReview
     if (propCountryCode) {
       countryCode = propCountryCode
@@ -155,7 +155,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         }
       }
     }
-    
+
     // Map country code to currency
     const currencyByCode: Record<string, { code: string; symbol: string; country: string }> = {
       'JM': { code: 'JMD', symbol: 'J$', country: 'Jamaica' },
@@ -171,9 +171,9 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       'DM': { code: 'XCD', symbol: 'EC$', country: 'Dominica' },
       'KN': { code: 'XCD', symbol: 'EC$', country: 'Saint Kitts and Nevis' },
     }
-    
+
     const currencyData = currencyByCode[countryCode] || currencyByCode['JM']
-    
+
     return {
       country: countryName,
       countryCode: countryCode,
@@ -183,7 +183,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   }
 
   const currencyInfo = detectCurrency()
-  
+
   // Log detected currency (after function is defined)
   console.log('[FormalBCPPreview] Detected currency:', {
     countryCode: currencyInfo.countryCode,
@@ -194,8 +194,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
 
   // Format currency with proper symbol and thousands separators (symbol only, no code suffix)
   const formatCurrency = (amount: number, currency: { code: string; symbol: string } = currencyInfo): string => {
-    if (amount === 0 || isNaN(amount)) return 'Cost TBD'
-    
+    if (amount === 0 || isNaN(amount)) return getUIText('bcpPreview.formalBcp.costTbd', currentLocale)
+
     const formatted = Math.round(amount).toLocaleString('en-US')
     return `${currency.symbol}${formatted}`
   }
@@ -203,10 +203,10 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   // Parse cost string to get numeric value
   const parseCostString = (costStr: string): number => {
     if (!costStr) return 0
-    
+
     const amounts = costStr.match(/[\d,]+/g)
     if (!amounts || amounts.length === 0) return 0
-    
+
     const numbers = amounts.map((a: string) => parseInt(a.replace(/,/g, '')))
     return numbers.reduce((sum, val) => sum + val, 0) / numbers.length
   }
@@ -217,7 +217,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     if (formData.BUSINESS_CHARACTERISTICS?.industry?.name) {
       return getStringValue(formData.BUSINESS_CHARACTERISTICS.industry.name)
     }
-    
+
     // Try from localStorage (browser context only)
     if (typeof window !== 'undefined') {
       try {
@@ -232,59 +232,59 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         // Silently fail
       }
     }
-    
+
     // Fallback: try to infer from business purpose
     const purpose = getStringValue(formData.BUSINESS_OVERVIEW?.['Business Purpose'] || '').toLowerCase()
     if (purpose.includes('hotel') || purpose.includes('resort') || purpose.includes('accommodation')) {
-      return 'Hospitality & Tourism'
+      return getUIText('bcpPreview.formalBcp.hospitalityTourism', currentLocale)
     }
     if (purpose.includes('restaurant') || purpose.includes('food') || purpose.includes('dining')) {
-      return 'Food & Beverage'
+      return getUIText('bcpPreview.formalBcp.foodBeverage', currentLocale)
     }
     if (purpose.includes('retail') || purpose.includes('store') || purpose.includes('shop')) {
-      return 'Retail'
+      return getUIText('bcpPreview.formalBcp.retail', currentLocale)
     }
-    
-    return 'Small Business'
+
+    return getUIText('bcpPreview.formalBcp.smallBusiness', currentLocale)
   }
-  
+
   // Extract key business information
   const companyName = getStringValue(formData.PLAN_INFORMATION?.['Company Name'] || formData.BUSINESS_OVERVIEW?.['Company Name'] || 'Your Business')
   const planManager = getStringValue(formData.PLAN_INFORMATION?.['Plan Manager'] || 'Not specified')
-  
+
   // FIX: Business Address should come from PLAN_INFORMATION first
   const businessAddress = getStringValue(
-    formData.PLAN_INFORMATION?.['Business Address'] || 
-    formData.BUSINESS_OVERVIEW?.['Business Address'] || 
+    formData.PLAN_INFORMATION?.['Business Address'] ||
+    formData.BUSINESS_OVERVIEW?.['Business Address'] ||
     ''
   )
-  
+
   // FIX: Business Type extracted from industry selection
   const businessType = getBusinessType()
-  
+
   // Optional fields - may not be in wizard yet
   const yearsInOperation = getStringValue(formData.BUSINESS_OVERVIEW?.['Years in Operation'] || '')
   const totalPeople = getStringValue(formData.BUSINESS_OVERVIEW?.['Total People in Business'] || '')
   const annualRevenue = getStringValue(formData.BUSINESS_OVERVIEW?.['Approximate Annual Revenue'] || '')
-  
+
   // Parse location
   const addressParts = businessAddress.split(',').map((s: string) => s.trim())
   const parish = addressParts.length > 1 ? addressParts[addressParts.length - 2] : ''
   const country = addressParts.length > 0 ? addressParts[addressParts.length - 1] : ''
-  
+
   // Get business purpose
   const businessPurpose = getStringValue(formData.BUSINESS_OVERVIEW?.['Business Purpose'] || '')
-  
+
   // Get competitive advantages with multilingual support
   const advantages = formData.BUSINESS_OVERVIEW?.['Competitive Advantages']
-  const competitiveAdvantages = Array.isArray(advantages) 
+  const competitiveAdvantages = Array.isArray(advantages)
     ? advantages.map(a => getStringValue(a)).filter(Boolean)
     : typeof advantages === 'string'
-    ? [getStringValue(advantages)]
-    : typeof advantages === 'object' && advantages !== null
-    ? [getStringValue(advantages)] // Handle single multilingual object
-    : []
-  
+      ? [getStringValue(advantages)]
+      : typeof advantages === 'object' && advantages !== null
+        ? [getStringValue(advantages)] // Handle single multilingual object
+        : []
+
   // Get essential functions with multilingual support
   const essentialFunctions = (formData.ESSENTIAL_FUNCTIONS?.['Functions'] || [])
     .map((func: any) => ({
@@ -294,7 +294,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     .filter(f => f.name) // Only include if has a name
 
   const topFunctions = essentialFunctions.slice(0, 6)
-  
+
   // Get ALL functions with their priorities and downtime data
   const functionsWithPriorities = (formData.ESSENTIAL_FUNCTIONS?.['Function Priorities'] || [])
     .map((func: any) => ({
@@ -307,18 +307,18 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       recoveryStrategy: getStringValue(func.recoveryStrategy || '')
     }))
     .filter(f => f.name) // Only include if has a name
-  
+
   // Get target markets
-  const targetMarkets = formData.BUSINESS_OVERVIEW?.['Target Markets'] || 
-                       formData.BUSINESS_OVERVIEW?.['Primary Customers'] || []
-  
+  const targetMarkets = formData.BUSINESS_OVERVIEW?.['Target Markets'] ||
+    formData.BUSINESS_OVERVIEW?.['Primary Customers'] || []
+
   // Get full products/services list
-  const productsServices = formData.BUSINESS_OVERVIEW?.['Products and Services'] || 
-                          formData.BUSINESS_OVERVIEW?.['Key Products/Services'] || ''
-  
+  const productsServices = formData.BUSINESS_OVERVIEW?.['Products and Services'] ||
+    formData.BUSINESS_OVERVIEW?.['Key Products/Services'] || ''
+
   // Get risk matrix with proper filtering
   const riskMatrixRaw = formData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []
-  
+
   console.log('[FormalBCPPreview] Raw riskMatrix from formData:', {
     total: riskMatrixRaw.length,
     sample: riskMatrixRaw[0] ? {
@@ -328,26 +328,26 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       isSelected: riskMatrixRaw[0].isSelected
     } : null
   })
-  
+
   const riskMatrix = riskMatrixRaw
     .filter((r: any) => r.isSelected === true) // CRITICAL: Only show explicitly ticked risks
     .map((r: any) => {
       // FIX: Extract impact - try multiple field names including Severity
       let impactText = getStringValue(r.impact || r.Impact || r.severity || r.Severity || '')
-      
+
       // If impact is numeric, convert to text
       const impactNum = parseFloat(r.impact || r.Impact || r.severityScore || r.severity || 0)
       if (!impactText && impactNum > 0) {
-        if (impactNum >= 7) impactText = 'Severe (7-9)'
-        else if (impactNum >= 5) impactText = 'Major (5-6)'
-        else if (impactNum >= 3) impactText = 'Moderate (3-4)'
-        else impactText = 'Minor (1-2)'
+        if (impactNum >= 7) impactText = `${getUIText('bcpPreview.formalBcp.extreme', currentLocale)} (7-9)`
+        else if (impactNum >= 5) impactText = `${getUIText('bcpPreview.formalBcp.high', currentLocale)} (5-6)`
+        else if (impactNum >= 3) impactText = `${getUIText('bcpPreview.formalBcp.medium', currentLocale)} (3-4)`
+        else impactText = `${getUIText('bcpPreview.formalBcp.low', currentLocale)} (1-2)`
       }
-      
+
       // Extract hazard name - try multiple field names
       const hazardNameRaw = r.hazardName || r.Hazard || r.hazard || r.name || ''
       const hazardName = hazardNameRaw ? getStringValue(hazardNameRaw) : 'Unnamed Risk'
-      
+
       // If still showing as JSON, try to parse it
       let finalHazardName = hazardName
       if (hazardName.includes('{') && hazardName.includes('"en":')) {
@@ -360,7 +360,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
           if (match) finalHazardName = match[1]
         }
       }
-      
+
       return {
         hazardId: r.hazardId || r.id,
         hazardName: finalHazardName,
@@ -377,41 +377,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         isSelected: r.isSelected
       }
     })
-  
-  // DIAGNOSTIC: Show all risk IDs from riskMatrix
-  console.log('[FormalBCPPreview] Risks in riskMatrix:', {
-    total: riskMatrix.length,
-    hazardIds: riskMatrix.map(r => r.hazardId).sort(),
-    hazardNames: riskMatrix.map(r => r.hazardName).sort()
-  })
-  
-  // DIAGNOSTIC: Compare risk IDs
-  const strategyRiskIds = [...new Set(strategies.flatMap(s => s.applicableRisks || []))].sort()
-  const matrixRiskIds = [...new Set(riskMatrix.map(r => r.hazardId))].sort()
-  const matrixRiskNames = [...new Set(riskMatrix.map(r => r.hazardName))].sort()
-  
-  console.log('[FormalBCPPreview] 🔍 RISK ID COMPARISON:')
-  console.log('  Strategy applicableRisks:', strategyRiskIds)
-  console.log('  Matrix hazardIds:', matrixRiskIds)
-  console.log('  Matrix hazardNames:', matrixRiskNames)
-  
-  // Check for mismatches
-  const unmatchedStrategyRisks = strategyRiskIds.filter(srid => {
-    const sridNorm = srid.toLowerCase().replace(/_/g, ' ')
-    return !matrixRiskIds.some(mid => {
-      const midNorm = (mid || '').toLowerCase().replace(/_/g, ' ')
-      return sridNorm === midNorm || sridNorm.includes(midNorm) || midNorm.includes(sridNorm)
-    }) && !matrixRiskNames.some(mname => {
-      const mnameNorm = mname.toLowerCase().replace(/_/g, ' ')
-      return sridNorm === mnameNorm || sridNorm.includes(mnameNorm) || mnameNorm.includes(sridNorm)
-    })
-  })
-  
-  if (unmatchedStrategyRisks.length > 0) {
-    console.warn('[FormalBCPPreview] ⚠️ WARNING: Some strategy risk IDs don\'t match matrix:',unmatchedStrategyRisks)
-  } else {
-    console.log('[FormalBCPPreview] ✅ All strategy risk IDs have matches in matrix')
-  }
+
+
 
   // Get high-priority risks (HIGH or EXTREME only) for Section 2
   // CRITICAL: Only include risks that are explicitly ticked (already filtered in riskMatrix)
@@ -419,52 +386,52 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     const level = (r.riskLevel || r['Risk Level'] || '').toLowerCase()
     return level.includes('high') || level.includes('extreme')
   })
-  
+
   // Helper function to normalize risk IDs for flexible matching
   const normalizeRiskId = (id: string): string => {
     if (!id) return ''
-    
+
     // Convert camelCase to snake_case: cyberAttack → cyber_attack
     const withUnderscores = id.replace(/([a-z])([A-Z])/g, '$1_$2')
-    
+
     // Convert to lowercase and replace underscores/spaces with a common separator
     return withUnderscores.toLowerCase().replace(/[_\s-]+/g, '_')
   }
-  
+
   // Get ALL selected risks that have strategies (for Section 3)
   // ENHANCED: Now handles camelCase ↔ snake_case conversion
   // CRITICAL: Only include risks that are explicitly ticked (isSelected === true) AND have strategies
   const risksWithStrategies = riskMatrix.filter((r: any) => {
     // Only include explicitly ticked risks
     if (r.isSelected !== true) return false
-    
+
     const hazardName = r.hazardName || r.Hazard || ''
     const hazardId = r.hazardId || hazardName
-    
+
     // Normalize the risk identifiers
     const hazardIdNorm = normalizeRiskId(hazardId)
     const hazardNameNorm = normalizeRiskId(hazardName)
-    
+
     // Check if any selected strategy applies to this risk
     const hasStrategy = strategies.some((strategy: any) => {
       if (!strategy.applicableRisks || strategy.applicableRisks.length === 0) return false
-      
+
       return strategy.applicableRisks.some((riskId: string) => {
         const riskIdNorm = normalizeRiskId(riskId)
-        
+
         // Try multiple matching approaches
-        return riskIdNorm === hazardIdNorm || 
-               riskIdNorm === hazardNameNorm ||
-               hazardIdNorm.includes(riskIdNorm) ||
-               riskIdNorm.includes(hazardIdNorm) ||
-               hazardNameNorm.includes(riskIdNorm) ||
-               riskIdNorm.includes(hazardNameNorm)
+        return riskIdNorm === hazardIdNorm ||
+          riskIdNorm === hazardNameNorm ||
+          hazardIdNorm.includes(riskIdNorm) ||
+          riskIdNorm.includes(hazardIdNorm) ||
+          hazardNameNorm.includes(riskIdNorm) ||
+          riskIdNorm.includes(hazardNameNorm)
       })
     })
-    
+
     return hasStrategy
   })
-  
+
   console.log('[FormalBCPPreview] ========================================')
   console.log('[FormalBCPPreview] Display mode: SHOW ALL USER-SELECTED STRATEGIES')
   console.log('[FormalBCPPreview] Risk assessment summary:', {
@@ -472,13 +439,13 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     highPriorityRisks: highPriorityRisks.length,
     risksWithMatchedStrategies: risksWithStrategies.length
   })
-  
+
   console.log('[FormalBCPPreview] Strategy display logic:', {
     totalUserSelectedStrategies: strategies.length,
     displayMode: 'ALL STRATEGIES (not filtered by risk)',
     reasoning: 'Wizard already filtered by location, business type, and multipliers'
   })
-  
+
   console.log('[FormalBCPPreview] Individual strategy breakdown:')
   strategies.forEach((s, idx) => {
     const stratName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
@@ -486,9 +453,9 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     const risks = s.applicableRisks?.length || 0
     console.log(`  ${idx + 1}. "${stratName}" - ${cost > 0 ? currencyInfo.symbol + cost : 'Cost TBD'} - Protects: ${risks} risks`)
   })
-  
+
   console.log('[FormalBCPPreview] ========================================')
-  
+
   // Calculate total investment - USE WIZARD'S CALCULATED COSTS
   const calculateInvestment = () => {
     let total = 0
@@ -502,7 +469,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         // FALLBACK: Parse legacy cost string
         const costStr = s.implementationCost || s.cost || ''
         const parsedCost = parseCostString(costStr)
-        
+
         if (parsedCost > 0 && parsedCost < 1e15) {
           total += parsedCost
         } else if (s.costEstimateJMD && typeof s.costEstimateJMD === 'number' && s.costEstimateJMD < 1e15) {
@@ -511,135 +478,203 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         }
       }
     })
-    
+
     // Final sanity check
     if (total > 1e15 || isNaN(total) || !isFinite(total)) {
       console.warn('[FormalBCPPreview] Invalid total investment calculated:', total)
       return 0
     }
-    
+
     return total
   }
-  
+
   const totalInvestment = calculateInvestment()
-  
+
+  // Format hours into human-readable format with localization
+  const formatTimeDisplay = (hours: number): string => {
+    if (hours === 0) return getUIText('bcpPreview.formalBcp.time.tbd', currentLocale)
+    if (hours < 1) return getUIText('bcpPreview.formalBcp.time.lessThanOneHour', currentLocale)
+    if (hours === 1) return getUIText('bcpPreview.formalBcp.time.oneHour', currentLocale)
+
+    if (hours < 8) {
+      return getUIText('bcpPreview.formalBcp.time.hours', currentLocale).replace('{count}', String(Math.round(hours)))
+    }
+
+    if (hours < 40) {
+      const days = Math.round(hours / 8)
+      const key = days === 1 ? 'bcpPreview.formalBcp.time.day' : 'bcpPreview.formalBcp.time.days'
+      return getUIText(key, currentLocale).replace('{count}', String(days))
+    }
+
+    if (hours < 160) {
+      const weeks = Math.round(hours / 40)
+      const key = weeks === 1 ? 'bcpPreview.formalBcp.time.week' : 'bcpPreview.formalBcp.time.weeks'
+      return getUIText(key, currentLocale).replace('{count}', String(weeks))
+    }
+
+    const months = Math.round(hours / 160)
+    const key = months === 1 ? 'bcpPreview.formalBcp.time.month' : 'bcpPreview.formalBcp.time.months'
+    return getUIText(key, currentLocale).replace('{count}', String(months))
+  }
+
+  // Get localized frequency label
+  const getFrequencyLabel = (freq: string): string => {
+    if (!freq) return ''
+    const lower = freq.toLowerCase()
+    if (lower.includes('quarterly')) return getUIText('bcpPreview.formalBcp.frequency.quarterly', currentLocale)
+    if (lower.includes('monthly')) return getUIText('bcpPreview.formalBcp.frequency.monthly', currentLocale)
+    if (lower.includes('annual')) return getUIText('bcpPreview.formalBcp.frequency.annual', currentLocale)
+    if (lower.includes('semi-annual') || lower.includes('semiannual')) return getUIText('bcpPreview.formalBcp.frequency.semiannual', currentLocale)
+    if (lower.includes('weekly')) return getUIText('bcpPreview.formalBcp.frequency.weekly', currentLocale)
+    if (lower.includes('daily')) return getUIText('bcpPreview.formalBcp.frequency.daily', currentLocale)
+    if (lower.includes('scheduled')) return getUIText('bcpPreview.formalBcp.frequency.asScheduled', currentLocale)
+    return getStringValue(freq)
+  }
+
   // Format revenue range with detected currency
   const formatRevenue = (value: string): string => {
     const currency = currencyInfo.code
     const ranges: any = {
-      'under_1m': `Under ${currency} 1 million`,
-      '1m_3m': `${currency} 1-3 million`,
-      '3m_10m': `${currency} 3-10 million`,
-      '10m_20m': `${currency} 10-20 million`,
-      'over_20m': `Over ${currency} 20 million`,
-      'not_disclosed': 'Not disclosed'
+      'under_1m': getUIText('bcpPreview.formalBcp.revenue.under_1m', currentLocale).replace('{currency}', currency),
+      '1m_3m': getUIText('bcpPreview.formalBcp.revenue.1m_3m', currentLocale).replace('{currency}', currency),
+      '3m_10m': getUIText('bcpPreview.formalBcp.revenue.3m_10m', currentLocale).replace('{currency}', currency),
+      '10m_20m': getUIText('bcpPreview.formalBcp.revenue.10m_20m', currentLocale).replace('{currency}', currency),
+      'over_20m': getUIText('bcpPreview.formalBcp.revenue.over_20m', currentLocale).replace('{currency}', currency),
+      'not_disclosed': getUIText('bcpPreview.formalBcp.revenue.not_disclosed', currentLocale)
     }
     return ranges[value] || value
   }
-  
+
   // Extract Plan Manager contact info
-  const planManagerInfo = planManager
+  const planManagerInfo = planManager === 'Not specified' ? getUIText('bcpPreview.formalBcp.notSpecified', currentLocale) : planManager
   const planManagerNameOnly = planManager.split(',')[0]?.trim() || planManager
-  
+
   // Try to find contact info from staff contacts
-  const staffContacts = formData.CONTACTS_AND_INFORMATION?.['Staff Contact Information'] || 
-                        formData.CONTACTS?.['Staff Contact Information'] || []
-  const managerContact = staffContacts.find((contact: any) => 
-    contact.Name === planManagerNameOnly || 
+  const staffContacts = formData.CONTACTS_AND_INFORMATION?.['Staff Contact Information'] ||
+    formData.CONTACTS?.['Staff Contact Information'] || []
+  const managerContact = staffContacts.find((contact: any) =>
+    contact.Name === planManagerNameOnly ||
     contact.Position?.toLowerCase().includes('manager') ||
     contact.Role?.toLowerCase().includes('manager')
   )
-  
+
   // Build contact display string
-  const planManagerPhone = formData.PLAN_INFORMATION?.['Phone'] || 
-                           formData.PLAN_INFORMATION?.['Phone Number'] ||
-                           managerContact?.['Phone Number'] ||
-                           managerContact?.Phone || 
-                           managerContact?.phone || 
-                           ''
-  const planManagerEmail = formData.PLAN_INFORMATION?.['Email'] || 
-                           formData.PLAN_INFORMATION?.['Email Address'] ||
-                           managerContact?.['Email Address'] ||
-                           managerContact?.Email || 
-                           managerContact?.email || 
-                           ''
-  
+  const planManagerPhone = formData.PLAN_INFORMATION?.['Phone'] ||
+    formData.PLAN_INFORMATION?.['Phone Number'] ||
+    managerContact?.['Phone Number'] ||
+    managerContact?.Phone ||
+    managerContact?.phone ||
+    ''
+  const planManagerEmail = formData.PLAN_INFORMATION?.['Email'] ||
+    formData.PLAN_INFORMATION?.['Email Address'] ||
+    managerContact?.['Email Address'] ||
+    managerContact?.Email ||
+    managerContact?.email ||
+    ''
+
   const planManagerContactDisplay = [planManagerPhone, planManagerEmail]
     .filter(Boolean)
-    .join(' | ') || 'Contact pending'
-  
+    .join(' | ') || getUIText('bcpPreview.formalBcp.contactPending', currentLocale)
+
   // Get ALL contacts - FIX: Extract from correct wizard data structure
   // The wizard saves contacts in separate arrays under CONTACTS_AND_INFORMATION, not in a single array with categories
   const contactsAndInfo = formData.CONTACTS_AND_INFORMATION || formData.CONTACTS || {}
-  
+
   // Staff contacts
-  const staffContactsData = contactsAndInfo['Staff Contact Information'] || []
-  
+  const staffContactsData = contactsAndInfo['Staff Contact Information'] ||
+    contactsAndInfo['Informations de Contact du Personnel'] ||
+    contactsAndInfo['Información de Contacto del Personal'] || []
+
   // Suppliers
-  const allSuppliers = contactsAndInfo['Supplier Information'] || []
-  
+  const allSuppliers = contactsAndInfo['Supplier Information'] ||
+    contactsAndInfo['Informations Fournisseurs'] ||
+    contactsAndInfo['Información de Proveedores'] || []
+
   // Customers
-  const keyCustomers = contactsAndInfo['Key Customer Contacts'] || []
-  
+  const keyCustomers = contactsAndInfo['Key Customer Contacts'] ||
+    contactsAndInfo['Contacts Clients Clés'] ||
+    contactsAndInfo['Contactos de Clientes Clave'] || []
+
   // Emergency Services and Utilities (combined in wizard, need to separate)
-  const emergencyServicesAndUtilities = contactsAndInfo['Emergency Services and Utilities'] || []
-  
+  const emergencyServicesAndUtilities = contactsAndInfo['Emergency Services and Utilities'] ||
+    contactsAndInfo['Services d\'Urgence et Utilités'] ||
+    contactsAndInfo['Servicios de Emergencia y Servicios Públicos'] || []
+
   // Try to separate emergency services from utilities based on service type
   const emergencyContacts = emergencyServicesAndUtilities.filter((c: any) => {
     const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-    return serviceType.includes('police') || serviceType.includes('fire') || 
-           serviceType.includes('ambulance') || serviceType.includes('medical') ||
-           serviceType.includes('emergency')
+    return serviceType.includes('police') || serviceType.includes('policía') ||
+      serviceType.includes('fire') || serviceType.includes('bomberos') || serviceType.includes('incendie') ||
+      serviceType.includes('ambulance') || serviceType.includes('medical') || serviceType.includes('médica') || serviceType.includes('médicale') ||
+      serviceType.includes('emergency') || serviceType.includes('emergencia') || serviceType.includes('urgence')
   })
-  
+
   const utilitiesContacts = emergencyServicesAndUtilities.filter((c: any) => {
     const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-    return serviceType.includes('electric') || serviceType.includes('water') || 
-           serviceType.includes('internet') || serviceType.includes('phone') ||
-           serviceType.includes('gas') || serviceType.includes('sewage')
+    return serviceType.includes('electric') || serviceType.includes('eléctrica') || serviceType.includes('électricité') ||
+      serviceType.includes('water') || serviceType.includes('agua') || serviceType.includes('eau') ||
+      serviceType.includes('internet') ||
+      serviceType.includes('phone') || serviceType.includes('teléfono') || serviceType.includes('téléphone') ||
+      serviceType.includes('gas') || serviceType.includes('gaz') ||
+      serviceType.includes('sewage') || serviceType.includes('alcantarillado') || serviceType.includes('égouts')
   })
-  
+
   // Insurance and Banking (might be combined with utilities, or separate)
   const insuranceContacts = emergencyServicesAndUtilities.filter((c: any) => {
     const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-    return serviceType.includes('insurance')
+    return serviceType.includes('insurance') || serviceType.includes('seguros') || serviceType.includes('assurance')
   })
-  
+
   const bankingContacts = emergencyServicesAndUtilities.filter((c: any) => {
     const serviceType = (c['Service Type'] || c.serviceType || c.type || '').toLowerCase()
-    return serviceType.includes('bank') || serviceType.includes('financial')
+    return serviceType.includes('bank') || serviceType.includes('banca') || serviceType.includes('banque') ||
+      serviceType.includes('financial') || serviceType.includes('financiero') || serviceType.includes('financier')
   })
-  
+
   // Legacy fallback: Try old 'Contact Information' array with categories if new structure is empty
   const legacyContacts = formData.CONTACTS?.['Contact Information'] || []
-  if (legacyContacts.length > 0 && 
-      staffContactsData.length === 0 && 
-      allSuppliers.length === 0 && 
-      emergencyServicesAndUtilities.length === 0) {
+  if (legacyContacts.length > 0 &&
+    staffContactsData.length === 0 &&
+    allSuppliers.length === 0 &&
+    emergencyServicesAndUtilities.length === 0) {
     // Use legacy structure with category filtering
     console.warn('[FormalBCPPreview] Using legacy contact structure with categories')
   }
-  
+
   // Get vital records data
   // PRIMARY: 'Vital Records Inventory' (from VITAL_RECORDS step in steps.ts)
   // FALLBACK: 'Records Inventory' (legacy)
-  const vitalRecords = formData.VITAL_RECORDS?.['Vital Records Inventory'] || 
-                      formData.VITAL_RECORDS?.['Records Inventory'] || []
-  
+  // Get vital records data
+  // PRIMARY: 'Vital Records Inventory' (from VITAL_RECORDS step in steps.ts)
+  // FALLBACK: 'Records Inventory' (legacy)
+  const vitalRecords = formData.VITAL_RECORDS?.['Vital Records Inventory'] ||
+    formData.VITAL_RECORDS?.['Inventario des Documents Vitaux'] ||
+    formData.VITAL_RECORDS?.['Inventario de Registros Vitales'] ||
+    formData.VITAL_RECORDS?.['Records Inventory'] || []
+
   // Get testing & maintenance data
   // PRIMARY: from TESTING_AND_MAINTENANCE step (matches steps.ts naming)
   // FALLBACK: from TESTING (legacy naming)
-  const testingSchedule = formData.TESTING_AND_MAINTENANCE?.['Plan Testing Schedule'] || 
-                         formData.TESTING?.['Plan Testing Schedule'] || 
-                         formData.TESTING?.['Testing Schedule'] || []
-  const trainingPrograms = formData.TESTING_AND_MAINTENANCE?.['Training Schedule'] || 
-                          formData.TESTING?.['Training Schedule'] || 
-                          formData.TESTING?.['Training Programs'] || []
+  // Get testing & maintenance data
+  // PRIMARY: from TESTING_AND_MAINTENANCE step (matches steps.ts naming)
+  // FALLBACK: from TESTING (legacy naming)
+  const testingSchedule = formData.TESTING_AND_MAINTENANCE?.['Plan Testing Schedule'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Calendrier de Test du Plan'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Cronograma de Pruebas del Plan'] ||
+    formData.TESTING?.['Plan Testing Schedule'] ||
+    formData.TESTING?.['Testing Schedule'] || []
+  const trainingPrograms = formData.TESTING_AND_MAINTENANCE?.['Training Schedule'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Calendrier de Formation'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Cronograma de Capacitación'] ||
+    formData.TESTING?.['Training Schedule'] ||
+    formData.TESTING?.['Training Programs'] || []
   // Get improvements and deduplicate by issue text
-  const improvementsRaw = formData.TESTING_AND_MAINTENANCE?.['Improvement Tracking'] || 
-                          formData.TESTING?.['Improvement Tracking'] || 
-                          formData.TESTING?.['Improvements Needed'] || []
-  
+  const improvementsRaw = formData.TESTING_AND_MAINTENANCE?.['Improvement Tracking'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Suivi des Améliorations'] ||
+    formData.TESTING_AND_MAINTENANCE?.['Seguimiento de Mejoras'] ||
+    formData.TESTING?.['Improvement Tracking'] ||
+    formData.TESTING?.['Improvements Needed'] || []
+
   // Deduplicate improvements by comparing issue text
   const improvements = Array.isArray(improvementsRaw) ? improvementsRaw.filter((item: any, index: number, self: any[]) => {
     const issueText = getStringValue(item['Issue Identified'] || item.issueIdentified || item.area || item.title || '')
@@ -649,36 +684,36 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       return issueText && issueText === otherIssueText
     })
   }) : []
-  
+
   // ============================================================================
   // COMPREHENSIVE DATA AVAILABILITY CHECK - Debug logging
   // ============================================================================
   console.group('🔍 BCP Data Availability Check')
-  
+
   console.log('%c📊 Section 4: Contact Details', 'font-weight: bold; color: #2563eb')
   console.log('  ✓ 4.1 Emergency Leadership:', planManagerInfo ? '✅ Present' : '❌ Missing')
   console.log('  ✓ 4.2 Staff Contact Roster:', staffContactsData.length, 'contacts', staffContactsData.length > 0 ? '✅' : '❌')
   console.log('  ✓ 4.3 Emergency Services:', emergencyContacts.length, 'services', emergencyContacts.length > 0 ? '✅' : '❌')
   console.log('  ✓ 4.4 Utilities & Essential Services:', utilitiesContacts.length, 'utilities', utilitiesContacts.length > 0 ? '✅' : '❌')
   console.log('  ✓ 4.5 Supplier Directory (ALL):', allSuppliers.length, 'suppliers', allSuppliers.length > 0 ? '✅' : '❌')
-  console.log('  ✓ 4.6 Insurance & Banking:', 
+  console.log('  ✓ 4.6 Insurance & Banking:',
     `${insuranceContacts.length} insurance + ${bankingContacts.length} banking`,
     (insuranceContacts.length > 0 || bankingContacts.length > 0) ? '✅' : '❌')
   console.log('  ✓ 4.7 Key Customers (optional):', keyCustomers.length, 'customers', keyCustomers.length > 0 ? '✅' : '(optional)')
-  
+
   console.log('%c📊 Section 5: Vital Records & Data Protection', 'font-weight: bold; color: #2563eb')
   console.log('  ✓ Vital Records Inventory:', vitalRecords.length, 'records', vitalRecords.length > 0 ? '✅' : '(optional)')
-  
+
   console.log('%c📊 Section 6: Testing & Maintenance', 'font-weight: bold; color: #2563eb')
   console.log('  ✓ 6.1 Testing Schedule:', testingSchedule.length, 'tests', testingSchedule.length > 0 ? '✅' : '(optional)')
   console.log('  ✓ 6.2 Training Programs:', trainingPrograms.length, 'programs', trainingPrograms.length > 0 ? '✅' : '(optional)')
   console.log('  ✓ 6.3 Improvements Tracking:', improvements.length, 'improvements', improvements.length > 0 ? '✅' : '(optional)')
-  
+
   console.log('%c📊 Section 1: Business Overview Enhancements', 'font-weight: bold; color: #2563eb')
   console.log('  ✓ 1.5 Target Markets:', targetMarkets ? (Array.isArray(targetMarkets) ? `${targetMarkets.length} markets ✅` : 'Present ✅') : '(optional)')
   console.log('  ✓ 1.6 Products/Services:', productsServices ? 'Present ✅' : '(optional)')
   console.log('  ✓ 1.7 Critical Function Analysis:', functionsWithPriorities.length, 'functions', functionsWithPriorities.length > 0 ? '✅' : '(optional)')
-  
+
   // Debug raw data structure - show which top-level keys exist
   console.log('%c🔍 Raw Data Structure Check:', 'font-weight: bold; color: #7c3aed')
   console.log('  - formData.CONTACTS keys:', Object.keys(formData.CONTACTS || {}))
@@ -688,7 +723,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   console.log('  - formData.TESTING_AND_MAINTENANCE keys:', Object.keys(formData.TESTING_AND_MAINTENANCE || {}))
   console.log('  - formData.BUSINESS_OVERVIEW keys:', Object.keys(formData.BUSINESS_OVERVIEW || {}))
   console.log('  - formData.ESSENTIAL_FUNCTIONS keys:', Object.keys(formData.ESSENTIAL_FUNCTIONS || {}))
-  
+
   // Debug contacts structure
   if (emergencyServicesAndUtilities.length > 0) {
     console.log('%c🔍 Emergency Services & Utilities structure:', 'color: #059669')
@@ -700,14 +735,14 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     console.log('  - Insurance extracted:', insuranceContacts.length)
     console.log('  - Banking extracted:', bankingContacts.length)
   }
-  
+
   if (allSuppliers.length > 0) {
     console.log('%c🔍 Supplier structure:', 'color: #059669')
     console.log('  - Total suppliers:', allSuppliers.length)
     console.log('  - Sample supplier:', allSuppliers[0])
     console.log('  - All suppliers will be shown in Section 4.5 (not limited to 3)')
   }
-  
+
   // Summary report
   console.log('%c📋 SUMMARY REPORT', 'font-weight: bold; font-size: 14px; color: #dc2626')
   const totalSections = 7 // Total possible sections
@@ -720,7 +755,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     true, // Section 6 always present (base text)
     true, // Section 7 always present (certification)
   ].filter(Boolean).length
-  
+
   const requiredData = {
     'Emergency Leadership (4.1)': planManagerInfo,
     'Staff Contacts (4.2)': staffContactsData.length > 0,
@@ -729,7 +764,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     'Suppliers (4.5)': allSuppliers.length > 0,
     'Insurance/Banking (4.6)': insuranceContacts.length > 0 || bankingContacts.length > 0,
   }
-  
+
   const optionalData = {
     'Vital Records (Section 5)': vitalRecords.length > 0,
     'Testing Schedule (6.1)': testingSchedule.length > 0,
@@ -739,16 +774,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
     'Products/Services (1.6)': !!productsServices,
     'Function Analysis (1.7)': functionsWithPriorities.length > 0,
   }
-  
+
   const requiredPresent = Object.values(requiredData).filter(Boolean).length
   const requiredTotal = Object.keys(requiredData).length
   const optionalPresent = Object.values(optionalData).filter(Boolean).length
   const optionalTotal = Object.keys(optionalData).length
-  
+
   console.log(`  Sections with content: ${presentSections}/${totalSections}`)
   console.log(`  Required data: ${requiredPresent}/${requiredTotal} ${requiredPresent === requiredTotal ? '✅ ALL PRESENT' : '⚠️ SOME MISSING'}`)
   console.log(`  Optional data: ${optionalPresent}/${optionalTotal} present`)
-  
+
   if (requiredPresent < requiredTotal) {
     console.warn('%c⚠️ MISSING REQUIRED DATA:', 'font-weight: bold; color: #dc2626')
     Object.entries(requiredData).forEach(([key, value]) => {
@@ -757,16 +792,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
   } else {
     console.log('%c✅ All required data is present!', 'font-weight: bold; color: #059669')
   }
-  
+
   if (optionalPresent > 0) {
     console.log('%cℹ️ Optional enhancements present:', 'font-weight: bold; color: #2563eb')
     Object.entries(optionalData).forEach(([key, value]) => {
       if (value) console.log(`  ✅ ${key}`)
     })
   }
-  
+
   console.groupEnd()
-  
+
   // UNDP Color Scheme
   const undpColors = {
     blue: {
@@ -796,6 +831,8 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       darkGreen: '#59BA47',
       azure: '#60D4F2',
       darkAzure: '#00C1FF',
+      lightRed: '#FCA5A5',
+      lightGreen: '#86EFAC',
     }
   }
 
@@ -805,21 +842,21 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
       <div className="relative" style={{ backgroundColor: undpColors.blue[600] }}>
         {/* UNDP Blue Bar */}
         <div className="h-1.5" style={{ backgroundColor: undpColors.blue[700] }}></div>
-        
+
         {/* Header Content */}
         <div className="px-8 py-4">
           <div className="flex items-center justify-between gap-6">
             {/* Left: UNDP Logo and Title */}
             <div className="flex items-center gap-4 flex-1">
-              <img 
-                src="/undp-logo.png" 
-                alt="UNDP Logo" 
+              <img
+                src="/undp-logo.png"
+                alt="UNDP Logo"
                 className="h-10 w-auto"
                 style={{ filter: 'brightness(0) invert(1)' }}
               />
               <div className="flex-1">
                 <div className="text-xs uppercase tracking-wider mb-0.5" style={{ color: undpColors.blue[200] }}>
-                  Formal Business Continuity Plan
+                  {getUIText('bcpPreview.formalBcp.title', currentLocale)}
                 </div>
                 <h1 className="text-xl font-bold text-white leading-tight">{companyName}</h1>
                 <div className="text-sm mt-0.5" style={{ color: undpColors.blue[200] }}>
@@ -828,34 +865,34 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Right: Document Info */}
             <div className="text-right text-white text-sm">
               <div style={{ color: undpColors.blue[200] }}>
-                Version 1.0 • {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                {getUIText('bcpPreview.formalBcp.version', currentLocale)} 1.0 • {new Date().toLocaleDateString(currentLocale === 'en' ? 'en-US' : currentLocale === 'es' ? 'es-ES' : 'fr-FR', { month: 'short', year: 'numeric' })}
               </div>
             </div>
           </div>
         </div>
       </div>
-      
+
       {/* UNDP Certification Bar */}
       <div className="px-8 py-2 text-center" style={{ backgroundColor: undpColors.gray[100], borderBottom: `1px solid ${undpColors.gray[300]}` }}>
         <div className="text-xs" style={{ color: undpColors.gray[600] }}>
-          Prepared with technical support from: <span className="font-semibold" style={{ color: undpColors.blue[600] }}>UNDP Caribbean | CARICHAM Business Support Program</span>
+          {getUIText('bcpPreview.formalBcp.preparedWithSupport', currentLocale)}
         </div>
       </div>
 
       {/* Document Body - Smart Spacing */}
       <div className="px-8 py-5 space-y-5">
-        
+
         {/* SECTION 1: BUSINESS OVERVIEW */}
         <section>
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>1</div>
             <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.businessOverview', currentLocale)}</h2>
           </div>
-          
+
           {/* Business Information - Efficient 3-Column Grid */}
           <div className="mb-4">
             <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>1.1 {getUIText('bcpPreview.formalBcp.businessInformation', currentLocale)}</h3>
@@ -867,19 +904,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 </div>
                 {businessAddress && (
                   <div>
-                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Physical Address</div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.physicalAddress', currentLocale)}</div>
                     <div className="text-sm" style={{ color: undpColors.gray[700] }}>{businessAddress}</div>
                   </div>
                 )}
               </div>
               <div className="space-y-2.5">
                 <div>
-                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Business Type</div>
+                  <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.businessType', currentLocale)}</div>
                   <div className="text-sm" style={{ color: undpColors.gray[700] }}>{businessType}</div>
                 </div>
                 {yearsInOperation && (
                   <div>
-                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Years in Operation</div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.yearsInOperation', currentLocale)}</div>
                     <div className="text-sm" style={{ color: undpColors.gray[700] }}>{yearsInOperation}</div>
                   </div>
                 )}
@@ -887,206 +924,216 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               <div className="space-y-2.5">
                 {totalPeople && (
                   <div>
-                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Total People</div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.totalPeople', currentLocale)}</div>
                     <div className="text-sm" style={{ color: undpColors.gray[700] }}>{totalPeople}</div>
                   </div>
                 )}
                 {annualRevenue && (
                   <div>
-                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Annual Revenue</div>
+                    <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.annualRevenue', currentLocale)}</div>
                     <div className="text-sm" style={{ color: undpColors.gray[700] }}>{formatRevenue(annualRevenue)}</div>
                   </div>
                 )}
               </div>
             </div>
           </div>
-          
+
           {/* Business Purpose & Key Strengths - Side by Side */}
-          {(businessPurpose || competitiveAdvantages.length > 0) && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-              {businessPurpose && (
-                <div>
-                  <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.2 Business Purpose</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: undpColors.gray[600] }}>{businessPurpose}</p>
-                </div>
-              )}
-              {competitiveAdvantages.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.3 Key Strengths</h3>
-                  <ul className="list-none space-y-1">
-                    {competitiveAdvantages.slice(0, 3).map((adv, idx) => (
-                      <li key={idx} className="text-sm flex items-start" style={{ color: undpColors.gray[700] }}>
-                        <span className="mr-2 font-bold" style={{ color: undpColors.accent.darkGreen }}>•</span>
-                        <span>{adv}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Essential Operations */}
-          {topFunctions.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.4 Essential Operations</h3>
-              <p className="text-xs text-slate-600 mb-2">These functions are critical to keeping our business running:</p>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                {topFunctions.map((func: any, idx: number) => (
-                  <div key={idx} className="border-l-4 border-green-600 bg-slate-50 px-3 py-1.5">
-                    <div className="font-semibold text-sm text-slate-800">{func.name}</div>
-                    {func.description && (
-                      <div className="text-xs text-slate-600 mt-0.5">{func.description}</div>
-                    )}
+          {
+            (businessPurpose || competitiveAdvantages.length > 0) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {businessPurpose && (
+                  <div>
+                    <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.2 {getUIText('bcpPreview.formalBcp.businessPurpose', currentLocale)}</h3>
+                    <p className="text-sm leading-relaxed" style={{ color: undpColors.gray[600] }}>{businessPurpose}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Target Markets & Customers */}
-          {targetMarkets && targetMarkets.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.5 Target Markets</h3>
-              <div className="bg-slate-50 p-3 rounded">
-                {Array.isArray(targetMarkets) ? (
-                  <ul className="space-y-0.5">
-                    {targetMarkets.map((market: any, idx: number) => (
-                      <li key={idx} className="text-sm text-slate-700 flex items-start">
-                        <span className="text-blue-600 mr-2">•</span>
-                        <span>{getStringValue(market.name || market)}</span>
-                        {market.percentage && (
-                          <span className="text-xs text-slate-600 ml-2">({market.percentage}% of revenue)</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-slate-700">{getStringValue(targetMarkets)}</p>
+                )}
+                {competitiveAdvantages.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>1.3 {getUIText('bcpPreview.formalBcp.keyStrengths', currentLocale)}</h3>
+                    <ul className="list-none space-y-1">
+                      {competitiveAdvantages.slice(0, 3).map((adv, idx) => (
+                        <li key={idx} className="text-sm flex items-start" style={{ color: undpColors.gray[700] }}>
+                          <span className="mr-2 font-bold" style={{ color: undpColors.accent.darkGreen }}>•</span>
+                          <span>{adv}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
               </div>
-            </div>
-          )}
-          
-          {/* Full Products & Services */}
-          {productsServices && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.6 Products & Services</h3>
-              <div className="bg-slate-50 p-3 rounded">
-                <p className="text-sm text-slate-700 leading-normal whitespace-pre-line">
-                  {getStringValue(productsServices)}
-                </p>
-              </div>
-            </div>
-          )}
-          
-          {/* Critical Functions Analysis with Priorities */}
-          {functionsWithPriorities.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">1.7 Critical Function Analysis</h3>
-              <p className="text-xs text-slate-600 mb-2">
-                Priority levels, maximum acceptable downtime, and recovery objectives for our most critical business functions.
-              </p>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-                {functionsWithPriorities.map((func: any, idx: number) => (
-                  <div key={idx} className="border border-slate-300 rounded overflow-hidden">
-                    <div className="bg-slate-100 px-3 py-1.5 font-semibold text-sm">
-                      {func.name}
+            )
+          }
+
+          {/* Essential Operations */}
+          {
+            topFunctions.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">1.4 {getUIText('bcpPreview.formalBcp.essentialOperations', currentLocale)}</h3>
+                <p className="text-xs text-slate-600 mb-2">{getUIText('bcpPreview.formalBcp.criticalFunctionsDesc', currentLocale)}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                  {topFunctions.map((func: any, idx: number) => (
+                    <div key={idx} className="border-l-4 border-green-600 bg-slate-50 px-3 py-1.5">
+                      <div className="font-semibold text-sm text-slate-800">{func.name}</div>
+                      {func.description && (
+                        <div className="text-xs text-slate-600 mt-0.5">{func.description}</div>
+                      )}
                     </div>
-                    <div className="p-3 space-y-1.5">
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-slate-600">Priority:</span>{' '}
-                          <span className="font-semibold text-slate-900">
-                            {func.priority !== 'N/A' ? `${func.priority}/10` : 'Not specified'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-600">Max Downtime:</span>{' '}
-                          <span className="font-semibold text-slate-900">
-                            {func.maxDowntime || 'Not specified'}
-                          </span>
-                        </div>
-                        {func.rto && (
+                  ))}
+                </div>
+              </div>
+            )
+          }
+
+          {/* Target Markets & Customers */}
+          {
+            targetMarkets && targetMarkets.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">1.5 {getUIText('bcpPreview.formalBcp.targetMarkets', currentLocale)}</h3>
+                <div className="bg-slate-50 p-3 rounded">
+                  {Array.isArray(targetMarkets) ? (
+                    <ul className="space-y-0.5">
+                      {targetMarkets.map((market: any, idx: number) => (
+                        <li key={idx} className="text-sm text-slate-700 flex items-start">
+                          <span className="text-blue-600 mr-2">•</span>
+                          <span>{getStringValue(market.name || market)}</span>
+                          {market.percentage && (
+                            <span className="text-xs text-slate-600 ml-2">({market.percentage}% of revenue)</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-slate-700">{getStringValue(targetMarkets)}</p>
+                  )}
+                </div>
+              </div>
+            )
+          }
+
+          {/* Full Products & Services */}
+          {
+            productsServices && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">1.6 {getUIText('bcpPreview.formalBcp.productsServices', currentLocale)}</h3>
+                <div className="bg-slate-50 p-3 rounded">
+                  <p className="text-sm text-slate-700 leading-normal whitespace-pre-line">
+                    {getStringValue(productsServices)}
+                  </p>
+                </div>
+              </div>
+            )
+          }
+
+          {/* Critical Functions Analysis with Priorities */}
+          {
+            functionsWithPriorities.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">1.7 {getUIText('bcpPreview.formalBcp.criticalFunctionAnalysis', currentLocale)}</h3>
+                <p className="text-xs text-slate-600 mb-2">
+                  {getUIText('bcpPreview.formalBcp.criticalFunctionAnalysisDesc', currentLocale)}
+                </p>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                  {functionsWithPriorities.map((func: any, idx: number) => (
+                    <div key={idx} className="border border-slate-300 rounded overflow-hidden">
+                      <div className="bg-slate-100 px-3 py-1.5 font-semibold text-sm">
+                        {func.name}
+                      </div>
+                      <div className="p-3 space-y-1.5">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
-                            <span className="text-slate-600">RTO:</span>{' '}
-                            <span className="font-semibold text-slate-900">{func.rto}</span>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.priority', currentLocale)}:</span>{' '}
+                            <span className="font-semibold text-slate-900">
+                              {func.priority !== 'N/A' ? `${func.priority}/10` : getUIText('bcpPreview.formalBcp.notSpecified', currentLocale)}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.maxDowntime', currentLocale)}:</span>{' '}
+                            <span className="font-semibold text-slate-900">
+                              {func.maxDowntime || getUIText('bcpPreview.formalBcp.notSpecified', currentLocale)}
+                            </span>
+                          </div>
+                          {func.rto && (
+                            <div>
+                              <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.rto', currentLocale)}:</span>{' '}
+                              <span className="font-semibold text-slate-900">{func.rto}</span>
+                            </div>
+                          )}
+                          {func.rpo && (
+                            <div>
+                              <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.rpo', currentLocale)}:</span>{' '}
+                              <span className="font-semibold text-slate-900">{func.rpo}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {func.impact && (
+                          <div>
+                            <div className="text-xs font-semibold text-slate-700 mb-0.5">{getUIText('bcpPreview.formalBcp.impactIfDisrupted', currentLocale)}:</div>
+                            <div className="text-xs text-slate-700 bg-yellow-50 border-l-2 border-yellow-400 p-1.5">
+                              {func.impact}
+                            </div>
                           </div>
                         )}
-                        {func.rpo && (
+
+                        {func.recoveryStrategy && (
                           <div>
-                            <span className="text-slate-600">RPO:</span>{' '}
-                            <span className="font-semibold text-slate-900">{func.rpo}</span>
+                            <div className="text-xs font-semibold text-slate-700 mb-0.5">{getUIText('bcpPreview.formalBcp.recoveryStrategy', currentLocale)}:</div>
+                            <div className="text-xs text-slate-700 bg-green-50 border-l-2 border-green-400 p-1.5">
+                              {func.recoveryStrategy}
+                            </div>
                           </div>
                         )}
                       </div>
-                      
-                      {func.impact && (
-                        <div>
-                          <div className="text-xs font-semibold text-slate-700 mb-0.5">Impact if Disrupted:</div>
-                          <div className="text-xs text-slate-700 bg-yellow-50 border-l-2 border-yellow-400 p-1.5">
-                            {func.impact}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {func.recoveryStrategy && (
-                        <div>
-                          <div className="text-xs font-semibold text-slate-700 mb-0.5">Recovery Strategy:</div>
-                          <div className="text-xs text-slate-700 bg-green-50 border-l-2 border-green-400 p-1.5">
-                            {func.recoveryStrategy}
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
-        </section>
+            )
+          }
+        </section >
 
         {/* SECTION 2: RISK ASSESSMENT */}
-        <section>
+        < section >
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>2</div>
             <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.riskAssessment', currentLocale)}</h2>
           </div>
-          
+
           {/* Overview Summary */}
           <div className="mb-3">
             <p className="text-sm leading-relaxed" style={{ color: undpColors.gray[700] }}>
-              We have identified and assessed <strong>{riskMatrix.length} significant risks</strong> that could disrupt our business operations.
+              <span dangerouslySetInnerHTML={{ __html: getUIText('bcpPreview.formalBcp.riskCountDesc', currentLocale).replace('{count}', `<strong>${riskMatrix.length}</strong>`) }} />
             </p>
           </div>
-          
+
           {/* Risk Severity Legend - Inline */}
           <div className="mb-4">
             <div className="px-3 py-2 rounded inline-flex flex-wrap gap-4 text-xs" style={{ backgroundColor: undpColors.gray[100], border: `1px solid ${undpColors.gray[300]}` }}>
-              <span className="font-semibold" style={{ color: undpColors.gray[700] }}>Severity Levels:</span>
+              <span className="font-semibold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.severityLevels', currentLocale)}:</span>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkRed }}></div>
-                <span style={{ color: undpColors.gray[600] }}>EXTREME (≥8.0)</span>
+                <span style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.extreme', currentLocale)} (≥8.0)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.red }}></div>
-                <span style={{ color: undpColors.gray[600] }}>HIGH (6.0-7.9)</span>
+                <span style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.high', currentLocale)} (6.0-7.9)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkYellow }}></div>
-                <span style={{ color: undpColors.gray[600] }}>MEDIUM (4.0-5.9)</span>
+                <span style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.medium', currentLocale)} (4.0-5.9)</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded" style={{ backgroundColor: undpColors.accent.darkGreen }}></div>
-                <span style={{ color: undpColors.gray[600] }}>LOW (&lt;4.0)</span>
+                <span style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.low', currentLocale)} (&lt;4.0)</span>
               </div>
             </div>
           </div>
-          
+
           {/* Unified Risk Cards - Optimized Layout */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>2.1 Identified Risks & Mitigation Status</h3>
-            
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>2.1 {getUIText('bcpPreview.formalBcp.identifiedRisks', currentLocale)}</h3>
+
             {/* Sort risks by score (highest first) - Show ALL ticked risks */}
             {(() => {
               // riskMatrix already filtered to only ticked risks (isSelected === true)
@@ -1095,20 +1142,20 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                 const scoreB = b.riskScore || b['Risk Score'] || 0
                 return scoreB - scoreA
               })
-              
+
               return (
                 <div className="space-y-2">
                   {sortedRisks.map((risk: any, idx: number) => {
                     const riskName = risk.hazardName || risk.Hazard || 'Unnamed Risk'
                     const riskScore = risk.riskScore || risk['Risk Score'] || 0
                     let riskLevel = risk.riskLevel || risk['Risk Level'] || 'MEDIUM'
-                    
+
                     // Determine risk level from score if not provided
                     if (riskScore >= 8.0) riskLevel = 'EXTREME'
                     else if (riskScore >= 6.0) riskLevel = 'HIGH'
                     else if (riskScore >= 4.0) riskLevel = 'MEDIUM'
                     else riskLevel = 'LOW'
-                    
+
                     const likelihood = risk.likelihood || risk.Likelihood || 'Not assessed'
                     const impact = risk.impact || risk.Impact || 'Not assessed'
                     // Clean reasoning - remove JSON objects and extract readable text
@@ -1129,11 +1176,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       reasoning = reasoning.replace(/\{[^}]*\}/g, '').trim()
                     }
                     reasoning = getStringValue(reasoning)
-                    
-                    const hasStrategies = strategies.some(s => 
+
+                    const hasStrategies = strategies.some(s =>
                       s.applicableRisks?.includes(risk.hazardId)
                     )
-                    
+
                     // Color coding by severity using UNDP accent colors
                     const colorClasses = {
                       'EXTREME': {
@@ -1161,9 +1208,9 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                         text: undpColors.gray[700]
                       }
                     }
-                    
+
                     const colors = colorClasses[riskLevel as keyof typeof colorClasses] || colorClasses['MEDIUM']
-                    
+
                     return (
                       <div key={idx} className="rounded overflow-hidden mb-3" style={{ border: `1px solid ${colors.border}`, backgroundColor: colors.bg }}>
                         <div className="p-3">
@@ -1184,16 +1231,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                             <div className="flex-shrink-0 flex items-start gap-4">
                               {/* Score */}
                               <div className="text-center">
-                                <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>Risk Score</div>
+                                <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.riskScore', currentLocale)}</div>
                                 <div className="text-2xl font-bold leading-none" style={{ color: colors.badge }}>{riskScore.toFixed(1)}</div>
-                                <div className="text-xs" style={{ color: undpColors.gray[500] }}>out of 10</div>
+                                <div className="text-xs" style={{ color: undpColors.gray[500] }}>{getUIText('bcpPreview.formalBcp.outOfTen', currentLocale)}</div>
                               </div>
                               {/* Metrics */}
                               <div className="text-right border-l pl-4" style={{ borderColor: undpColors.gray[300] }}>
-                                <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>Metrics</div>
+                                <div className="text-xs font-semibold mb-1" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.metrics', currentLocale)}</div>
                                 <div className="space-y-1 text-xs" style={{ color: undpColors.gray[700] }}>
-                                  <div><span className="font-semibold">Likelihood:</span> {likelihood}</div>
-                                  <div><span className="font-semibold">Impact:</span> {impact}</div>
+                                  <div><span className="font-semibold">{getUIText('bcpPreview.formalBcp.likelihood', currentLocale)}:</span> {likelihood}</div>
+                                  <div><span className="font-semibold">{getUIText('bcpPreview.formalBcp.impact', currentLocale)}:</span> {impact}</div>
                                   {/* Removed Planned/Addressed status - no user input for this */}
                                 </div>
                               </div>
@@ -1207,21 +1254,20 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               )
             })()}
           </div>
-        </section>
+        </section >
 
         {/* SECTION 3: CONTINUITY STRATEGIES */}
-        <section>
+        < section >
           <div className="flex items-center gap-3 mb-4 pb-2" style={{ borderBottom: `2px solid ${undpColors.blue[600]}` }}>
             <div className="text-white w-9 h-9 rounded flex items-center justify-center font-bold text-sm" style={{ backgroundColor: undpColors.blue[600] }}>3</div>
             <h2 className="text-xl font-bold" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.continuityStrategies', currentLocale)}</h2>
           </div>
-          
+
           <div className="mb-4">
-            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>3.1 Investment Summary ({currencyInfo.code})</h3>
+            <h3 className="text-sm font-bold mb-3" style={{ color: undpColors.gray[700] }}>3.1 {getUIText('bcpPreview.formalBcp.investmentSummary', currentLocale)} ({currencyInfo.code})</h3>
             <div className="rounded-lg p-4" style={{ backgroundColor: undpColors.accent.lightGreen + '30', border: `2px solid ${undpColors.accent.darkGreen}` }}>
               <p className="text-sm mb-2 leading-relaxed" style={{ color: undpColors.gray[700] }}>
-                We are investing <strong className="text-lg" style={{ color: undpColors.accent.darkGreen }}>{formatCurrency(totalInvestment, currencyInfo)}</strong> in business continuity measures 
-                to protect our operations, assets, and ability to serve customers during disruptions.
+                <span dangerouslySetInnerHTML={{ __html: getUIText('bcpPreview.formalBcp.investmentDesc', currentLocale).replace('{amount}', `<strong class="text-lg" style="color: ${undpColors.accent.darkGreen}">${formatCurrency(totalInvestment, currencyInfo)}</strong>`) }} />
               </p>
               {(() => {
                 // Calculate investment breakdown by category
@@ -1230,11 +1276,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                   response: 0,
                   recovery: 0
                 }
-                
+
                 strategies.forEach(s => {
                   // Use calculatedCostLocal (should be in correct currency already)
                   let cost = s.calculatedCostLocal || 0
-                  
+
                   // Sanity check - filter out invalid costs
                   if (!cost || cost < 0 || cost > 1e15 || isNaN(cost) || !isFinite(cost)) {
                     // Try fallback
@@ -1243,19 +1289,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       return // Skip this strategy if cost is invalid
                     }
                   }
-                  
+
                   // Log for debugging
                   const strategyName = getStringValue(s.smeTitle || s.name) || 'Unnamed'
                   console.log(`[Preview] Strategy "${strategyName}" → cost: ${cost}`)
-                  
+
                   // Categorize by phase of action steps (not executionTiming)
                   // Use step.phase field which is 'before', 'during', or 'after'
                   const beforeSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'before')
                   const duringSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'during')
                   const afterSteps = (s.actionSteps || []).filter((step: any) => step.phase === 'after')
-                  
+
                   const totalSteps = beforeSteps.length + duringSteps.length + afterSteps.length
-                  
+
                   if (totalSteps > 0) {
                     // Distribute cost proportionally based on number of steps in each phase
                     if (beforeSteps.length > 0) {
@@ -1272,50 +1318,50 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     categoryInvestment.prevention += cost
                   }
                 })
-                
+
                 const totalCategory = categoryInvestment.prevention + categoryInvestment.response + categoryInvestment.recovery
-                
+
                 if (totalCategory > 0) {
                   const preventionPct = Math.round((categoryInvestment.prevention / totalCategory) * 100)
                   const responsePct = Math.round((categoryInvestment.response / totalCategory) * 100)
                   const recoveryPct = Math.round((categoryInvestment.recovery / totalCategory) * 100)
-                  
+
                   return (
                     <div className="text-xs text-slate-600 mt-2 space-y-0.5">
-                      <div className="font-semibold mb-1">Investment Breakdown:</div>
-                      <div>• Prevention & Mitigation: {formatCurrency(categoryInvestment.prevention, currencyInfo)} ({preventionPct}%)</div>
-                      <div>• Response Capabilities: {formatCurrency(categoryInvestment.response, currencyInfo)} ({responsePct}%)</div>
-                      <div>• Recovery Resources: {formatCurrency(categoryInvestment.recovery, currencyInfo)} ({recoveryPct}%)</div>
+                      <div className="font-semibold mb-1">{getUIText('bcpPreview.formalBcp.investmentBreakdown', currentLocale)}:</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.prevention', currentLocale)}: {formatCurrency(categoryInvestment.prevention, currencyInfo)} ({preventionPct}%)</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.response', currentLocale)}: {formatCurrency(categoryInvestment.response, currencyInfo)} ({responsePct}%)</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.recovery', currentLocale)}: {formatCurrency(categoryInvestment.recovery, currencyInfo)} ({recoveryPct}%)</div>
                     </div>
                   )
                 } else {
                   return (
                     <div className="text-xs text-slate-600 mt-2 space-y-0.5">
-                      <div className="font-semibold mb-1">Investment Breakdown:</div>
-                      <div>• Prevention & Mitigation: Reducing risk likelihood</div>
-                      <div>• Response Capabilities: Handling emergencies effectively</div>
-                      <div>• Recovery Resources: Restoring operations quickly</div>
+                      <div className="font-semibold mb-1">{getUIText('bcpPreview.formalBcp.investmentBreakdown', currentLocale)}:</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.prevention', currentLocale)}: {getUIText('bcpPreview.formalBcp.preventionDesc', currentLocale)}</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.response', currentLocale)}: {getUIText('bcpPreview.formalBcp.responseDesc', currentLocale)}</div>
+                      <div>• {getUIText('bcpPreview.formalBcp.recovery', currentLocale)}: {getUIText('bcpPreview.formalBcp.recoveryDesc', currentLocale)}</div>
                     </div>
                   )
                 }
               })()}
             </div>
           </div>
-          
+
           {/* ALL Selected Strategies - Organized by Priority */}
           <div className="mb-4">
-            <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>3.2 Our Preparation Strategies</h3>
+            <h3 className="text-sm font-bold mb-2" style={{ color: undpColors.gray[700] }}>3.2 {getUIText('bcpPreview.formalBcp.ourStrategies', currentLocale)}</h3>
             <p className="text-xs mb-3 leading-relaxed" style={{ color: undpColors.gray[600] }}>
-              These {strategies.length} strategies were selected based on your business needs, location risks, and operational requirements.
+              {getUIText('bcpPreview.formalBcp.strategyCountDesc', currentLocale).replace('{count}', String(strategies.length))}
             </p>
-            
+
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {strategies.map((strategy: any, stratIdx: number) => {
                 // Get cost - PRIORITIZE calculatedCostLocal
                 const strategyCost = strategy.calculatedCostLocal && strategy.calculatedCostLocal > 0
                   ? strategy.calculatedCostLocal
                   : parseCostString(strategy.implementationCost || strategy.cost || '')
-                
+
                 // Get risks this strategy protects against
                 const protectsAgainst = strategy.applicableRisks || []
                 const protectsAgainstNames = protectsAgainst.map((riskId: string) => {
@@ -1324,70 +1370,74 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     const riskIdNorm = normalizeRiskId(riskId)
                     const hazardIdNorm = normalizeRiskId(r.hazardId || '')
                     const hazardNameNorm = normalizeRiskId(r.hazardName || r.Hazard || '')
-                    
-                    return riskIdNorm === hazardIdNorm || 
-                           riskIdNorm === hazardNameNorm ||
-                           hazardIdNorm.includes(riskIdNorm) ||
-                           hazardNameNorm.includes(riskIdNorm)
+
+                    return riskIdNorm === hazardIdNorm ||
+                      riskIdNorm === hazardNameNorm ||
+                      hazardIdNorm.includes(riskIdNorm) ||
+                      hazardNameNorm.includes(riskIdNorm)
                   })
-                  
+
                   if (matchingRisk) {
                     const name = matchingRisk.hazardName || matchingRisk.Hazard || ''
                     // Ensure we return a clean string, not JSON
                     return getStringValue(name)
                   }
-                  
-                  // Fallback: Format the risk ID nicely
+
+                  // Fallback: Try to localize the risk ID directly if it matches a known key
+                  // Common risk IDs: hurricane, flood, earthquake, fire, etc.
+                  // We don't have a direct map, but we can try to see if it matches a key in our messages
+                  // For now, just format it nicely
                   return riskId.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim()
                 }).filter(Boolean).filter(name => name && name !== 'Unnamed Risk' && !name.includes('{"en"'))
-                
+
                 // PRIORITY: Use calculated cost from wizard
                 // NOTE: calculatedCostLocal should already be in the user's selected currency
                 // But we need to ensure consistency - always use currencyInfo
                 let costAmount = strategyCost
-                
+
                 // If strategy has currency info that doesn't match, we might need to convert
                 // But for now, trust that calculatedCostLocal is already in the correct currency
                 // Just ensure we use the consistent currency symbol
                 const costDisplay = costAmount > 0 && costAmount < 1e15
                   ? `${currencyInfo.symbol}${Math.round(costAmount).toLocaleString()}`
-                  : 'Cost TBD'
-                
+                  : getUIText('bcpPreview.formalBcp.costTbd', currentLocale)
+
                 // Extract timeline/timeframe - Calculate from action steps
                 const stratName = getStringValue(strategy.smeTitle || strategy.name) || 'Unnamed'
-                
+
                 const getTimeline = (): string => {
                   // Validate action step timeframes
                   validateActionStepTimeframes(strategy)
-                  
+
                   // ONLY METHOD: Calculate from action steps
                   const calculatedHours = calculateStrategyTimeFromSteps(strategy.actionSteps || [])
-                  const formatted = formatHoursToDisplay(calculatedHours)
-                  
+                  // Use localized formatTimeDisplay instead of imported formatHoursToDisplay
+                  const formatted = formatTimeDisplay(calculatedHours)
+
                   console.log(`[Preview] Strategy "${stratName}": ${calculatedHours}h from ${strategy.actionSteps?.length || 0} steps → "${formatted}"`)
-                  
+
                   // Fallback only if no action steps at all
                   if (calculatedHours === 0 && strategy.totalEstimatedHours) {
                     console.warn(`[Preview] No action steps for "${stratName}", using fallback totalEstimatedHours: ${strategy.totalEstimatedHours}h`)
-                    return formatHoursToDisplay(strategy.totalEstimatedHours)
+                    return formatTimeDisplay(strategy.totalEstimatedHours)
                   }
-                  
+
                   return formatted
                 }
-                
+
                 const timeline = getTimeline()
-                
+
                 // Debug log for each strategy
                 console.log(`[Preview] Strategy "${stratName}": ${costDisplay} | Timeline: ${timeline}`)
-                
+
                 // Get priority badge
                 const priorityTier = strategy.priorityTier || strategy.selectionTier || 'recommended'
-                const priorityBadge = priorityTier === 'essential' 
-                  ? { label: 'ESSENTIAL', color: 'bg-red-100 text-red-800' }
+                const priorityBadge = priorityTier === 'essential'
+                  ? { label: getUIText('bcpPreview.formalBcp.essential', currentLocale), color: 'bg-red-100 text-red-800' }
                   : priorityTier === 'recommended'
-                  ? { label: 'RECOMMENDED', color: 'bg-yellow-100 text-yellow-800' }
-                  : { label: 'OPTIONAL', color: 'bg-green-100 text-green-800' }
-                
+                    ? { label: getUIText('bcpPreview.formalBcp.recommended', currentLocale), color: 'bg-yellow-100 text-yellow-800' }
+                    : { label: getUIText('bcpPreview.formalBcp.optional', currentLocale), color: 'bg-green-100 text-green-800' }
+
                 return (
                   <div key={stratIdx} className="rounded overflow-hidden bg-white shadow-sm" style={{ border: `1px solid ${undpColors.gray[300]}` }}>
                     {/* Strategy Header */}
@@ -1398,12 +1448,12 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                             <span className="text-white px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: undpColors.blue[600] }}>
                               #{stratIdx + 1}
                             </span>
-                            <span className="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: priorityBadge.bgColor, color: priorityBadge.textColor }}>
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap ${priorityBadge.color}`}>
                               {priorityBadge.label}
                             </span>
                             {strategy.quickWinIndicator && (
                               <span className="px-2 py-0.5 rounded text-xs font-bold whitespace-nowrap" style={{ backgroundColor: undpColors.accent.lightGreen + '40', color: undpColors.accent.darkGreen }}>
-                                ⚡ QUICK WIN
+                                ⚡ {getUIText('bcpPreview.formalBcp.quickWin', currentLocale)}
                               </span>
                             )}
                           </div>
@@ -1412,12 +1462,12 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                           </h4>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>Investment</div>
+                          <div className="text-xs mb-0.5" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.investment', currentLocale)}</div>
                           <div className="font-bold text-base leading-tight" style={{ color: undpColors.accent.darkGreen }}>{costDisplay}</div>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Strategy Content */}
                     <div className="p-3">
                       {/* Description */}
@@ -1426,16 +1476,16 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                           {getStringValue(strategy.smeSummary || strategy.description)}
                         </p>
                       )}
-                      
+
                       {/* Quick Stats & Protects - Side by Side */}
                       <div className="grid grid-cols-2 gap-3 mb-2.5">
                         <div>
-                          <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>Timeline</div>
+                          <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.timeline', currentLocale)}</div>
                           <div className="text-xs font-semibold" style={{ color: undpColors.gray[700] }}>{timeline}</div>
                         </div>
                         {protectsAgainstNames.length > 0 && (
                           <div>
-                            <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>Protects Against</div>
+                            <div className="text-xs font-semibold mb-0.5" style={{ color: undpColors.gray[600] }}>{getUIText('bcpPreview.formalBcp.protectsAgainst', currentLocale)}</div>
                             <div className="flex flex-wrap gap-1">
                               {protectsAgainstNames.slice(0, 3).map((riskName: string, idx: number) => (
                                 <span key={idx} className="px-1.5 py-0.5 rounded text-[10px] leading-tight" style={{ backgroundColor: undpColors.blue[100], color: undpColors.blue[700] }}>
@@ -1449,19 +1499,19 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Cost Items - What You Need to Purchase */}
                       {(() => {
                         // Collect all cost items from all action steps
                         const itemMap = new Map<string, { name: string; quantity: number; unit: string; category: string }>()
-                        
+
                         strategy.actionSteps?.forEach((step: any) => {
                           if (step.costItems && Array.isArray(step.costItems)) {
                             step.costItems.forEach((costItem: any) => {
                               // Get item name from multilingual database field
                               // Cost items should always have multilingual names in the database (JSON format)
                               let itemName = 'Unknown Item'
-                              
+
                               // Priority 1: Full item object with multilingual name (from transformers)
                               if (costItem.item?.name) {
                                 itemName = getLocalizedText(costItem.item.name, currentLocale)
@@ -1480,17 +1530,17 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                                 // Only use itemId as last resort - this indicates missing data in DB
                                 itemName = costItem.itemId
                               }
-                              
+
                               // Ensure we have a valid name (not empty or just whitespace)
                               if (!itemName || itemName.trim().length === 0) {
                                 console.warn(`[FormalBCPPreview] Cost item ${costItem.itemId} has empty name for locale ${currentLocale}`)
                                 itemName = costItem.itemId || 'Unknown Item'
                               }
-                              
+
                               const quantity = costItem.quantity || 1
                               const unit = costItem.item?.unit || costItem.costItem?.unit || costItem.unit || ''
                               const category = costItem.item?.category || costItem.costItem?.category || costItem.category || 'supplies'
-                              
+
                               // Aggregate by item name (handle multilingual)
                               const key = itemName.toLowerCase()
                               if (itemMap.has(key)) {
@@ -1502,9 +1552,9 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                             })
                           }
                         })
-                        
+
                         const uniqueItems = Array.from(itemMap.values())
-                        
+
                         if (uniqueItems.length > 0) {
                           return (
                             <div className="mb-2.5 mt-2.5 pt-2.5 border-t" style={{ borderColor: undpColors.gray[300] }}>
@@ -1523,11 +1573,11 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                         }
                         return null
                       })()}
-                      
+
                       {/* Key Actions */}
                       {strategy.actionSteps && strategy.actionSteps.length > 0 && (
                         <div className="mt-2.5 pt-2.5 border-t" style={{ borderColor: undpColors.gray[300] }}>
-                          <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>Key Actions:</div>
+                          <div className="text-xs font-semibold mb-1.5" style={{ color: undpColors.gray[700] }}>{getUIText('bcpPreview.formalBcp.keyActions', currentLocale)}:</div>
                           <div className="space-y-1">
                             {strategy.actionSteps.slice(0, 6).map((step: any, stepIdx: number) => {
                               const actionText = getStringValue(step.smeAction || step.action || step.title || '')
@@ -1549,7 +1599,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                                   timeframeStr = ` (${timeframeParsed})`
                                 }
                               }
-                              
+
                               return (
                                 <div key={stepIdx} className="flex gap-1.5 text-xs leading-relaxed" style={{ color: undpColors.gray[700] }}>
                                   <span className="font-bold flex-shrink-0" style={{ color: undpColors.blue[600] }}>→</span>
@@ -1559,7 +1609,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                             })}
                             {strategy.actionSteps.length > 6 && (
                               <div className="text-xs italic pt-0.5" style={{ color: undpColors.gray[500] }}>
-                                +{strategy.actionSteps.length - 6} more actions
+                                {getUIText('bcpPreview.formalBcp.moreActions', currentLocale).replace('{count}', String(strategy.actionSteps.length - 6))}
                               </div>
                             )}
                           </div>
@@ -1571,23 +1621,23 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               })}
             </div>
           </div>
-        </section>
+        </section >
 
         {/* SECTION 4: EMERGENCY RESPONSE & CONTACTS */}
-        <section>
+        < section >
           <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">4</div>
             <h2 className="text-xl font-bold text-slate-900">{getUIText('bcpPreview.formalBcp.emergencyResponse', currentLocale)}</h2>
           </div>
-          
+
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">4.1 Emergency Leadership</h3>
+            <h3 className="text-sm font-bold text-slate-700 mb-2">{getUIText('bcpPreview.formalBcp.emergencyLeadership', currentLocale)}</h3>
             <table className="w-full border border-slate-300 text-xs">
               <thead className="bg-slate-100">
                 <tr>
-                  <th className="px-3 py-1.5 text-left border-r border-slate-300">Role</th>
-                  <th className="px-3 py-1.5 text-left border-r border-slate-300">Person</th>
-                  <th className="px-3 py-1.5 text-left">Contact</th>
+                  <th className="px-3 py-1.5 text-left border-r border-slate-300">{getUIText('bcpPreview.formalBcp.role', currentLocale)}</th>
+                  <th className="px-3 py-1.5 text-left border-r border-slate-300">{getUIText('bcpPreview.formalBcp.person', currentLocale)}</th>
+                  <th className="px-3 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.contact', currentLocale)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1601,328 +1651,338 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               </tbody>
             </table>
           </div>
-          
+
           {/* Staff Contact Roster */}
-          {staffContactsData.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">4.2 Staff Contact Roster</h3>
-              <p className="text-xs text-slate-600 mb-2">Contact information for all team members during emergencies.</p>
-              <table className="w-full border border-slate-300 text-xs">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left">Name</th>
-                    <th className="px-2 py-1.5 text-left">Position</th>
-                    <th className="px-2 py-1.5 text-left">Phone</th>
-                    <th className="px-2 py-1.5 text-left">Email</th>
-                    <th className="px-2 py-1.5 text-left">Emergency Contact</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {staffContactsData.map((contact: any, idx: number) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Name || contact.name)}</td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Position || contact.position || contact.role || contact.Role)}</td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Phone || contact.phone || contact['Mobile Phone'])}</td>
-                      <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact.Email || contact.email || contact['Email Address'])}</td>
-                      <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact['Emergency Contact'] || contact.emergencyContact || '')}</td>
+          {
+            staffContactsData.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">4.2 {getUIText('bcpPreview.formalBcp.staffContactRoster', currentLocale)}</h3>
+                <p className="text-xs text-slate-600 mb-2">{getUIText('bcpPreview.formalBcp.staffContactDesc', currentLocale)}</p>
+                <table className="w-full border border-slate-300 text-xs">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.name', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.position', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.phone', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.email', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.emergencyContact', currentLocale)}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          
+                  </thead>
+                  <tbody>
+                    {staffContactsData.map((contact: any, idx: number) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Name || contact.name)}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Position || contact.position || contact.role || contact.Role)}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">{getStringValue(contact.Phone || contact.phone || contact['Mobile Phone'])}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact.Email || contact.email || contact['Email Address'])}</td>
+                        <td className="px-2 py-1.5 border-t border-slate-200 text-xs">{getStringValue(contact['Emergency Contact'] || contact.emergencyContact || '')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
+
           {/* Emergency Services */}
-          {emergencyContacts.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">4.3 Emergency Services</h3>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {emergencyContacts.map((contact: any, idx: number) => (
-                  <div key={idx} className="bg-red-50 border border-red-200 rounded p-2">
-                    <div className="font-semibold text-xs text-slate-800">
-                      {getStringValue(contact['Service Type'] || contact.serviceType || contact.type || contact.name)}
-                    </div>
-                    <div className="text-xs text-slate-700 mt-0.5">
-                      {getStringValue(contact['Organization Name'] || contact.organizationName || contact.organization)}
-                    </div>
-                    <div className="text-xs text-slate-600 mt-0.5">
-                      📞 {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
-                    </div>
-                    {contact['24/7 Emergency'] && (
-                      <div className="text-xs text-red-700 font-semibold mt-0.5">
-                        🚨 Emergency: {getStringValue(contact['24/7 Emergency'])}
+          {
+            emergencyContacts.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">4.3 {getUIText('bcpPreview.formalBcp.emergencyServices', currentLocale)}</h3>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {emergencyContacts.map((contact: any, idx: number) => (
+                    <div key={idx} className="bg-red-50 border border-red-200 rounded p-2">
+                      <div className="font-semibold text-xs text-slate-800">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || contact.type || contact.name)}
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Utilities Contacts */}
-          {utilitiesContacts.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">4.4 Utilities & Essential Services</h3>
-              <div className="grid md:grid-cols-2 gap-2">
-                {utilitiesContacts.map((contact: any, idx: number) => (
-                  <div key={idx} className="border border-slate-300 rounded p-2 bg-white">
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-                      <div>
-                        <span className="text-slate-600">Service:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact['Service Type'] || contact.serviceType || contact.service || contact.type)}</span>
+                      <div className="text-xs text-slate-700 mt-0.5">
+                        {getStringValue(contact['Organization Name'] || contact.organizationName || contact.organization)}
                       </div>
-                      <div>
-                        <span className="text-slate-600">Provider:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.provider || contact.company)}</span>
+                      <div className="text-xs text-slate-600 mt-0.5">
+                        📞 {getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}
                       </div>
-                      <div>
-                        <span className="text-slate-600">Phone:</span>{' '}
-                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
-                      </div>
-                      {(contact['Account Number'] || contact.accountNumber) && (
-                        <div>
-                          <span className="text-slate-600">Account #:</span>{' '}
-                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
-                        </div>
-                      )}
-                      {contact['Email Address'] && (
-                        <div className="col-span-2">
-                          <span className="text-slate-600">Email:</span>{' '}
-                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
+                      {contact['24/7 Emergency'] && (
+                        <div className="text-xs text-red-700 font-semibold mt-0.5">
+                          🚨 {getUIText('bcpPreview.formalBcp.emergencyLabel', currentLocale)}: {getStringValue(contact['24/7 Emergency'])}
                         </div>
                       )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Suppliers */}
-          {allSuppliers.length > 0 && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">4.5 Supplier Directory</h3>
-              <p className="text-xs text-slate-600 mb-2">All {allSuppliers.length} suppliers listed with complete contact information.</p>
-              <table className="w-full border border-slate-300 text-xs">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left">Supplier Name</th>
-                    <th className="px-2 py-1.5 text-left">Contact Person</th>
-                    <th className="px-2 py-1.5 text-left">Product/Service</th>
-                    <th className="px-2 py-1.5 text-left">Phone</th>
-                    <th className="px-2 py-1.5 text-left">Email</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allSuppliers.map((supplier: any, idx: number) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                      <td className="px-2 py-1.5 border-t border-slate-200 font-semibold">
-                        {getStringValue(supplier.Name || supplier.name || supplier.companyName || supplier['Supplier Name'])}
-                      </td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">
-                        {getStringValue(supplier['Contact Person'] || supplier.contactPerson || supplier.contact)}
-                      </td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">
-                        {getStringValue(supplier.Service || supplier.service || supplier.productType || supplier['Goods/Services Supplied'] || 'Various')}
-                      </td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">
-                        {getStringValue(supplier.Phone || supplier.phone || supplier.phoneNumber || supplier['Phone Number'])}
-                      </td>
-                      <td className="px-2 py-1.5 border-t border-slate-200">
-                        {getStringValue(supplier.Email || supplier.email || supplier['Email Address'])}
-                      </td>
-                    </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          
-          {/* Insurance & Banking */}
-          {(insuranceContacts.length > 0 || bankingContacts.length > 0) && (
-            <div className="mb-4">
-              <h3 className="text-sm font-bold text-slate-700 mb-2">4.6 Insurance & Banking Partners</h3>
-              <div className="grid md:grid-cols-2 gap-2">
-                {insuranceContacts.map((contact: any, idx: number) => (
-                  <div key={`ins-${idx}`} className="border border-blue-200 rounded p-2 bg-blue-50">
-                    <div className="font-semibold text-xs text-blue-900 mb-1">
-                      {getStringValue(contact['Service Type'] || contact.serviceType || 'Insurance')}
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-                      <div>
-                        <span className="text-blue-700">Company:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.company || contact.name)}</span>
-                      </div>
-                      <div>
-                        <span className="text-blue-700">Phone:</span>{' '}
-                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
-                      </div>
-                      {(contact['Email Address'] || contact.email) && (
-                        <div className="col-span-2">
-                          <span className="text-blue-700">Email:</span>{' '}
-                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
-                        </div>
-                      )}
-                      {(contact['Account Number'] || contact.accountNumber || contact.policyNumber) && (
-                        <div className="col-span-2">
-                          <span className="text-blue-700">Account/Policy #:</span>{' '}
-                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber || contact.policyNumber)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                
-                {bankingContacts.map((contact: any, idx: number) => (
-                  <div key={`bank-${idx}`} className="border border-green-200 rounded p-2 bg-green-50">
-                    <div className="font-semibold text-xs text-green-900 mb-1">
-                      {getStringValue(contact['Service Type'] || contact.serviceType || 'Banking')}
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
-                      <div>
-                        <span className="text-green-700">Bank:</span>{' '}
-                        <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.bank || contact.name)}</span>
-                      </div>
-                      <div>
-                        <span className="text-green-700">Phone:</span>{' '}
-                        <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
-                      </div>
-                      {(contact['Email Address'] || contact.email) && (
-                        <div className="col-span-2">
-                          <span className="text-green-700">Email:</span>{' '}
-                          <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
-                        </div>
-                      )}
-                      {(contact['Account Number'] || contact.accountNumber) && (
-                        <div className="col-span-2">
-                          <span className="text-green-700">Account #:</span>{' '}
-                          <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                </div>
               </div>
-            </div>
-          )}
-        </section>
+            )
+          }
+
+          {/* Utilities Contacts */}
+          {
+            utilitiesContacts.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">4.4 {getUIText('bcpPreview.formalBcp.utilitiesServices', currentLocale)}</h3>
+                <div className="grid md:grid-cols-2 gap-2">
+                  {utilitiesContacts.map((contact: any, idx: number) => (
+                    <div key={idx} className="border border-slate-300 rounded p-2 bg-white">
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                        <div>
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.service', currentLocale)}:</span>{' '}
+                          <span className="font-semibold">{getStringValue(contact['Service Type'] || contact.serviceType || contact.service || contact.type)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.provider', currentLocale)}:</span>{' '}
+                          <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.provider || contact.company)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.phone', currentLocale)}:</span>{' '}
+                          <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
+                        </div>
+                        {(contact['Account Number'] || contact.accountNumber) && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.accountNumber', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
+                          </div>
+                        )}
+                        {contact['Email Address'] && (
+                          <div className="col-span-2">
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.email', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          }
+
+          {/* Suppliers */}
+          {
+            allSuppliers.length > 0 && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">4.5 {getUIText('bcpPreview.formalBcp.supplierDirectory', currentLocale)}</h3>
+                <p className="text-xs text-slate-600 mb-2">{getUIText('bcpPreview.formalBcp.supplierCountDesc', currentLocale).replace('{count}', String(allSuppliers.length))}</p>
+                <table className="w-full border border-slate-300 text-xs">
+                  <thead className="bg-slate-100">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.supplierName', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.contactPerson', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.productService', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.phone', currentLocale)}</th>
+                      <th className="px-2 py-1.5 text-left">{getUIText('bcpPreview.formalBcp.email', currentLocale)}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allSuppliers.map((supplier: any, idx: number) => (
+                      <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="px-2 py-1.5 border-t border-slate-200 font-semibold">
+                          {getStringValue(supplier.Name || supplier.name || supplier.companyName || supplier['Supplier Name'])}
+                        </td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">
+                          {getStringValue(supplier['Contact Person'] || supplier.contactPerson || supplier.contact)}
+                        </td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">
+                          {getStringValue(supplier.Service || supplier.service || supplier.productType || supplier['Goods/Services Supplied'] || 'Various')}
+                        </td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">
+                          {getStringValue(supplier.Phone || supplier.phone || supplier.phoneNumber || supplier['Phone Number'])}
+                        </td>
+                        <td className="px-2 py-1.5 border-t border-slate-200">
+                          {getStringValue(supplier.Email || supplier.email || supplier['Email Address'])}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          }
+
+          {/* Insurance & Banking */}
+          {
+            (insuranceContacts.length > 0 || bankingContacts.length > 0) && (
+              <div className="mb-4">
+                <h3 className="text-sm font-bold text-slate-700 mb-2">4.6 {getUIText('bcpPreview.formalBcp.insuranceBanking', currentLocale)}</h3>
+                <div className="grid md:grid-cols-2 gap-2">
+                  {insuranceContacts.map((contact: any, idx: number) => (
+                    <div key={`ins-${idx}`} className="border border-blue-200 rounded p-2 bg-blue-50">
+                      <div className="font-semibold text-xs text-blue-900 mb-1">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || 'Insurance')}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                        <div>
+                          <span className="text-blue-700">{getUIText('bcpPreview.formalBcp.company', currentLocale)}:</span>{' '}
+                          <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.company || contact.name)}</span>
+                        </div>
+                        <div>
+                          <span className="text-blue-700">{getUIText('bcpPreview.formalBcp.phone', currentLocale)}:</span>{' '}
+                          <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
+                        </div>
+                        {(contact['Email Address'] || contact.email) && (
+                          <div className="col-span-2">
+                            <span className="text-blue-700">{getUIText('bcpPreview.formalBcp.email', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
+                          </div>
+                        )}
+                        {(contact['Account Number'] || contact.accountNumber || contact.policyNumber) && (
+                          <div className="col-span-2">
+                            <span className="text-blue-700">{getUIText('bcpPreview.formalBcp.accountPolicyNumber', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Account Number'] || contact.accountNumber || contact.policyNumber)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {bankingContacts.map((contact: any, idx: number) => (
+                    <div key={`bank-${idx}`} className="border border-green-200 rounded p-2 bg-green-50">
+                      <div className="font-semibold text-xs text-green-900 mb-1">
+                        {getStringValue(contact['Service Type'] || contact.serviceType || 'Banking')}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                        <div>
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.bank', currentLocale)}:</span>{' '}
+                          <span className="font-semibold">{getStringValue(contact['Organization Name'] || contact.organizationName || contact.bank || contact.name)}</span>
+                        </div>
+                        <div>
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.phone', currentLocale)}:</span>{' '}
+                          <span>{getStringValue(contact['Phone Number'] || contact.phoneNumber || contact.phone)}</span>
+                        </div>
+                        {(contact['Email Address'] || contact.email) && (
+                          <div className="col-span-2">
+                            <span className="text-green-700">{getUIText('bcpPreview.formalBcp.email', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Email Address'] || contact.email)}</span>
+                          </div>
+                        )}
+                        {(contact['Account Number'] || contact.accountNumber) && (
+                          <div className="col-span-2">
+                            <span className="text-green-700">{getUIText('bcpPreview.formalBcp.accountNumber', currentLocale)}:</span>{' '}
+                            <span>{getStringValue(contact['Account Number'] || contact.accountNumber)}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          }
+        </section >
 
         {/* SECTION 5: VITAL RECORDS & DATA PROTECTION */}
-        {vitalRecords.length > 0 && (
-          <section>
-            <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
-              <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
-              <h2 className="text-xl font-bold text-slate-900">Vital Records & Data Protection</h2>
-            </div>
-            
-            <div className="mb-3">
-              <p className="text-sm text-slate-700 leading-normal">
-                Critical records and data must be protected, backed up regularly, and recoverable quickly to ensure business continuity. 
-                The following records are essential to our operations and have established protection and recovery procedures.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-              {vitalRecords.map((record: any, idx: number) => (
-                <div key={idx} className="border border-slate-300 rounded overflow-hidden">
-                  <div className="bg-slate-100 px-3 py-1.5 font-semibold text-xs flex items-center justify-between">
-                    <span>{getStringValue(record['Record Type'] || record.recordType || record.name)}</span>
-                    {record.format && (
-                      <span className="text-xs bg-slate-200 px-1.5 py-0.5 rounded">
-                        {getStringValue(record.format)}
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                      {(record.Location || record.location || record.storageLocation) && (
-                        <div>
-                          <span className="text-slate-600">Primary Location:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.Location || record.location || record.storageLocation)}</span>
-                        </div>
+        {
+          vitalRecords.length > 0 && (
+            <section>
+              <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
+                <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">5</div>
+                <h2 className="text-xl font-bold text-slate-900">{getUIText('bcpPreview.formalBcp.vitalRecords', currentLocale)}</h2>
+              </div>
+
+              <div className="mb-3">
+                <p className="text-sm text-slate-700 leading-normal">
+                  {getUIText('bcpPreview.formalBcp.vitalRecordsDesc', currentLocale)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                {vitalRecords.map((record: any, idx: number) => (
+                  <div key={idx} className="border border-slate-300 rounded overflow-hidden">
+                    <div className="bg-slate-100 px-3 py-1.5 font-semibold text-xs flex items-center justify-between">
+                      <span>{getStringValue(record['Record Type'] || record.recordType || record.name)}</span>
+                      {record.format && (
+                        <span className="text-xs bg-slate-200 px-1.5 py-0.5 rounded">
+                          {getStringValue(record.format)}
+                        </span>
                       )}
-                      {(record['Backup Location'] || record.backupLocation) && (
-                        <div>
-                          <span className="text-slate-600">Backup Location:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record['Backup Location'] || record.backupLocation)}</span>
-                        </div>
-                      )}
-                      {(record['Update Frequency'] || record.updateFrequency || record.backupFrequency) && (
-                        <div>
-                          <span className="text-slate-600">Update Frequency:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record['Update Frequency'] || record.updateFrequency || record.backupFrequency)}</span>
-                        </div>
-                      )}
-                      {(record['Responsible Person'] || record.responsiblePerson) && (
-                        <div>
-                          <span className="text-slate-600">Responsible Person:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record['Responsible Person'] || record.responsiblePerson)}</span>
-                        </div>
-                      )}
-                      {record.retentionPeriod && (
-                        <div>
-                          <span className="text-slate-600">Retention Period:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.retentionPeriod)}</span>
-                        </div>
-                      )}
-                      {record.recoveryTime && (
-                        <div>
-                          <span className="text-slate-600">Recovery Time:</span>{' '}
-                          <span className="font-semibold">{getStringValue(record.recoveryTime)}</span>
+                    </div>
+                    <div className="p-2">
+                      <div className="grid grid-cols-2 gap-2 text-xs mb-2">
+                        {(record.Location || record.location || record.storageLocation) && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.primaryLocation', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record.Location || record.location || record.storageLocation)}</span>
+                          </div>
+                        )}
+                        {(record['Backup Location'] || record.backupLocation) && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.backupLocation', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record['Backup Location'] || record.backupLocation)}</span>
+                          </div>
+                        )}
+                        {(record['Update Frequency'] || record.updateFrequency || record.backupFrequency) && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.updateFrequency', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record['Update Frequency'] || record.updateFrequency || record.backupFrequency)}</span>
+                          </div>
+                        )}
+                        {(record['Responsible Person'] || record.responsiblePerson) && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.responsiblePerson', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record['Responsible Person'] || record.responsiblePerson)}</span>
+                          </div>
+                        )}
+                        {record.retentionPeriod && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.retentionPeriod', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record.retentionPeriod)}</span>
+                          </div>
+                        )}
+                        {record.recoveryTime && (
+                          <div>
+                            <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.recoveryTime', currentLocale)}:</span>{' '}
+                            <span className="font-semibold">{getStringValue(record.recoveryTime)}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {record.backupProcedure && (
+                        <div className="mt-1.5 bg-blue-50 border-l-2 border-blue-400 p-1.5">
+                          <div className="text-xs font-semibold text-blue-900 mb-0.5">{getUIText('bcpPreview.formalBcp.backupProcedure', currentLocale)}:</div>
+                          <div className="text-xs text-blue-800">{getStringValue(record.backupProcedure)}</div>
                         </div>
                       )}
                     </div>
-                    
-                    {record.backupProcedure && (
-                      <div className="mt-1.5 bg-blue-50 border-l-2 border-blue-400 p-1.5">
-                        <div className="text-xs font-semibold text-blue-900 mb-0.5">Backup Procedure:</div>
-                        <div className="text-xs text-blue-800">{getStringValue(record.backupProcedure)}</div>
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+                ))}
+              </div>
+            </section>
+          )
+        }
 
         {/* SECTION 6: PLAN MAINTENANCE & TESTING */}
         <section>
           <div className="flex items-center gap-3 mb-3 pb-2 border-b-2 border-slate-800">
             <div className="bg-slate-800 text-white w-8 h-8 rounded flex items-center justify-center font-bold">{vitalRecords.length > 0 ? '6' : '5'}</div>
-            <h2 className="text-xl font-bold text-slate-900">Plan Maintenance & Testing</h2>
+            <h2 className="text-xl font-bold text-slate-900">{getUIText('bcpPreview.formalBcp.planMaintenance', currentLocale)}</h2>
           </div>
-          
+
           <div className="mb-4">
             <div className="bg-blue-50 border border-blue-200 rounded p-3">
               <p className="text-sm text-slate-700">
-                We regularly test our preparedness to ensure this plan works when needed. 
-                This plan is reviewed <strong>quarterly</strong> and updated whenever business circumstances change.
+                <span dangerouslySetInnerHTML={{ __html: getUIText('bcpPreview.formalBcp.maintenanceDesc', currentLocale).replace('{frequency}', `<strong>${getUIText('bcpPreview.formalBcp.frequency.quarterly', currentLocale)}</strong>`) }} />
               </p>
               <div className="mt-2 text-xs text-slate-600 space-y-0.5">
-                <div className="font-semibold mb-0.5">Plan Updates When:</div>
-                <div>• We move locations or make major facility changes</div>
-                <div>• Key personnel change</div>
-                <div>• After any actual emergency or disruption</div>
-                <div>• Suppliers, insurance, or banking relationships change</div>
-                <div>• At least once per year regardless of changes</div>
+                <div className="font-semibold mb-0.5">{getUIText('bcpPreview.formalBcp.planUpdatesWhen', currentLocale)}:</div>
+                <div>• {getUIText('bcpPreview.formalBcp.updateTrigger1', currentLocale)}</div>
+                <div>• {getUIText('bcpPreview.formalBcp.updateTrigger2', currentLocale)}</div>
+                <div>• {getUIText('bcpPreview.formalBcp.updateTrigger3', currentLocale)}</div>
+                <div>• {getUIText('bcpPreview.formalBcp.updateTrigger4', currentLocale)}</div>
+                <div>• {getUIText('bcpPreview.formalBcp.updateTrigger5', currentLocale)}</div>
               </div>
             </div>
           </div>
-          
+
           <div className="text-sm text-slate-700 mb-4">
-            <div className="font-semibold mb-1">Responsibility:</div>
-            <p>{planManagerInfo} is responsible for ensuring the plan stays current and conducting regular tests.</p>
+            <div className="font-semibold mb-1">{getUIText('bcpPreview.formalBcp.responsibility', currentLocale)}:</div>
+            <p>{getUIText('bcpPreview.formalBcp.responsibilityDesc', currentLocale).replace('{name}', planManagerInfo)}</p>
           </div>
-          
+
           {/* Testing Schedule */}
           {testingSchedule.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">
-                {vitalRecords.length > 0 ? '6.1' : '5.1'} Testing & Exercise Schedule
+                {vitalRecords.length > 0 ? '6.1' : '5.1'} {getUIText('bcpPreview.formalBcp.testingSchedule', currentLocale)}
               </h3>
               <p className="text-xs text-slate-600 mb-2">
-                Scheduled tests to verify preparedness and identify improvements needed.
+                {getUIText('bcpPreview.formalBcp.testingScheduleDesc', currentLocale)}
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {testingSchedule.map((test: any, idx: number) => (
@@ -1932,25 +1992,25 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                         {getStringValue(test['Test Type'] || test.testType || test.name)}
                       </div>
                       <div className="text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">
-                        {getStringValue(test.Frequency || test.frequency || 'As scheduled')}
+                        {getFrequencyLabel(test.Frequency || test.frequency || 'As scheduled')}
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {(test['Next Date'] || test.nextTestDate || test.nextDate) && (
                         <div>
-                          <span className="text-slate-600">Next Test:</span>{' '}
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.nextTest', currentLocale)}:</span>{' '}
                           <span className="font-semibold">{getStringValue(test['Next Date'] || test.nextTestDate || test.nextDate)}</span>
                         </div>
                       )}
                       {(test.Responsible || test.responsible) && (
                         <div>
-                          <span className="text-slate-600">Responsible:</span>{' '}
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.responsible', currentLocale)}:</span>{' '}
                           <span className="font-semibold">{getStringValue(test.Responsible || test.responsible)}</span>
                         </div>
                       )}
                       {(test.Participants || test.participants) && (
                         <div className="col-span-2">
-                          <span className="text-slate-600">Participants:</span>{' '}
+                          <span className="text-slate-600">{getUIText('bcpPreview.formalBcp.participants', currentLocale)}:</span>{' '}
                           <span>{getStringValue(test.Participants || test.participants)}</span>
                         </div>
                       )}
@@ -1965,15 +2025,15 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               </div>
             </div>
           )}
-          
+
           {/* Training Programs */}
           {trainingPrograms.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">
-                {vitalRecords.length > 0 ? '6.2' : '5.2'} Training Programs
+                {vitalRecords.length > 0 ? '6.2' : '5.2'} {getUIText('bcpPreview.formalBcp.trainingPrograms', currentLocale)}
               </h3>
               <p className="text-xs text-slate-600 mb-2">
-                Staff training ensures everyone knows their role in emergency response and recovery.
+                {getUIText('bcpPreview.formalBcp.trainingProgramsDesc', currentLocale)}
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {trainingPrograms.map((program: any, idx: number) => (
@@ -1991,28 +2051,28 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     <div className="grid grid-cols-2 gap-2 text-xs mb-1.5">
                       {(program.Frequency || program.frequency) && (
                         <div>
-                          <span className="text-green-700">Frequency:</span>{' '}
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.frequency', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-green-900">{getStringValue(program.Frequency || program.frequency)}</span>
                         </div>
                       )}
                       {(program['Next Date'] || program.nextDate || program.nextSessionDate) && (
                         <div>
-                          <span className="text-green-700">Next Session:</span>{' '}
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.nextSession', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-green-900">{getStringValue(program['Next Date'] || program.nextDate || program.nextSessionDate)}</span>
                         </div>
                       )}
                       {(program.Trainer || program.trainer) && (
                         <div className="col-span-2">
-                          <span className="text-green-700">Trainer:</span>{' '}
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.trainer', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-green-900">{getStringValue(program.Trainer || program.trainer)}</span>
                         </div>
                       )}
                     </div>
                     {program.topics && (
                       <div className="mt-2">
-                        <div className="text-xs font-semibold text-green-800 mb-1">Topics Covered:</div>
+                        <div className="text-xs font-semibold text-green-800 mb-1">{getUIText('bcpPreview.formalBcp.topicsCovered', currentLocale)}:</div>
                         <div className="text-xs text-green-800">
-                          {Array.isArray(program.topics) 
+                          {Array.isArray(program.topics)
                             ? program.topics.map((t: any) => getStringValue(t)).join(' • ')
                             : getStringValue(program.topics)
                           }
@@ -2024,15 +2084,15 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
               </div>
             </div>
           )}
-          
+
           {/* Improvements Needed */}
           {improvements.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-bold text-slate-700 mb-2">
-                {vitalRecords.length > 0 ? '6.3' : '5.3'} Identified Improvements
+                {vitalRecords.length > 0 ? '6.3' : '5.3'} {getUIText('bcpPreview.formalBcp.identifiedImprovements', currentLocale)}
               </h3>
               <p className="text-xs text-slate-600 mb-2">
-                Areas for improvement identified through testing, exercises, or actual incidents.
+                {getUIText('bcpPreview.formalBcp.identifiedImprovementsDesc', currentLocale)}
               </p>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
                 {improvements.map((improvement: any, idx: number) => (
@@ -2041,30 +2101,29 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                       {getStringValue(improvement['Issue Identified'] || improvement.issueIdentified || improvement.area || improvement.title)}
                     </div>
                     <div className="text-xs text-yellow-800 mb-1">
-                      <span className="text-yellow-700">Action Required:</span>{' '}
+                      <span className="text-yellow-700">{getUIText('bcpPreview.formalBcp.actionRequired', currentLocale)}:</span>{' '}
                       {getStringValue(improvement['Action Required'] || improvement.actionRequired || improvement.action || improvement.description)}
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-xs mt-1">
                       {(improvement.Responsible || improvement.responsible) && (
                         <div>
-                          <span className="text-yellow-700">Responsible:</span>{' '}
+                          <span className="text-yellow-700">{getUIText('bcpPreview.formalBcp.responsible', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-yellow-900">{getStringValue(improvement.Responsible || improvement.responsible)}</span>
                         </div>
                       )}
                       {(improvement['Due Date'] || improvement.dueDate || improvement.targetDate) && (
                         <div>
-                          <span className="text-yellow-700">Due Date:</span>{' '}
+                          <span className="text-yellow-700">{getUIText('bcpPreview.formalBcp.dueDate', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-yellow-900">{getStringValue(improvement['Due Date'] || improvement.dueDate || improvement.targetDate)}</span>
                         </div>
                       )}
                       {(improvement.Status || improvement.status) && (
                         <div>
-                          <span className="text-yellow-700">Status:</span>{' '}
-                          <span className={`font-semibold px-2 py-0.5 rounded text-xs ${
-                            (improvement.Status || improvement.status) === 'Completed' ? 'bg-green-100 text-green-800' :
+                          <span className="text-yellow-700">{getUIText('bcpPreview.formalBcp.status', currentLocale)}:</span>{' '}
+                          <span className={`font-semibold px-2 py-0.5 rounded text-xs ${(improvement.Status || improvement.status) === 'Completed' ? 'bg-green-100 text-green-800' :
                             (improvement.Status || improvement.status) === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                              'bg-gray-100 text-gray-800'
+                            }`}>
                             {getStringValue(improvement.Status || improvement.status)}
                           </span>
                         </div>
@@ -2080,44 +2139,44 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
         {/* SECTION 7: CERTIFICATION */}
         <section className="border-t-2 border-slate-300 pt-5 mt-5">
           <div className="mb-4">
-            <h3 className="text-sm font-bold text-slate-700 mb-2">Plan Approval</h3>
+            <h3 className="text-sm font-bold text-slate-700 mb-2">{getUIText('bcpPreview.formalBcp.planApproval', currentLocale)}</h3>
             <div className="bg-slate-50 border border-slate-300 rounded-lg p-4">
               <p className="text-sm text-slate-700 mb-3">
-                This Business Continuity Plan was prepared on <strong>{new Date().toLocaleDateString()}</strong> and is approved for implementation:
+                <span dangerouslySetInnerHTML={{ __html: getUIText('bcpPreview.formalBcp.approvalDesc', currentLocale).replace('{date}', `<strong>${new Date().toLocaleDateString()}</strong>`) }} />
               </p>
               <div className="space-y-3">
                 <div>
-                  <div className="text-xs text-slate-600 mb-1">Business Owner/Manager:</div>
+                  <div className="text-xs text-slate-600 mb-1">{getUIText('bcpPreview.formalBcp.businessOwnerManager', currentLocale)}</div>
                   <div className="border-b-2 border-slate-400 w-64 h-8"></div>
-                  <div className="text-xs text-slate-500 mt-1">Signature & Date</div>
+                  <div className="text-xs text-slate-500 mt-1">{getUIText('bcpPreview.formalBcp.signatureDate', currentLocale)}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-slate-600 mb-1">Plan Manager Contact:</div>
+                  <div className="text-xs text-slate-600 mb-1">{getUIText('bcpPreview.formalBcp.planManagerContact', currentLocale)}</div>
                   <div className="text-sm font-semibold">{planManagerInfo}</div>
                   <div className="text-xs text-slate-600">{planManagerContactDisplay}</div>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-green-50 border-2 border-green-600 rounded-lg p-3 text-center">
-            <div className="text-xs font-semibold text-green-900 mb-1">Technical Assistance Provided By:</div>
+            <div className="text-xs font-semibold text-green-900 mb-1">{getUIText('bcpPreview.formalBcp.technicalAssistance', currentLocale)}</div>
             <div className="text-sm font-bold text-green-800">UNDP Caribbean | CARICHAM</div>
             <div className="text-xs text-green-700 mt-0.5">(Caribbean Chamber of Commerce)</div>
             <div className="text-xs text-slate-600 mt-2">
-              Industry Standards Referenced: UNDP Business Continuity Framework • CARICHAM SME Best Practices
+              {getUIText('bcpPreview.formalBcp.industryStandards', currentLocale)}
             </div>
           </div>
         </section>
-      </div>
-      
+      </div >
+
       {/* Footer Note */}
-      <div className="bg-slate-100 px-6 py-3 border-t border-slate-300">
+      < div className="bg-slate-100 px-6 py-3 border-t border-slate-300" >
         <div className="text-xs text-slate-600 text-center">
-          📄 This is a browser preview. You can scroll through all sections to review your plan before downloading.
+          {getUIText('bcpPreview.formalBcp.footerNote', currentLocale)}
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   )
 }
 
