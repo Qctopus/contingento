@@ -236,15 +236,18 @@ export default function RiskCalculatorTab() {
       // Parse risk data from adminUnitRisk
       let locationRisks: Record<string, number> = {}
 
-      if (unit.adminUnitRisk) {
+      // Support both uppercase (from Prisma) and lowercase (legacy) field names
+      const adminUnitRisk = unit.AdminUnitRisk || unit.adminUnitRisk
+      
+      if (adminUnitRisk) {
         // Map database fields to risk type keys
         locationRisks = {
-          hurricane: unit.adminUnitRisk.hurricaneLevel || 0,
-          flood: unit.adminUnitRisk.floodLevel || 0,
-          earthquake: unit.adminUnitRisk.earthquakeLevel || 0,
-          drought: unit.adminUnitRisk.droughtLevel || 0,
-          landslide: unit.adminUnitRisk.landslideLevel || 0,
-          power_outage: unit.adminUnitRisk.powerOutageLevel || 0,
+          hurricane: adminUnitRisk.hurricaneLevel || 0,
+          flood: adminUnitRisk.floodLevel || 0,
+          earthquake: adminUnitRisk.earthquakeLevel || 0,
+          drought: adminUnitRisk.droughtLevel || 0,
+          landslide: adminUnitRisk.landslideLevel || 0,
+          power_outage: adminUnitRisk.powerOutageLevel || 0,
           fire: 0, // Not in DB, default to 0
           cyber_attack: 0, // Not in DB, default to 0
           terrorism: 0, // Not in DB, default to 0
@@ -256,8 +259,8 @@ export default function RiskCalculatorTab() {
 
         // Also try to parse riskProfileJson if it exists
         try {
-          if (unit.adminUnitRisk.riskProfileJson && unit.adminUnitRisk.riskProfileJson !== '{}') {
-            const parsedProfile = JSON.parse(unit.adminUnitRisk.riskProfileJson)
+          if (adminUnitRisk.riskProfileJson && adminUnitRisk.riskProfileJson !== '{}') {
+            const parsedProfile = JSON.parse(adminUnitRisk.riskProfileJson)
 
             // The JSON format is: { "fire": { "level": 3, "notes": "..." }, ... }
             // We need to extract just the level values and map camelCase to snake_case
