@@ -646,7 +646,7 @@ function createTestingScheduleTable(testingSchedule: any[], locale: Locale): Tab
       tableHeader: true,
       children: [
         createHeaderCell(getUIText('bcpPreview.formalBcp.testType', locale), 6000),
-        createHeaderCell(getUIText('bcpPreview.formalBcp.frequency', locale), 3360)
+        createHeaderCell(getUIText('bcpPreview.formalBcp.frequencyLabel', locale), 3360)
       ]
     })
   ]
@@ -688,7 +688,7 @@ function createTrainingProgramsTable(trainingPrograms: any[], locale: Locale): T
       tableHeader: true,
       children: [
         createHeaderCell(getUIText('bcpPreview.formalBcp.trainingProgram', locale), 6000),
-        createHeaderCell(getUIText('bcpPreview.formalBcp.frequency', locale), 3360)
+        createHeaderCell(getUIText('bcpPreview.formalBcp.frequencyLabel', locale), 3360)
       ]
     })
   ]
@@ -1684,7 +1684,392 @@ function generateWorkbookDocument(options: WordExportOptions): Document {
               spacing: { after: 80 },
               children: [new TextRun({ text: `✓ ${tip}`, size: 28, color: WB_COLORS.gray[700], font: 'Arial' })]
             })
-          )
+          ),
+          
+          new Paragraph({ children: [new PageBreak()] })
+        ]
+      },
+
+      // =========================================================================
+      // INCIDENT LOG SECTION
+      // =========================================================================
+      {
+        children: [
+          new Paragraph({
+            shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+            border: { top: { style: BorderStyle.SINGLE, size: 24, color: WB_COLORS.gray[700] }, bottom: { style: BorderStyle.SINGLE, size: 24, color: WB_COLORS.gray[700] } },
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 320 },
+            children: [new TextRun({ text: `📝 ${getUIText('bcpPreview.workbook.incidentLog.title', locale)}`, bold: true, size: 44, color: WB_COLORS.gray[900], font: 'Arial' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.subtitle', locale), size: 28, color: WB_COLORS.gray[600], font: 'Arial' })]
+          }),
+
+          // Incident Details Section
+          new Paragraph({
+            shading: { fill: WB_COLORS.gray[200], type: ShadingType.CLEAR },
+            spacing: { before: 240, after: 160 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.incidentDetails', locale), bold: true, size: 28, color: WB_COLORS.gray[900], font: 'Arial' })]
+          }),
+          
+          // Incident Details Table
+          new Table({
+            width: { size: TABLE_WIDTH, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+            columnWidths: [2400, 2280, 2400, 2280],
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.incidentType', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  }),
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.dateTimeStarted', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.reportedBy', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  }),
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.location', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              })
+            ]
+          }),
+
+          // Impact Assessment Section
+          new Paragraph({
+            shading: { fill: 'fef2f2', type: ShadingType.CLEAR },
+            spacing: { before: 320, after: 160 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.impactAssessment', locale), bold: true, size: 28, color: '991b1b', font: 'Arial' })]
+          }),
+          
+          new Table({
+            width: { size: TABLE_WIDTH, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+            columnWidths: [3120, 6240],
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.staffAffected', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.operationsAffected', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.estimatedDamage', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              })
+            ]
+          }),
+
+          // Actions Taken Section
+          new Paragraph({
+            shading: { fill: 'dbeafe', type: ShadingType.CLEAR },
+            spacing: { before: 320, after: 160 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.actionsTaken', locale), bold: true, size: 28, color: '1e40af', font: 'Arial' })]
+          }),
+          
+          new Table({
+            width: { size: TABLE_WIDTH, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+            columnWidths: [3120, 6240],
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.immediateResponse', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 600 } })]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.resourcesUsed', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 600 } })]
+                  })
+                ]
+              }),
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 3120, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.externalContacts', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6240, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 600 } })]
+                  })
+                ]
+              })
+            ]
+          }),
+
+          // Incident Closed Section
+          new Paragraph({
+            shading: { fill: 'dcfce7', type: ShadingType.CLEAR },
+            spacing: { before: 320, after: 160 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.incidentClosed', locale), bold: true, size: 28, color: '166534', font: 'Arial' })]
+          }),
+          
+          new Table({
+            width: { size: TABLE_WIDTH, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+            columnWidths: [2400, 2280, 2400, 2280],
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.dateTime', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  }),
+                  new TableCell({
+                    width: { size: 2400, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.gray[100], type: ShadingType.CLEAR },
+                    children: [new Paragraph({ children: [new TextRun({ text: getUIText('bcpPreview.workbook.incidentLog.closedBy', locale), bold: true, size: 22, font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 2280, type: WidthType.DXA },
+                    borders: cellBorders,
+                    children: [new Paragraph({ spacing: { after: 400 } })]
+                  })
+                ]
+              })
+            ]
+          }),
+
+          // Important Reminders
+          new Paragraph({
+            shading: { fill: 'fef3c7', type: ShadingType.CLEAR },
+            spacing: { before: 480, after: 160 },
+            border: { left: { style: BorderStyle.SINGLE, size: 24, color: WB_COLORS.warning.border } },
+            children: [new TextRun({ text: `⚠️ ${getUIText('bcpPreview.workbook.incidentLog.importantReminders', locale)}`, bold: true, size: 28, color: '92400e', font: 'Arial' })]
+          }),
+          
+          ...[
+            getUIText('bcpPreview.workbook.incidentLog.reminder1', locale),
+            getUIText('bcpPreview.workbook.incidentLog.reminder2', locale),
+            getUIText('bcpPreview.workbook.incidentLog.reminder3', locale),
+            getUIText('bcpPreview.workbook.incidentLog.reminder4', locale),
+            getUIText('bcpPreview.workbook.incidentLog.reminder5', locale)
+          ].map((reminder, idx) =>
+            new Paragraph({
+              indent: { left: 400 },
+              spacing: { after: 100 },
+              children: [new TextRun({ text: `${idx + 1}. ${reminder}`, size: 24, color: WB_COLORS.gray[700], font: 'Arial' })]
+            })
+          ),
+
+          new Paragraph({ children: [new PageBreak()] })
+        ]
+      },
+
+      // =========================================================================
+      // NOTES & UPDATES SECTION (Final Page)
+      // =========================================================================
+      {
+        children: [
+          new Paragraph({
+            shading: { fill: 'dbeafe', type: ShadingType.CLEAR },
+            border: { top: { style: BorderStyle.SINGLE, size: 24, color: WB_COLORS.before.header }, bottom: { style: BorderStyle.SINGLE, size: 24, color: WB_COLORS.before.header } },
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 320 },
+            children: [new TextRun({ text: `📋 ${getUIText('bcpPreview.workbook.notesUpdates.title', locale)}`, bold: true, size: 44, color: '1e40af', font: 'Arial' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 480 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.notesUpdates.subtitle', locale), size: 28, color: WB_COLORS.gray[600], font: 'Arial' })]
+          }),
+
+          // Notes Table
+          new Table({
+            width: { size: TABLE_WIDTH, type: WidthType.DXA },
+            layout: TableLayoutType.FIXED,
+            columnWidths: [1500, 6360, 1500],
+            rows: [
+              new TableRow({
+                tableHeader: true,
+                children: [
+                  new TableCell({
+                    width: { size: 1500, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.before.header, type: ShadingType.CLEAR },
+                    children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: getUIText('bcpPreview.workbook.notesUpdates.date', locale), bold: true, size: 24, color: 'ffffff', font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 6360, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.before.header, type: ShadingType.CLEAR },
+                    children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: getUIText('bcpPreview.workbook.notesUpdates.noteUpdateActionItem', locale), bold: true, size: 24, color: 'ffffff', font: 'Arial' })] })]
+                  }),
+                  new TableCell({
+                    width: { size: 1500, type: WidthType.DXA },
+                    borders: cellBorders,
+                    shading: { fill: WB_COLORS.before.header, type: ShadingType.CLEAR },
+                    children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: getUIText('bcpPreview.workbook.notesUpdates.updatedBy', locale), bold: true, size: 24, color: 'ffffff', font: 'Arial' })] })]
+                  })
+                ]
+              }),
+              // 20 empty rows for notes
+              ...Array.from({ length: 20 }, (_, idx) => 
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 1500, type: WidthType.DXA },
+                      borders: cellBorders,
+                      shading: idx % 2 === 1 ? { fill: WB_COLORS.gray[50], type: ShadingType.CLEAR } : undefined,
+                      children: [new Paragraph({ spacing: { after: 300 } })]
+                    }),
+                    new TableCell({
+                      width: { size: 6360, type: WidthType.DXA },
+                      borders: cellBorders,
+                      shading: idx % 2 === 1 ? { fill: WB_COLORS.gray[50], type: ShadingType.CLEAR } : undefined,
+                      children: [new Paragraph({ spacing: { after: 300 } })]
+                    }),
+                    new TableCell({
+                      width: { size: 1500, type: WidthType.DXA },
+                      borders: cellBorders,
+                      shading: idx % 2 === 1 ? { fill: WB_COLORS.gray[50], type: ShadingType.CLEAR } : undefined,
+                      children: [new Paragraph({ spacing: { after: 300 } })]
+                    })
+                  ]
+                })
+              )
+            ]
+          }),
+
+          // Footer
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { before: 480, after: 160 },
+            border: { top: { style: BorderStyle.SINGLE, size: 8, color: WB_COLORS.gray[300] } },
+            children: [new TextRun({ text: businessName, bold: true, size: 28, color: WB_COLORS.gray[900], font: 'Arial' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: `${getUIText('bcpPreview.workbook.notesUpdates.footer.planManager', locale)}: `, bold: true, size: 22, color: WB_COLORS.gray[600], font: 'Arial' }),
+              new TextRun({ text: `${planManager} | ${planManagerPhone || planManagerEmail}`, size: 22, color: WB_COLORS.gray[700], font: 'Arial' })
+            ]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 80 },
+            children: [
+              new TextRun({ text: `${getUIText('bcpPreview.workbook.notesUpdates.footer.lastUpdated', locale)}: `, bold: true, size: 22, color: WB_COLORS.gray[600], font: 'Arial' }),
+              new TextRun({ text: currentDate, size: 22, color: WB_COLORS.gray[700], font: 'Arial' })
+            ]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 160 },
+            children: [new TextRun({ text: getUIText('bcpPreview.workbook.notesUpdates.footer.nextReview', locale), size: 20, color: WB_COLORS.gray[500], font: 'Arial' })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [new TextRun({ text: 'UNDP x CARICHAM Business Continuity Planning Initiative', size: 18, color: WB_COLORS.gray[500], font: 'Arial' })]
+          })
         ]
       }
     ]

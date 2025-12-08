@@ -5,12 +5,15 @@ import { useTranslations } from 'next-intl';
 import { anonymousSessionService } from '@/services/anonymousSessionService';
 import { SaveOptions, AccessAttempt } from '@/types';
 
+// Note: Session Manager uses both 'sessionManager' and 'header' namespaces
+
 interface SessionManagerProps {
   // Remove onPlanLoaded prop to fix static generation
 }
 
 export function SessionManager({}: SessionManagerProps) {
   const t = useTranslations('sessionManager');
+  const tHeader = useTranslations('header');
   const [isClient, setIsClient] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<'save' | 'access'>('save');
@@ -134,16 +137,16 @@ export function SessionManager({}: SessionManagerProps) {
             <>
               <div className={`w-2 h-2 rounded-full ${sessionSummary.isCloudSaved ? 'bg-green-400' : 'bg-orange-400'}`}></div>
               <span className="text-gray-600 dark:text-gray-300 hidden sm:inline">
-                {sessionSummary.businessName || 'Plan Draft'}
+                {sessionSummary.businessName || tHeader('planDraft')}
               </span>
               <span className="text-gray-500 dark:text-gray-400 text-xs">
-                ({sessionSummary.isCloudSaved ? 'Saved' : 'Local'})
+                ({sessionSummary.isCloudSaved ? tHeader('saved') : tHeader('local')})
               </span>
             </>
           ) : (
             <>
               <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-              <span className="text-gray-500 dark:text-gray-400 text-sm">No Plan</span>
+              <span className="text-gray-500 dark:text-gray-400 text-sm">{tHeader('noPlan')}</span>
             </>
           )}
         </div>
@@ -156,8 +159,8 @@ export function SessionManager({}: SessionManagerProps) {
           <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-          <span className="hidden sm:inline">Manage Plan</span>
-          <span className="sm:hidden">Save</span>
+          <span className="hidden sm:inline">{tHeader('managePlan')}</span>
+          <span className="sm:hidden">{tHeader('save')}</span>
         </button>
       </div>
     );

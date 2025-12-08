@@ -68,19 +68,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get business type with hazard mappings
+    // Get business type with hazard mappings including translations
     const businessType = await (prisma as any).adminBusinessType.findUnique({
       where: { businessTypeId },
       include: {
-        businessTypeHazards: {
+        AdminBusinessTypeHazard: {
           include: {
-            hazard: {
+            AdminHazardType: {
               include: {
-                hazardStrategies: {
+                AdminHazardStrategy: {
                   include: {
-                    strategy: true
+                    AdminStrategy: true
                   },
                   where: { isActive: true }
+                },
+                HazardTranslation: {
+                  where: { locale: userLocale }
                 }
               }
             }
@@ -92,6 +95,40 @@ export async function POST(request: NextRequest) {
         }
       }
     })
+
+    // Pre-fetch all hazard translations for requested hazardIds
+    // This ensures we have translated names even for fallback cases
+    const allHazardTranslations = await (prisma as any).hazardTranslation.findMany({
+      where: {
+        locale: userLocale,
+        AdminHazardType: {
+          hazardId: { in: hazardIds }
+        }
+      },
+      include: {
+        AdminHazardType: {
+          select: { hazardId: true }
+        }
+      }
+    })
+    
+    // Create a map of hazardId -> translated name
+    const hazardNameMap = new Map<string, string>()
+    allHazardTranslations.forEach((t: any) => {
+      hazardNameMap.set(t.AdminHazardType?.hazardId, t.name)
+    })
+    
+    // Helper to get hazard name - first try from translation, then fallback to formatting
+    const getHazardName = (hazard: any): string => {
+      const translation = hazard?.HazardTranslation?.[0]
+      return translation?.name || hazard?.hazardId || 'Unknown Hazard'
+    }
+    
+    // Helper to get hazard name by ID - uses pre-fetched translations map
+    const getHazardNameById = (hazardId: string): string => {
+      return hazardNameMap.get(hazardId) || 
+             hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+    }
 
     if (!businessType) {
       return NextResponse.json(
@@ -128,8 +165,8 @@ export async function POST(request: NextRequest) {
     const allStrategies = new Map()
 
     for (const hazardId of hazardIds) {
-      // Find business type hazard mapping
-      const businessTypeHazard = businessType.businessTypeHazards.find(
+      // Find business type hazard mapping (use Prisma relation name)
+      const businessTypeHazard = businessType.AdminBusinessTypeHazard?.find(
         (bth: any) => bth.hazardId === hazardId
       )
 
@@ -204,7 +241,7 @@ export async function POST(request: NextRequest) {
           
           riskCalculations.push({
             hazardId,
-            hazardName: hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            hazardName: getHazardNameById(hazardId),
             likelihood: parishLikelihood,
             severity: 'moderate',
             riskLevel: calculatedRiskLevel,
@@ -220,7 +257,7 @@ export async function POST(request: NextRequest) {
           // Parish has no/low risk data - make available but not pre-selected
           riskCalculations.push({
             hazardId,
-            hazardName: hazardId.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+            hazardName: getHazardNameById(hazardId),
             likelihood: 'possible',
             severity: 'moderate',
             riskLevel: 'not_applicable',
@@ -234,11 +271,11 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const hazard = businessTypeHazard.hazard
+      const hazard = businessTypeHazard.AdminHazardType
 
       // Start with base values from business type hazard mapping
-      let baseLikelihood = businessTypeHazard.frequency || hazard.frequency || 'possible'
-      let baseSeverity = businessTypeHazard.impact || hazard.impact || 'moderate'
+      let baseLikelihood = businessTypeHazard.frequency || hazard?.defaultFrequency || 'possible'
+      let baseSeverity = businessTypeHazard.impact || hazard?.defaultImpact || 'moderate'
       let baseRiskLevel = businessTypeHazard.riskLevel || 'medium'
 
       // Apply location modifiers from Parish risk data
@@ -352,7 +389,7 @@ export async function POST(request: NextRequest) {
       
       riskCalculations.push({
         hazardId,
-        hazardName: hazard.name,
+        hazardName: getHazardName(hazard),
         likelihood: baseLikelihood,
         severity: baseSeverity,
         riskLevel: calculatedRiskLevel,
@@ -366,8 +403,8 @@ export async function POST(request: NextRequest) {
       })
 
       // Collect strategies for this hazard
-      hazard.hazardStrategies?.forEach((hs: any) => {
-        const strategy = hs.strategy
+      hazard?.AdminHazardStrategy?.forEach((hs: any) => {
+        const strategy = hs.AdminStrategy
         const key = strategy.strategyId
 
         // Check if strategy applies to this business type
@@ -399,7 +436,7 @@ export async function POST(request: NextRequest) {
               priority: hs.priority,
               effectiveness,
               isRecommended: hs.isRecommended,
-              reasoning: strategy.reasoning || `Effective ${strategy.category} strategy for ${hazard.name.toLowerCase()}`,
+              reasoning: strategy.reasoning || `Effective ${strategy.category} strategy for ${getHazardName(hazard).toLowerCase()}`,
               worksWellWith: [], // To be populated by compatibility analysis
               conflictsWith: []   // To be populated by compatibility analysis
             })

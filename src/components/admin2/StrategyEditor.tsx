@@ -9,6 +9,7 @@ import { MultilingualArrayEditor } from './MultilingualArrayEditor'
 import { MultiCurrencyInput } from './MultiCurrencyInput'
 import { ActionStepCostItemSelector } from './ActionStepCostItemSelector'
 import { getLocalizedText, stringifyMultilingualContent } from '@/utils/localizationUtils'
+import { locales, localeMetadata, type Locale } from '@/i18n/config'
 
 interface StrategyEditorProps {
   strategy?: Strategy | null // If editing existing strategy
@@ -20,7 +21,7 @@ interface StrategyEditorProps {
 
 export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAutoSave }: StrategyEditorProps) {
   const [currentTab, setCurrentTab] = useState<'basic' | 'descriptions' | 'actions' | 'guidance'>('basic')
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<Locale>('en')
   const [formData, setFormData] = useState<Strategy>({
     id: strategy?.id || '',
     strategyId: strategy?.strategyId || '',
@@ -47,22 +48,29 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
     'US' // Default to USD per requirements
   )
   
-  // Language labels and flags
-  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
-  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
-  
   // Helper to parse multilingual JSON
-  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+  const parseMultilingual = (value: any): Record<Locale, string> => {
+    const result: Record<Locale, string> = { en: '', es: '', fr: '' }
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value)
+        const parsed = JSON.parse(value)
+        for (const loc of locales) {
+          result[loc] = parsed[loc] || ''
+        }
+        return result
       } catch {
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       }
     }
-    return value || { en: '', es: '', fr: '' }
+    if (value && typeof value === 'object') {
+      for (const loc of locales) {
+        result[loc] = value[loc] || ''
+      }
+    }
+    return result
   }
-  
+
   // Update formData when strategy prop changes (when editing a different strategy)
   useEffect(() => {
     if (strategy) {
@@ -118,7 +126,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
   ])
   
   // Helper to update multilingual field
-  const updateMultilingualField = (field: keyof Strategy, lang: 'en' | 'es' | 'fr', value: string) => {
+  const updateMultilingualField = (field: keyof Strategy, lang: Locale, value: string) => {
     const current = parseMultilingual(formData[field])
     current[lang] = value
     setFormData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
@@ -404,7 +412,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             
             {/* Language Selector */}
             <div className="flex space-x-2 mb-4">
-              {(['en', 'es', 'fr'] as const).map(lang => (
+              {locales.map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveLanguage(lang)}
@@ -414,7 +422,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                       : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                   }`}
                 >
-                  {languageFlags[lang]} {languageLabels[lang]}
+                  {localeMetadata[lang].flag} {localeMetadata[lang].nativeLabel}
                 </button>
               ))}
             </div>
@@ -423,7 +431,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Strategy Name ({languageLabels[activeLanguage]}) *
+                  Strategy Name ({localeMetadata[activeLanguage].nativeLabel}) *
                 </label>
                 <input
                   type="text"
@@ -520,7 +528,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             
             {/* Language Selector */}
             <div className="flex space-x-2 mb-4">
-              {(['en', 'es', 'fr'] as const).map(lang => (
+              {locales.map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveLanguage(lang)}
@@ -530,7 +538,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
                       : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                   }`}
                 >
-                  {languageFlags[lang]} {languageLabels[lang]}
+                  {localeMetadata[lang].flag} {localeMetadata[lang].nativeLabel}
                 </button>
               ))}
             </div>
@@ -538,7 +546,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             {/* Technical Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Technical Description ({languageLabels[activeLanguage]}) *
+                Technical Description ({localeMetadata[activeLanguage].nativeLabel}) *
               </label>
               <textarea
                 value={parseMultilingual(formData.description)[activeLanguage] || ''}
@@ -553,7 +561,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             {/* SME Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                SME Description ({languageLabels[activeLanguage]}) - Simple Language *
+                SME Description ({localeMetadata[activeLanguage].nativeLabel}) - Simple Language *
               </label>
               <textarea
                 value={parseMultilingual(formData.smeDescription)[activeLanguage] || ''}
@@ -568,7 +576,7 @@ export function StrategyEditor({ strategy, businessTypes, onSave, onCancel, onAu
             {/* Why Important */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Why This Matters ({languageLabels[activeLanguage]}) *
+                Why This Matters ({localeMetadata[activeLanguage].nativeLabel}) *
               </label>
               <textarea
                 value={parseMultilingual(formData.whyImportant)[activeLanguage] || ''}
@@ -903,26 +911,33 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
   }
 
   const [stepData, setStepData] = useState<ActionStep>(initialStepData)
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<Locale>('en')
 
-  // Language labels and flags
-  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
-  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
-  
   // Helper to parse multilingual JSON
-  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+  const parseMultilingual = (value: any): Record<Locale, string> => {
+    const result: Record<Locale, string> = { en: '', es: '', fr: '' }
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value)
+        const parsed = JSON.parse(value)
+        for (const loc of locales) {
+          result[loc] = parsed[loc] || ''
+        }
+        return result
       } catch {
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       }
     }
-    return value || { en: '', es: '', fr: '' }
+    if (value && typeof value === 'object') {
+      for (const loc of locales) {
+        result[loc] = value[loc] || ''
+      }
+    }
+    return result
   }
   
   // Helper to update multilingual field
-  const updateMultilingualStepField = (field: keyof ActionStep, lang: 'en' | 'es' | 'fr', value: string) => {
+  const updateMultilingualStepField = (field: keyof ActionStep, lang: Locale, value: string) => {
     const current = parseMultilingual(stepData[field])
     current[lang] = value
     setStepData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
@@ -1013,7 +1028,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
 
             {/* Language Selector */}
             <div className="flex space-x-2">
-              {(['en', 'es', 'fr'] as const).map(lang => (
+              {locales.map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveLanguage(lang)}
@@ -1023,7 +1038,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
                       : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                   }`}
                 >
-                  {languageFlags[lang]} {languageLabels[lang]}
+                  {localeMetadata[lang].flag} {localeMetadata[lang].nativeLabel}
                 </button>
               ))}
             </div>
@@ -1032,7 +1047,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Action Step Title ({languageLabels[activeLanguage]}) *
+                  Action Step Title ({localeMetadata[activeLanguage].nativeLabel}) *
                 </label>
                 <input
                   type="text"
@@ -1045,7 +1060,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Technical Description ({languageLabels[activeLanguage]}) *
+                  Technical Description ({localeMetadata[activeLanguage].nativeLabel}) *
                 </label>
                 <textarea
                   value={parseMultilingual(stepData.description)[activeLanguage] || ''}
@@ -1060,7 +1075,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  SME Action Description ({languageLabels[activeLanguage]}) - Simple Language *
+                  SME Action Description ({localeMetadata[activeLanguage].nativeLabel}) - Simple Language *
                 </label>
                 <textarea
                   value={parseMultilingual(stepData.smeAction)[activeLanguage] || ''}
@@ -1078,7 +1093,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Timeframe ({languageLabels[activeLanguage]}) *
+                  Timeframe ({localeMetadata[activeLanguage].nativeLabel}) *
                 </label>
                 <input
                   type="text"
@@ -1091,7 +1106,7 @@ function ActionStepEditor({ step, onSave, onCancel }: ActionStepEditorProps) {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Responsibility ({languageLabels[activeLanguage]}) *
+                  Responsibility ({localeMetadata[activeLanguage].nativeLabel}) *
                 </label>
                 <input
                   type="text"

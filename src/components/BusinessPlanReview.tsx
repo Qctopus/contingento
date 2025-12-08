@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { centralDataService } from '../services/centralDataService'
 import type { Strategy, ActionStep } from '../types/admin'
 import type { Locale } from '../i18n/config'
@@ -195,6 +195,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
   onExportPDF
 }) => {
   const locale = useLocale() as Locale
+  const t = useTranslations('bcpReview')
   const [allStrategies, setAllStrategies] = useState<Strategy[]>([])
   const [exportMode, setExportMode] = useState<'formal' | 'workbook'>('formal')
 
@@ -496,12 +497,12 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Business Continuity Plan</h1>
+              <h1 className="text-2xl font-bold text-gray-900">{t('businessContinuityPlan')}</h1>
               <p className="text-sm text-gray-600">
                 {getFieldValue(formData.BUSINESS_PROFILE, 'Business Name', '', locale)}
               </p>
               <p className="text-xs text-gray-500">
-                Version 1.0 • {new Date().toLocaleDateString()}
+                {t('version')} • {new Date().toLocaleDateString()}
               </p>
             </div>
             <div className="flex gap-3">
@@ -509,13 +510,13 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
               onClick={onBack}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             >
-              ← Back to Edit
+              {t('backToEdit')}
             </button>
             <button
               onClick={() => onExportPDF(exportMode, selectedStrategies, selectedRisks)}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
             >
-              📄 Export Word Document
+              {t('exportWordDocument')}
             </button>
             </div>
           </div>
@@ -525,7 +526,7 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
       {/* Export Mode Selection - Hidden in print */}
       <div className="print:hidden bg-slate-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Choose Your Document Format:</h2>
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">{t('chooseDocumentFormat')}</h2>
           <div className="grid md:grid-cols-2 gap-4">
             {/* Formal BCP (Loan Submission) */}
             <button
@@ -550,16 +551,16 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-900 mb-1">
-                    🏦 Formal BCP (Loan Submission)
+                    {t('formalBcpTitle')}
                   </h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Professional document for bank loans and insurance applications
+                    {t('formalBcpDescription')}
                   </p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>✓ 8-12 pages, loan-ready format</li>
-                    <li>✓ Shows detailed risk assessment & mitigation</li>
-                    <li>✓ UNDP/CARICHAM certified framework</li>
-                    <li>✓ Suitable for JMD 500K-10M loan applications</li>
+                    <li>{t('formalBcpBullet1')}</li>
+                    <li>{t('formalBcpBullet2')}</li>
+                    <li>{t('formalBcpBullet3')}</li>
+                    <li>{t('formalBcpBullet4')}</li>
                   </ul>
                 </div>
               </div>
@@ -588,16 +589,16 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-900 mb-1">
-                    ✅ Action Workbook
+                    {t('actionWorkbookTitle')}
                   </h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Step-by-step implementation guide for your team
+                    {t('actionWorkbookDescription')}
                   </p>
                   <ul className="text-sm text-gray-700 space-y-1">
-                    <li>✓ 20-30 pages with detailed checklists</li>
-                    <li>✓ 30-day action plan with deadlines</li>
-                    <li>✓ Budget worksheets & progress trackers</li>
-                    <li>✓ Print and use to implement your plan</li>
+                    <li>{t('actionWorkbookBullet1')}</li>
+                    <li>{t('actionWorkbookBullet2')}</li>
+                    <li>{t('actionWorkbookBullet3')}</li>
+                    <li>{t('actionWorkbookBullet4')}</li>
                   </ul>
                 </div>
               </div>
@@ -609,11 +610,8 @@ export const BusinessPlanReview: React.FC<BusinessPlanReviewProps> = ({
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 text-2xl">💡</div>
               <div>
-                <h4 className="text-sm font-bold text-blue-900 mb-1">Pro Tip:</h4>
-                <p className="text-sm text-blue-800">
-                  Download <strong>both formats</strong>! Use the <strong>Formal BCP</strong> when applying for loans or insurance, 
-                  and the <strong>Action Workbook</strong> to actually implement your continuity strategies with your team.
-                </p>
+                <h4 className="text-sm font-bold text-blue-900 mb-1">{t('proTip')}</h4>
+                <p className="text-sm text-blue-800" dangerouslySetInnerHTML={{ __html: t.raw('proTipContent') }} />
               </div>
             </div>
           </div>

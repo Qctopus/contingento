@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma'
 
+// Helper to get hazard name from translation
+const getHazardName = (hazard: any): string => {
+  const translation = hazard?.HazardTranslation?.[0]
+  return translation?.name || hazard?.hazardId || 'Unknown Hazard'
+}
+
 interface LocationData {
   country?: string
   countryCode?: string
@@ -128,13 +134,19 @@ export const generateDynamicPreFillData = async (
   location: LocationData
 ): Promise<DynamicPreFillData | null> => {
   try {
-    // Get business type with its hazard mappings
-    const businessType = await prisma.adminBusinessType.findUnique({
+    // Get business type with its hazard mappings including translations
+    const businessType = await (prisma.adminBusinessType as any).findUnique({
       where: { businessTypeId, isActive: true },
       include: {
-        businessTypeHazards: {
+        AdminBusinessTypeHazard: {
           where: { isActive: true },
-          include: { hazard: true }
+          include: { 
+            AdminHazardType: {
+              include: {
+                HazardTranslation: { where: { locale: 'en' } }
+              }
+            }
+          }
         }
       }
     })
@@ -147,22 +159,28 @@ export const generateDynamicPreFillData = async (
     // Get location-specific hazards if location data is available
     let locationHazards: any[] = []
     if (location.countryCode) {
-      const locationRecord = await prisma.adminLocation.findFirst({
+      const locationRecord = await (prisma.adminLocation as any).findFirst({
         where: {
           countryCode: location.countryCode,
           parish: location.parish || undefined,
           isActive: true
         },
         include: {
-          locationHazards: {
+          AdminLocationHazard: {
             where: { isActive: true },
-            include: { hazard: true }
+            include: { 
+              AdminHazardType: {
+                include: {
+                  HazardTranslation: { where: { locale: 'en' } }
+                }
+              }
+            }
           }
         }
       })
 
       if (locationRecord) {
-        locationHazards = locationRecord.locationHazards
+        locationHazards = locationRecord.AdminLocationHazard || []
       }
     }
 
@@ -170,17 +188,21 @@ export const generateDynamicPreFillData = async (
     const combinedHazards = new Map()
 
     // Add business type hazards
-    businessType.businessTypeHazards.forEach(bth => {
-      const modifiedRisk = applyLocationModifiers(bth, location)
+    const businessTypeHazards = businessType?.AdminBusinessTypeHazard || []
+    businessTypeHazards.forEach((bth: any) => {
+      const hazard = bth.AdminHazardType
+      const modifiedRisk = applyLocationModifiers({ ...bth, hazard }, location)
       combinedHazards.set(bth.hazardId, {
         ...bth,
+        hazard,
         ...modifiedRisk,
         source: 'business_type'
       })
     })
 
     // Add/modify with location-specific hazards
-    locationHazards.forEach(lh => {
+    locationHazards.forEach((lh: any) => {
+      const hazard = lh.AdminHazardType
       const existing = combinedHazards.get(lh.hazardId)
       if (existing) {
         // Location can increase risk level
@@ -194,9 +216,10 @@ export const generateDynamicPreFillData = async (
         })
       } else {
         // Add new location-specific hazard
-        const modifiedRisk = applyLocationModifiers(lh, location)
+        const modifiedRisk = applyLocationModifiers({ ...lh, hazard }, location)
         combinedHazards.set(lh.hazardId, {
           ...lh,
+          hazard,
           ...modifiedRisk,
           source: 'location'
         })
@@ -204,12 +227,12 @@ export const generateDynamicPreFillData = async (
     })
 
     // Generate risk assessments
-    const riskAssessments: RiskAssessment[] = Array.from(combinedHazards.values()).map(hazardRisk => {
+    const riskAssessments: RiskAssessment[] = Array.from(combinedHazards.values()).map((hazardRisk: any) => {
       const riskScore = calculateRiskScore(hazardRisk.frequency, hazardRisk.impact)
       const riskLevel = getRiskLevel(riskScore)
       
       return {
-        hazard: hazardRisk.hazard.name,
+        hazard: getHazardName(hazardRisk.hazard),
         likelihood: hazardRisk.frequency,
         severity: hazardRisk.impact,
         riskScore,

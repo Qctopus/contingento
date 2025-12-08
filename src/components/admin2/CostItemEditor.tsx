@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { locales, localeMetadata, type Locale } from '@/i18n/config'
 
 interface CostItem {
   id?: string
@@ -24,7 +25,7 @@ interface CostItemEditorProps {
 }
 
 export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) {
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<Locale>('en')
   const [formData, setFormData] = useState<CostItem>({
     itemId: '',
     name: '',
@@ -41,24 +42,31 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   
-  // Language labels and flags
-  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
-  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
-  
   // Helper to parse multilingual JSON
-  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
+  const parseMultilingual = (value: any): Record<Locale, string> => {
+    const result: Record<Locale, string> = { en: '', es: '', fr: '' }
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value)
+        const parsed = JSON.parse(value)
+        for (const loc of locales) {
+          result[loc] = parsed[loc] || ''
+        }
+        return result
       } catch {
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       }
     }
-    return value || { en: '', es: '', fr: '' }
+    if (value && typeof value === 'object') {
+      for (const loc of locales) {
+        result[loc] = value[loc] || ''
+      }
+    }
+    return result
   }
   
   // Helper to update multilingual field
-  const updateMultilingualField = (field: keyof CostItem, lang: 'en' | 'es' | 'fr', value: string) => {
+  const updateMultilingualField = (field: keyof CostItem, lang: Locale, value: string) => {
     const current = parseMultilingual(formData[field])
     current[lang] = value
     setFormData(prev => ({
@@ -168,7 +176,7 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
             Language / Idioma / Langue
           </label>
           <div className="flex space-x-2">
-            {(['en', 'es', 'fr'] as const).map(lang => (
+            {locales.map(lang => (
               <button
                 key={lang}
                 type="button"
@@ -179,7 +187,7 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
                     : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                 }`}
               >
-                {languageFlags[lang]} {languageLabels[lang]}
+                {localeMetadata[lang].flag} {localeMetadata[lang].nativeLabel}
               </button>
             ))}
           </div>
@@ -188,7 +196,7 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
         {/* Name (Multilingual) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Name ({languageLabels[activeLanguage]}) <span className="text-red-500">*</span>
+            Name ({localeMetadata[activeLanguage].nativeLabel}) <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -206,7 +214,7 @@ export function CostItemEditor({ item, onSave, onCancel }: CostItemEditorProps) 
         {/* Description (Multilingual) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description ({languageLabels[activeLanguage]})
+            Description ({localeMetadata[activeLanguage].nativeLabel})
           </label>
           <textarea
             value={parseMultilingual(formData.description)[activeLanguage] || ''}

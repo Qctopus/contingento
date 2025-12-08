@@ -197,9 +197,8 @@ model AdminHazardStrategy {
 model AdminHazardType {
   id                      String                    @id
   hazardId                String                    @unique
-  name                    String
+  // REMOVED: name, description - now in HazardTranslation
   category                String
-  description             String?
   defaultFrequency        String
   defaultImpact           String
   seasonalPattern         String?
@@ -736,8 +735,7 @@ model RiskMitigationStrategy {
 
 model RiskMultiplier {
   id                        String                      @id
-  name                      String
-  description               String
+  // REMOVED: name, description, reasoning - now in RiskMultiplierTranslation
   characteristicType        String
   conditionType             String
   thresholdValue            Float?
@@ -747,7 +745,6 @@ model RiskMultiplier {
   applicableHazards         String
   isActive                  Boolean                     @default(true)
   priority                  Int                         @default(0)
-  reasoning                 String?
   createdAt                 DateTime                    @default(now())
   updatedAt                 DateTime
   createdBy                 String                      @default("system")

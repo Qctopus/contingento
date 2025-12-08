@@ -1,9 +1,88 @@
 {
   "common": {
-    "businessContinuityPlan": "Plan de Continuidad del Negocio",
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "confirm": "Confirmar",
+    "yes": "Sí",
+    "no": "No",
+    "ok": "OK",
+    "close": "Cerrar",
+    "back": "Atrás",
     "next": "Siguiente",
     "previous": "Anterior",
-    "save": "Guardar",
+    "submit": "Enviar",
+    "required": "Requerido",
+    "optional": "Opcional",
+    "all": "Todo",
+    "none": "Ninguno",
+    "other": "Otro",
+    "actions": "Acciones",
+    "actionStep": "Paso",
+    "details": "Detalles",
+    "summary": "Resumen",
+    "status": "Estado",
+    "type": "Tipo",
+    "name": "Nombre",
+    "description": "Descripción",
+    "date": "Fecha",
+    "time": "Hora",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "add": "Agregar",
+    "remove": "Eliminar",
+    "clear": "Limpiar",
+    "reset": "Restablecer",
+    "refresh": "Actualizar",
+    "export": "Exportar",
+    "import": "Importar",
+    "download": "Descargar",
+    "upload": "Cargar",
+    "print": "Imprimir",
+    "share": "Compartir",
+    "copy": "Copiar",
+    "cut": "Cortar",
+    "paste": "Pegar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "selectAll": "Seleccionar Todo",
+    "deselectAll": "Deseleccionar Todo",
+    "expand": "Expandir",
+    "collapse": "Contraer",
+    "show": "Mostrar",
+    "hide": "Ocultar",
+    "view": "Ver",
+    "preview": "Vista Previa",
+    "fullscreen": "Pantalla Completa",
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "help": "Ayuda",
+    "about": "Acerca de",
+    "settings": "Configuración",
+    "preferences": "Preferencias",
+    "account": "Cuenta",
+    "profile": "Perfil",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "register": "Registrarse",
+    "forgotPassword": "Olvidé mi contraseña",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "username": "Nombre de usuario",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "address": "Dirección",
+    "phone": "Teléfono",
+    "website": "Sitio web",
+    "company": "Empresa",
+    "organization": "Organización",
+    "department": "Departamento",
+    "position": "Puesto",
+    "role": "Rol",
+    "businessContinuityPlan": "Plan de Continuidad del Negocio",
     "saving": "Guardando...",
     "saved": "Guardado",
     "saveFailed": "Error al guardar",
@@ -113,6 +192,9 @@
     "reviewYourRisks": "Revise Su Evaluación de Riesgos",
     "reviewRisksDescription": "Según su ubicación y perfil comercial, hemos identificado y categorizado riesgos potenciales. Revise cada riesgo y ajuste la gravedad del impacto según sea necesario para su situación específica.",
     "criticalPriorityLabel": "Crítico",
+    "simple": "Simple",
+    "moderate": "Moderado",
+    "complex": "Complejo",
     "criticalPriorityDescription": "Requiere atención inmediata",
     "importantLabel": "Importante",
     "importantDescription": "Debe ser abordado",
@@ -514,6 +596,69 @@
             "Junio 2025",
             "Diciembre 2025"
           ]
+        },
+        "planName": {
+          "label": "Nombre del Plan",
+          "prompt": "¿Cómo le gustaría llamar a este plan de continuidad del negocio?",
+          "examples": [
+            "Plan de Continuidad del Restaurante Brisa Caribeña",
+            "Plan de Respuesta de Emergencia de Soluciones Tecnológicas Isleñas",
+            "Plan de Recuperación ante Desastres de Tours y Viajes Paraíso"
+          ]
+        },
+        "businessName": {
+          "label": "Nombre del Negocio",
+          "prompt": "¿Cuál es el nombre oficial de su negocio?",
+          "examples": [
+            "Restaurante Brisa Caribeña S.A.",
+            "Soluciones Tecnológicas Isleñas",
+            "Tours y Viajes Paraíso Cía. Ltda."
+          ]
+        },
+        "businessAddress": {
+          "label": "Dirección del Negocio",
+          "prompt": "¿Cuál es la dirección física de su ubicación principal de negocios?",
+          "examples": [
+            "Calle Vista al Puerto 123, Montego Bay, St. James, Jamaica",
+            "Parque Tecnológico 45, Kingston 10, Jamaica",
+            "Plaza Ocean Front, Local 12, Negril, Westmoreland, Jamaica"
+          ]
+        },
+        "businessDescription": {
+          "label": "Descripción del Negocio",
+          "prompt": "Proporcione una breve descripción de lo que hace su negocio y a quién sirve.",
+          "examples": [
+            "Restaurante familiar que sirve cocina caribeña auténtica a locales y turistas, establecido en 2015, 25 empleados, especializado en mariscos y platillos tradicionales jamaiquinos",
+            "Empresa de consultoría tecnológica que proporciona soporte de TI y servicios de desarrollo de software a pequeñas y medianas empresas en Jamaica, 12 empleados, fundada en 2018",
+            "Operador turístico que ofrece tours culturales y de aventura en toda Jamaica, atendiendo a turistas internacionales y pasajeros de cruceros, 8 empleados a tiempo completo más guías temporales"
+          ]
+        },
+        "keyPersonnel": {
+          "label": "Personal Clave",
+          "prompt": "¿Quiénes son las personas clave responsables de las operaciones del negocio y la respuesta de emergencia?",
+          "examples": [
+            "Propietario/Gerente: Juan García (876-555-0123), Subgerente: María Rodríguez (876-555-0124), Chef Principal: David Williams (876-555-0125)",
+            "CEO: Sara López (876-555-0130), Director de TI: Miguel Brown (876-555-0131), Gerente de Operaciones: Lisa Davis (876-555-0132)",
+            "Propietario: Roberto Taylor (876-555-0140), Especialista de Tour: Marcus Clarke (876-555-0141), Coordinador de Reservas: Carmen White (876-555-0142)"
+          ]
+        },
+        "planPreparedBy": {
+          "label": "Plan Preparado Por",
+          "prompt": "¿Quién está preparando este plan de continuidad del negocio?",
+          "examples": [
+            "Juan García, Propietario del Negocio, con asistencia de la oficina local de gestión de emergencias",
+            "Comité de Planificación de Emergencias: Sara López (CEO), Miguel Brown (Director de TI), Lisa Davis (Operaciones)",
+            "Roberto Taylor (Propietario) y Marcus Clarke (Oficial de Seguridad)"
+          ]
+        },
+        "preparationDate": {
+          "label": "Fecha de Preparación",
+          "prompt": "¿Cuándo se está preparando este plan?",
+          "examples": [
+            "15 de enero de 2024",
+            "Marzo 2024",
+            "10 de diciembre de 2024"
+          ]
         }
       }
     },
@@ -614,6 +759,42 @@
               "value": "unknown"
             }
           ]
+        },
+        "approximateAnnualRevenue": {
+          "label": "Ingresos Anuales Aproximados",
+          "prompt": "¿Cuáles son sus ingresos anuales aproximados? Seleccione el rango que mejor se ajuste a su negocio. Esto ayuda a demostrar el tamaño de su negocio para solicitudes de préstamos y renovaciones de seguros.",
+          "options": [
+            { "label": "Menos de 1 millón" },
+            { "label": "1-3 millones" },
+            { "label": "3-10 millones" },
+            { "label": "10-20 millones" },
+            { "label": "Más de 20 millones" },
+            { "label": "Prefiero no revelar" }
+          ]
+        },
+        "totalPeopleInBusiness": {
+          "label": "Total de Personas en el Negocio",
+          "prompt": "¿Cuántas personas trabajan en su negocio en total? Incluya a usted mismo, familiares, personal de tiempo completo, personal de medio tiempo y contratistas regulares.",
+          "options": [
+            { "label": "Solo yo (1 persona)" },
+            { "label": "2-5 personas" },
+            { "label": "6-10 personas" },
+            { "label": "11-25 personas" },
+            { "label": "26-50 personas" },
+            { "label": "Más de 50 personas" }
+          ]
+        },
+        "yearsInOperation": {
+          "label": "Años en Operación",
+          "prompt": "¿Cuánto tiempo lleva operando su negocio? Esto ayuda a demostrar su experiencia y trayectoria.",
+          "options": [
+            { "label": "Menos de 1 año (recién comenzando)" },
+            { "label": "1-2 años" },
+            { "label": "3-5 años" },
+            { "label": "6-10 años" },
+            { "label": "11-20 años" },
+            { "label": "Más de 20 años" }
+          ]
         }
       }
     },
@@ -709,6 +890,7 @@
         "fire": "Incendio",
         "crime": "Crimen/Robo/Allanamiento",
         "civil_disorder": "Desorden civil/Disturbios",
+        "civil_unrest": "Disturbios Civiles",
         "terrorism": "Terrorismo",
         "supply_disruption": "Interrupción de la cadena de suministro",
         "supply_chain_disruption": "Interrupción de la cadena de suministro",
@@ -1779,6 +1961,23 @@
     "testingSchedule": "Las pruebas regulares aseguran que su plan funcione cuando sea necesario. Incluya frecuencia, quién es responsable y qué se prueba.",
     "reviewSchedule": "Los planes necesitan actualizaciones a medida que su negocio cambia. Establezca fechas de revisión regulares y activadores para actualizaciones no programadas."
   },
+  "header": {
+    "appTitle": "Herramienta de Plan de Continuidad del Negocio",
+    "logout": "Cerrar sesión",
+    "exit": "Salir",
+    "restartWizard": "Reiniciar Asistente",
+    "restart": "Reiniciar",
+    "restartWizardConfirm": "¿Reiniciar Asistente?",
+    "restartWizardWarning": "Esto borrará su progreso actual y comenzará de nuevo.",
+    "restartWizardMessage": "Tiene progreso sin guardar en su plan de continuidad del negocio. Reiniciar el asistente borrará estos datos y tendrá que comenzar de nuevo. ¿Está seguro de que desea continuar?",
+    "yesRestart": "Sí, Reiniciar",
+    "planDraft": "Borrador del Plan",
+    "saved": "Guardado",
+    "local": "Local",
+    "noPlan": "Sin Plan",
+    "managePlan": "Gestionar Plan",
+    "save": "Guardar"
+  },
   "sessionManager": {
     "planStatus": "Estado del Plan",
     "getStarted": "Comenzar",
@@ -1814,6 +2013,27 @@
     "privacyBullet2": "• Tu PIN es tu clave - manténlo seguro",
     "privacyBullet3": "• Los datos están encriptados y expiran automáticamente después de 30 días de inactividad",
     "privacyBullet4": "• Los enlaces compartibles permiten acceso de solo lectura para prestamistas/asesores"
+  },
+  "bcpReview": {
+    "businessContinuityPlan": "Plan de Continuidad del Negocio",
+    "version": "Versión 1.0",
+    "backToEdit": "← Volver a Editar",
+    "exportWordDocument": "📄 Exportar Documento Word",
+    "chooseDocumentFormat": "Elija el Formato del Documento:",
+    "formalBcpTitle": "🏦 PCA Formal (Solicitud de Préstamo)",
+    "formalBcpDescription": "Documento profesional para préstamos bancarios y solicitudes de seguro",
+    "formalBcpBullet1": "✓ 8-12 páginas, formato listo para préstamos",
+    "formalBcpBullet2": "✓ Muestra evaluación de riesgos y mitigación detallada",
+    "formalBcpBullet3": "✓ Marco certificado por PNUD/CARICHAM",
+    "formalBcpBullet4": "✓ Adecuado para solicitudes de préstamo de JMD 500K-10M",
+    "actionWorkbookTitle": "✅ Libro de Acción",
+    "actionWorkbookDescription": "Guía de implementación paso a paso para su equipo",
+    "actionWorkbookBullet1": "✓ 20-30 páginas con listas de verificación detalladas",
+    "actionWorkbookBullet2": "✓ Plan de acción de 30 días con fechas límite",
+    "actionWorkbookBullet3": "✓ Hojas de trabajo de presupuesto y seguimiento de progreso",
+    "actionWorkbookBullet4": "✓ Imprimir y usar para implementar su plan",
+    "proTip": "Consejo Profesional:",
+    "proTipContent": "¡Descargue <strong>ambos formatos</strong>! Use el <strong>PCA Formal</strong> al solicitar préstamos o seguros, y el <strong>Libro de Acción</strong> para implementar sus estrategias de continuidad con su equipo."
   },
   "bcpPreview": {
     "formalBcp": {
@@ -1935,7 +2155,7 @@
       "trainingProgramsDesc": "La capacitación del personal asegura que todos conozcan su papel en la respuesta y recuperación de emergencias.",
       "identifiedImprovementsDesc": "Áreas de mejora identificadas a través de pruebas, ejercicios o incidentes reales.",
       "testType": "Tipo de Prueba",
-      "frequency": "Frecuencia",
+      "frequencyLabel": "Frecuencia",
       "participants": "Participantes",
       "nextTest": "Próxima Prueba",
       "responsible": "Responsable",
@@ -2029,7 +2249,45 @@
       "example": "EJEMPLO",
       "alternatives": "ALTERNATIVAS",
       "freeLowCost": "Gratis/Bajo Costo",
-      "lowTech": "Baja Tecnología"
+      "lowTech": "Baja Tecnología",
+      "incidentLog": {
+        "title": "REGISTRO DE INCIDENTES",
+        "subtitle": "Use este formulario para registrar eventos durante una emergencia - Crítico para reclamos de seguros y lecciones aprendidas",
+        "incidentDetails": "Detalles del Incidente",
+        "incidentType": "Tipo de Incidente",
+        "dateTimeStarted": "Fecha y Hora de Inicio",
+        "reportedBy": "Reportado Por",
+        "location": "Ubicación",
+        "impactAssessment": "Evaluación del Impacto",
+        "staffAffected": "Personal Afectado",
+        "operationsAffected": "Operaciones Afectadas",
+        "estimatedDamage": "Daño Estimado",
+        "actionsTaken": "Acciones Tomadas",
+        "immediateResponse": "Respuesta Inmediata",
+        "resourcesUsed": "Recursos Utilizados",
+        "externalContacts": "Contactos Externos Realizados",
+        "incidentClosed": "Incidente Cerrado",
+        "closedBy": "Cerrado Por",
+        "dateTime": "Fecha y Hora",
+        "importantReminders": "Recordatorios Importantes",
+        "reminder1": "Tome fotos/videos de todos los daños antes de la limpieza - esencial para reclamos de seguros",
+        "reminder2": "Guarde todos los recibos de compras de emergencia, reparaciones, alojamiento temporal",
+        "reminder3": "No deseche artículos dañados hasta que el ajustador de seguros los haya visto",
+        "reminder4": "Contacte al seguro dentro de las 24 horas para iniciar el proceso de reclamo",
+        "reminder5": "Después de resolver el incidente: Programe una reunión de lecciones aprendidas y actualice este libro"
+      },
+      "notesUpdates": {
+        "title": "NOTAS Y ACTUALIZACIONES",
+        "subtitle": "Use este espacio para registrar cambios, lecciones aprendidas y elementos de acción",
+        "date": "Fecha",
+        "noteUpdateActionItem": "Nota / Actualización / Elemento de Acción",
+        "updatedBy": "Actualizado Por",
+        "footer": {
+          "planManager": "Gerente del Plan",
+          "lastUpdated": "Última Actualización",
+          "nextReview": "Próxima Revisión: Trimestral o después de cualquier incidente"
+        }
+      }
     }
   }
 }

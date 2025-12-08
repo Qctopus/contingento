@@ -1,75 +1,151 @@
 /**
  * Utilities for handling multilingual content in the database
+ * 
+ * This module provides functions to extract localized content from various formats:
+ * - Plain strings (assumed to be English or already localized)
+ * - JSON strings containing multilingual objects
+ * - Objects with locale keys (e.g., { en: "Hello", es: "Hola" })
+ * - Arrays of multilingual objects
+ * 
+ * Fallback chain: requested locale → fallback locale → default locale → any available
  */
 
-import type { Locale } from '../i18n/config'
+import { type Locale, defaultLocale, locales } from '@/i18n/config'
 
-// Type for multilingual content stored as JSON
+// Re-export types from config for convenience
+export type { MultilingualText, MultilingualArray } from '@/i18n/config'
+
+// Legacy type for backward compatibility
 export type MultilingualContent = {
   en: string
   fr?: string
   es?: string
-} | string // backward compatibility for existing single-language content
+} | string
+
+// ============================================================================
+// CORE FUNCTIONS - Simplified and robust
+// ============================================================================
 
 /**
- * Extract localized text from multilingual content
+ * Get localized text with fallback chain: requested locale → fallback → default → any available
+ * Handles: string, object, JSON string, null/undefined
  */
 export function getLocalizedText(
-  content: MultilingualContent | string | null | undefined,
+  content: unknown,
   locale: Locale,
-  fallbackLocale: Locale = 'en'
+  fallbackLocale: Locale = defaultLocale
 ): string {
   if (!content) return ''
 
-  // If content is a string, check if it's JSON that needs parsing
+  // Plain string - check if it's JSON that needs parsing
   if (typeof content === 'string') {
-    // Try to parse as JSON if it looks like multilingual content
-    if (content.startsWith('{') && (content.includes('"en":') || content.includes('"es":') || content.includes('"fr":'))) {
+    // Check if it's a JSON string that needs parsing
+    if (content.startsWith('{') && content.includes('"en"')) {
       try {
         const parsed = JSON.parse(content)
-        // Recursively process the parsed object
         return getLocalizedText(parsed, locale, fallbackLocale)
       } catch {
-        // If parsing fails, return the original string
         return content
       }
     }
     return content
   }
 
-  // If content is an object, try to get the requested locale
-  if (typeof content === 'object' && content !== null) {
-    // Try requested locale first
-    if (content[locale] && typeof content[locale] === 'string') {
-      return content[locale]
+  // Object with locale keys
+  if (typeof content === 'object' && content !== null && !Array.isArray(content)) {
+    const obj = content as Record<string, unknown>
+
+    // Try requested locale
+    if (typeof obj[locale] === 'string' && obj[locale]) {
+      return obj[locale] as string
     }
 
-    // Fall back to fallback locale
-    if (content[fallbackLocale] && typeof content[fallbackLocale] === 'string') {
-      return content[fallbackLocale]
+    // Try fallback locale
+    if (typeof obj[fallbackLocale] === 'string' && obj[fallbackLocale]) {
+      return obj[fallbackLocale] as string
     }
 
-    // Fall back to English if available
-    if (content.en && typeof content.en === 'string') {
-      return content.en
+    // Try default locale
+    if (typeof obj[defaultLocale] === 'string' && obj[defaultLocale]) {
+      return obj[defaultLocale] as string
     }
 
-    // Fall back to any available language
-    const availableValue = Object.values(content).find(value => {
-      if (!value) return false
-      // Handle string values
-      if (typeof value === 'string') {
-        return value.trim().length > 0
+    // Last resort: first available locale
+    for (const loc of locales) {
+      if (typeof obj[loc] === 'string' && obj[loc]) {
+        return obj[loc] as string
       }
-      return true
-    })
-    if (availableValue && typeof availableValue === 'string') {
-      return availableValue
     }
   }
 
   return ''
 }
+
+/**
+ * Get localized array with same fallback logic
+ * Handles: array of strings, array of multilingual objects, object with locale arrays, JSON string
+ */
+export function getLocalizedArray(
+  content: unknown,
+  locale: Locale,
+  fallbackLocale: Locale = defaultLocale
+): string[] {
+  if (!content) return []
+
+  // Already an array
+  if (Array.isArray(content)) {
+    if (content.length === 0) return []
+    
+    // Check if it's an array of multilingual objects
+    if (typeof content[0] === 'object' && content[0] !== null) {
+      return content
+        .map(item => getLocalizedText(item, locale, fallbackLocale))
+        .filter(Boolean)
+    }
+    
+    // Array of strings
+    return content.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+  }
+
+  // JSON string
+  if (typeof content === 'string') {
+    if (content.startsWith('[') || content.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(content)
+        return getLocalizedArray(parsed, locale, fallbackLocale)
+      } catch {
+        return []
+      }
+    }
+    return []
+  }
+
+  // Object with locale keys pointing to arrays
+  if (typeof content === 'object' && content !== null) {
+    const obj = content as Record<string, unknown>
+
+    // Try locales in order: requested → fallback → default → any
+    const localesToTry = [locale, fallbackLocale, defaultLocale, ...locales]
+    const tried = new Set<string>()
+
+    for (const loc of localesToTry) {
+      if (tried.has(loc)) continue
+      tried.add(loc)
+
+      if (Array.isArray(obj[loc]) && (obj[loc] as unknown[]).length > 0) {
+        return (obj[loc] as unknown[])
+          .map(item => typeof item === 'string' ? item : getLocalizedText(item, locale, fallbackLocale))
+          .filter(Boolean)
+      }
+    }
+  }
+
+  return []
+}
+
+// ============================================================================
+// HELPER FUNCTIONS - For creating and updating multilingual content
+// ============================================================================
 
 /**
  * Create multilingual content object from individual language strings
@@ -80,10 +156,8 @@ export function createMultilingualContent(
   es?: string
 ): MultilingualContent {
   const content: MultilingualContent = { en }
-
-  if (fr) content.fr = fr
-  if (es) content.es = es
-
+  if (fr) (content as Record<string, string>).fr = fr
+  if (es) (content as Record<string, string>).es = es
   return content
 }
 
@@ -98,14 +172,14 @@ export function updateMultilingualContent(
   // If existing content is a string, convert to object
   if (typeof existing === 'string') {
     const content: MultilingualContent = { en: existing }
-    content[locale] = newText
+    ;(content as Record<string, string>)[locale] = newText
     return content
   }
 
   // If existing content is null/undefined, create new
   if (!existing) {
     const content: MultilingualContent = { en: '' }
-    content[locale] = newText
+    ;(content as Record<string, string>)[locale] = newText
     return content
   }
 
@@ -129,7 +203,8 @@ export function hasTranslation(
     return locale === 'en' // assume string content is English
   }
 
-  return !!(content[locale] && content[locale].trim())
+  const value = (content as Record<string, string>)[locale]
+  return !!(value && value.trim())
 }
 
 /**
@@ -145,10 +220,12 @@ export function getAvailableLanguages(
   }
 
   const languages: Locale[] = []
-  if (content.en && content.en.trim()) languages.push('en')
-  if (content.fr && content.fr.trim()) languages.push('fr')
-  if (content.es && content.es.trim()) languages.push('es')
-
+  for (const loc of locales) {
+    const value = (content as Record<string, string>)[loc]
+    if (value && value.trim()) {
+      languages.push(loc)
+    }
+  }
   return languages
 }
 
@@ -164,10 +241,13 @@ export function migrateToMultilingual(
   }
 
   const content: MultilingualContent = { en: '' }
-  content[sourceLocale] = existingContent
-
+  ;(content as Record<string, string>)[sourceLocale] = existingContent
   return content
 }
+
+// ============================================================================
+// ENTITY LOCALIZATION HELPERS - For common data structures
+// ============================================================================
 
 /**
  * Localize a business type object
@@ -189,7 +269,14 @@ export function localizeStrategy(strategy: any, locale: Locale) {
     name: getLocalizedText(strategy.name, locale),
     description: getLocalizedText(strategy.description, locale),
     smeDescription: getLocalizedText(strategy.smeDescription, locale),
+    smeTitle: getLocalizedText(strategy.smeTitle, locale),
+    smeSummary: getLocalizedText(strategy.smeSummary, locale),
     whyImportant: getLocalizedText(strategy.whyImportant, locale),
+    realWorldExample: getLocalizedText(strategy.realWorldExample, locale),
+    lowBudgetAlternative: getLocalizedText(strategy.lowBudgetAlternative, locale),
+    helpfulTips: getLocalizedArray(strategy.helpfulTips, locale),
+    commonMistakes: getLocalizedArray(strategy.commonMistakes, locale),
+    successMetrics: getLocalizedArray(strategy.successMetrics, locale),
     actionSteps: strategy.actionSteps?.map((step: any) => localizeActionStep(step, locale))
   }
 }
@@ -202,9 +289,36 @@ export function localizeActionStep(actionStep: any, locale: Locale) {
     ...actionStep,
     title: getLocalizedText(actionStep.title, locale),
     description: getLocalizedText(actionStep.description, locale),
-    smeAction: getLocalizedText(actionStep.smeAction, locale)
+    smeAction: getLocalizedText(actionStep.smeAction, locale),
+    timeframe: getLocalizedText(actionStep.timeframe, locale),
+    whyThisStepMatters: getLocalizedText(actionStep.whyThisStepMatters, locale),
+    howToKnowItsDone: getLocalizedText(actionStep.howToKnowItsDone, locale),
+    whatHappensIfSkipped: getLocalizedText(actionStep.whatHappensIfSkipped, locale),
+    exampleOutput: getLocalizedText(actionStep.exampleOutput, locale),
+    freeAlternative: getLocalizedText(actionStep.freeAlternative, locale),
+    lowTechOption: getLocalizedText(actionStep.lowTechOption, locale),
+    commonMistakesForStep: getLocalizedArray(actionStep.commonMistakesForStep, locale)
   }
 }
+
+/**
+ * Localize a risk multiplier object
+ */
+export function localizeRiskMultiplier(multiplier: any, locale: Locale) {
+  return {
+    ...multiplier,
+    name: getLocalizedText(multiplier.name, locale),
+    description: getLocalizedText(multiplier.description, locale),
+    reasoning: getLocalizedText(multiplier.reasoning, locale),
+    wizardQuestion: getLocalizedText(multiplier.wizardQuestion, locale),
+    wizardHelpText: getLocalizedText(multiplier.wizardHelpText, locale),
+    wizardAnswerOptions: getLocalizedArray(multiplier.wizardAnswerOptions, locale)
+  }
+}
+
+// ============================================================================
+// JSON PARSING HELPERS
+// ============================================================================
 
 /**
  * Parse JSON content safely - handles both string and object formats
@@ -222,7 +336,7 @@ export function parseMultilingualJSON(content: string | null | undefined): Multi
     if (typeof parsed === 'string') {
       return { en: parsed }
     }
-  } catch (error) {
+  } catch {
     // If JSON parsing fails, treat the content as a plain English string
     return { en: content }
   }
@@ -242,72 +356,4 @@ export function stringifyMultilingualContent(content: MultilingualContent | null
   }
 
   return JSON.stringify(content)
-}
-
-/**
- * Extract localized array from multilingual array content
- * Handles format: {"en":["item1","item2"],"es":["..."],"fr":["..."]}
- * Returns array of strings for the requested locale
- */
-export function getLocalizedArray(
-  content: string | any[] | { en?: any[]; es?: any[]; fr?: any[] } | null | undefined,
-  locale: Locale,
-  fallbackLocale: Locale = 'en'
-): string[] {
-  if (!content) return []
-
-  let parsed: any = null
-
-  // If content is a string, return empty array (strings are not arrays)
-  if (typeof content === 'string') {
-    return []
-  }
-
-  parsed = content
-
-  // If it's already an array, return it (assuming it's already localized)
-  if (Array.isArray(parsed)) {
-    // Ensure each item is a string
-    return parsed.map((item: any) => {
-      if (typeof item === 'string') return item
-      if (typeof item === 'object' && item !== null) {
-        // If it's a multilingual object, extract text for current locale
-        return item[locale] || item[fallbackLocale] || item.en || String(item)
-      }
-      return String(item)
-    }).filter((item: string) => item && item.trim().length > 0)
-  }
-
-  // If it's an object with language keys
-  if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-    // Try to get array for requested locale
-    let array: any[] = []
-
-    if (parsed[locale] && Array.isArray(parsed[locale])) {
-      array = parsed[locale]
-    } else if (parsed[fallbackLocale] && Array.isArray(parsed[fallbackLocale])) {
-      array = parsed[fallbackLocale]
-    } else if (parsed.en && Array.isArray(parsed.en)) {
-      array = parsed.en
-    } else {
-      // Try to find any array value
-      const values = Object.values(parsed)
-      const foundArray = values.find((v: any) => Array.isArray(v))
-      if (foundArray) {
-        array = foundArray
-      }
-    }
-
-    // Ensure each item is a string
-    return array.map((item: any) => {
-      if (typeof item === 'string') return item
-      if (typeof item === 'object' && item !== null) {
-        // If it's a multilingual object, extract text for current locale
-        return item[locale] || item[fallbackLocale] || item.en || String(item)
-      }
-      return String(item)
-    }).filter((item: string) => item && item.trim().length > 0)
-  }
-
-  return []
 }

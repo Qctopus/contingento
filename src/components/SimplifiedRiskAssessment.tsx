@@ -296,8 +296,9 @@ export function SimplifiedRiskAssessment({
           const data = await response.json()
 
           const calculatedRisks: RiskItem[] = selectedHazards.map(hazardId => {
-            const hazardLabel = getHazardLabel(hazardId)
             const calculation = data.riskCalculations?.find((calc: any) => calc.hazardId === hazardId)
+            // Prioritize translated hazard name from API, fallback to local label
+            const hazardLabel = calculation?.hazardName || getHazardLabel(hazardId)
             const existingData = initialValue?.find(item =>
               item.hazard === hazardLabel || item.hazardId === hazardId
             )

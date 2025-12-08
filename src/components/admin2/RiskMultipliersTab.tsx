@@ -3,13 +3,14 @@
 import { useState, useEffect } from 'react'
 import { RiskMultiplier, MultiplierFormData, CHARACTERISTIC_TYPES, HAZARD_TYPES } from '@/types/multipliers'
 import { RISK_TYPES } from '@/types/admin'
+import { locales, localeMetadata, type Locale } from '@/i18n/config'
 
 export default function RiskMultipliersTab() {
   const [multipliers, setMultipliers] = useState<RiskMultiplier[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [activeLanguage, setActiveLanguage] = useState<'en' | 'es' | 'fr'>('en')
+  const [activeLanguage, setActiveLanguage] = useState<Locale>('en')
   const [formData, setFormData] = useState<MultiplierFormData>({
     name: '',
     description: '',
@@ -21,25 +22,32 @@ export default function RiskMultipliersTab() {
     isActive: true
   })
 
-  // Language labels and flags
-  const languageFlags = { en: '🇬🇧', es: '🇪🇸', fr: '🇫🇷' }
-  const languageLabels = { en: 'English', es: 'Español', fr: 'Français' }
-
   // Helper to parse multilingual JSON
-  const parseMultilingual = (value: any): Record<'en' | 'es' | 'fr', string> => {
-    if (!value) return { en: '', es: '', fr: '' }
+  const parseMultilingual = (value: any): Record<Locale, string> => {
+    const result: Record<Locale, string> = { en: '', es: '', fr: '' }
+    if (!value) return result
     if (typeof value === 'string') {
       try {
-        return JSON.parse(value)
+        const parsed = JSON.parse(value)
+        for (const loc of locales) {
+          result[loc] = parsed[loc] || ''
+        }
+        return result
       } catch {
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       }
     }
-    return value || { en: '', es: '', fr: '' }
+    if (value && typeof value === 'object') {
+      for (const loc of locales) {
+        result[loc] = value[loc] || ''
+      }
+    }
+    return result
   }
 
   // Helper to update multilingual field
-  const updateMultilingualField = (field: keyof MultiplierFormData, lang: 'en' | 'es' | 'fr', value: string) => {
+  const updateMultilingualField = (field: keyof MultiplierFormData, lang: Locale, value: string) => {
     const current = parseMultilingual(formData[field])
     current[lang] = value
     setFormData(prev => ({ ...prev, [field]: JSON.stringify(current) }))
@@ -596,7 +604,7 @@ export default function RiskMultipliersTab() {
 
               {/* Language Selector */}
               <div className="flex space-x-2 mb-4">
-                {(['en', 'es', 'fr'] as const).map(lang => (
+                {locales.map(lang => (
                   <button
                     key={lang}
                     type="button"
@@ -606,7 +614,7 @@ export default function RiskMultipliersTab() {
                         : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                       }`}
                   >
-                    {languageFlags[lang]} {languageLabels[lang]}
+                    {localeMetadata[lang].flag} {localeMetadata[lang].nativeLabel}
                   </button>
                 ))}
               </div>
@@ -614,7 +622,7 @@ export default function RiskMultipliersTab() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Question ({languageLabels[activeLanguage]}) *
+                    Question ({localeMetadata[activeLanguage].nativeLabel}) *
                   </label>
                   <input
                     type="text"
@@ -628,7 +636,7 @@ export default function RiskMultipliersTab() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Help Text ({languageLabels[activeLanguage]})
+                    Help Text ({localeMetadata[activeLanguage].nativeLabel})
                   </label>
                   <textarea
                     value={parseMultilingual(formData.wizardHelpText)[activeLanguage] || ''}

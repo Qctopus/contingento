@@ -20,8 +20,7 @@ export async function GET(request: NextRequest) {
         }
       } as any, // Cast to any to bypass type check since we can't regenerate client
       orderBy: [
-        { priority: 'asc' },
-        { name: 'asc' }
+        { priority: 'asc' }
       ]
     })
 
@@ -45,11 +44,13 @@ export async function GET(request: NextRequest) {
 
       return {
         ...multiplier,
-        name: translation.name || multiplier.name,
-        description: translation.description || multiplier.description,
-        wizardQuestion: translation.wizardQuestion || parseJsonField(multiplier.wizardQuestion),
-        wizardHelpText: translation.wizardHelpText || parseJsonField(multiplier.wizardHelpText),
-        wizardAnswerOptions: translation.wizardAnswerOptions || parseJsonField(multiplier.wizardAnswerOptions),
+        // All translatable fields come from translation table only
+        name: translation.name || '',
+        description: translation.description || '',
+        reasoning: translation.reasoning || '',
+        wizardQuestion: translation.wizardQuestion || null,
+        wizardHelpText: translation.wizardHelpText || null,
+        wizardAnswerOptions: translation.wizardAnswerOptions || null,
         applicableHazards: parseJsonField(multiplier.applicableHazards) || [],
         // Remove the raw translation array from the response
         RiskMultiplierTranslation: undefined
@@ -100,10 +101,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare base data
+    // Prepare base data (non-translatable fields only)
     const baseData: any = {
-      name,
-      description,
       characteristicType,
       conditionType,
       thresholdValue,
@@ -112,7 +111,6 @@ export async function POST(request: NextRequest) {
       multiplierFactor,
       applicableHazards: typeof applicableHazards === 'object' ? JSON.stringify(applicableHazards) : applicableHazards,
       priority: priority || 0,
-      reasoning,
       isActive,
       createdBy
     }
@@ -201,11 +199,7 @@ export async function PATCH(request: NextRequest) {
         if (key === 'wizardAnswerOptions' && (Array.isArray(value) || typeof value === 'object')) value = JSON.stringify(value)
 
         translationUpdates[key] = value
-
-        // name, description, reasoning also go to base table
-        if (['name', 'description', 'reasoning'].includes(key)) {
-          baseUpdates[key] = value
-        }
+        // Translatable fields NO LONGER go to base table
       } else if (key === 'applicableHazards') {
         baseUpdates[key] = Array.isArray(updates[key]) ? JSON.stringify(updates[key]) : updates[key]
       } else {
@@ -236,8 +230,8 @@ export async function PATCH(request: NextRequest) {
           data: {
             riskMultiplierId: id,
             locale: 'en',
-            name: updates.name || multiplier.name,
-            description: updates.description || multiplier.description,
+            name: updates.name || '',
+            description: updates.description || '',
             ...translationUpdates
           }
         })
@@ -252,7 +246,8 @@ export async function PATCH(request: NextRequest) {
       } as any
     })
 
-    console.log(`✅ Updated multiplier: ${updatedMultiplier?.name}`)
+    const translationName = updatedMultiplier?.RiskMultiplierTranslation?.find((t: any) => t.locale === 'en')?.name || 'unknown'
+    console.log(`✅ Updated multiplier: ${translationName}`)
 
     // Helper function to safely parse JSON fields
     const parseJsonField = (value: string | null | undefined): any => {

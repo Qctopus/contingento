@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Helper to get hazard name from translation
+const getHazardName = (hazard: any): string => {
+  const translation = hazard?.HazardTranslation?.[0]
+  return translation?.name || hazard?.hazardId || 'Unknown Hazard'
+}
+
 // Risk level ordering for calculations
 const RISK_LEVELS: Record<RiskLevel, number> = {
   'low': 1,
@@ -31,7 +37,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get business type with dependencies
+    // Get business type with dependencies including translations
     const businessType = await (prisma as any).adminBusinessType.findUnique({
       where: { businessTypeId },
       include: {
@@ -44,6 +50,9 @@ export async function POST(request: NextRequest) {
                     AdminStrategy: true
                   },
                   where: { isActive: true }
+                },
+                HazardTranslation: {
+                  where: { locale: 'en' }  // Default to English for recommendations
                 }
               }
             }
@@ -167,7 +176,7 @@ export async function POST(request: NextRequest) {
 
       risks.push({
         hazardId: hazard.hazardId,
-        hazardName: hazard.name,
+        hazardName: getHazardName(hazard),
         baseRiskLevel,
         locationModifier,
         finalRiskLevel,

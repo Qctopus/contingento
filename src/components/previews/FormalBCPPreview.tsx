@@ -2051,7 +2051,7 @@ export const FormalBCPPreview: React.FC<FormalBCPPreviewProps> = ({
                     <div className="grid grid-cols-2 gap-2 text-xs mb-1.5">
                       {(program.Frequency || program.frequency) && (
                         <div>
-                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.frequency', currentLocale)}:</span>{' '}
+                          <span className="text-green-700">{getUIText('bcpPreview.formalBcp.frequencyLabel', currentLocale)}:</span>{' '}
                           <span className="font-semibold text-green-900">{getStringValue(program.Frequency || program.frequency)}</span>
                         </div>
                       )}

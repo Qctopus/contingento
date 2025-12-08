@@ -7,12 +7,18 @@ import { BusinessCharacteristics, AppliedMultiplier, MultiplierApplicationResult
 export async function applyMultipliers(
   baseScore: number,
   hazardType: string,
-  userCharacteristics: BusinessCharacteristics
+  userCharacteristics: BusinessCharacteristics,
+  locale: string = 'en'
 ): Promise<MultiplierApplicationResult> {
   try {
-    // Fetch all active multipliers from database
+    // Fetch all active multipliers from database with translations
     const allMultipliers = await (prisma as any).riskMultiplier.findMany({
       where: { isActive: true },
+      include: {
+        RiskMultiplierTranslation: {
+          where: { locale }
+        }
+      },
       orderBy: { priority: 'asc' } // Apply in priority order
     })
 
@@ -56,15 +62,20 @@ export async function applyMultipliers(
       )
 
       if (shouldApply) {
+        // Get translated name and reasoning from translation table
+        const translation = multiplier.RiskMultiplierTranslation?.[0] || {}
+        const name = translation.name || `Multiplier ${multiplier.id}`
+        const reasoning = translation.reasoning || translation.description || ''
+        
         finalScore *= multiplier.multiplierFactor
         appliedMultipliers.push({
-          name: multiplier.name,
+          name,
           factor: multiplier.multiplierFactor,
-          reasoning: multiplier.reasoning || multiplier.description
+          reasoning
         })
         
         reasoningParts.push(
-          `${multiplier.name} ×${multiplier.multiplierFactor}`
+          `${name} ×${multiplier.multiplierFactor}`
         )
       }
     }

@@ -1,6 +1,7 @@
 import { Inter } from 'next/font/google'
 import { notFound } from 'next/navigation'
 import { NextIntlClientProvider } from 'next-intl'
+import { getTranslations } from 'next-intl/server'
 import { locales } from '@/i18n/config'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -44,6 +45,9 @@ export default async function LocaleLayout({
     notFound()
   }
 
+  // Get translations for header
+  const t = await getTranslations({ locale, namespace: 'header' })
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <head>
@@ -63,7 +67,7 @@ export default async function LocaleLayout({
                         <Link href={`/${locale}`} className="flex items-center gap-4 hover:opacity-80 transition-opacity">
                           <img src="/undp-logo.png" alt="UNDP Logo" style={{ height: '64px' }} />
                           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                            Business Continuity Plan Tool
+                            {t('appTitle')}
                           </h1>
                         </Link>
                       </div>

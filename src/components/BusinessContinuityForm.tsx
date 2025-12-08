@@ -891,8 +891,8 @@ export function BusinessContinuityForm() {
         />
       )}
 
-      {/* Navigation Sidebar */}
-      <div className="w-80 bg-white border-r flex flex-col">
+      {/* Navigation Sidebar - wider to accommodate longer translations (French/Spanish) */}
+      <div className="w-80 lg:w-96 bg-white border-r flex flex-col overflow-hidden">
         <div className="overflow-y-auto flex-1">
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
@@ -971,7 +971,7 @@ export function BusinessContinuityForm() {
                               : 'hover:bg-gray-50'
                           }`}
                         >
-                          <span className="flex-1 truncate">{input.label}</span>
+                          <span className="flex-1 line-clamp-2 break-words">{input.label}</span>
                           {isFieldPreFilled(step, input.label, formData[step]?.[input.label], preFillData) && (
                             <svg className="w-3 h-3 text-blue-500 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />

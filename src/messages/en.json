@@ -712,6 +712,42 @@
               "value": "unknown"
             }
           ]
+        },
+        "approximateAnnualRevenue": {
+          "label": "Approximate Annual Revenue",
+          "prompt": "What is your approximate annual revenue? Select the range that best fits your business. This helps demonstrate your business size for loan applications and insurance renewals.",
+          "options": [
+            { "label": "Under 1 million" },
+            { "label": "1-3 million" },
+            { "label": "3-10 million" },
+            { "label": "10-20 million" },
+            { "label": "Over 20 million" },
+            { "label": "Prefer not to disclose" }
+          ]
+        },
+        "totalPeopleInBusiness": {
+          "label": "Total People in Business",
+          "prompt": "How many people work in your business in total? Include yourself, family members, full-time staff, part-time staff, and regular contractors.",
+          "options": [
+            { "label": "Just me (1 person)" },
+            { "label": "2-5 people" },
+            { "label": "6-10 people" },
+            { "label": "11-25 people" },
+            { "label": "26-50 people" },
+            { "label": "More than 50 people" }
+          ]
+        },
+        "yearsInOperation": {
+          "label": "Years in Operation",
+          "prompt": "How long has your business been operating? This helps demonstrate your experience and track record.",
+          "options": [
+            { "label": "Less than 1 year (just starting)" },
+            { "label": "1-2 years" },
+            { "label": "3-5 years" },
+            { "label": "6-10 years" },
+            { "label": "11-20 years" },
+            { "label": "More than 20 years" }
+          ]
         }
       }
     },
@@ -1882,6 +1918,23 @@
     "technology_upgrade": "Technology upgrade",
     "other": "Other (please specify)"
   },
+  "header": {
+    "appTitle": "Business Continuity Plan Tool",
+    "logout": "Logout",
+    "exit": "Exit",
+    "restartWizard": "Restart Wizard",
+    "restart": "Restart",
+    "restartWizardConfirm": "Restart Wizard?",
+    "restartWizardWarning": "This will clear your current progress and start over.",
+    "restartWizardMessage": "You have unsaved progress in your business continuity plan. Restarting the wizard will clear this data and you'll need to start over. Are you sure you want to continue?",
+    "yesRestart": "Yes, Restart",
+    "planDraft": "Plan Draft",
+    "saved": "Saved",
+    "local": "Local",
+    "noPlan": "No Plan",
+    "managePlan": "Manage Plan",
+    "save": "Save"
+  },
   "sessionManager": {
     "planStatus": "Plan Status",
     "getStarted": "Get Started",
@@ -1917,6 +1970,27 @@
     "privacyBullet2": "• Your PIN is your key - keep it safe",
     "privacyBullet3": "• Data is encrypted and automatically expires after 30 days of inactivity",
     "privacyBullet4": "• Shareable links allow read-only access for lenders/advisors"
+  },
+  "bcpReview": {
+    "businessContinuityPlan": "Business Continuity Plan",
+    "version": "Version 1.0",
+    "backToEdit": "← Back to Edit",
+    "exportWordDocument": "📄 Export Word Document",
+    "chooseDocumentFormat": "Choose Your Document Format:",
+    "formalBcpTitle": "🏦 Formal BCP (Loan Submission)",
+    "formalBcpDescription": "Professional document for bank loans and insurance applications",
+    "formalBcpBullet1": "✓ 8-12 pages, loan-ready format",
+    "formalBcpBullet2": "✓ Shows detailed risk assessment & mitigation",
+    "formalBcpBullet3": "✓ UNDP/CARICHAM certified framework",
+    "formalBcpBullet4": "✓ Suitable for JMD 500K-10M loan applications",
+    "actionWorkbookTitle": "✅ Action Workbook",
+    "actionWorkbookDescription": "Step-by-step implementation guide for your team",
+    "actionWorkbookBullet1": "✓ 20-30 pages with detailed checklists",
+    "actionWorkbookBullet2": "✓ 30-day action plan with deadlines",
+    "actionWorkbookBullet3": "✓ Budget worksheets & progress trackers",
+    "actionWorkbookBullet4": "✓ Print and use to implement your plan",
+    "proTip": "Pro Tip:",
+    "proTipContent": "Download <strong>both formats</strong>! Use the <strong>Formal BCP</strong> when applying for loans or insurance, and the <strong>Action Workbook</strong> to actually implement your continuity strategies with your team."
   },
   "bcpPreview": {
     "formalBcp": {
@@ -2038,7 +2112,7 @@
       "trainingProgramsDesc": "Staff training ensures everyone knows their role in emergency response and recovery.",
       "identifiedImprovementsDesc": "Areas for improvement identified through testing, exercises, or actual incidents.",
       "testType": "Test Type",
-      "frequency": "Frequency",
+      "frequencyLabel": "Frequency",
       "participants": "Participants",
       "nextTest": "Next Test",
       "responsible": "Responsible",
@@ -2132,7 +2206,45 @@
       "example": "EXAMPLE",
       "alternatives": "ALTERNATIVES",
       "freeLowCost": "Free/Low-Cost",
-      "lowTech": "Low-Tech"
+      "lowTech": "Low-Tech",
+      "incidentLog": {
+        "title": "INCIDENT LOG",
+        "subtitle": "Use this form to record events during an emergency - Critical for insurance claims and lessons learned",
+        "incidentDetails": "Incident Details",
+        "incidentType": "Incident Type",
+        "dateTimeStarted": "Date & Time Started",
+        "reportedBy": "Reported By",
+        "location": "Location",
+        "impactAssessment": "Impact Assessment",
+        "staffAffected": "Staff Affected",
+        "operationsAffected": "Operations Affected",
+        "estimatedDamage": "Estimated Damage",
+        "actionsTaken": "Actions Taken",
+        "immediateResponse": "Immediate Response",
+        "resourcesUsed": "Resources Used",
+        "externalContacts": "External Contacts Made",
+        "incidentClosed": "Incident Closed",
+        "closedBy": "Closed By",
+        "dateTime": "Date & Time",
+        "importantReminders": "Important Reminders",
+        "reminder1": "Take photos/videos of all damage before cleanup - essential for insurance claims",
+        "reminder2": "Keep all receipts for emergency purchases, repairs, temporary accommodations",
+        "reminder3": "Don't throw away damaged items until insurance adjuster has seen them",
+        "reminder4": "Contact insurance within 24 hours to start claims process",
+        "reminder5": "After incident is resolved: Schedule lessons-learned meeting and update this workbook"
+      },
+      "notesUpdates": {
+        "title": "NOTES & UPDATES",
+        "subtitle": "Use this space to track changes, lessons learned, and action items",
+        "date": "Date",
+        "noteUpdateActionItem": "Note / Update / Action Item",
+        "updatedBy": "Updated By",
+        "footer": {
+          "planManager": "Plan Manager",
+          "lastUpdated": "Last Updated",
+          "nextReview": "Next Review: Quarterly or after any incident"
+        }
+      }
     }
   }
 }

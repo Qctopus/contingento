@@ -1,5 +1,12 @@
 import { PrismaClient } from '@prisma/client'
 import type { Locale } from '@/i18n/config'
+import { locales } from '@/i18n/config'
+import { 
+  withTranslation, 
+  withAllTranslations, 
+  extractTranslation,
+  getMissingTranslations 
+} from '@/lib/db/translationHelpers'
 
 const prisma = new PrismaClient()
 
@@ -10,24 +17,22 @@ export class MultilingualDataService {
         const businessTypes = await this.prismaClient.businessType.findMany({
             where: { isActive: true },
             include: {
-                BusinessTypeTranslation: {
-                    where: { locale: this.locale }
-                },
+                BusinessTypeTranslation: withTranslation(this.locale),
                 BusinessRiskVulnerability: true
             }
         })
 
         return businessTypes.map(bt => {
-            const translation = bt.BusinessTypeTranslation?.[0] || {}
+            const translation = extractTranslation(bt.BusinessTypeTranslation, this.locale) || {}
             return {
                 ...bt,
-                name: translation.name || '',
-                description: translation.description || '',
-                exampleBusinessPurposes: translation.exampleBusinessPurposes || [],
-                exampleProducts: translation.exampleProducts || [],
-                exampleKeyPersonnel: translation.exampleKeyPersonnel || [],
-                exampleCustomerBase: translation.exampleCustomerBase || [],
-                minimumEquipment: translation.minimumEquipment || [],
+                name: (translation as any).name || '',
+                description: (translation as any).description || '',
+                exampleBusinessPurposes: (translation as any).exampleBusinessPurposes || [],
+                exampleProducts: (translation as any).exampleProducts || [],
+                exampleKeyPersonnel: (translation as any).exampleKeyPersonnel || [],
+                exampleCustomerBase: (translation as any).exampleCustomerBase || [],
+                minimumEquipment: (translation as any).minimumEquipment || [],
                 BusinessTypeTranslation: undefined,
                 BusinessRiskVulnerability: undefined
             }
@@ -38,23 +43,23 @@ export class MultilingualDataService {
         const bt = await this.prismaClient.businessType.findUnique({
             where: { businessTypeId: id },
             include: {
-                BusinessTypeTranslation: { where: { locale: this.locale } },
+                BusinessTypeTranslation: withTranslation(this.locale),
                 BusinessRiskVulnerability: true
             }
         })
 
         if (!bt) return null
 
-        const translation = bt.BusinessTypeTranslation?.[0] || {}
+        const translation = extractTranslation(bt.BusinessTypeTranslation, this.locale) || {}
         return {
             ...bt,
-            name: translation.name || '',
-            description: translation.description || '',
-            exampleBusinessPurposes: translation.exampleBusinessPurposes || [],
-            exampleProducts: translation.exampleProducts || [],
-            exampleKeyPersonnel: translation.exampleKeyPersonnel || [],
-            exampleCustomerBase: translation.exampleCustomerBase || [],
-            minimumEquipment: translation.minimumEquipment || [],
+            name: (translation as any).name || '',
+            description: (translation as any).description || '',
+            exampleBusinessPurposes: (translation as any).exampleBusinessPurposes || [],
+            exampleProducts: (translation as any).exampleProducts || [],
+            exampleKeyPersonnel: (translation as any).exampleKeyPersonnel || [],
+            exampleCustomerBase: (translation as any).exampleCustomerBase || [],
+            minimumEquipment: (translation as any).minimumEquipment || [],
             BusinessTypeTranslation: undefined,
             BusinessRiskVulnerability: undefined
         }
@@ -75,17 +80,13 @@ export class MultilingualDataService {
         const strategies = await this.prismaClient.riskMitigationStrategy.findMany({
             where,
             include: {
-                StrategyTranslation: {
-                    where: { locale: this.locale }
-                },
+                StrategyTranslation: withTranslation(this.locale),
                 ActionStep: {
                     orderBy: {
                         sortOrder: 'asc'
                     },
                     include: {
-                        ActionStepTranslation: {
-                            where: { locale: this.locale }
-                        },
+                        ActionStepTranslation: withTranslation(this.locale),
                         ActionStepItemCost: {
                             include: {
                                 CostItem: true
@@ -97,7 +98,7 @@ export class MultilingualDataService {
         })
 
         return strategies.map(strategy => {
-            const t = strategy.StrategyTranslation?.[0] || {}
+            const t = extractTranslation(strategy.StrategyTranslation, this.locale) || {} as any
             return {
                 ...strategy,
                 name: t.name || '',
@@ -113,7 +114,7 @@ export class MultilingualDataService {
                 lowBudgetAlternative: t.lowBudgetAlternative || '',
 
                 actionSteps: (strategy.ActionStep || []).map(step => {
-                    const st = step.ActionStepTranslation?.[0] || {}
+                    const st = extractTranslation(step.ActionStepTranslation, this.locale) || {} as any
                     return {
                         ...step,
                         title: st.title || '',
@@ -159,14 +160,12 @@ export class MultilingualDataService {
         const multipliers = await this.prismaClient.riskMultiplier.findMany({
             where: { isActive: true },
             include: {
-                RiskMultiplierTranslation: {
-                    where: { locale: this.locale }
-                }
+                RiskMultiplierTranslation: withTranslation(this.locale)
             }
         })
 
         return multipliers.map(m => {
-            const t = m.RiskMultiplierTranslation?.[0] || {}
+            const t = extractTranslation(m.RiskMultiplierTranslation, this.locale) || {} as any
             return {
                 ...m,
                 name: t.name || '',
@@ -185,10 +184,10 @@ export class MultilingualDataService {
         return await this.prismaClient.riskMitigationStrategy.findUnique({
             where: { id: strategyId },
             include: {
-                StrategyTranslation: true,
+                StrategyTranslation: withAllTranslations,
                 ActionStep: {
                     include: {
-                        ActionStepTranslation: true
+                        ActionStepTranslation: withAllTranslations
                     }
                 }
             }
@@ -218,5 +217,31 @@ export class MultilingualDataService {
         )
 
         return await this.prismaClient.$transaction(updates)
+    }
+
+    // Admin method to get missing translations for a strategy
+    async getStrategyMissingTranslations(strategyId: string) {
+        const strategy = await this.prismaClient.riskMitigationStrategy.findUnique({
+            where: { id: strategyId },
+            include: {
+                StrategyTranslation: { select: { locale: true } },
+                ActionStep: {
+                    include: {
+                        ActionStepTranslation: { select: { locale: true } }
+                    }
+                }
+            }
+        })
+
+        if (!strategy) return null
+
+        return {
+            strategyId,
+            strategyMissing: getMissingTranslations(strategy.StrategyTranslation),
+            actionStepsMissing: strategy.ActionStep.map(step => ({
+                stepId: step.stepId,
+                missing: getMissingTranslations(step.ActionStepTranslation)
+            })).filter(s => s.missing.length > 0)
+        }
     }
 }

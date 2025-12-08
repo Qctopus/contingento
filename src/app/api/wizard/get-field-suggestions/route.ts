@@ -395,6 +395,4 @@ function getLocationContext(fieldName: string, location: any, businessType: any)
   return context.length > 0
     ? `Consider ${context.join(', ')} for ${businessType.name} operations`
     : null
-}   
- 
- 
+}

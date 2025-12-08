@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { useLocale } from 'next-intl'
-import { locales } from '@/i18n/config'
+import { locales, localeMetadata, type Locale, isValidLocale } from '@/i18n/config'
 import { useState } from 'react'
 
 export function LanguageSwitcher() {
@@ -11,8 +11,11 @@ export function LanguageSwitcher() {
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
+  // Ensure current locale is valid
+  const currentLocale: Locale = isValidLocale(locale) ? locale : 'en'
+
   const switchLanguage = (newLocale: string) => {
-    if (newLocale === locale) return
+    if (newLocale === currentLocale) return
     
     // Remove current locale from pathname and add new one
     const segments = pathname.split('/')
@@ -24,20 +27,15 @@ export function LanguageSwitcher() {
   }
 
   const getCurrentLabel = () => {
-    switch (locale) {
-      case 'en': return 'EN'
-      case 'fr': return 'FR'
-      case 'es': return 'ES'
-      default: return 'EN'
-    }
+    return localeMetadata[currentLocale].shortCode
   }
 
   const getAllLanguages = () => {
     return locales.map(lang => ({
       code: lang,
-      label: lang === 'en' ? 'EN' : lang === 'fr' ? 'FR' : 'ES',
-      fullLabel: lang === 'en' ? 'English' : lang === 'fr' ? 'Français' : 'Español',
-      isActive: lang === locale
+      label: localeMetadata[lang].shortCode,
+      fullLabel: localeMetadata[lang].nativeLabel,
+      isActive: lang === currentLocale
     }))
   }
 

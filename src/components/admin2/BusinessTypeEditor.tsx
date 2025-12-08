@@ -6,6 +6,7 @@ import { AutoSaveIndicator } from './AutoSaveIndicator'
 import { BusinessType } from '../../types/admin'
 import { BUSINESS_CATEGORIES } from '../../constants/admin'
 import { logger } from '../../utils/logger'
+import { locales, localeMetadata, type Locale } from '@/i18n/config'
 
 interface BusinessTypeEditorProps {
   businessType: BusinessType
@@ -13,12 +14,10 @@ interface BusinessTypeEditorProps {
   onClose: () => void
 }
 
-type Language = 'en' | 'es' | 'fr'
-
 export function BusinessTypeEditor({ businessType, onUpdate, onClose }: BusinessTypeEditorProps) {
   const [editedBusinessType, setEditedBusinessType] = useState<BusinessType>(businessType)
   const [activeTab, setActiveTab] = useState<'basic' | 'examples' | 'risks'>('basic')
-  const [activeLanguage, setActiveLanguage] = useState<Language>('en')
+  const [activeLanguage, setActiveLanguage] = useState<Locale>('en')
 
   // Sync state when businessType prop changes
   useEffect(() => {
@@ -74,16 +73,16 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
   }
 
   // Helper to parse multilingual JSON
-  const parseMultilingual = (value: any): Record<Language, string> => {
-    if (!value) return { en: '', es: '', fr: '' }
+  const parseMultilingual = (value: any): Record<Locale, string> => {
+    const result: Record<Locale, string> = { en: '', es: '', fr: '' }
+    if (!value) return result
     
     // If it's already an object (multilingual)
     if (typeof value === 'object' && value !== null) {
-      return {
-        en: value.en || '',
-        es: value.es || '',
-        fr: value.fr || ''
+      for (const loc of locales) {
+        result[loc] = value[loc] || ''
       }
+      return result
     }
     
     // If it's a string, try to parse as JSON
@@ -91,26 +90,33 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
       try {
         const parsed = JSON.parse(value)
         if (typeof parsed === 'object' && parsed !== null) {
-          return {
-            en: parsed.en || '',
-            es: parsed.es || '',
-            fr: parsed.fr || ''
+          for (const loc of locales) {
+            result[loc] = parsed[loc] || ''
           }
+          return result
         }
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       } catch {
-        return { en: value, es: '', fr: '' }
+        result.en = value
+        return result
       }
     }
     
-    return { en: '', es: '', fr: '' }
+    return result
   }
 
   // Helper to parse array of multilingual objects
   // Handles two formats:
   // 1. Array of objects: [{en: "...", es: "...", fr: "..."}, ...]
   // 2. Object with arrays: {en: ["...", "..."], es: ["...", "..."], fr: ["...", "..."]}
-  const parseMultilingualArray = (value: any): Array<Record<Language, string>> => {
+  const parseMultilingualArray = (value: any): Array<Record<Locale, string>> => {
+    const emptyItem = (): Record<Locale, string> => {
+      const item: Record<Locale, string> = {} as Record<Locale, string>
+      for (const loc of locales) item[loc] = ''
+      return item
+    }
+
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value)
@@ -121,19 +127,21 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
         }
         
         // Format 2: Object with language keys containing arrays - need to transpose
-        if (parsed && typeof parsed === 'object' && (parsed.en || parsed.es || parsed.fr)) {
-          const en = parsed.en || []
-          const es = parsed.es || []
-          const fr = parsed.fr || []
-          const maxLength = Math.max(en.length, es.length, fr.length)
+        if (parsed && typeof parsed === 'object') {
+          const arrays: Record<Locale, string[]> = {} as Record<Locale, string[]>
+          let maxLength = 0
+          for (const loc of locales) {
+            arrays[loc] = parsed[loc] || []
+            maxLength = Math.max(maxLength, arrays[loc].length)
+          }
           
-          const result: Array<Record<Language, string>> = []
+          const result: Array<Record<Locale, string>> = []
           for (let i = 0; i < maxLength; i++) {
-            result.push({
-              en: en[i] || '',
-              es: es[i] || '',
-              fr: fr[i] || ''
-            })
+            const item = emptyItem()
+            for (const loc of locales) {
+              item[loc] = arrays[loc][i] || ''
+            }
+            result.push(item)
           }
           return result
         }
@@ -150,19 +158,23 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
     }
     
     // Handle object format directly
-    if (value && typeof value === 'object' && (value.en || value.es || value.fr)) {
-      const en = value.en || []
-      const es = value.es || []
-      const fr = value.fr || []
-      const maxLength = Math.max(en.length, es.length, fr.length)
+    if (value && typeof value === 'object') {
+      const arrays: Record<Locale, string[]> = {} as Record<Locale, string[]>
+      let maxLength = 0
+      for (const loc of locales) {
+        arrays[loc] = value[loc] || []
+        maxLength = Math.max(maxLength, arrays[loc].length)
+      }
       
-      const result: Array<Record<Language, string>> = []
+      if (maxLength === 0) return []
+      
+      const result: Array<Record<Locale, string>> = []
       for (let i = 0; i < maxLength; i++) {
-        result.push({
-          en: en[i] || '',
-          es: es[i] || '',
-          fr: fr[i] || ''
-        })
+        const item = emptyItem()
+        for (const loc of locales) {
+          item[loc] = arrays[loc][i] || ''
+        }
+        result.push(item)
       }
       return result
     }
@@ -171,17 +183,19 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
   }
 
   // Helper to update multilingual field
-  const updateMultilingualField = (field: keyof BusinessType, lang: Language, value: string) => {
+  const updateMultilingualField = (field: keyof BusinessType, lang: Locale, value: string) => {
     const current = parseMultilingual(editedBusinessType[field])
     current[lang] = value
     updateField(field, JSON.stringify(current))
   }
 
   // Helper to update multilingual array
-  const updateMultilingualArray = (field: keyof BusinessType, index: number, lang: Language, value: string) => {
+  const updateMultilingualArray = (field: keyof BusinessType, index: number, lang: Locale, value: string) => {
     const current = parseMultilingualArray(editedBusinessType[field])
     if (!current[index]) {
-      current[index] = { en: '', es: '', fr: '' }
+      const emptyItem: Record<Locale, string> = {} as Record<Locale, string>
+      for (const loc of locales) emptyItem[loc] = ''
+      current[index] = emptyItem
     }
     current[index][lang] = value
     updateField(field, JSON.stringify(current))
@@ -190,7 +204,9 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
   // Helper to add item to multilingual array
   const addMultilingualArrayItem = (field: keyof BusinessType) => {
     const current = parseMultilingualArray(editedBusinessType[field])
-    current.push({ en: '', es: '', fr: '' })
+    const emptyItem: Record<Locale, string> = {} as Record<Locale, string>
+    for (const loc of locales) emptyItem[loc] = ''
+    current.push(emptyItem)
     updateField(field, JSON.stringify(current))
   }
 
@@ -199,18 +215,6 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
     const current = parseMultilingualArray(editedBusinessType[field])
     current.splice(index, 1)
     updateField(field, JSON.stringify(current))
-  }
-
-  const languageFlags = {
-    en: '🇬🇧',
-    es: '🇪🇸',
-    fr: '🇫🇷'
-  }
-
-  const languageLabels = {
-    en: 'English',
-    es: 'Spanish',
-    fr: 'French'
   }
 
   return (
@@ -309,7 +313,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             
             {/* Language Selector for Name & Description */}
             <div className="flex space-x-2 mb-4">
-              {(['en', 'es', 'fr'] as Language[]).map(lang => (
+              {locales.map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveLanguage(lang)}
@@ -319,7 +323,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
                       : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                   }`}
                 >
-                  {languageFlags[lang]} {languageLabels[lang]}
+                  {localeMetadata[lang].flag} {localeMetadata[lang].label}
                 </button>
               ))}
             </div>
@@ -327,7 +331,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             <div className="grid grid-cols-1 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Business Type Name ({languageLabels[activeLanguage]})
+                  Business Type Name ({localeMetadata[activeLanguage].label})
                 </label>
                 <input
                   type="text"
@@ -340,7 +344,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description ({languageLabels[activeLanguage]})
+                  Description ({localeMetadata[activeLanguage].label})
                 </label>
                 <textarea
                   value={parseMultilingual(editedBusinessType.description)[activeLanguage] || ''}
@@ -398,7 +402,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
 
             {/* Language Selector */}
             <div className="flex space-x-2">
-              {(['en', 'es', 'fr'] as Language[]).map(lang => (
+              {locales.map(lang => (
                 <button
                   key={lang}
                   onClick={() => setActiveLanguage(lang)}
@@ -408,7 +412,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
                       : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
                   }`}
                 >
-                  {languageFlags[lang]} {languageLabels[lang]}
+                  {localeMetadata[lang].flag} {localeMetadata[lang].label}
                 </button>
               ))}
             </div>
@@ -416,7 +420,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             {/* Example Business Purposes */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="text-md font-medium text-gray-900 mb-2">
-                Example Business Purposes ({languageLabels[activeLanguage]})
+                Example Business Purposes ({localeMetadata[activeLanguage].label})
               </h4>
               <p className="text-sm text-gray-600 mb-4">2-3 examples of business purposes users might have</p>
               
@@ -449,7 +453,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             {/* Example Products */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="text-md font-medium text-gray-900 mb-2">
-                Example Products/Services ({languageLabels[activeLanguage]})
+                Example Products/Services ({localeMetadata[activeLanguage].label})
               </h4>
               <p className="text-sm text-gray-600 mb-4">2-3 examples of products or services</p>
               
@@ -482,7 +486,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             {/* Example Key Personnel */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="text-md font-medium text-gray-900 mb-2">
-                Example Key Personnel ({languageLabels[activeLanguage]})
+                Example Key Personnel ({localeMetadata[activeLanguage].label})
               </h4>
               <p className="text-sm text-gray-600 mb-4">3-5 typical roles</p>
               
@@ -515,7 +519,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             {/* Example Customer Base */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="text-md font-medium text-gray-900 mb-2">
-                Example Customer Base ({languageLabels[activeLanguage]})
+                Example Customer Base ({localeMetadata[activeLanguage].label})
               </h4>
               <p className="text-sm text-gray-600 mb-4">2-3 examples of typical customer types</p>
               
@@ -548,7 +552,7 @@ export function BusinessTypeEditor({ businessType, onUpdate, onClose }: Business
             {/* Minimum Equipment */}
             <div className="bg-gray-50 p-6 rounded-lg">
               <h4 className="text-md font-medium text-gray-900 mb-2">
-                Minimum Equipment ({languageLabels[activeLanguage]})
+                Minimum Equipment ({localeMetadata[activeLanguage].label})
               </h4>
               <p className="text-sm text-gray-600 mb-4">4-6 essential equipment items</p>
               
