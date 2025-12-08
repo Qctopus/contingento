@@ -697,7 +697,39 @@ export default function IndustrySelector({ onSelection, onSkip }: IndustrySelect
                                   </label>
                                 )
                               })
-                            ) : null}
+                            ) : (
+                              // Fallback: Numeric input for threshold values without predefined options
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-4">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    value={typeof currentValue === 'number' ? currentValue : ''}
+                                    onChange={(e) => {
+                                      const value = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+                                      setBusinessCharacteristics(prev => ({
+                                        ...prev,
+                                        [charType]: value
+                                      }))
+                                    }}
+                                    placeholder={t('enterValue') || 'Enter value'}
+                                    className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                  />
+                                  {multiplier.conditionValue && (
+                                    <span className="text-sm text-gray-600">
+                                      {t('thresholdHint', { threshold: multiplier.conditionValue }) || `(threshold: ${multiplier.conditionValue})`}
+                                    </span>
+                                  )}
+                                </div>
+                                {multiplier.conditionValue && (
+                                  <p className="text-xs text-gray-500">
+                                    {t('multiplierAppliesWhen', { threshold: multiplier.conditionValue }) || 
+                                      `Multiplier applies when value ≥ ${multiplier.conditionValue}`}
+                                  </p>
+                                )}
+                              </div>
+                            )}
                           </div>
                         ) : null}
                       </div>
