@@ -1006,16 +1006,7 @@ export function BusinessContinuityForm() {
             >
               {isSubmitting ? t('common.saving') : t('common.save')}
             </button>
-            
-            {isComplete && (
-              <button
-                onClick={exportToPDF}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
-              >
-                {t('common.exportPDF')}
-              </button>
-            )}
-            
+
             <button
               onClick={clearDraft}
               className="w-full px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm"

@@ -1,6 +1,13 @@
 /**
  * API Route: Export Word Document (Formal BCP or Action Workbook)
- * Generates a docx on the server to avoid client-side bundling issues.
+ * Generates a DOCX on the server.
+ * 
+ * Parameters:
+ * - planData: The form data
+ * - mode: 'formal' | 'workbook'
+ * - locale: 'en' | 'es' | 'fr'
+ * - strategies: Optional array of strategies
+ * - risks: Optional array of risks
  */
 
 import { NextResponse } from 'next/server'
@@ -52,6 +59,10 @@ export async function POST(req: Request) {
       ? risksFromClient
       : (planData.RISK_ASSESSMENT?.['Risk Assessment Matrix'] || []).filter((r: any) => r.isSelected || risksFromClient === undefined)
 
+    const companyName = planData.PLAN_INFORMATION?.['Company Name'] || 'business'
+    const sanitizedName = companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
+    
+    // Generate Word document
     const buffer = await buildWordBuffer({
       formData: planData,
       strategies,
@@ -60,8 +71,6 @@ export async function POST(req: Request) {
       mode
     } as WordExportOptions)
 
-    const companyName = planData.PLAN_INFORMATION?.['Company Name'] || 'business'
-    const sanitizedName = companyName.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase()
     const filename = `${sanitizedName}-${mode === 'formal' ? 'formal-bcp' : 'action-workbook'}.docx`
 
     return new NextResponse(buffer as any, {
@@ -80,4 +89,3 @@ export async function POST(req: Request) {
     )
   }
 }
-

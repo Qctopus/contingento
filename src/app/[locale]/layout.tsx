@@ -81,7 +81,7 @@ export default async function LocaleLayout({
                         <div className="hidden md:flex items-center gap-3">
                           <div className="flex flex-col items-start">
                             <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
-                              Built with support from
+                              {t('builtWithSupport')}
                             </span>
                             <div className="flex items-center gap-2 mt-1">
                               {/* MOFA Logo Icon Only */}
